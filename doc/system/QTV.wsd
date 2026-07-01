@@ -1,0 +1,42 @@
+@startuml
+left to right direction
+actor "Quản trị viên" as QTV
+
+rectangle "Hệ thống bán voucher trực tuyến" {
+  usecase "Tra cứu người dùng" as UC1
+  usecase "Khóa/Mở khóa tài khoản người dùng" as UC2
+  usecase "Phân quyền người dùng" as UC3
+  usecase "Duyệt hồ sơ đối tác" as UC4
+  usecase "Khóa/Mở khóa đối tác" as UC5
+  usecase "Quản lý chi nhánh đối tác" as UC6
+  usecase "Duyệt voucher" as UC7
+  usecase "Thay đổi trạng thái hiển thị voucher" as UC8
+  usecase "Tra cứu đơn hàng" as UC9
+  usecase "Hủy đơn hàng và hoàn tiền" as UC10
+  usecase "Quản lý nội dung hệ thống" as UC11
+  usecase "Xem dashboard quản trị" as UC12
+  usecase "Tra cứu nhật ký hệ thống" as UC13
+
+  UC2 -[hidden]left- UC1
+  UC3 -[hidden]left- UC1
+  UC5 -[hidden]left- UC4
+  UC6 -[hidden]left- UC4
+  UC8 -[hidden]left- UC7
+  UC10 -[hidden]left- UC9
+}
+
+QTV -> UC1
+QTV -> UC4
+QTV -> UC7
+QTV -> UC9
+QTV --> UC11
+QTV --> UC12
+QTV --> UC13
+
+UC2 ..> UC1 : <<extend>>
+UC3 ..> UC1 : <<extend>>
+UC5 ..> UC4 : <<extend>>
+UC6 ..> UC4 : <<extend>>
+UC8 ..> UC7 : <<extend>>
+UC10 ..> UC9 : <<extend>>
+@enduml
