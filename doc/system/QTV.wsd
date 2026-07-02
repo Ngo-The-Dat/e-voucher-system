@@ -20,14 +20,15 @@ rectangle "Hệ thống bán voucher trực tuyến" {
   UC2 -[hidden]left- UC1
   UC3 -[hidden]left- UC1
   UC5 -[hidden]left- UC4
-  UC6 -[hidden]left- UC4
-  UC8 -[hidden]left- UC7
   UC10 -[hidden]left- UC9
 }
 
 QTV -> UC1
 QTV -> UC4
+QTV -> UC5
+QTV -> UC6
 QTV -> UC7
+QTV -> UC8
 QTV -> UC9
 QTV --> UC11
 QTV --> UC12
@@ -35,8 +36,5 @@ QTV --> UC13
 
 UC2 ..> UC1 : <<extend>>
 UC3 ..> UC1 : <<extend>>
-UC5 ..> UC4 : <<extend>>
-UC6 ..> UC4 : <<extend>>
-UC8 ..> UC7 : <<extend>>
 UC10 ..> UC9 : <<extend>>
 @enduml
