@@ -1,0 +1,31 @@
+@startuml
+left to right direction
+actor "Đối tác" as DT
+actor "Nhân viên đối tác" as NVDT
+
+rectangle "Hệ thống quản lý đối tác & voucher" {
+  usecase "Đăng ký tài khoản đối tác" as UC01
+  usecase "Quản lý hồ sơ đối tác" as UC02
+  usecase "Tạo voucher mới" as UC03
+  usecase "Quản lý voucher" as UC04
+  usecase "Gửi duyệt voucher" as UC05
+  usecase "Chỉnh sửa voucher" as UC06
+  usecase "Kiểm tra voucher code" as UC07
+  usecase "Xác nhận sử dụng voucher" as UC08
+  usecase "Báo cáo đối tác" as UC09
+}
+
+DT --> UC01
+DT --> UC02
+DT --> UC03
+DT --> UC04
+DT --> UC07
+DT --> UC08
+DT --> UC09
+NVDT --> UC07
+NVDT --> UC08
+
+UC05 ..> UC04 : <<extend>>
+UC06 ..> UC05 : <<extend>>
+UC08 ..> UC07 : <<include>>
+@enduml
