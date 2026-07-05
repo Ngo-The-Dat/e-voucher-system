@@ -1,10 +1,5 @@
 @startuml
 left to right direction
-skinparam packageStyle rectangle
-skinparam usecase {
-    BackgroundColor White
-    BorderColor Black
-}
 
 actor "Khách hàng" as Customer
 
@@ -12,23 +7,13 @@ rectangle "Voucher E-Commerce System" {
 
     usecase "SR-CUS-05\nQuản lý giỏ hàng" as UC05
     usecase "Kiểm tra tồn kho" as UC051
-    usecase "Cập nhật giỏ hàng" as UC052
-    usecase "Tính tổng tiền\n tạm tính" as UC053
 
     usecase "SR-CUS-06\nTạo đơn hàng" as UC06
-    usecase "Lấy thông tin\nkhách hàng" as UC061
-    usecase "Kiểm tra\nvoucher hợp lệ" as UC062
-    usecase "Tạo đơn hàng" as UC063
+    usecase "Kiểm tra voucher\nhợp lệ" as UC061
 
-    usecase "SR-CUS-07\nNhận voucher đã mua" as UC07
-    usecase "Cập nhật trạng thái\nđơn hàng" as UC071
-    usecase "Sinh Voucher Code" as UC072
-    usecase "Sinh mã QR" as UC073
-    usecase "Xem lịch sử\nđơn hàng" as UC074
+    usecase "SR-CUS-07\nNhận voucher\nđã mua" as UC07
 
-    usecase "SR-CUS-08\nĐánh giá và phản hồi" as UC08
-    usecase "Đánh giá\nvoucher" as UC081
-    usecase "Gửi phản hồi /\nKhiếu nại" as UC082
+    usecase "SR-CUS-08\nĐánh giá và\nphản hồi" as UC08
 }
 
 Customer --> UC05
@@ -36,24 +21,10 @@ Customer --> UC06
 Customer --> UC07
 Customer --> UC08
 
-UC05 .> UC051 : <<include>>
-UC05 .> UC052 : <<include>>
-UC05 .> UC053 : <<include>>
+UC05 ..> UC051 : <<include>>
+UC06 ..> UC061 : <<include>>
 
-
-UC06 .> UC061 : <<include>>
-UC06 .> UC062 : <<include>>
-UC06 .> UC063 : <<include>>
-
-UC07 .> UC071 : <<include>>
-UC07 .> UC072 : <<include>>
-UC07 .> UC073 : <<include>>
-UC07 .> UC074 : <<include>>
-
-UC08 .> UC081 : <<extend>>
-UC08 .> UC082 : <<extend>>
-
-UC07 .> UC06 : <<extend>>
-UC08 .> UC07 : <<extend>>
+UC07 ..> UC06 : <<extend>>
+UC08 ..> UC07 : <<extend>>
 
 @enduml
