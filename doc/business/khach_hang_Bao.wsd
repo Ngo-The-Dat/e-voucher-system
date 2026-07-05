@@ -1,0 +1,44 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Khách hàng" as Customer
+actor "Doanh nghiệp" as Business
+
+rectangle "Hệ thống bán Voucher" {
+
+    usecase "BR-CUS-05\nQuản lý giỏ hàng" as UC05
+    usecase "BR-CUS-06\nTạo đơn hàng" as UC06
+    usecase "BR-CUS-07\nNhận voucher\nđã mua" as UC07
+    usecase "BR-CUS-08\nĐánh giá\nvà phản hồi" as UC08
+
+    usecase "Kiểm tra tồn kho" as Stock
+    usecase "Tính tiền tạm tính" as Total
+    usecase "Lập hóa đơn" as Invoice
+    usecase "Thanh toán" as Payment
+    usecase "Sinh Voucher Code\nvà QR" as Voucher
+    usecase "Tiếp nhận\nkhiếu nại" as Complaint
+
+}
+
+Customer --> UC05
+Customer --> UC06
+Customer --> UC07
+Customer --> UC08
+
+Business --> UC05
+Business --> UC06
+Business --> UC07
+Business --> UC08
+
+UC05 .> Stock : <<include>>
+UC05 .> Total : <<include>>
+
+UC06 .> Invoice : <<include>>
+UC06 .> Payment : <<include>>
+
+UC07 .> Voucher : <<include>>
+
+UC08 .> Complaint : <<extend>>
+
+@enduml
