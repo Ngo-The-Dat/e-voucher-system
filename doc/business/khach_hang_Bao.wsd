@@ -2,7 +2,6 @@
 left to right direction
 
 actor "Khách hàng" as Customer
-actor "Doanh nghiệp" as Business
 
 rectangle "Quản lý bán Voucher" {
 
@@ -17,10 +16,5 @@ Customer --> UC05
 Customer --> UC06
 Customer --> UC07
 Customer --> UC08
-
-Business --> UC05
-Business --> UC06
-Business --> UC07
-Business --> UC08
 
 @enduml

@@ -1,0 +1,63 @@
+@startuml title BR-CUS-05 - Quản lý giỏ hàng
+
+|Khách hàng|
+start
+:Chọn voucher;
+:Nhập số lượng;
+
+|Nhân viên bán hàng|
+:Tiếp nhận yêu cầu;
+:Ghi nhận giỏ hàng;
+
+|Nhân viên kho hàng|
+:Kiểm tra tồn kho;
+
+if (Đủ hàng?) then (Có)
+    :Xác nhận số lượng;
+else (Không)
+    :Xác nhận số lượng khả dụng;
+endif
+
+|Nhân viên bán hàng|
+
+if (Đủ hàng?) then (Có)
+    :Xác định tổng tiền tạm tính;
+else (Không)
+    :Thông báo vượt số lượng;
+    :Điều chỉnh về số lượng khả dụng;
+    :Xác định tổng tiền tạm tính;
+endif
+
+|Khách hàng|
+:Xem giỏ hàng;
+
+if (Muốn chỉnh sửa?) then (Có)
+
+    :Điều chỉnh số lượng\nhoặc xóa voucher;
+
+    |Nhân viên kho hàng|
+    :Kiểm tra lại tồn kho;
+
+    if (Đủ hàng?) then (Có)
+        :Xác nhận số lượng;
+    else (Không)
+        :Thông báo không đủ hàng;
+    endif
+
+    |Nhân viên bán hàng|
+
+    if (Đủ hàng?) then (Có)
+        :Cập nhật giỏ hàng;
+        :Tính lại tổng tiền;
+    else (Không)
+        :Giữ số lượng cũ;
+        :Tính lại tổng tiền;
+    endif
+
+endif
+
+|Khách hàng|
+:Xem tổng tiền;
+
+stop
+@enduml

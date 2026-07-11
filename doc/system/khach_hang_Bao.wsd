@@ -3,16 +3,11 @@ left to right direction
 
 actor "Khách hàng" as Customer
 
-rectangle "Voucher E-Commerce System" {
+rectangle "Hệ thống quản lý voucher" {
 
     usecase "SR-CUS-05\nQuản lý giỏ hàng" as UC05
-    usecase "Kiểm tra tồn kho" as UC051
-
     usecase "SR-CUS-06\nTạo đơn hàng" as UC06
-    usecase "Kiểm tra voucher\nhợp lệ" as UC061
-
     usecase "SR-CUS-07\nNhận voucher\nđã mua" as UC07
-
     usecase "SR-CUS-08\nĐánh giá và\nphản hồi" as UC08
 }
 
@@ -21,10 +16,7 @@ Customer --> UC06
 Customer --> UC07
 Customer --> UC08
 
-UC05 ..> UC051 : <<include>>
-UC06 ..> UC061 : <<include>>
-
-UC07 ..> UC06 : <<extend>>
+UC06 ..> UC05 : <<extend>>
 UC08 ..> UC07 : <<extend>>
 
 @enduml

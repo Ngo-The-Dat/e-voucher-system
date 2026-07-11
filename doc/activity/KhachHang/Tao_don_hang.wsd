@@ -1,0 +1,41 @@
+@startuml title BR-CUS-06 - Tạo đơn hàng
+
+|Khách hàng|
+start
+:Gửi đơn đặt hàng;
+
+|Nhân viên bán hàng|
+:Kiểm tra voucher;
+:Kiểm tra tồn kho;
+
+if (Đơn hợp lệ?) then (Có)
+
+    :Lập hóa đơn;
+    :Tạo mã đơn hàng;
+
+    |Khách hàng|
+    :Xác nhận thông tin;
+
+    if (Mua làm quà?) then (Có)
+        :Nhập thông tin người nhận;
+    endif
+
+    :Chọn phương thức thanh toán;
+    :Xác nhận thanh toán;
+
+    |Nhân viên bán hàng|
+    :Phê duyệt đơn hàng;
+    :Chuyển hồ sơ cho thu ngân;
+
+else (Không)
+
+    :Hủy đơn;
+    :Thông báo từ chối;
+
+    |Khách hàng|
+    :Nhận thông báo;
+
+endif
+
+stop
+@enduml

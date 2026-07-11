@@ -1,0 +1,40 @@
+@startuml title BR-CUS-07 - Nhận voucher đã mua
+
+|Khách hàng|
+start
+:Thanh toán;
+
+|Nhân viên thu ngân|
+:Xác nhận thanh toán;
+
+if (Thanh toán thành công?) then (Có)
+
+    :Đóng dấu "Đã thanh toán";
+
+    |Nhân viên bán hàng|
+    :Sinh Voucher Code;
+    :Sinh mã QR;
+
+    :Bàn giao Voucher Code,
+    QR và trạng thái sử dụng;
+
+    |Nhân viên thu ngân|
+    :In và bàn giao biên lai;
+
+    |Khách hàng|
+    :Nhận Voucher Code, mã QR và biên lai;
+    :Xem lịch sử đơn hàng;
+
+else (Không)
+
+    :Đóng dấu
+    "Thanh toán thất bại";
+    :Trả lại đơn hàng;
+
+    |Khách hàng|
+    :Nhận thông báo;
+
+endif
+
+stop
+@enduml
