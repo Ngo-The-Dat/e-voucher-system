@@ -1,0 +1,23 @@
+@startuml
+|Khách hàng|
+start
+:Xuất trình voucher tại điểm giao dịch;
+
+|Đối tác|
+:Tiếp nhận voucher từ khách hàng;
+:Xác minh voucher còn hiệu lực;
+if (Voucher hợp lệ?) then (Có)
+  :Xác nhận áp dụng voucher\ncho giao dịch của khách hàng;
+  :Ghi nhận voucher đã sử dụng;
+  :Cung cấp ưu đãi tương ứng;
+  |Khách hàng|
+  :Nhận ưu đãi từ voucher;
+  stop
+else (Không)
+  |Đối tác|
+  :Từ chối áp dụng ưu đãi;
+  :Thông báo lý do cho khách hàng\n(không tồn tại, hết hạn, đã sử dụng);
+  |Khách hàng|
+  stop
+endif
+@enduml

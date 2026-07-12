@@ -1,0 +1,50 @@
+@startuml
+|Đối tác|
+start
+
+repeat
+  :Cung cấp thông tin định danh
+  (họ tên, số định danh cá nhân,
+  số điện thoại, email...);
+
+  |Doanh nghiệp|
+  :Xác minh thông tin định danh
+  là duy nhất, chưa từng đăng ký;
+
+  backward: Từ chối yêu cầu\nvà thông báo lý do cho đối tác;
+repeat while (Thông tin định danh
+đã tồn tại?) is (có)
+->không;
+
+  |Doanh nghiệp|
+:Xác thực danh tính đối tác
+qua phương thức liên lạc
+đối tác lựa chọn;
+
+|Đối tác|
+:Thiết lập phương thức bảo mật
+để truy cập tài khoản sau này;
+
+|Doanh nghiệp|
+:Công nhận đối tác là
+thành viên chính thức;
+:Cấp quyền tham gia
+hợp tác kinh doanh;
+
+|Đối tác|
+repeat
+  :Cập nhật thông tin hồ sơ
+  (thông tin pháp lý, người đại diện,
+  danh sách chi nhánh...) khi có thay đổi;
+
+  |Doanh nghiệp|
+  :Kiểm tra thông tin cập nhật;
+
+  backward: Từ chối cập nhật\nvà thông báo lý do cho đối tác;
+repeat while (Thông tin cập nhật
+hợp lệ?) is (không - A2)
+->hợp lệ;
+
+:Ghi nhận cập nhật hồ sơ;
+stop
+@enduml
