@@ -1,0 +1,40 @@
+@startuml
+left to right direction
+
+actor "Khách hàng" as Customer
+
+rectangle "Voucher E-Commerce System" {
+
+    usecase "Đăng ký tài khoản" as UC01
+    usecase "Xác thực OTP" as UC012
+
+    usecase "Đăng nhập" as UC021
+    usecase "Quên mật khẩu" as UC022
+    usecase "Đổi mật khẩu" as UC023
+    usecase "Cập nhật hồ sơ cá nhân" as UC024
+
+    usecase "Tìm kiếm voucher" as UC03
+    usecase "Xem chi tiết voucher" as UC04
+
+    usecase "Quản lý giỏ hàng" as UC05
+    usecase "Tạo đơn hàng" as UC06
+    usecase "Nhận voucher đã mua" as UC07
+    usecase "Đánh giá và phản hồi" as UC08
+}
+
+Customer --> UC01
+Customer --> UC021
+Customer --> UC022
+Customer --> UC023
+Customer --> UC024
+Customer --> UC03
+Customer --> UC04
+Customer --> UC05
+Customer --> UC06
+Customer --> UC07
+Customer --> UC08
+
+UC01 ..> UC012 : <<include>>
+UC022 ..> UC012 : <<include>>
+
+@enduml
