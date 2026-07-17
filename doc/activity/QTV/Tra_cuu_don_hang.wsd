@@ -1,0 +1,27 @@
+@startuml
+title BUC-ADM-05 - Tra cứu đơn hàng
+
+start
+:Chọn mục "Quản lý đơn hàng";
+:Theo dõi danh sách đơn hàng hiện có;
+:Nhập từ khóa và/hoặc chọn bộ lọc;
+
+if (Có đơn hàng phù hợp với
+từ khóa/bộ lọc?) then (không)
+  :Nhận thông báo "Không tìm thấy kết quả phù hợp";
+  stop
+else (có)
+  :Xem danh sách các đơn hàng;
+endif
+
+:Chọn một đơn hàng để xem chi tiết;
+:Rà soát thông tin chi tiết đơn hàng;
+:Cập nhật trạng thái thanh toán nếu phát hiện sai lệch;
+:Xác nhận thay đổi trạng thái đơn hàng;
+:Kiểm tra ghi nhận thao tác
+vào nhật ký hệ thống;
+:Nhận thông báo xác nhận cập nhật
+thành công trên giao diện;
+stop
+
+@enduml

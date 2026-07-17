@@ -1,0 +1,25 @@
+@startuml
+title BUC-ADM-07 - Quản lý nội dung
+
+start
+:Chọn mục "Quản lý nội dung";
+:Xem danh sách các loại 
+nội dung hiện có trên sàn;
+
+repeat
+  :Chọn loại nội dung cần thao tác;
+  :Thêm mới, cập nhật, hoặc xóa một mục;
+
+  backward:Hiển thị cảnh báo danh mục
+  đang được sử dụng và từ chối xóa;
+
+repeat while (Danh mục đang được voucher sử dụng?) is (có) not (không)
+
+:Cập nhật nội dung vào cơ sở dữ liệu;
+:Kiểm tra ghi nhận thao tác
+vào nhật ký hệ thống;
+:Nhận thông báo xác nhận cập nhật
+nội dung thành công;
+stop
+
+@enduml

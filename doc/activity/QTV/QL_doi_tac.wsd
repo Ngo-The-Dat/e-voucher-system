@@ -1,0 +1,37 @@
+@startuml
+title BUC-ADM-02 - Quản lý đối tác
+
+start
+:Chọn mục "Quản lý đối tác";
+:Xem danh sách hồ sơ đối tác
+và danh sách chi nhánh;
+:Chọn một hồ sơ đối tác;
+:Xem thông tin chi tiết được hiển thị;
+
+switch (Hành động của Quản trị viên?)
+case (Từ chối hồ sơ mới)
+  :Nhập lý do từ chối;
+  :Chuyển trạng thái hồ sơ thành "Bị từ chối";
+  :Kiểm tra ghi nhận vào nhật ký hệ thống;
+  :Gửi thông báo lý do từ chối tới đối tác
+  (thao tác mô phỏng);
+
+case (Khóa đối tác đang có voucher bán)
+  :Xác nhận khóa đối tác;
+  :Ẩn các voucher đang bán khỏi trang tìm kiếm
+  của khách hàng;
+  :Xác nhận cập nhật trạng thái, kiểm tra ghi nhận
+  thao tác vào nhật ký hệ thống;
+  :Nhận thông báo cập nhật thành công;
+
+case (Duyệt hồ sơ / Mở khóa / Thêm - xóa - sửa chi nhánh)
+  :Thực hiện duyệt hồ sơ, khóa/mở khóa đối tác,
+  hoặc thêm/cập nhật/xóa chi nhánh đối tác;
+  :Xác nhận cập nhật trạng thái hoặc thay đổi
+  danh sách chi nhánh;
+  :Kiểm tra ghi nhận thao tác vào nhật ký hệ thống;
+  :Nhận thông báo cập nhật thành công;
+
+endswitch
+stop
+@enduml

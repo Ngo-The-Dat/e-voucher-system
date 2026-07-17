@@ -1,0 +1,22 @@
+@startuml 
+title BUC-ADM-03 - Duyệt voucher 
+|Quản trị viên|
+start
+:Chọn mục "Duyệt voucher";
+:Xem danh sách các voucher đang ở trạng thái chờ duyệt;
+repeat :Chọn một voucher để xem chi tiết;
+:Đối chiếu thông tin;
+backward:Quan sát cảnh báo về nội dung không hợp lệ trên giao diện;
+repeat while (Voucher hợp lệ theo quy tắc nghiệp vụ?) is (không hợp lệ) not (hợp lệ)
+
+if (Xác nhận duyệt voucher?) then (từ chối)
+    :Nhập lý do từ chối;
+    :Cập nhật trạng thái voucher thành "Bị từ chối";
+    :Kiểm tra ghi nhận thao tác vào nhật ký hệ thống;
+    :Gửi thông báo lý do từ chối tới đối tác;
+else (duyệt)
+    :Cập nhật trạng thái voucher thành "Đã duyệt";
+    :Kiểm tra ghi nhận thao tác vào nhật ký hệ thống;
+endif
+stop
+@enduml
