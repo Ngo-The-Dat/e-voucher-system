@@ -1,0 +1,23 @@
+@startuml
+title BUC-ADM-08 - Xem dashboard quản trị
+
+start
+:Chọn mục "Dashboard";
+:Quan sát các số liệu tổng quan 
+được tổng hợp và hiển thị;
+:Chọn khoảng thời gian hoặc 
+bộ lọc để xem chi tiết hơn;
+
+if (Có dữ liệu phát sinh trong
+khoảng thời gian đã chọn?) then (không)
+  :Nhận thông báo
+  "Không có dữ liệu trong khoảng
+  thời gian này";
+else (có)
+  :Xem số liệu đã được cập nhật
+  và hiển thị theo bộ lọc vừa thiết lập;
+endif
+
+stop
+
+@enduml

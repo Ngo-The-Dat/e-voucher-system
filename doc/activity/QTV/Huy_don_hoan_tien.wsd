@@ -1,0 +1,36 @@
+@startuml
+title BUC-ADM-06 - Hủy đơn hàng và hoàn tiền
+
+start
+:Chọn "Hủy đơn hàng" tại màn hình
+chi tiết đơn hàng;
+:Đối chiếu đơn hàng với chính sách hủy
+của voucher hoặc chính sách sàn để xác định
+điều kiện hủy;
+
+if (Đơn hàng đủ điều kiện hủy
+theo chính sách?) then (không)
+  :Từ chối hủy đơn;
+  stop
+else (có)
+  :Xác nhận hủy đơn;
+endif
+
+:Cập nhật trạng thái đơn hàng thành "Đã hủy";
+
+if (Voucher code đã 
+được phát hành và 
+giao cho khách hàng?) then (đã phát hành)
+  :Khóa hoặc vô hiệu hóa các 
+  voucher code đã phát hành;
+endif
+
+:Ghi nhận hoàn tiền mô phỏng cho đơn hàng;
+:Xác nhận hoàn tất cập nhật trạng thái hoàn tiền;
+:Kiểm tra ghi nhận thao tác
+vào nhật ký hệ thống;
+:Nhận thông báo xác nhận hủy đơn
+và hoàn tiền thành công;
+stop
+
+@enduml

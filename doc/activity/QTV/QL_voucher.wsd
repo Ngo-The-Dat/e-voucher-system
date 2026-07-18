@@ -1,0 +1,16 @@
+@startuml
+title BUC-ADM-04 - Quản lý voucher
+
+start
+:Chọn mục "Quản lý voucher";
+:Xem danh sách voucher đã duyệt;
+:Chọn một voucher và thực hiện thay đổi
+trạng thái hiển thị tùy tình hình thực tế;
+:Cập nhật trạng thái voucher;
+:Kiểm tra ghi nhận thao tác
+vào nhật ký hệ thống;
+:Nhận thông báo cập nhật trạng thái
+voucher thành công;
+stop
+
+@enduml

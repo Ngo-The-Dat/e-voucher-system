@@ -1,0 +1,21 @@
+@startuml
+title BUC-ADM-09 - Tra cứu nhật ký hệ thống
+
+start
+:Chọn mục "Nhật ký hệ thống";
+:Xem danh sách các thao tác quản trị
+đã được ghi nhận;
+:Nhập từ khóa hoặc chọn bộ lọc;
+
+if (Có nhật ký phù hợp với
+điều kiện đã chọn?) then (không)
+  :Nhận thông báo
+  "Không tìm thấy kết quả phù hợp";
+else (có)
+  :Theo dõi danh sách các nhật ký
+  phù hợp với điều kiện đã chọn;
+endif
+
+stop
+
+@enduml

@@ -1,0 +1,28 @@
+@startuml 
+title BUC-ADM-01 - Quản lý tài khoản người dùng
+|Quản trị viên|
+start
+:Chọn mục "Quản lý người dùng";
+:Quan sát danh sách tài khoản kèm trạng thái và vai trò;
+:Nhập từ khóa hoặc chọn bộ lọc;
+:Thực hiện tìm kiếm;
+
+if (Có tài khoản phù hợp?) then (không)
+  :Nhận thông báo không tìm thấy kết quả;
+  stop
+else (có)
+  :Xem danh sách kết quả trả về;
+endif
+
+:Chọn một tài khoản cụ thể để xem chi tiết;
+:Theo dõi thông tin hồ sơ, vai trò và lịch sử hoạt động;
+
+if (Xác nhận thao tác?) then (hủy)
+  :Giữ nguyên trạng thái tài khoản cũ;
+else (tiếp tục)
+  :Khóa/mở khóa tài khoản hoặc thay đổi vai trò, phân quyền;
+  :Xác nhận cập nhật thành công;
+  :Kiểm tra nhật ký thao tác;
+endif
+stop
+@enduml
