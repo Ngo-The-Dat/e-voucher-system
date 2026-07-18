@@ -1,0 +1,36 @@
+@startuml
+|Đối tác|
+start
+
+if (Đã triển khai chương trình\nkhuyến mãi nào?) then (chưa - A1)
+  :Không có dữ liệu để xem xét;
+  stop
+else (có)
+  :Tổng hợp kết quả kinh doanh
+  của từng chương trình trong kỳ theo dõi
+  (doanh thu, số lượng voucher phát hành,
+  số lượng voucher đã tiêu thụ);
+
+  :Đối chiếu kết quả đạt được
+  với mục tiêu, kỳ vọng đã đặt ra
+  khi xây dựng từng chương trình;
+
+  :Xác định chương trình đang mang lại
+  hiệu quả tốt và chương trình
+  chưa đạt kỳ vọng;
+
+  :Quyết định hướng xử lý tiếp theo
+  cho từng chương trình;
+
+  switch (Hướng xử lý?)
+  case (tiếp tục duy trì)
+    :Tiếp tục duy trì chương trình;
+  case (điều chỉnh quy tắc)
+    :Điều chỉnh quy tắc chương trình;
+  case (dừng triển khai)
+    :Dừng triển khai chương trình;
+  endswitch
+endif
+
+stop
+@enduml

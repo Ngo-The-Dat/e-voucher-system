@@ -1,0 +1,39 @@
+@startuml
+|Đối tác|
+start
+
+repeat
+  :Xác định quy tắc chương trình khuyến mãi
+  (mức ưu đãi, điều kiện áp dụng,
+  thời gian triển khai, số lượng phát hành);
+
+  if (Cần điều chỉnh quy tắc\ntrước khi gửi duyệt?) then (có - A1)
+    :Cập nhật lại quy tắc chương trình;
+  endif
+repeat while (Cần tiếp tục điều chỉnh?) is (có)
+->không;
+
+repeat
+  |Đối tác|
+  :Gửi yêu cầu phê duyệt chương trình;
+
+  |Doanh nghiệp|
+  :Xem xét chương trình;
+
+  if (Doanh nghiệp phê duyệt?) then (có)
+    :Phê duyệt chương trình;
+  else (không - A2)
+    :Phản hồi lý do từ chối cho đối tác;
+
+    |Đối tác|
+    :Điều chỉnh lại quy tắc chương trình;
+  endif
+repeat while (Doanh nghiệp từ chối phê duyệt?) is (có - A2)
+->không;
+
+|Doanh nghiệp|
+:Chương trình khuyến mãi chính thức
+có hiệu lực và được cung cấp
+đến khách hàng;
+stop
+@enduml
