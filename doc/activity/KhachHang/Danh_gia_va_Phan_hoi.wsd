@@ -1,35 +1,28 @@
-@startuml title BR-CUS-08 - Đánh giá và phản hồi
+@startuml
+title BR-CUS-08 - Đánh giá và phản hồi
 
 |Khách hàng|
 start
-:Liên hệ CSKH;
-:Xuất trình voucher\nhoặc hóa đơn;
+:Liên hệ nhân viên CSKH;
+:Xuất trình Thẻ voucher/\nHóa đơn cũ;
+:Yêu cầu Phiếu ghi nhận\ný kiến khách hàng;
 
 |Nhân viên CSKH|
-:Cấp phiếu khảo sát;
+:Bàn giao Phiếu khảo sát\nchất lượng dịch vụ;
+
+if (Khách hàng có\nphản ánh/khiếu nại?) then (Có)
+    :Cấp thêm đơn khiếu nại;
+endif
 
 |Khách hàng|
+:Khoanh tròn số sao\nđánh giá từ 1 đến 5;
+:Viết nhận xét/\nphản hồi/khiếu nại;
+:Bỏ phiếu vào hòm thư;
 
-if (Khiếu nại nghiêm trọng?) then (Có)
-
-    :Lập đơn khiếu nại;
-
-    |Nhân viên CSKH|
-    :Tiếp nhận đơn;
-    :Đóng dấu đã nhận;
-    :Chuyển xử lý khẩn cấp;
-
-else (Không)
-
-    :Đánh giá sao;
-    :Viết nhận xét;
-    :Nộp phiếu;
-
-    |Nhân viên CSKH|
-    :Lưu trữ phản hồi;
-    :Gửi lời cảm ơn;
-
-endif
+|Nhân viên CSKH|
+:Tiếp nhận phiếu;
+:Ghi sổ và lưu trữ;
+:Gửi lời cảm ơn\nđến khách hàng;
 
 stop
 @enduml
