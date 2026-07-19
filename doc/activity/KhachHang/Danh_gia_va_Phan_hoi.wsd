@@ -10,8 +10,9 @@ start
 |Nhân viên CSKH|
 :Bàn giao Phiếu khảo sát\nchất lượng dịch vụ;
 
-if (Khách hàng có\nphản ánh/khiếu nại?) then (Có)
+if (Khách hàng có phản ánh/khiếu nại?) then (Có)
     :Cấp thêm đơn khiếu nại;
+else (Không)
 endif
 
 |Khách hàng|
