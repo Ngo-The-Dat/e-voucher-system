@@ -1,0 +1,67 @@
+@startuml
+left to right direction
+
+actor "Khách hàng" as KH
+actor "Đối tác" as DT
+actor "Quản trị viên" as QTV
+
+rectangle "Hệ thống bán voucher" {
+
+  ' --- Use Cases cho Khách hàng ---
+  usecase "Đăng ký tài khoản" as KH_UC01
+  usecase "Đăng nhập và quản lý hồ sơ" as KH_UC02
+  usecase "Tìm kiếm voucher" as KH_UC03
+  usecase "Xem chi tiết voucher" as KH_UC04
+  usecase "Quản lý giỏ hàng" as KH_UC05
+  usecase "Tạo đơn hàng" as KH_UC06
+  usecase "Nhận Voucher" as KH_UC07
+  usecase "Đánh giá & phản hồi" as KH_UC08
+
+  ' --- Use Cases cho Đối tác ---
+  usecase "Thiết lập và duy trì quan hệ đối tác" as DT_UC01
+  usecase "Triển khai chương trình khuyến mãi voucher" as DT_UC02
+  usecase "Sử dụng voucher tại điểm bán" as DT_UC03
+  usecase "Theo dõi hiệu quả kinh doanh của đối tác" as DT_UC04
+
+  ' --- Use Cases cho Quản trị viên ---
+  usecase "Quản lý tài khoản người dùng" as QTV_UC1
+  usecase "Quản lý đối tác" as QTV_UC2
+  usecase "Duyệt voucher" as QTV_UC3
+  usecase "Quản lý voucher" as QTV_UC4
+  usecase "Tra cứu đơn hàng" as QTV_UC5
+  usecase "Hủy đơn hàng và hoàn tiền" as QTV_UC6
+  usecase "Quản lý nội dung" as QTV_UC7
+  usecase "Xem dashboard quản trị" as QTV_UC8
+  usecase "Tra cứu nhật ký hệ thống" as QTV_UC9
+
+  ' Mối quan hệ extend giữa các usecase QTV
+  QTV_UC6 ..> QTV_UC5 : <<extend>>
+}
+
+' --- Liên kết Khách hàng ---
+KH --> KH_UC01
+KH --> KH_UC02
+KH --> KH_UC03
+KH --> KH_UC04
+KH --> KH_UC05
+KH --> KH_UC06
+KH --> KH_UC07
+KH --> KH_UC08
+
+' --- Liên kết Đối tác ---
+DT --> DT_UC01
+DT --> DT_UC02
+DT --> DT_UC03
+DT --> DT_UC04
+
+' --- Liên kết Quản trị viên ---
+QTV --> QTV_UC1
+QTV --> QTV_UC2
+QTV --> QTV_UC3
+QTV --> QTV_UC4
+QTV --> QTV_UC5
+QTV --> QTV_UC7
+QTV --> QTV_UC8
+QTV --> QTV_UC9
+
+@enduml
