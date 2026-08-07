@@ -18,3 +18,4 @@ out/
 doc/SRS/*
 !doc/SRS/main.pdf
 .vscode/
+doc/report.md
