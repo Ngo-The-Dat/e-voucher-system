@@ -95,7 +95,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
           onClick={() => {
             if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
               // TODO: gọi API logout / xóa session cookie khi có auth thật
-              router.push("/register");
+              router.push("/partner/register");
             }
           }}
           title={isCollapsed ? "Đăng xuất" : undefined}
