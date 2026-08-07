@@ -17,3 +17,4 @@ out/
 # SRS documentation - track only main.pdf
 doc/SRS/*
 !doc/SRS/main.pdf
+.vscode/
