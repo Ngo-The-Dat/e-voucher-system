@@ -1,4 +1,5 @@
 import Icon from "@/components/shared/ui/Icon";
+import { Input } from "@/components/shared/ui/Input";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
 import { VoucherFormErrors } from "@/lib/types/voucher";
 
@@ -37,7 +38,7 @@ export default function VoucherDateSection({
         <h4 className="font-bold text-base text-on-surface">Khung thời gian Bán Voucher:</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FormField label="Bắt đầu bán" required error={errors.sellStartDate}>
-            <input
+            <Input
               type="date"
               value={sellStartDate}
               onChange={(e) => onSellStartChange(e.target.value)}
@@ -46,7 +47,7 @@ export default function VoucherDateSection({
           </FormField>
 
           <FormField label="Kết thúc bán" required error={errors.sellEndDate}>
-            <input
+            <Input
               type="date"
               value={sellEndDate}
               onChange={(e) => onSellEndChange(e.target.value)}
@@ -61,7 +62,7 @@ export default function VoucherDateSection({
         <h4 className="font-bold text-base text-on-surface">Khung thời gian Sử dụng Voucher:</h4>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FormField label="Bắt đầu sử dụng" required error={errors.useStartDate}>
-            <input
+            <Input
               type="date"
               value={useStartDate}
               onChange={(e) => onUseStartChange(e.target.value)}
@@ -70,7 +71,7 @@ export default function VoucherDateSection({
           </FormField>
 
           <FormField label="Kết thúc sử dụng" required error={errors.useEndDate}>
-            <input
+            <Input
               type="date"
               value={useEndDate}
               onChange={(e) => onUseEndChange(e.target.value)}

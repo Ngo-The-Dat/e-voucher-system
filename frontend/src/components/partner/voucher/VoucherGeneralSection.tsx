@@ -1,4 +1,5 @@
 import Icon from "@/components/shared/ui/Icon";
+import { Input } from "@/components/shared/ui/Input";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
 import { Branch } from "@/lib/types/profile";
 import { CategoryOption, VoucherFormErrors } from "@/lib/types/voucher";
@@ -43,7 +44,7 @@ export default function VoucherGeneralSection({
       <div className="space-y-5">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FormField label="Tên chương trình" required error={errors.title}>
-            <input
+            <Input
               type="text"
               value={title}
               onChange={(e) => onTitleChange(e.target.value)}
@@ -53,7 +54,7 @@ export default function VoucherGeneralSection({
           </FormField>
 
           <FormField label="Mã chương trình" required error={errors.code}>
-            <input
+            <Input
               type="text"
               value={code}
               onChange={(e) => onCodeChange(e.target.value)}
@@ -61,7 +62,7 @@ export default function VoucherGeneralSection({
               disabled={codeReadOnly}
               className={
                 codeReadOnly
-                  ? "w-full border border-outline-variant rounded-lg px-4 py-3 bg-surface-container text-on-surface-variant cursor-not-allowed"
+                  ? "bg-surface-container text-on-surface-variant cursor-not-allowed"
                   : getInputClass(!!errors.code)
               }
             />

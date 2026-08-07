@@ -5,6 +5,7 @@ import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
+import { Button } from "@/components/shared/ui/Button";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSection";
@@ -137,12 +138,11 @@ export default function CreateVoucherPage() {
               Điền đầy đủ các thông tin dưới đây để khởi tạo chương trình voucher mới.
             </p>
           </div>
-          <Link
-            href="/partner/vouchers"
-            className="px-4 py-2 text-base font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant flex items-center gap-1.5"
-          >
-            <Icon name="arrow_back" /> Trở về danh sách
-          </Link>
+          <Button variant="outline" className="gap-1.5" asChild>
+            <Link href="/partner/vouchers">
+              <Icon name="arrow_back" /> Trở về danh sách
+            </Link>
+          </Button>
         </div>
 
         <ValidationErrorBanner errorCount={errorCount} submitLabel="Tạo voucher" />
@@ -218,19 +218,15 @@ export default function CreateVoucherPage() {
 
           {/* Actions */}
           <div className="flex justify-end items-center gap-4 pt-2">
-            <Link
-              href="/partner/vouchers"
-              className="px-6 py-3 rounded-xl font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors text-base"
-            >
-              Hủy bỏ
-            </Link>
-            <button
-              type="submit"
-              className="px-8 py-3 rounded-xl font-bold bg-primary text-on-primary hover:bg-surface-tint transition-all shadow-md hover:shadow-lg text-base flex items-center gap-2"
-            >
+            <Button variant="ghost" size="lg" asChild>
+              <Link href="/partner/vouchers">
+                Hủy bỏ
+              </Link>
+            </Button>
+            <Button type="submit" size="lg" className="shadow-md gap-2">
               <Icon name="add" className="text-xl" />
               <span>Tạo voucher</span>
-            </button>
+            </Button>
           </div>
         </form>
       </main>

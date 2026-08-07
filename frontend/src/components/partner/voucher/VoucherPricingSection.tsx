@@ -1,4 +1,5 @@
 import Icon from "@/components/shared/ui/Icon";
+import { Input } from "@/components/shared/ui/Input";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
 import { VoucherFormErrors } from "@/lib/types/voucher";
 import { formatCurrency } from "@/lib/utils";
@@ -33,7 +34,7 @@ export default function VoucherPricingSection({
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <FormField label="Giá gốc (₫)" required error={errors.originalPrice}>
-          <input
+          <Input
             type="number"
             min="0"
             step="1000"
@@ -45,7 +46,7 @@ export default function VoucherPricingSection({
         </FormField>
 
         <FormField label="Giá bán (₫)" required error={errors.sellingPrice}>
-          <input
+          <Input
             type="number"
             min="0"
             step="1000"
@@ -69,7 +70,7 @@ export default function VoucherPricingSection({
       </div>
 
       <FormField label="Số lượng phát hành" required error={errors.issuedQuantity}>
-        <input
+        <Input
           type="number"
           min="1"
           value={issuedQuantityStr}
