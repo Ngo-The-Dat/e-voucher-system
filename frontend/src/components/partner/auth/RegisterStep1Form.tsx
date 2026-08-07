@@ -1,4 +1,6 @@
 import Icon from "@/components/shared/ui/Icon";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
 
 type FormData = {
   fullName: string;
@@ -24,11 +26,9 @@ export default function RegisterStep1Form({
   onSubmit,
 }: RegisterStep1FormProps) {
   const inputClass = (field: keyof FormData) =>
-    `w-full px-4 py-2.5 bg-surface border ${
-      fieldErrors[field]
-        ? "border-error ring-1 ring-error bg-error-container/10"
-        : "border-outline-variant"
-    } rounded-lg text-on-surface font-medium focus:ring-1 focus:ring-primary outline-none transition-all`;
+    fieldErrors[field]
+      ? "border-error ring-1 ring-error bg-error-container/10"
+      : "";
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 text-xs">
@@ -64,7 +64,7 @@ export default function RegisterStep1Form({
           <label className="block font-semibold text-on-surface-variant mb-1">
             {label} {required && <span className="text-error">*</span>}
           </label>
-          <input
+          <Input
             type={type}
             value={formData[key]}
             onChange={(e) => onChange(key, e.target.value)}
@@ -81,13 +81,10 @@ export default function RegisterStep1Form({
       ))}
 
       <div className="pt-4 flex justify-end">
-        <button
-          type="submit"
-          className="px-6 py-2.5 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-surface-tint shadow transition-all flex items-center gap-2"
-        >
+        <Button type="submit" className="gap-2">
           <span>Xác nhận đăng ký</span>
           <Icon name="arrow_forward" className="text-base" />
-        </button>
+        </Button>
       </div>
     </form>
   );
