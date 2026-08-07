@@ -5,13 +5,16 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 
 export default function PendingPartnerDetailPage() {
   const params = useParams();
   const router = useRouter();
   const partnerId = (params?.id as string) || "MER-901";
 
-  const [status, setStatus] = useState<"Chờ duyệt" | "Đã duyệt" | "Từ chối">("Chờ duyệt");
+  type PartnerStatus = "Chờ duyệt" | "Đã duyệt" | "Từ chối";
+  const [status, setStatus] = useState<PartnerStatus>("Chờ duyệt");
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
@@ -82,12 +85,13 @@ export default function PendingPartnerDetailPage() {
             <Icon name="check_circle" className="text-emerald-600 text-xl" />
             <span>{toastMessage}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setToastMessage(null)}
-            className="text-emerald-500 hover:text-emerald-700 transition"
+            className="text-emerald-500 hover:text-emerald-700 p-0 h-auto"
           >
             <Icon name="close" className="text-lg" />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -142,28 +146,29 @@ export default function PendingPartnerDetailPage() {
           </Link>
           {status === "Chờ duyệt" && (
             <>
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setRevisionModalOpen(true)}
-                className="px-4 py-2 border border-slate-200 bg-white text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50 hover:border-slate-300 transition shadow-2xs"
               >
                 Yêu cầu bổ sung
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 type="button"
                 onClick={() => setRejectModalOpen(true)}
-                className="px-4 py-2 border border-rose-200 bg-rose-50 text-rose-600 hover:bg-rose-100 font-semibold text-xs rounded-xl transition shadow-2xs"
+                className="bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100"
               >
                 Từ chối hồ sơ
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleApprove}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <Icon name="check" className="text-base" />
+                <Icon name="check" className="text-base mr-1.5" />
                 Phê duyệt hồ sơ
-              </button>
+              </Button>
             </>
           )}
         </div>
@@ -222,13 +227,14 @@ export default function PendingPartnerDetailPage() {
                       <div className="text-[11px] text-slate-400 font-medium">{doc.size}</div>
                     </div>
                   </div>
-                  <button
+                  <Button
+                    variant="outline"
                     type="button"
                     onClick={() => alert(`Đang mở tập tin: ${doc.name}`)}
-                    className="px-3 py-1 bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-lg hover:bg-blue-50 hover:text-blue-600 transition shadow-2xs"
+                    className="px-3 py-1 bg-white border border-slate-200 text-slate-700 font-semibold text-xs h-auto hover:bg-blue-50 hover:text-blue-600"
                   >
                     Xem tài liệu
-                  </button>
+                  </Button>
                 </div>
               ))}
             </div>
@@ -351,12 +357,13 @@ export default function PendingPartnerDetailPage() {
                 <Icon name="warning" className="text-rose-500" />
                 Từ chối hồ sơ đối tác
               </h3>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setRejectModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1 h-auto"
               >
                 <Icon name="close" />
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-slate-500">
               Vui lòng nhập lý do từ chối để hệ thống phản hồi chính xác tới người đại diện doanh nghiệp.
@@ -368,22 +375,22 @@ export default function PendingPartnerDetailPage() {
               onChange={(e) => setRejectionReason(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
             />
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
+            <div className="flex justify-end gap-3 mt-2">
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setRejectModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 type="button"
                 onClick={handleConfirmReject}
                 disabled={!rejectionReason.trim()}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition"
               >
                 Xác nhận từ chối
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -398,12 +405,13 @@ export default function PendingPartnerDetailPage() {
                 <Icon name="edit_note" className="text-amber-500" />
                 Yêu cầu bổ sung hồ sơ
               </h3>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setRevisionModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1 h-auto"
               >
                 <Icon name="close" />
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-slate-500">
               Ghi rõ các chứng từ hoặc thông tin doanh nghiệp cần cung cấp thêm.
@@ -415,22 +423,22 @@ export default function PendingPartnerDetailPage() {
               onChange={(e) => setRevisionNote(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition"
             />
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
+            <div className="flex justify-end gap-3 mt-2">
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setRevisionModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleConfirmRevision}
                 disabled={!revisionNote.trim()}
-                className="px-4 py-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition"
+                className="bg-amber-500 hover:bg-amber-600 text-white"
               >
                 Gửi yêu cầu
-              </button>
+              </Button>
             </div>
           </div>
         </div>
