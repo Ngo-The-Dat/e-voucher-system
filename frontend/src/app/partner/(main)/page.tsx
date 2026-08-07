@@ -140,7 +140,7 @@ export default function DashboardPage() {
                       </td>
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <Link
-                          href={`/vouchers/${item.id}`}
+                          href={`/partner/vouchers/${item.id}`}
                           className="px-4 py-2 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold rounded-xl text-sm transition-colors border border-outline-variant inline-flex items-center gap-1.5"
                         >
                           <Icon name="visibility" className="text-base text-primary" />
