@@ -8,6 +8,7 @@ interface PaginationProps {
   totalItems: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  itemName?: string;
 }
 
 export default function Pagination({
@@ -16,6 +17,7 @@ export default function Pagination({
   totalItems,
   itemsPerPage,
   onPageChange,
+  itemName = "mục",
 }: PaginationProps) {
   const startItem = Math.min((currentPage - 1) * itemsPerPage + 1, totalItems);
   const endItem = Math.min(currentPage * itemsPerPage, totalItems);
@@ -44,7 +46,7 @@ export default function Pagination({
   return (
     <div className="p-4 border-t border-outline-variant flex items-center justify-between text-base text-on-surface-variant bg-surface">
       <p>
-        Hiển thị {totalItems > 0 ? startItem : 0} - {endItem} trong số {totalItems} voucher
+        Hiển thị {totalItems > 0 ? startItem : 0} - {endItem} trong số {totalItems} {itemName}
       </p>
 
       <div className="flex items-center gap-2">
