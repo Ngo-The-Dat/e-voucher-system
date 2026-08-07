@@ -5,7 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Icon from "@/components/ui/Icon";
 
 const navItems = [
-  { href: "/", label: "Tổng quan", icon: "dashboard" },
+  { href: "/partner", label: "Tổng quan", icon: "dashboard" },
   { href: "/partner/vouchers", label: "Quản lý Voucher", icon: "confirmation_number" },
   { href: "/partner/vouchers/check", label: "Kiểm tra Voucher", icon: "qr_code_scanner" },
   { href: "/partner/reports", label: "Thống kê hiệu quả", icon: "analytics" },
@@ -59,7 +59,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
         {navItems.map((item) => {
           const isExactActive = pathname === item.href;
           const isSubActive =
-            item.href !== "/" &&
+            item.href !== "/partner" &&
             pathname.startsWith(item.href) &&
             !pathname.startsWith("/partner/vouchers/check");
           const isActive = isExactActive || isSubActive;
