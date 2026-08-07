@@ -1,3 +1,14 @@
+
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+/**
+ * Merge Tailwind classes with clsx
+ */
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
+
 /**
  * Format số tiền theo định dạng Việt Nam (VD: 123.000 ₫)
  */
