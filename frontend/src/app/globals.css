@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+}
+
+html, body, input, select, textarea, button {
+  font-family: var(--font-inter);
+  font-size: 16px; /* Standard 16px (1rem) base */
+}
+
+body {
+  background-color: #faf8ff;
+  color: #191b23;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  font-family: inherit;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
+}
+
+/* Custom typography classes to match design system configuration */
+.text-title-md {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+}
+.text-headline-xl-mobile {
+  font-size: 36px;
+  line-height: 44px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.text-body-lg {
+  font-size: 18px;
+  line-height: 28px;
+  font-weight: 400;
+}
+.text-label-md {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+}
+.text-label-sm {
+  font-size: 12px;
+  line-height: 16px;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+.text-headline-xl {
+  font-size: 48px;
+  line-height: 56px;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+.text-headline-lg {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -0.01em;
+  font-weight: 600;
+}
+.text-body-md {
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+}
+
+.voucher-divider {
+  background-image: linear-gradient(to right, theme('colors.outline-variant') 50%, rgba(255,255,255,0) 0%);
+  background-position: bottom;
+  background-size: 8px 1px;
+  background-repeat: repeat-x;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+.no-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}

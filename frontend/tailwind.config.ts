@@ -1,0 +1,92 @@
+import type { Config } from "tailwindcss";
+
+const config: Config = {
+  content: [
+    "./src/pages/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/components/**/*.{js,ts,jsx,tsx,mdx}",
+    "./src/app/**/*.{js,ts,jsx,tsx,mdx}",
+  ],
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#004ac6",
+        "inverse-on-surface": "#f0f0fb",
+        "on-secondary-fixed": "#002113",
+        "on-secondary-fixed-variant": "#005236",
+        "tertiary-amber": "#F59E0B",
+        "primary-fixed": "#dbe1ff",
+        "surface-container-highest": "#e1e2ed",
+        "surface-tint": "#0053db",
+        "error": "#ba1a1a",
+        "on-secondary": "#ffffff",
+        "on-tertiary-fixed-variant": "#653e00",
+        "surface-container-low": "#f3f3fe",
+        "secondary-container": "#6cf8bb",
+        "on-tertiary-container": "#ffeedd",
+        "surface-container": "#ededf9",
+        "surface-bright": "#faf8ff",
+        "on-primary-container": "#eeefff",
+        "tertiary-container": "#996100",
+        "secondary": "#006c49",
+        "muted-slate": "#94A3B8",
+        "on-tertiary-fixed": "#2a1700",
+        "primary-fixed-dim": "#b4c5ff",
+        "inverse-primary": "#b4c5ff",
+        "outline": "#737686",
+        "on-primary": "#ffffff",
+        "on-surface": "#191b23",
+        "primary-container": "#2563eb",
+        "on-primary-fixed-variant": "#003ea8",
+        "on-surface-variant": "#434655",
+        "on-tertiary": "#ffffff",
+        "tertiary": "#784b00",
+        "tertiary-fixed-dim": "#ffb95f",
+        "tertiary-fixed": "#ffddb8",
+        "secondary-fixed": "#6ffbbe",
+        "on-primary-fixed": "#00174b",
+        "on-error": "#ffffff",
+        "surface-dim": "#F7F9FB",
+        "outline-variant": "#c3c6d7",
+        "surface-variant": "#e1e2ed",
+        "surface-container-high": "#e7e7f3",
+        "surface": "#faf8ff",
+        "on-background": "#191b23",
+        "secondary-fixed-dim": "#4edea3",
+        "error-container": "#ffdad6",
+        "error-red": "#BA1A1A",
+        "inverse-surface": "#2e3039",
+        "on-secondary-container": "#00714d",
+        "on-error-container": "#93000a",
+        "surface-container-lowest": "#ffffff",
+        "background": "#faf8ff"
+      },
+      borderRadius: {
+        "DEFAULT": "0.25rem",
+        "lg": "0.5rem",
+        "xl": "0.75rem",
+        "full": "9999px"
+      },
+      spacing: {
+        "sidebar-width": "280px",
+        "gutter": "24px",
+        "margin-mobile": "16px",
+        "container-max": "1280px",
+        "base": "8px",
+        "margin-desktop": "48px"
+      },
+      fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        "headline-lg": ["Inter", "sans-serif"],
+        "label-md": ["Inter", "sans-serif"],
+        "headline-md": ["Inter", "sans-serif"],
+        "body-lg": ["Inter", "sans-serif"],
+        "label-sm": ["Inter", "sans-serif"],
+        "title-lg": ["Inter", "sans-serif"],
+        "body-md": ["Inter", "sans-serif"]
+      }
+    },
+  },
+  plugins: [],
+};
+export default config;
