@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: 'Inter', sans-serif;
+}
+
+html, body, input, select, textarea, button {
+  font-family: var(--font-inter);
+  font-size: 16px; /* Standard 16px (1rem) base */
+}
+
+body {
+  background-color: #faf8ff;
+  color: #191b23;
+  margin: 0;
+  padding: 0;
+  line-height: 1.5;
+}
+
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  font-family: inherit;
+}
+
+.material-symbols-outlined {
+  font-variation-settings:
+  'FILL' 0,
+  'wght' 400,
+  'GRAD' 0,
+  'opsz' 24;
+}
