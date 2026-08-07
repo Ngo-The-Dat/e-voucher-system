@@ -88,7 +88,7 @@ export default function ReportsPage() {
             </div>
             <div className="pt-2">
               <Link
-                href="/vouchers/create"
+                href="/partner/vouchers/create"
                 className="inline-flex items-center gap-2 bg-primary text-on-primary font-bold text-base px-6 py-3 rounded-xl hover:bg-surface-tint transition-all shadow-md"
               >
                 <Icon name="add" className="text-xl" />

@@ -117,7 +117,7 @@ export default function CreateVoucherPage() {
     });
 
     setIsSuccessToast(true);
-    setTimeout(() => router.push("/vouchers"), 1500);
+    setTimeout(() => router.push("/partner/vouchers"), 1500);
   };
 
   const errorCount = Object.keys(errors).length;
@@ -138,7 +138,7 @@ export default function CreateVoucherPage() {
             </p>
           </div>
           <Link
-            href="/vouchers"
+            href="/partner/vouchers"
             className="px-4 py-2 text-base font-semibold text-on-surface-variant hover:bg-surface-container-high rounded-lg transition-colors border border-outline-variant flex items-center gap-1.5"
           >
             <Icon name="arrow_back" /> Trở về danh sách
@@ -219,7 +219,7 @@ export default function CreateVoucherPage() {
           {/* Actions */}
           <div className="flex justify-end items-center gap-4 pt-2">
             <Link
-              href="/vouchers"
+              href="/partner/vouchers"
               className="px-6 py-3 rounded-xl font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors text-base"
             >
               Hủy bỏ
