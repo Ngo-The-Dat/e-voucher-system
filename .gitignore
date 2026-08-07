@@ -25,3 +25,8 @@ doc/report.md
 .idea/
 *.swp
 *.swo
+
+# Frontend deployment
+frontend/deploy.sh
+frontend/deploy-frontend/
+frontend/frontend-release.tar.gz

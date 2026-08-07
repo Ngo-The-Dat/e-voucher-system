@@ -174,7 +174,7 @@ export default function VouchersPage() {
                     <tr key={item.id} className="hover:bg-surface-container-low/40 transition-colors">
                       <td className="py-4 px-4 font-bold text-on-surface">
                         <Link
-                          href={`/vouchers/${item.id}`}
+                          href={`/partner/vouchers/${item.id}`}
                           className="hover:text-primary transition-colors text-base"
                         >
                           {item.title}
@@ -197,7 +197,7 @@ export default function VouchersPage() {
 
                       <td className="py-4 px-4 text-center whitespace-nowrap">
                         <Link
-                          href={`/vouchers/${item.id}`}
+                          href={`/partner/vouchers/${item.id}`}
                           className="px-4 py-2 rounded-lg text-sm font-bold inline-flex items-center gap-1.5 bg-surface-container-high text-on-surface hover:bg-primary hover:text-on-primary border border-outline-variant transition-colors shadow-sm"
                         >
                           <Icon name="visibility" className="text-base" />

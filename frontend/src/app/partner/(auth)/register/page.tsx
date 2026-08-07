@@ -268,7 +268,7 @@ export default function RegisterPage() {
                 <span className="text-on-surface tracking-wide font-medium">{formData.phone}</span>
               </div>
             </div>
-            <Link href="/" className="px-8 py-2.5 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-surface-tint shadow-md transition-all text-center">
+            <Link href="/partner" className="px-8 py-2.5 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-surface-tint shadow-md transition-all text-center">
               Về trang chủ Dashboard
             </Link>
           </div>
