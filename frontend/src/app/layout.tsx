@@ -1,19 +1,9 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import { AppProvider } from "@/context/AppContext";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
-
-const inter = Inter({
-  variable: "--font-sans",
-  subsets: ["latin", "vietnamese"],
-});
 
 export const metadata: Metadata = {
-  title: "Lumina Marketplace - Nền tảng voucher hàng đầu Việt Nam",
-  description: "Trải nghiệm mua sắm voucher thông minh, tiết kiệm tối đa tại Lumina Marketplace.",
+  title: "Lumina Partner Portal",
+  description: "Hệ thống quản lý đối tác & e-voucher Lumina",
 };
 
 export default function RootLayout({
@@ -22,17 +12,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="vi" className={`${inter.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-background text-on-background">
-        <AppProvider>
-          <Suspense fallback={<div className="h-24 bg-surface-container-lowest" />}>
-            <Header />
-          </Suspense>
-          <div className="flex-grow">
-            {children}
-          </div>
-          <Footer />
-        </AppProvider>
+    <html lang="vi">
+      <head>
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+        />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+        />
+      </head>
+      <body className="antialiased min-h-screen bg-background text-on-background">
+        {children}
       </body>
     </html>
   );

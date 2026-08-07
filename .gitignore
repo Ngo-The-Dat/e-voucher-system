@@ -1,0 +1,21 @@
+# Dependencies
+node_modules/
+
+# Build and dist
+dist/
+build/
+.next/
+out/
+
+# Environment files
+.env
+.env*.local
+
+# Logs
+*.log
+
+# SRS documentation - track only main.pdf
+doc/SRS/*
+!doc/SRS/main.pdf
+.vscode/
+doc/report.md
