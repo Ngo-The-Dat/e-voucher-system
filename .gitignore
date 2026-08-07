@@ -19,3 +19,9 @@ doc/SRS/*
 !doc/SRS/main.pdf
 .vscode/
 doc/report.md
+
+# OS / IDE
+.DS_Store
+.idea/
+*.swp
+*.swo

@@ -6,12 +6,10 @@ interface CheckResultIdleCodeProps {
   inputCode: string;
   onInputChange: (v: string) => void;
   onSubmit: () => void;
-  onTryValid: () => void;
-  onTryInvalid: () => void;
 }
 
 export function CheckResultIdleCode({
-  inputCode, onInputChange, onSubmit, onTryValid, onTryInvalid,
+  inputCode, onInputChange, onSubmit,
 }: CheckResultIdleCodeProps) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-6 max-w-lg mx-auto w-full text-center">
@@ -32,23 +30,13 @@ export function CheckResultIdleCode({
       <button type="submit" className="w-full py-4 bg-primary text-on-primary font-bold rounded-xl hover:bg-surface-tint transition-all shadow-md text-base flex items-center justify-center gap-2">
         <Icon name="search" className="text-xl" /><span>Xác nhận</span>
       </button>
-      <div className="pt-4 border-t border-outline-variant/30 text-xs text-on-surface-variant space-y-2">
-        <p className="font-semibold text-sm">Tùy chọn thử nghiệm:</p>
-        <div className="flex flex-wrap justify-center gap-2 text-xs font-semibold">
-          <button type="button" onClick={onTryValid} className="px-3.5 py-2 bg-secondary-container/30 hover:bg-secondary-container text-secondary rounded-lg border border-secondary/30 transition-colors">Thử Mã Hợp lệ</button>
-          <button type="button" onClick={onTryInvalid} className="px-3.5 py-2 bg-error-container/20 hover:bg-error-container text-error rounded-lg border border-error/30 transition-colors">Thử Mã Không hợp lệ</button>
-        </div>
-      </div>
     </form>
   );
 }
 
-interface CheckResultIdleQrProps {
-  onTryValid: () => void;
-  onTryInvalid: () => void;
-}
+interface CheckResultIdleQrProps {}
 
-export function CheckResultIdleQr({ onTryValid, onTryInvalid }: CheckResultIdleQrProps) {
+export function CheckResultIdleQr({}: CheckResultIdleQrProps) {
   return (
     <div className="space-y-6 max-w-lg mx-auto w-full text-center">
       <div className="w-16 h-16 bg-primary-container/30 text-primary rounded-full flex items-center justify-center mx-auto shadow-sm">
@@ -61,14 +49,6 @@ export function CheckResultIdleQr({ onTryValid, onTryInvalid }: CheckResultIdleQ
       <div className="w-64 h-64 border-4 border-dashed border-primary rounded-2xl mx-auto flex flex-col items-center justify-center bg-primary/5 shadow-inner">
         <Icon name="qr_code_2" className="text-6xl text-primary/60 animate-pulse mb-2" />
         <span className="text-xs text-on-surface-variant font-medium px-4">Đang bật Camera quét mã QR...</span>
-      </div>
-      <div className="flex gap-3 justify-center text-sm font-semibold">
-        <button type="button" onClick={onTryValid} className="px-5 py-2.5 bg-secondary text-on-secondary hover:bg-secondary-container rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
-          <Icon name="check_circle" className="text-base" /><span>Quét QR Hợp lệ</span>
-        </button>
-        <button type="button" onClick={onTryInvalid} className="px-5 py-2.5 bg-error text-on-error hover:bg-error-container hover:text-on-error-container rounded-xl transition-colors shadow-sm flex items-center gap-1.5">
-          <Icon name="error" className="text-base" /><span>Quét QR Không hợp lệ</span>
-        </button>
       </div>
     </div>
   );

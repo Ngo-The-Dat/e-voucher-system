@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
@@ -27,9 +27,8 @@ import {
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
-export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const resolvedParams = use(params);
-  const { id } = resolvedParams;
+export default function VoucherDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params;
 
   const router = useRouter();
   const { vouchers, addToCart, addReview } = useApp();

@@ -104,7 +104,7 @@ export default function RegisterStep2Otp({
 
           <div className="space-y-3">
             <label className="block text-xs font-bold text-on-surface">
-              Nhập 6 chữ số mã OTP (Mã thử nghiệm: <span className="text-primary">123456</span>):
+              Nhập 6 chữ số mã OTP:
             </label>
 
             <div className="flex justify-center gap-2">

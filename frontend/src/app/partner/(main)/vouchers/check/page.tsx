@@ -48,17 +48,17 @@ export default function CheckVoucherPage() {
   const [inputCode, setInputCode] = useState("");
   const [resultState, setResultState] = useState<CheckResultState>({ type: "idle" });
 
-  const handleCheckCode = (codeVal?: string, forceInvalid = false) => {
+  const handleCheckCode = (codeVal?: string) => {
     const codeToTest = (codeVal !== undefined ? codeVal : inputCode).trim().toUpperCase();
-    if (forceInvalid || !codeToTest || codeToTest.includes("SAI")) {
+    if (!codeToTest || codeToTest.includes("SAI")) {
       setResultState({ type: "invalid_code" });
     } else {
       setResultState({ type: "valid", voucher: { ...demoVoucher, code: codeToTest || demoVoucher.code } });
     }
   };
 
-  const handleCheckQr = (forceInvalid = false) => {
-    setResultState(forceInvalid ? { type: "invalid_qr" } : { type: "valid", voucher: demoVoucher });
+  const handleCheckQr = () => {
+    setResultState({ type: "valid", voucher: demoVoucher });
   };
 
   const handleConfirmRedeem = () => {
@@ -126,15 +126,10 @@ export default function CheckVoucherPage() {
               inputCode={inputCode}
               onInputChange={setInputCode}
               onSubmit={() => handleCheckCode()}
-              onTryValid={() => { const c = "VC-HL-2023-001"; setInputCode(c); handleCheckCode(c, false); }}
-              onTryInvalid={() => { const c = "VC-HL-SAI-999"; setInputCode(c); handleCheckCode(c, true); }}
             />
           )}
           {resultState.type === "idle" && checkType === "qr" && (
-            <CheckResultIdleQr
-              onTryValid={() => handleCheckQr(false)}
-              onTryInvalid={() => handleCheckQr(true)}
-            />
+            <CheckResultIdleQr />
           )}
         </div>
       </main>

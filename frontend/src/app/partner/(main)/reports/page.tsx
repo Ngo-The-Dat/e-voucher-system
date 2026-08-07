@@ -12,7 +12,7 @@ import { VoucherItem } from "@/lib/types/voucher";
 export default function ReportsPage() {
   const { vouchers, isLoading } = useVouchers();
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
-  const [simulateEmptyState, setSimulateEmptyState] = useState(false);
+
 
   // Chọn voucher đầu tiên khi load xong
   useEffect(() => {
@@ -33,7 +33,7 @@ export default function ReportsPage() {
   const usageRate = calcRate(usedQty, soldQty).toFixed(1);
   const efficiencyRate = calcRate(soldQty, issuedQty).toFixed(1);
 
-  const displayVouchers = simulateEmptyState ? [] : vouchers;
+  const displayVouchers = vouchers;
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
@@ -48,20 +48,7 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          {/* Nút xem trước empty state — chỉ dùng cho dev/preview */}
-          <button
-            onClick={() => setSimulateEmptyState(!simulateEmptyState)}
-            className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 border transition-all shadow-sm ${
-              simulateEmptyState
-                ? "bg-primary text-on-primary border-primary"
-                : "bg-surface-bright text-on-surface hover:bg-surface-container-high border-outline-variant"
-            }`}
-          >
-            <Icon name={simulateEmptyState ? "refresh" : "visibility"} className="text-lg" />
-            <span>
-              {simulateEmptyState ? "Quay lại Báo cáo đầy đủ" : "Xem trước: Chưa có voucher"}
-            </span>
-          </button>
+
         </div>
 
         {/* Loading skeleton */}

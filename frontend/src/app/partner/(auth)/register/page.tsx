@@ -38,9 +38,7 @@ export default function RegisterPage() {
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
-  // Test helpers
-  const [simulateDuplicate, setSimulateDuplicate] = useState(false);
-  const [simulateInvalidOtp, setSimulateInvalidOtp] = useState(false);
+
 
   // OTP State
   const [otpDeliveryMethod, setOtpDeliveryMethod] = useState<"email" | "phone" | null>(null);
@@ -74,13 +72,11 @@ export default function RegisterPage() {
     if (!formData.email.trim()) errors.email = "Vui lòng nhập Email liên hệ";
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
 
-    const isCccdDuplicate = simulateDuplicate || formData.cccd === "012345678901";
-    if (simulateDuplicate || isCccdDuplicate) {
+    const isCccdDuplicate = formData.cccd === "012345678901";
+    if (isCccdDuplicate) {
       setFieldErrors({
         global: "Thông tin định danh đã tồn tại",
-        cccd: isCccdDuplicate ? "Số CCCD/CMND đã được đăng ký trên hệ thống" : undefined,
-        phone: simulateDuplicate ? "Số điện thoại đã được đăng ký trên hệ thống" : undefined,
-        email: simulateDuplicate ? "Email đã được sử dụng trên hệ thống" : undefined,
+        cccd: "Số CCCD/CMND đã được đăng ký trên hệ thống",
       });
       return;
     }
@@ -96,7 +92,7 @@ export default function RegisterPage() {
     setOtpError("");
     setTimeout(() => {
       setIsVerifyingOtp(false);
-      if (simulateInvalidOtp || fullCode !== "123456") {
+      if (fullCode !== "123456") {
         setOtpError("Mã OTP không hợp lệ");
         setOtpCode(["", "", "", "", "", ""]);
         setTimeout(() => {
@@ -177,28 +173,6 @@ export default function RegisterPage() {
 
   return (
     <main className="w-full max-w-2xl bg-surface-bright rounded-2xl border border-outline-variant shadow-xl flex flex-col overflow-hidden my-auto">
-      {/* Dev test toggles */}
-      <div className="bg-surface-container-high px-6 py-2 text-xs flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant/40">
-        <div className="flex items-center gap-2 text-on-surface-variant font-medium">
-          <Icon name="bug_report" className="text-base text-primary" />
-          <span>Chế độ thử nghiệm UC:</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-primary">
-            <input type="checkbox" checked={simulateDuplicate}
-              onChange={(e) => { setSimulateDuplicate(e.target.checked); if (!e.target.checked) setFieldErrors({}); }}
-              className="rounded border-outline text-primary focus:ring-primary h-3.5 w-3.5" />
-            Giả lập Dòng A1 (Trùng định danh)
-          </label>
-          <label className="flex items-center gap-1.5 cursor-pointer select-none font-semibold text-error">
-            <input type="checkbox" checked={simulateInvalidOtp}
-              onChange={(e) => setSimulateInvalidOtp(e.target.checked)}
-              className="rounded border-outline text-error focus:ring-error h-3.5 w-3.5" />
-            Giả lập Dòng A2 (Mã OTP không hợp lệ)
-          </label>
-        </div>
-      </div>
-
       {/* Header */}
       <header className="p-6 border-b border-outline-variant/50 flex flex-col items-center justify-center bg-surface-container-low">
         <div className="flex items-center gap-2.5 mb-1">
