@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Icon from "@/components/admin/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 interface HeaderProps {
   onMenuToggle?: () => void;

@@ -1,6 +1,6 @@
 "use client";
 
-import Icon from "@/components/admin/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";

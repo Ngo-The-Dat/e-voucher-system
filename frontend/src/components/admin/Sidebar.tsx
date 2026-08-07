@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import Icon from "@/components/admin/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 export interface NavItem {
   label: string;

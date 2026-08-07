@@ -1,6 +1,6 @@
 "use client";
 
-import Icon from "@/components/admin/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 
