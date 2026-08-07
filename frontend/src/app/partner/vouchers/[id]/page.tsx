@@ -68,7 +68,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />
             <p className="font-bold text-lg text-on-surface">Không tìm thấy thông tin chương trình voucher.</p>
-            <Link href="/vouchers" className="text-primary font-bold hover:underline inline-block">
+            <Link href="/partner/vouchers" className="text-primary font-bold hover:underline inline-block">
               Trở về danh sách voucher
             </Link>
           </div>
@@ -88,7 +88,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
     setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
     setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
     setTimeout(() => {
-      router.push("/vouchers");
+      router.push("/partner/vouchers");
     }, 2000);
   };
 
@@ -165,7 +165,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
 
           <div className="flex items-center gap-3">
             <Link
-              href="/vouchers"
+              href="/partner/vouchers"
               className="bg-surface-container text-on-surface px-4 py-2.5 rounded-lg text-base font-semibold hover:bg-surface-container-highest transition-colors border border-outline-variant flex items-center gap-1.5"
             >
               <Icon name="arrow_back" /> Danh sách

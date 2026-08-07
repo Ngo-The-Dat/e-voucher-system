@@ -102,7 +102,7 @@ export default function VouchersPage() {
 
           {/* Create Button */}
           <Link
-            href="/vouchers/create"
+            href="/partner/vouchers/create"
             className="bg-primary hover:bg-surface-tint text-on-primary font-bold text-base px-5 py-2.5 rounded-lg flex items-center gap-2 transition-colors whitespace-nowrap shadow-sm"
           >
             <Icon name="add" className="text-[20px]" />

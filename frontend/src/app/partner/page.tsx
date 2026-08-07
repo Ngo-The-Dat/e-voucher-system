@@ -77,7 +77,7 @@ export default function DashboardPage() {
               </p>
             </div>
             <Link
-              href="/vouchers"
+              href="/partner/vouchers"
               className="text-primary font-bold text-sm hover:underline flex items-center gap-1"
             >
               <span>Xem tất cả</span>

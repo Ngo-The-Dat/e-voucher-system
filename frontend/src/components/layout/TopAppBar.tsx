@@ -40,7 +40,7 @@ export default function TopAppBar({
 
         {/* Profile Avatar & Link to /profile */}
         <Link
-          href="/profile"
+          href="/partner/profile"
           className="flex items-center gap-3 pl-3 border-l border-outline-variant/40 hover:opacity-80 transition-opacity"
         >
           <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm shadow-sm">

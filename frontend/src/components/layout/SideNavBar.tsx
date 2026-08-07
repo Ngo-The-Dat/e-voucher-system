@@ -6,9 +6,9 @@ import Icon from "@/components/ui/Icon";
 
 const navItems = [
   { href: "/", label: "Tổng quan", icon: "dashboard" },
-  { href: "/vouchers", label: "Quản lý Voucher", icon: "confirmation_number" },
-  { href: "/vouchers/check", label: "Kiểm tra Voucher", icon: "qr_code_scanner" },
-  { href: "/reports", label: "Thống kê hiệu quả", icon: "analytics" },
+  { href: "/partner/vouchers", label: "Quản lý Voucher", icon: "confirmation_number" },
+  { href: "/partner/vouchers/check", label: "Kiểm tra Voucher", icon: "qr_code_scanner" },
+  { href: "/partner/reports", label: "Thống kê hiệu quả", icon: "analytics" },
 ];
 
 interface SideNavBarProps {
@@ -61,7 +61,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
           const isSubActive =
             item.href !== "/" &&
             pathname.startsWith(item.href) &&
-            !pathname.startsWith("/vouchers/check");
+            !pathname.startsWith("/partner/vouchers/check");
           const isActive = isExactActive || isSubActive;
 
           return (
