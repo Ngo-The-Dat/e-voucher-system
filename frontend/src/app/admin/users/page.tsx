@@ -4,6 +4,8 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 import Link from "next/link";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
 
 interface User {
   id: string;
@@ -91,13 +93,13 @@ export default function UserManagementPage() {
       <div className="bg-surface p-4 rounded-xl shadow-sm border border-border flex flex-col md:flex-row gap-4 items-center justify-between">
         {/* Search Input */}
         <div className="w-full md:w-96 relative">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted z-10" />
+          <Input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm theo tên đăng nhập, email hoặc số điện thoại"
-            className="w-full pl-10 pr-4 py-2.5 bg-surface border border-border focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg text-sm transition-all outline-none"
+            className="w-full pl-10 pr-4 py-2.5 bg-surface border-border rounded-lg text-sm"
           />
         </div>
 
@@ -124,13 +126,14 @@ export default function UserManagementPage() {
             <option value="locked">Đã khóa</option>
           </select>
 
-          <button
+          <Button
+            variant="ghost"
             onClick={handleReset}
-            className="px-4 py-2.5 text-text-muted bg-slate-100 hover:bg-slate-200 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 border border-transparent"
+            className="text-text-muted bg-slate-100 hover:bg-slate-200"
           >
-            <Icon name="filter_alt_off" className="text-[20px]" />
+            <Icon name="filter_alt_off" className="text-[20px] mr-2" />
             <span>Đặt lại</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -139,23 +142,23 @@ export default function UserManagementPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-50 border-b border-border text-xs text-text-muted uppercase font-bold tracking-wider">
-                <th className="px-6 py-4">Người dùng</th>
-                <th className="px-6 py-4 hidden md:table-cell">Liên hệ</th>
-                <th className="px-6 py-4">Vai trò</th>
-                <th className="px-6 py-4">Trạng thái</th>
-                <th className="px-6 py-4 text-right">Thao tác</th>
+              <tr className="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
+                <th className="py-4 px-5">Người dùng</th>
+                <th className="py-4 px-5 hidden md:table-cell">Liên hệ</th>
+                <th className="py-4 px-5">Vai trò</th>
+                <th className="py-4 px-5">Trạng thái</th>
+                <th className="py-4 px-5 text-right">Thao tác</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {filteredUsers.map((user) => (
                 <tr
                   key={user.id}
-                  className={`hover:bg-slate-50/80 transition-colors ${
+                  className={`hover:bg-slate-50/60 transition ${
                     user.status === "Đã khóa" ? "opacity-75" : ""
                   }`}
                 >
-                  <td className="px-6 py-4">
+                  <td className="py-4 px-5">
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${user.avatarBg}`}
@@ -178,10 +181,10 @@ export default function UserManagementPage() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-text-muted hidden md:table-cell">
+                  <td className="py-4 px-5 text-text-muted hidden md:table-cell">
                     {user.email}
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="py-4 px-5">
                     <span
                       className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         user.role === "Đối tác"
@@ -194,7 +197,7 @@ export default function UserManagementPage() {
                       {user.role}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
+                  <td className="py-4 px-5">
                     {user.status === "Đang hoạt động" ? (
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-600 mr-1.5" />
@@ -207,7 +210,7 @@ export default function UserManagementPage() {
                       </span>
                     )}
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="py-4 px-5 text-right">
                     <Link
                       href={`/admin/users/${user.id}`}
                       className="px-4 py-2 text-primary bg-blue-50 hover:bg-blue-100 rounded-lg text-xs font-bold transition-colors inline-flex items-center gap-2"

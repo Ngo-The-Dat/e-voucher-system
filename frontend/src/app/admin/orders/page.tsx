@@ -4,7 +4,12 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import { MOCK_ORDERS, OrderData } from "./data";
+import StatusBadge from "@/components/shared/ui/StatusBadge";
+import Pagination from "@/components/shared/ui/Pagination";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
@@ -98,70 +103,67 @@ export default function OrdersPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {/* Ô Tìm kiếm */}
           <div className="sm:col-span-2 md:col-span-1">
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">
-              Tìm kiếm đơn hàng
-            </label>
-            <div className="relative">
-              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-              <input
-                type="text"
-                placeholder="Mã đơn, người mua, người nhận..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[38px] pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              />
-            </div>
+            <FormField label="Tìm kiếm đơn hàng">
+              <div className="relative">
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+                <Input
+                  type="text"
+                  placeholder="Mã đơn, người mua, người nhận..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
+                />
+              </div>
+            </FormField>
           </div>
 
           {/* Lọc Trạng thái đơn hàng */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">
-              Trạng thái đơn hàng
-            </label>
-            <div className="relative">
-              <select
-                value={orderStatusFilter}
-                onChange={(e) => {
-                  setOrderStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              >
-                <option value="ALL">Tất cả trạng thái đơn</option>
-                <option value="PENDING">Chờ xử lý</option>
-                <option value="CONFIRMED">Đã xác nhận</option>
-                <option value="COMPLETED">Hoàn thành</option>
-                <option value="CANCELLED">Đã hủy</option>
-              </select>
-              <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
-            </div>
+            <FormField label="Trạng thái đơn hàng">
+              <div className="relative">
+                <select
+                  value={orderStatusFilter}
+                  onChange={(e) => {
+                    setOrderStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                >
+                  <option value="ALL">Tất cả trạng thái đơn</option>
+                  <option value="PENDING">Chờ xử lý</option>
+                  <option value="CONFIRMED">Đã xác nhận</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                  <option value="CANCELLED">Đã hủy</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
 
           {/* Lọc Trạng thái thanh toán */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">
-              Trạng thái thanh toán
-            </label>
-            <div className="relative">
-              <select
-                value={paymentStatusFilter}
-                onChange={(e) => {
-                  setPaymentStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              >
-                <option value="ALL">Tất cả thanh toán</option>
-                <option value="UNPAID">Chưa thanh toán</option>
-                <option value="PAID">Đã thanh toán</option>
-                <option value="FAILED">Thanh toán thất bại</option>
-                <option value="REFUNDED">Đã hoàn tiền</option>
-              </select>
-              <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
-            </div>
+            <FormField label="Trạng thái thanh toán">
+              <div className="relative">
+                <select
+                  value={paymentStatusFilter}
+                  onChange={(e) => {
+                    setPaymentStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                >
+                  <option value="ALL">Tất cả thanh toán</option>
+                  <option value="UNPAID">Chưa thanh toán</option>
+                  <option value="PAID">Đã thanh toán</option>
+                  <option value="FAILED">Thanh toán thất bại</option>
+                  <option value="REFUNDED">Đã hoàn tiền</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
 
           {/* Lọc ngày đặt hàng */}
@@ -203,7 +205,7 @@ export default function OrdersPage() {
                 <th className="py-4 px-5 text-right">THAO TÁC</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {filteredOrders.length === 0 ? (
                 /* Thông báo rỗng (Luồng A1) */
                 <tr>
@@ -246,18 +248,10 @@ export default function OrdersPage() {
                         {formatCurrency(order.totalAmount)}
                       </td>
                       <td className="py-4 px-5">
-                        <span
-                          className={`px-3 py-1 font-semibold text-xs rounded-full border inline-flex items-center gap-1.5 ${oBadge.class}`}
-                        >
-                          {oBadge.label}
-                        </span>
+                        <StatusBadge status={order.orderStatus} label={oBadge.label} />
                       </td>
                       <td className="py-4 px-5">
-                        <span
-                          className={`px-3 py-1 font-semibold text-xs rounded-full border inline-flex items-center gap-1.5 ${pBadge.class}`}
-                        >
-                          {pBadge.label}
-                        </span>
+                        <StatusBadge status={order.paymentStatus} label={pBadge.label} />
                       </td>
                       <td className="py-4 px-5 text-xs text-slate-600">
                         <div className="font-semibold text-slate-800">{order.orderDate}</div>
@@ -281,38 +275,14 @@ export default function OrdersPage() {
         </div>
 
         {/* Footer & Phân trang */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            Hiển thị <span className="font-bold text-slate-900">1</span> đến{" "}
-            <span className="font-bold text-slate-900">{filteredOrders.length}</span> trong{" "}
-            <span className="font-bold text-slate-900">{orders.length}</span> đơn hàng
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 disabled:opacity-40 transition"
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition ${
-                currentPage === 1
-                  ? "border border-blue-500 bg-blue-50/50 text-blue-600"
-                  : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition"
-            >
-              &gt;
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredOrders.length / 10) || 1}
+          totalItems={filteredOrders.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+          itemName="đơn hàng"
+        />
       </div>
     </div>
   );
@@ -388,34 +358,34 @@ function DateRangePicker({
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1">Từ ngày</label>
-              <input
+              <Input
                 type="date"
                 value={startDate}
                 onChange={(e) => onStartDateChange(e.target.value)}
-                className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                className="w-full h-[32px] px-2 py-1 bg-slate-50 border-slate-200 rounded-lg text-xs"
               />
             </div>
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1">Đến ngày</label>
-              <input
+              <Input
                 type="date"
                 value={endDate}
                 onChange={(e) => onEndDateChange(e.target.value)}
-                className="w-full px-2 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs"
+                className="w-full h-[32px] px-2 py-1 bg-slate-50 border-slate-200 rounded-lg text-xs"
               />
             </div>
           </div>
           <div className="border-t border-slate-100 pt-2 flex items-center justify-between">
-            <button type="button" onClick={onReset} className="text-xs text-slate-400 hover:text-rose-500">
+            <Button variant="ghost" type="button" onClick={onReset} className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto">
               Xóa chọn
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-3 py-1 bg-blue-600 text-white text-xs font-bold rounded-lg"
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg h-auto"
             >
               Áp dụng
-            </button>
+            </Button>
           </div>
         </div>
       )}

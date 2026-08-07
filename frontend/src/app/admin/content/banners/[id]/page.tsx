@@ -22,7 +22,8 @@ export default function EditBannerPage() {
   const [displayPosition, setDisplayPosition] = useState(initialBanner.displayPosition);
   const [displayFrom, setDisplayFrom] = useState(initialBanner.displayFrom);
   const [displayTo, setDisplayTo] = useState(initialBanner.displayTo);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(initialBanner.status);
+  type BannerStatus = "ACTIVE" | "INACTIVE";
+  const [status, setStatus] = useState<BannerStatus>(initialBanner.status);
 
   const handleSaveBannerChanges = () => {
     if (!title.trim()) {

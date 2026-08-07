@@ -5,6 +5,9 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/shared/ui/Button";
+import { Input } from "@/components/shared/ui/Input";
+import FormField from "@/components/shared/ui/FormField";
 
 interface Branch {
   code: string;
@@ -143,7 +146,8 @@ export default function ManagePartnerDetailPage() {
     branches: [],
   };
 
-  const [partnerStatus, setPartnerStatus] = useState<"Đang hoạt động" | "Tạm khóa">(
+  type PartnerStatus = "Đang hoạt động" | "Tạm khóa";
+  const [partnerStatus, setPartnerStatus] = useState<PartnerStatus>(
     partnerInfo.status
   );
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -240,12 +244,13 @@ export default function ManagePartnerDetailPage() {
             <Icon name="info" className="text-emerald-400 text-xl" />
             <span>{toastMessage}</span>
           </div>
-          <button
+          <Button
+            variant="ghost"
             onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white transition"
+            className="text-slate-400 hover:text-white p-0 h-auto"
           >
             <Icon name="close" className="text-lg" />
-          </button>
+          </Button>
         </div>
       )}
 
@@ -292,18 +297,15 @@ export default function ManagePartnerDetailPage() {
           >
             Quay lại
           </Link>
-          <button
+          <Button
+            variant={partnerStatus === "Đang hoạt động" ? "destructive" : "default"}
             type="button"
             onClick={() => setLockModalOpen(true)}
-            className={`px-4 py-2 font-bold text-xs rounded-xl transition shadow-sm flex items-center gap-1.5 text-white ${
-              partnerStatus === "Đang hoạt động"
-                ? "bg-rose-600 hover:bg-rose-700"
-                : "bg-emerald-600 hover:bg-emerald-700"
-            }`}
+            className="px-4 py-2 text-xs"
           >
-            <Icon name={partnerStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-base" />
+            <Icon name={partnerStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-base mr-1.5" />
             {partnerStatus === "Đang hoạt động" ? "Tạm khóa" : "Mở khóa"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -357,14 +359,14 @@ export default function ManagePartnerDetailPage() {
                   Quản lý thông tin chi nhánh: Mã chi nhánh, Tên chi nhánh, Địa chỉ, Khu vực, Trạng thái.
                 </p>
               </div>
-              <button
+              <Button
                 type="button"
                 onClick={handleOpenAddBranch}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-2xs flex items-center gap-1.5 shrink-0"
+                className="px-3.5 py-2 text-xs"
               >
-                <Icon name="add" className="text-base" />
+                <Icon name="add" className="text-base mr-1.5" />
                 Thêm chi nhánh
-              </button>
+              </Button>
             </div>
 
             {/* Branches Table matching ERD */}
@@ -412,20 +414,22 @@ export default function ManagePartnerDetailPage() {
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button
+                            <Button
+                              variant="outline"
                               type="button"
                               onClick={() => handleOpenEditBranch(b)}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg transition"
+                              className="px-2.5 py-1 text-slate-700 font-semibold h-auto text-xs"
                             >
                               Sửa
-                            </button>
-                            <button
+                            </Button>
+                            <Button
+                              variant="destructive"
                               type="button"
                               onClick={() => setDeleteBranchCode(b.code)}
-                              className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold rounded-lg transition"
+                              className="px-2.5 py-1 text-xs h-auto bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700"
                             >
                               Xóa
-                            </button>
+                            </Button>
                           </div>
                         </td>
                       </tr>
@@ -514,12 +518,13 @@ export default function ManagePartnerDetailPage() {
                   ? "Xác nhận tạm khóa đối tác"
                   : "Xác nhận mở khóa đối tác"}
               </h3>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setLockModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1 h-auto"
               >
                 <Icon name="close" />
-              </button>
+              </Button>
             </div>
             <p className="text-xs text-slate-500">
               {partnerStatus === "Đang hoạt động"
@@ -536,24 +541,20 @@ export default function ManagePartnerDetailPage() {
               />
             )}
             <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setLockModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
+                variant={partnerStatus === "Đang hoạt động" ? "destructive" : "default"}
                 type="button"
                 onClick={handleConfirmLockToggle}
-                className={`px-4 py-2 font-bold text-xs rounded-xl transition text-white ${
-                  partnerStatus === "Đang hoạt động"
-                    ? "bg-rose-600 hover:bg-rose-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                }`}
               >
                 {partnerStatus === "Đang hoạt động" ? "Khóa ngay" : "Mở khóa ngay"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -568,29 +569,27 @@ export default function ManagePartnerDetailPage() {
                 <Icon name="store" className="text-blue-600" />
                 {editingBranch ? "Chỉnh sửa thông tin chi nhánh" : "Thêm chi nhánh mới"}
               </h3>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setBranchModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600"
+                className="text-slate-400 hover:text-slate-600 p-1 h-auto"
               >
                 <Icon name="close" />
-              </button>
+              </Button>
             </div>
 
             <div className="space-y-3.5 text-xs">
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-600 mb-1">Mã chi nhánh *</label>
-                  <input
+                <FormField label="Mã chi nhánh *">
+                  <Input
                     type="text"
                     placeholder="e.g. CN-001..."
                     value={branchForm.code}
                     disabled={Boolean(editingBranch)}
                     onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
-                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-mono font-bold focus:bg-white focus:border-blue-500 outline-none transition disabled:opacity-60"
                   />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-600 mb-1">Khu vực *</label>
+                </FormField>
+                <FormField label="Khu vực *">
                   <select
                     value={branchForm.region}
                     onChange={(e) => setBranchForm({ ...branchForm, region: e.target.value })}
@@ -605,33 +604,28 @@ export default function ManagePartnerDetailPage() {
                     <option value="Miền Trung">Miền Trung</option>
                     <option value="Miền Nam">Miền Nam</option>
                   </select>
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Tên chi nhánh *</label>
-                <input
+              <FormField label="Tên chi nhánh *">
+                <Input
                   type="text"
                   placeholder="e.g. Golden Gate - Vincom Ba Triệu..."
                   value={branchForm.name}
                   onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:bg-white focus:border-blue-500 outline-none transition"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Địa chỉ chi nhánh *</label>
-                <input
+              <FormField label="Địa chỉ chi nhánh *">
+                <Input
                   type="text"
                   placeholder="e.g. 191 Bà Triệu, Lê Đại Hành, Hai Bà Trưng, Hà Nội..."
                   value={branchForm.address}
                   onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
-                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:bg-white focus:border-blue-500 outline-none transition"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-600 mb-1">Trạng thái *</label>
+              <FormField label="Trạng thái *">
                 <select
                   value={branchForm.status}
                   onChange={(e) =>
@@ -645,25 +639,24 @@ export default function ManagePartnerDetailPage() {
                   <option value="Hoạt động">Hoạt động</option>
                   <option value="Tạm ngưng">Tạm ngưng</option>
                 </select>
-              </div>
+              </FormField>
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setBranchModalOpen(false)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleSaveBranch}
                 disabled={!branchForm.code.trim() || !branchForm.name.trim() || !branchForm.address.trim()}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition"
               >
                 {editingBranch ? "Lưu thay đổi" : "Thêm ngay"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -683,20 +676,20 @@ export default function ManagePartnerDetailPage() {
               </div>
             </div>
             <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => setDeleteBranchCode(null)}
-                className="px-4 py-2 border border-slate-200 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-50"
               >
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 type="button"
                 onClick={handleConfirmDeleteBranch}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition"
               >
                 Xóa chi nhánh
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -5,6 +5,9 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import ContentSubNavbar from "../SubNavbar";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import { INITIAL_ARTICLES, ContentArticleData } from "./data";
 
 export default function ArticlesPage() {
@@ -19,9 +22,11 @@ export default function ArticlesPage() {
   // Form states
   const [newTitle, setNewTitle] = useState("");
   const [newProgramId, setNewProgramId] = useState("PRG-HG-50K");
-  const [newContentType, setNewContentType] = useState<"POLICY" | "ARTICLE">("ARTICLE");
+  type ContentType = "POLICY" | "ARTICLE";
+  const [newContentType, setNewContentType] = useState<ContentType>("ARTICLE");
   const [newBody, setNewBody] = useState("");
-  const [newStatus, setNewStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  type ArticleStatus = "ACTIVE" | "INACTIVE";
+  const [newStatus, setNewStatus] = useState<ArticleStatus>("ACTIVE");
 
   const filteredArticles = articles.filter((item) => {
     if (searchQuery) {
@@ -91,25 +96,25 @@ export default function ArticlesPage() {
             Soạn thảo và đăng tải các bài viết tin tức và điều khoản quy định chính sách
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
         >
-          <Icon name="post_add" className="text-base" />
+          <Icon name="post_add" className="text-base mr-2" />
           Soạn Bài viết / Chính sách mới
-        </button>
+        </Button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-          <input
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tiêu đề bài viết, chương trình liên kết..."
-            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
           />
         </div>
 
@@ -186,7 +191,7 @@ export default function ArticlesPage() {
                 {/* Nút Xóa -> Mở Dialog */}
                 <button
                   onClick={() => setConfirmDeleteArticle(article)}
-                  className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs"
+                  className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs flex items-center justify-center"
                   title="Xóa bài viết"
                 >
                   <Icon name="delete" className="text-base block" />
@@ -210,8 +215,7 @@ export default function ArticlesPage() {
 
             <div className="space-y-4 text-xs sm:text-sm">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Loại nội dung</label>
+                <FormField label="Loại nội dung">
                   <select
                     value={newContentType}
                     onChange={(e) => setNewContentType(e.target.value as "POLICY" | "ARTICLE")}
@@ -220,11 +224,8 @@ export default function ArticlesPage() {
                     <option value="ARTICLE">Bài viết tin tức</option>
                     <option value="POLICY">Điều khoản chính sách</option>
                   </select>
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Chương trình Voucher liên kết <span className="text-rose-500">*</span>
-                  </label>
+                </FormField>
+                <FormField label="Chương trình Voucher liên kết" required>
                   <select
                     value={newProgramId}
                     onChange={(e) => setNewProgramId(e.target.value)}
@@ -234,26 +235,19 @@ export default function ArticlesPage() {
                     <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
                     <option value="PRG-KC-200K">PRG-KC-200K - Buffet Lẩu Kichi Kichi Giảm 20%</option>
                   </select>
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Tiêu đề <span className="text-rose-500">*</span>
-                </label>
-                <input
+              <FormField label="Tiêu đề" required>
+                <Input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Ví dụ: Quy định sử dụng và hoàn tiền voucher..."
-                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Nội dung chi tiết <span className="text-rose-500">*</span>
-                </label>
+              <FormField label="Nội dung chi tiết" required>
                 <textarea
                   rows={6}
                   value={newBody}
@@ -261,10 +255,9 @@ export default function ArticlesPage() {
                   placeholder="Nhập nội dung chi tiết bài viết hoặc quy định chính sách..."
                   className="w-full p-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 text-xs sm:text-sm"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Trạng thái</label>
+              <FormField label="Trạng thái">
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value as "ACTIVE" | "INACTIVE")}
@@ -273,22 +266,16 @@ export default function ArticlesPage() {
                   <option value="ACTIVE">Hiển thị</option>
                   <option value="INACTIVE">Tạm ẩn</option>
                 </select>
-              </div>
+              </FormField>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
                 Hủy
-              </button>
-              <button
-                onClick={handleCreateArticle}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button onClick={handleCreateArticle} className="bg-blue-600 hover:bg-blue-700 text-white">
                 Lưu Bài Viết / Chính Sách
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -306,18 +293,12 @@ export default function ArticlesPage() {
               Bạn có chắc chắn muốn gỡ bỏ bài viết <span className="font-bold text-slate-800">"{confirmDeleteArticle.title}"</span> khỏi hệ thống không?
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setConfirmDeleteArticle(null)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setConfirmDeleteArticle(null)}>
                 Hủy thao tác
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
                 Xác nhận gỡ bỏ
-              </button>
+              </Button>
             </div>
           </div>
         </div>

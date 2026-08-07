@@ -5,6 +5,9 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import ContentSubNavbar from "../SubNavbar";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import { INITIAL_CATEGORIES, CategoryData } from "./data";
 
 export default function CategoriesPage() {
@@ -15,7 +18,8 @@ export default function CategoriesPage() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
-  const [newCatStatus, setNewCatStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  type CatStatus = "ACTIVE" | "INACTIVE";
+  const [newCatStatus, setNewCatStatus] = useState<CatStatus>("ACTIVE");
 
   // Rule A1 Warning Modal
   const [warningCat, setWarningCat] = useState<CategoryData | null>(null);
@@ -80,25 +84,25 @@ export default function CategoriesPage() {
             Phân loại danh mục hiển thị các chương trình voucher trên ứng dụng và website
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
         >
-          <Icon name="add" className="text-base" />
+          <Icon name="add" className="text-base mr-2" />
           Thêm Danh mục mới
-        </button>
+        </Button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-          <input
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tên danh mục hoặc mã danh mục..."
-            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
           />
         </div>
         <div className="text-xs text-slate-500 font-semibold">
@@ -156,7 +160,7 @@ export default function CategoriesPage() {
                   {/* Nút Xóa -> Mở Dialog */}
                   <button
                     onClick={() => handleAttemptDelete(cat)}
-                    className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs"
+                    className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs flex items-center justify-center"
                     title="Gỡ bỏ danh mục"
                   >
                     <Icon name="delete" className="text-base block" />
@@ -180,21 +184,17 @@ export default function CategoriesPage() {
             </div>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Tên danh mục <span className="text-rose-500">*</span>
-                </label>
-                <input
+              <FormField label="Tên danh mục" required>
+                <Input
                   type="text"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
                   placeholder="Ví dụ: Ẩm thực & Trà sữa"
-                  className="w-full p-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-blue-500"
+                  className="w-full text-xs sm:text-sm"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Mô tả danh mục</label>
+              <FormField label="Mô tả danh mục">
                 <textarea
                   rows={3}
                   value={newCatDesc}
@@ -202,10 +202,9 @@ export default function CategoriesPage() {
                   placeholder="Mô tả tóm tắt phân loại danh mục..."
                   className="w-full p-2.5 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 focus:outline-none focus:border-blue-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Trạng thái</label>
+              <FormField label="Trạng thái">
                 <select
                   value={newCatStatus}
                   onChange={(e) => setNewCatStatus(e.target.value as "ACTIVE" | "INACTIVE")}
@@ -214,22 +213,16 @@ export default function CategoriesPage() {
                   <option value="ACTIVE">Đang hoạt động</option>
                   <option value="INACTIVE">Tạm ẩn</option>
                 </select>
-              </div>
+              </FormField>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
                 Hủy
-              </button>
-              <button
-                onClick={handleCreateCategory}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button onClick={handleCreateCategory} className="bg-blue-600 hover:bg-blue-700 text-white">
                 Thêm danh mục
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -248,12 +241,12 @@ export default function CategoriesPage() {
               <span className="font-bold text-rose-600">{warningCat.vouchers.length}</span> voucher liên kết. Hệ thống từ chối xóa để đảm bảo toàn vẹn dữ liệu!
             </p>
             <div className="pt-2">
-              <button
+              <Button
                 onClick={() => setWarningCat(null)}
-                className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+                className="w-full bg-rose-600 hover:bg-rose-700 text-white text-xs"
               >
                 Đã hiểu & Đóng thông báo
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -271,18 +264,12 @@ export default function CategoriesPage() {
               Bạn có chắc chắn muốn gỡ bỏ danh mục <span className="font-bold text-slate-800">"{confirmDeleteCat.categoryName}"</span> khỏi hệ thống không?
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setConfirmDeleteCat(null)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setConfirmDeleteCat(null)}>
                 Hủy thao tác
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
                 Xác nhận gỡ bỏ
-              </button>
+              </Button>
             </div>
           </div>
         </div>

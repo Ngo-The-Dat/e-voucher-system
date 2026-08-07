@@ -3,6 +3,7 @@
 import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
+import { Button } from "@/components/shared/ui/Button";
 
 interface RolePermission {
   module: string;
@@ -45,13 +46,13 @@ export default function PermissionsPage() {
             Quản lý ma trận quyền truy cập của các nhóm tài khoản quản trị
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setShowSaveModal(true)}
-          className="px-4 py-2 text-sm font-semibold text-white bg-primary-container rounded-lg shadow-sm hover:bg-blue-700 transition flex items-center gap-2"
+          className="bg-primary-container text-white hover:bg-blue-700"
         >
-          <Icon name="save" className="text-lg" />
+          <Icon name="save" className="text-lg mr-2" />
           <span>Lưu thay đổi quyền</span>
-        </button>
+        </Button>
       </div>
 
       {/* Role Selection Tabs */}
@@ -90,23 +91,23 @@ export default function PermissionsPage() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-slate-100/70 text-slate-700 font-bold uppercase tracking-wider border-b border-border">
-                <th className="py-3 px-4">Phân hệ chức năng</th>
-                <th className="py-3 px-4 text-center">Xem (Read)</th>
-                <th className="py-3 px-4 text-center">Tạo/Sửa (Create)</th>
-                <th className="py-3 px-4 text-center">Phê duyệt (Approve)</th>
-                <th className="py-3 px-4 text-center">Xóa/Khóa (Delete)</th>
+              <tr className="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
+                <th className="py-4 px-5">Phân hệ chức năng</th>
+                <th className="py-4 px-5 text-center">Xem (Read)</th>
+                <th className="py-4 px-5 text-center">Tạo/Sửa (Create)</th>
+                <th className="py-4 px-5 text-center">Phê duyệt (Approve)</th>
+                <th className="py-4 px-5 text-center">Xóa/Khóa (Delete)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 text-base">
               {matrix.map((row, idx) => (
-                <tr key={idx} className="hover:bg-slate-50 transition">
-                  <td className="py-3.5 px-4 font-semibold text-slate-800">
+                <tr key={idx} className="hover:bg-slate-50/60 transition">
+                  <td className="py-4 px-5 font-semibold text-slate-800">
                     {row.module}
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-4 px-5 text-center">
                     <input
                       type="checkbox"
                       checked={row.read}
@@ -114,7 +115,7 @@ export default function PermissionsPage() {
                       className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary"
                     />
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-4 px-5 text-center">
                     <input
                       type="checkbox"
                       checked={row.create}
@@ -122,7 +123,7 @@ export default function PermissionsPage() {
                       className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary"
                     />
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-4 px-5 text-center">
                     <input
                       type="checkbox"
                       checked={row.approve}
@@ -130,7 +131,7 @@ export default function PermissionsPage() {
                       className="w-4 h-4 rounded text-primary border-slate-300 focus:ring-primary"
                     />
                   </td>
-                  <td className="py-3.5 px-4 text-center">
+                  <td className="py-4 px-5 text-center">
                     <input
                       type="checkbox"
                       checked={row.delete}
@@ -162,21 +163,21 @@ export default function PermissionsPage() {
               <strong className="text-slate-900">{selectedRole}</strong>. Tất cả tài khoản thuộc nhóm này sẽ có hiệu lực ngay lập tức.
             </p>
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setShowSaveModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => {
                   setShowSaveModal(false);
                   alert("Cập nhật phân quyền thành công!");
                 }}
-                className="px-4 py-2 text-xs font-semibold text-white bg-primary-container hover:bg-blue-700 rounded-lg transition"
+                className="bg-primary-container text-white hover:bg-blue-700"
               >
                 Xác nhận lưu
-              </button>
+              </Button>
             </div>
           </div>
         </div>

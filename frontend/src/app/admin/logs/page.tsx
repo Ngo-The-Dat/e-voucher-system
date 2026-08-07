@@ -3,6 +3,9 @@
 import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import Pagination from "@/components/shared/ui/Pagination";
 
 // Data Model matching system_logs table in ERD & UC-ADM-13
 export interface SystemLog {
@@ -227,7 +230,8 @@ export default function SystemLogsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
+          <Button
+            variant="outline"
             onClick={() => {
               setSearchTerm("");
               setObjectTypeFilter("ALL");
@@ -236,11 +240,11 @@ export default function SystemLogsPage() {
               setEndDateFilter("");
               setCurrentPage(1);
             }}
-            className="px-3.5 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition flex items-center gap-1.5 shadow-2xs"
+            className="text-xs text-slate-600 bg-white"
           >
-            <Icon name="refresh" className="text-sm" />
+            <Icon name="refresh" className="text-sm mr-1.5" />
             <span>Đặt lại bộ lọc</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -249,8 +253,8 @@ export default function SystemLogsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           {/* Keyword Search */}
           <div className="relative">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-            <input
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+            <Input
               type="text"
               value={searchTerm}
               onChange={(e) => {
@@ -258,7 +262,7 @@ export default function SystemLogsPage() {
                 setCurrentPage(1);
               }}
               placeholder="Tìm hành động, người dùng, mã ID..."
-              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:border-primary font-medium"
+              className="w-full pl-9 pr-3 py-2 text-xs border-slate-200 rounded-xl"
             />
           </div>
 
@@ -299,18 +303,18 @@ export default function SystemLogsPage() {
 
           {/* Date Picker Filter */}
           <div className="flex items-center gap-1 text-xs bg-slate-50 p-1 border border-slate-200 rounded-xl">
-            <input
+            <Input
               type="date"
               value={startDateFilter}
               onChange={(e) => setStartDateFilter(e.target.value)}
-              className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 outline-none text-[11px]"
+              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
             />
             <span className="text-slate-400">&rarr;</span>
-            <input
+            <Input
               type="date"
               value={endDateFilter}
               onChange={(e) => setEndDateFilter(e.target.value)}
-              className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 outline-none text-[11px]"
+              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
             />
           </div>
         </div>
@@ -330,7 +334,8 @@ export default function SystemLogsPage() {
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
               Không có bản ghi nhật ký nào thỏa mãn điều kiện bộ lọc của bạn (Đáp ứng Luồng A1 - UC-ADM-13).
             </p>
-            <button
+            <Button
+              variant="outline"
               onClick={() => {
                 setSearchTerm("");
                 setObjectTypeFilter("ALL");
@@ -338,57 +343,57 @@ export default function SystemLogsPage() {
                 setStartDateFilter("");
                 setEndDateFilter("");
               }}
-              className="mt-4 px-3.5 py-1.5 text-xs font-semibold text-primary bg-blue-50 rounded-xl hover:bg-blue-100 transition"
+              className="mt-4 text-primary bg-blue-50 hover:bg-blue-100"
             >
               Xóa điều kiện lọc
-            </button>
+            </Button>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr className="bg-slate-50/80 text-slate-600 text-xs font-bold uppercase tracking-wider border-b border-border">
-                  <th className="py-3.5 px-4">Mã Log</th>
-                  <th className="py-3.5 px-4">Thời gian</th>
-                  <th className="py-3.5 px-4">Người thực hiện</th>
-                  <th className="py-3.5 px-4">Hành động</th>
-                  <th className="py-3.5 px-4">Loại đối tượng</th>
-                  <th className="py-3.5 px-4">Kết quả</th>
-                  <th className="py-3.5 px-4 text-right">Chi tiết</th>
+                <tr className="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
+                  <th className="py-4 px-5">Mã Log</th>
+                  <th className="py-4 px-5">Thời gian</th>
+                  <th className="py-4 px-5">Người thực hiện</th>
+                  <th className="py-4 px-5">Hành động</th>
+                  <th className="py-4 px-5">Loại đối tượng</th>
+                  <th className="py-4 px-5">Kết quả</th>
+                  <th className="py-4 px-5 text-right">Chi tiết</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-xs">
+              <tbody className="divide-y divide-slate-100 text-base">
                 {paginatedLogs.map((log) => (
                   <tr
                     key={log.log_id}
-                    className="hover:bg-slate-50/70 transition cursor-pointer"
+                    className="hover:bg-slate-50/60 transition cursor-pointer"
                     onClick={() => setSelectedLog(log)}
                   >
-                    <td className="py-3.5 px-4 font-mono font-bold text-primary">
+                    <td className="py-4 px-5 font-bold text-slate-900">
                       {log.log_id}
                     </td>
-                    <td className="py-3.5 px-4 text-slate-500 font-mono text-[11px]">
+                    <td className="py-4 px-5 text-slate-500 text-xs">
                       {log.performed_at}
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-4 px-5">
                       <p className="font-semibold text-slate-900">
                         {log.user_name}
                       </p>
-                      <p className="text-[11px] text-slate-400 font-mono">
+                      <p className="text-[11px] text-slate-500">
                         ID: {log.user_id} {log.user_role ? `(${log.user_role})` : ""}
                       </p>
                     </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-800">
+                    <td className="py-4 px-5 font-medium text-slate-800">
                       {log.action}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2.5 py-1 text-[10px] font-bold rounded-md bg-slate-100 text-slate-700 font-mono">
+                    <td className="py-4 px-5">
+                      <span className="px-2.5 py-1 text-[11px] font-bold rounded-md bg-slate-100 text-slate-700 whitespace-nowrap">
                         {log.object_type}: {log.object_id}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td className="py-4 px-5">
                       <span
-                        className={`px-2 py-0.5 text-[11px] font-bold rounded-md ${log.result === "SUCCESS"
+                        className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md whitespace-nowrap ${log.result === "SUCCESS"
                             ? "bg-emerald-100 text-emerald-800"
                             : "bg-rose-100 text-rose-800"
                           }`}
@@ -396,17 +401,18 @@ export default function SystemLogsPage() {
                         {log.result === "SUCCESS" ? "Thành công" : "Thất bại"}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
+                    <td className="py-4 px-5 text-right">
+                      <Button
+                        variant="outline"
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedLog(log);
                         }}
-                        className="px-2.5 py-1 text-xs font-semibold text-primary bg-blue-50 hover:bg-blue-100 rounded-lg transition inline-flex items-center gap-1"
+                        className="px-2.5 py-1 text-xs text-primary bg-blue-50 hover:bg-blue-100 h-auto"
                       >
-                        <span>Xem</span>
+                        <span className="mr-1">Xem</span>
                         <Icon name="visibility" className="text-sm" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -417,46 +423,14 @@ export default function SystemLogsPage() {
 
         {/* Pagination Bar (UC-ADM-13 Step 2) */}
         {filteredLogs.length > 0 && (
-          <div className="p-4 border-t border-slate-100 flex items-center justify-between gap-4 text-xs">
-            <span className="text-slate-500">
-              Hiển thị{" "}
-              <strong className="text-slate-800">
-                {(currentPage - 1) * itemsPerPage + 1} -{" "}
-                {Math.min(currentPage * itemsPerPage, filteredLogs.length)}
-              </strong>{" "}
-              trên tổng số{" "}
-              <strong className="text-slate-800">{filteredLogs.length}</strong> bản ghi
-            </span>
-
-            <div className="flex items-center gap-1">
-              <button
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                Trước
-              </button>
-              {Array.from({ length: totalPages }).map((_, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setCurrentPage(idx + 1)}
-                  className={`w-7 h-7 rounded-lg font-bold transition ${currentPage === idx + 1
-                      ? "bg-primary text-white"
-                      : "text-slate-600 hover:bg-slate-100"
-                    }`}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-              <button
-                disabled={currentPage === totalPages}
-                onClick={() => setCurrentPage((p) => p + 1)}
-                className="px-3 py-1.5 border border-slate-200 rounded-lg font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition"
-              >
-                Sau
-              </button>
-            </div>
-          </div>
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredLogs.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            itemName="bản ghi"
+          />
         )}
       </div>
 
@@ -580,12 +554,12 @@ export default function SystemLogsPage() {
 
             {/* Modal Footer */}
             <div className="p-4 border-t border-slate-100 flex justify-end bg-slate-50">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setSelectedLog(null)}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-200 rounded-xl hover:bg-slate-100 transition shadow-2xs"
               >
                 Đóng
-              </button>
+              </Button>
             </div>
           </div>
         </div>

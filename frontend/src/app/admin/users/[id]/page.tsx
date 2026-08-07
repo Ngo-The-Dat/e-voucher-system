@@ -5,6 +5,8 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { Button } from "@/components/shared/ui/Button";
+import { Input } from "@/components/shared/ui/Input";
 
 interface UserRecord {
   id: string;
@@ -98,13 +100,16 @@ export default function UserDetailPage() {
       "https://lh3.googleusercontent.com/aida-public/AB6AXuDmcbUWDcymSWYEPhjxPbI6X5kLhVpLKDyPwWrTfNRNDfC-YBoPu32VIdySLDh52f2Emia0F44iXsD5KS8AdOmEhwMUoUmNQrt6BL29mzpNGJ-lEzYSf1geyHFBH2o0OVaN7viR5muTlOEdocrMmzU_c6E9WtssQjyzZTvpR3oOsNJq-e2jOiHtrfwIuFme8pUBKGChm9yZaA14ZzqbuVv3M0L02lujPzZBxcV9th2OXR1_EhUJwyR0Mw",
   };
 
-  const [activeTab, setActiveTab] = useState<"info" | "permissions">("info");
-  const [selectedRole, setSelectedRole] = useState<"customer" | "partner">("customer");
+  type ActiveTab = "info" | "permissions";
+  const [activeTab, setActiveTab] = useState<ActiveTab>("info");
+  type SelectedRole = "customer" | "partner";
+  const [selectedRole, setSelectedRole] = useState<SelectedRole>("customer");
   const [currentRole, setCurrentRole] = useState(userData.role);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [savedNotification, setSavedNotification] = useState<string | null>(null);
 
-  const [accountStatus, setAccountStatus] = useState<"Đang hoạt động" | "Đã khóa">(userData.status);
+  type AccountStatus = "Đang hoạt động" | "Đã khóa";
+  const [accountStatus, setAccountStatus] = useState<AccountStatus>(userData.status);
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReason, setLockReason] = useState("");
 
@@ -201,20 +206,17 @@ export default function UserDetailPage() {
 
           {/* Header Action Buttons */}
           <div className="flex flex-wrap gap-3 mt-4 md:mt-0 w-full md:w-auto">
-            <button
+            <Button
               type="button"
               onClick={() => setLockModalOpen(true)}
-              className={`flex items-center gap-2 px-4 py-2 text-white rounded-lg text-sm font-semibold transition-colors shadow-sm ${
-                accountStatus === "Đang hoạt động"
-                  ? "bg-rose-600 hover:bg-rose-700"
-                  : "bg-emerald-600 hover:bg-emerald-700"
-              }`}
+              variant={accountStatus === "Đang hoạt động" ? "destructive" : "default"}
+              className={accountStatus !== "Đang hoạt động" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
             >
-              <Icon name={accountStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-[18px]" />
+              <Icon name={accountStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-[18px] mr-2" />
               <span>
                 {accountStatus === "Đang hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
               </span>
-            </button>
+            </Button>
 
             <Link
               href="/admin/users"
@@ -486,14 +488,14 @@ export default function UserDetailPage() {
 
               {/* Action Submit */}
               <div className="pt-4 border-t border-border mt-5 flex justify-end">
-                <button
+                <Button
                   type="button"
                   onClick={() => setShowConfirmModal(true)}
-                  className="px-6 py-2.5 bg-primary-container text-white font-bold text-[14px] rounded-lg hover:bg-blue-700 transition-all shadow-sm active:scale-95 flex items-center gap-1.5"
+                  className="bg-primary-container text-white hover:bg-blue-700"
                 >
-                  <Icon name="sync" className="text-[20px]" />
+                  <Icon name="sync" className="text-[20px] mr-1.5" />
                   <span>Cập nhật quyền hạn</span>
-                </button>
+                </Button>
               </div>
             </form>
           </div>
@@ -522,18 +524,18 @@ export default function UserDetailPage() {
               ⚠️ Tài khoản sẽ bị buộc đăng xuất ngay sau khi cập nhật để áp dụng cấu hình phân quyền mới.
             </p>
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setShowConfirmModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleConfirmRoleChange}
-                className="px-4 py-2 text-xs font-semibold text-white bg-primary-container hover:bg-blue-700 rounded-lg transition shadow-sm"
+                className="bg-primary-container text-white hover:bg-blue-700"
               >
                 Xác nhận thay đổi
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -580,24 +582,21 @@ export default function UserDetailPage() {
               </div>
             )}
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
-              <button
+              <Button
+                variant="ghost"
                 type="button"
                 onClick={() => setLockModalOpen(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-lg"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleConfirmLockToggle}
-                className={`px-4 py-2 text-xs font-semibold text-white rounded-lg transition shadow-sm ${
-                  accountStatus === "Đang hoạt động"
-                    ? "bg-rose-600 hover:bg-rose-700"
-                    : "bg-emerald-600 hover:bg-emerald-700"
-                }`}
+                variant={accountStatus === "Đang hoạt động" ? "destructive" : "default"}
+                className={accountStatus !== "Đang hoạt động" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
               >
                 {accountStatus === "Đang hoạt động" ? "Xác nhận khóa" : "Xác nhận mở khóa"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

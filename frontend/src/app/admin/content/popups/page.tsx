@@ -5,6 +5,9 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import ContentSubNavbar from "../SubNavbar";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import { INITIAL_POPUPS, PopupData } from "./data";
 
 export default function PopupsPage() {
@@ -24,7 +27,8 @@ export default function PopupsPage() {
   const [newImageUrl, setNewImageUrl] = useState("https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=80");
   const [newStartAt, setNewStartAt] = useState("01/08/2026 00:00");
   const [newEndAt, setNewEndAt] = useState("31/08/2026 23:59");
-  const [newStatus, setNewStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  type PopupStatus = "ACTIVE" | "INACTIVE";
+  const [newStatus, setNewStatus] = useState<PopupStatus>("ACTIVE");
 
   const filteredPopups = popups.filter(
     (p) =>
@@ -80,25 +84,25 @@ export default function PopupsPage() {
             Quản lý popup thông báo khuyến mãi khi người dùng mở ứng dụng/website
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
         >
-          <Icon name="add" className="text-base" />
+          <Icon name="add" className="text-base mr-2" />
           Thêm Popup mới
-        </button>
+        </Button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-          <input
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm theo tiêu đề popup, chương trình voucher..."
-            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
+            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
           />
         </div>
         <div className="text-xs text-slate-500 font-semibold">
@@ -149,12 +153,13 @@ export default function PopupsPage() {
 
               {/* Nút Thao Tác */}
               <div className="flex items-center gap-2 shrink-0 border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 justify-end">
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => setPreviewPopup(popup)}
-                  className="px-3 py-1.5 bg-blue-50 text-blue-600 border border-blue-200 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs"
+                  className="px-3 py-1.5 text-blue-600 border-blue-200 hover:bg-blue-600 hover:text-white"
                 >
                   Xem trước
-                </button>
+                </Button>
 
                 {/* Nút Chỉnh sửa -> Dẫn sang trang riêng /content/popups/[id] */}
                 <Link
@@ -168,7 +173,7 @@ export default function PopupsPage() {
                 {/* Nút Xóa -> Mở Dialog */}
                 <button
                   onClick={() => setConfirmDeletePopup(popup)}
-                  className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs"
+                  className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs flex items-center justify-center"
                   title="Xóa popup"
                 >
                   <Icon name="delete" className="text-base block" />
@@ -191,21 +196,16 @@ export default function PopupsPage() {
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Tiêu đề Popup <span className="text-rose-500">*</span>
-                </label>
-                <input
+              <FormField label="Tiêu đề Popup" required>
+                <Input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Nhập tiêu đề popup thông báo..."
-                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Nội dung chi tiết</label>
+              <FormField label="Nội dung chi tiết">
                 <textarea
                   rows={3}
                   value={newContent}
@@ -213,12 +213,9 @@ export default function PopupsPage() {
                   placeholder="Nội dung mô tả ngắn..."
                   className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Chương trình Voucher liên kết <span className="text-rose-500">*</span>
-                </label>
+              <FormField label="Chương trình Voucher liên kết" required>
                 <select
                   value={newProgramId}
                   onChange={(e) => setNewProgramId(e.target.value)}
@@ -227,53 +224,44 @@ export default function PopupsPage() {
                   <option value="PRG-HG-50K">PRG-HG-50K - Voucher Highlands Coffee 50.000đ</option>
                   <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
                 </select>
-              </div>
+              </FormField>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Đường dẫn hình ảnh</label>
-                  <input
+                <FormField label="Đường dẫn hình ảnh">
+                  <Input
                     type="text"
                     value={newImageUrl}
                     onChange={(e) => setNewImageUrl(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Liên kết đính kèm</label>
-                  <input
+                </FormField>
+                <FormField label="Liên kết đính kèm">
+                  <Input
                     type="text"
                     value={newTargetUrl}
                     onChange={(e) => setNewTargetUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
+                </FormField>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Bắt đầu</label>
-                  <input
+                <FormField label="Bắt đầu">
+                  <Input
                     type="text"
                     value={newStartAt}
                     onChange={(e) => setNewStartAt(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Kết thúc</label>
-                  <input
+                </FormField>
+                <FormField label="Kết thúc">
+                  <Input
                     type="text"
                     value={newEndAt}
                     onChange={(e) => setNewEndAt(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Trạng thái</label>
+              <FormField label="Trạng thái">
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value as "ACTIVE" | "INACTIVE")}
@@ -282,22 +270,16 @@ export default function PopupsPage() {
                   <option value="ACTIVE">Đang bật</option>
                   <option value="INACTIVE">Tạm ẩn</option>
                 </select>
-              </div>
+              </FormField>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
-                onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
                 Hủy
-              </button>
-              <button
-                onClick={handleCreatePopup}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button onClick={handleCreatePopup} className="bg-blue-600 hover:bg-blue-700 text-white">
                 Thêm Popup
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -344,18 +326,12 @@ export default function PopupsPage() {
               Bạn có chắc chắn muốn xóa popup <span className="font-bold text-slate-800">"{confirmDeletePopup.title}"</span> khỏi hệ thống không?
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
-              <button
-                onClick={() => setConfirmDeletePopup(null)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-              >
+              <Button variant="ghost" onClick={() => setConfirmDeletePopup(null)}>
                 Hủy thao tác
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-              >
+              </Button>
+              <Button variant="destructive" onClick={handleConfirmDelete}>
                 Xác nhận xóa
-              </button>
+              </Button>
             </div>
           </div>
         </div>

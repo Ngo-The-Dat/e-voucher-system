@@ -10,7 +10,8 @@ import { Button } from "@/components/shared/ui/Button";
 
 export default function DashboardOverview() {
   // Global Timeframe State
-  const [timeframe, setTimeframe] = useState<"today" | "week" | "month" | "custom">("week");
+  type Timeframe = "today" | "week" | "month" | "custom";
+  const [timeframe, setTimeframe] = useState<Timeframe>("week");
   const [startDate, setStartDate] = useState<string>("2026-08-01");
   const [endDate, setEndDate] = useState<string>("2026-08-05");
 

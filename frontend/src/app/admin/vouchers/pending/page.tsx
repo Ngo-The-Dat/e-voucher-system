@@ -4,6 +4,10 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
+import StatusBadge from "@/components/shared/ui/StatusBadge";
+import Pagination from "@/components/shared/ui/Pagination";
 
 interface VoucherApprovalItem {
   requestId: string;
@@ -238,7 +242,7 @@ export default function PendingVouchersPage() {
                 <th className="py-4 px-5 text-right">THAO TÁC</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {pendingVouchers.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
@@ -277,18 +281,16 @@ export default function PendingVouchersPage() {
                         {item.issueQuantity.toLocaleString("vi-VN")} lượt
                       </td>
                       <td className="py-4 px-5">
-                        <span className="px-3 py-1 font-semibold text-xs rounded-full inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/70">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          Chờ xét duyệt
-                        </span>
+                        <StatusBadge status="pending" label="Chờ xét duyệt" />
                       </td>
                       <td className="py-4 px-5 text-right">
-                        <button
+                        <Button
+                          variant="outline"
                           onClick={() => setSelectedVoucher(item)}
-                          className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block"
+                          className="px-3.5 py-1.5 bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white text-xs h-auto"
                         >
                           Xem & Duyệt
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   );
@@ -299,38 +301,14 @@ export default function PendingVouchersPage() {
         </div>
 
         {/* Footer & Phân trang */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            Hiển thị <span className="font-bold text-slate-900">1</span> đến{" "}
-            <span className="font-bold text-slate-900">{pendingVouchers.length}</span> trong{" "}
-            <span className="font-bold text-slate-900">{pendingVouchers.length}</span> hồ sơ chờ duyệt
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 disabled:opacity-40 transition"
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition ${
-                currentPage === 1
-                  ? "border border-blue-500 bg-blue-50/50 text-blue-600"
-                  : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition"
-            >
-              &gt;
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(pendingVouchers.length / 10) || 1}
+          totalItems={pendingVouchers.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+          itemName="hồ sơ chờ duyệt"
+        />
       </div>
 
       {/* Modal Chi Tiết & Duyệt Voucher */}
@@ -343,12 +321,13 @@ export default function PendingVouchersPage() {
                 <h3 className="font-bold text-slate-900 text-lg">Chi tiết Yêu cầu Duyệt Voucher</h3>
                 <p className="text-xs text-slate-500">Mã chương trình: {selectedVoucher.programCode}</p>
               </div>
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setSelectedVoucher(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
+                className="p-1 text-slate-400 hover:text-slate-600"
               >
                 <Icon name="close" />
-              </button>
+              </Button>
             </div>
 
             {/* Modal Body */}
@@ -477,26 +456,27 @@ export default function PendingVouchersPage() {
 
             {/* Modal Footer */}
             <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-3">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setSelectedVoucher(null)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-100 transition"
               >
                 Đóng
-              </button>
+              </Button>
               {selectedVoucher.approvalStatus === "PENDING" && (
                 <div className="flex items-center gap-2">
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => setIsRejectModalOpen(true)}
-                    className="px-4 py-2 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white font-bold text-xs rounded-xl transition shadow-2xs"
+                    className="bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white"
                   >
                     Từ chối duyệt
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     onClick={() => handleApprove(selectedVoucher)}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white"
                   >
                     Phê duyệt công bố bán
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -514,30 +494,29 @@ export default function PendingVouchersPage() {
               <span className="font-bold text-slate-800">{selectedVoucher.partnerName}</span>.
             </p>
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Lý do từ chối (Lưu vào Nhật ký & Yêu cầu duyệt)
-              </label>
-              <textarea
-                rows={4}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Ví dụ: Giá bán lớn hơn giá gốc, hoặc thông tin thời gian không chính xác..."
-                className="w-full p-3 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
-              />
+              <FormField label="Lý do từ chối (Lưu vào Nhật ký & Yêu cầu duyệt)">
+                <textarea
+                  rows={4}
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  placeholder="Ví dụ: Giá bán lớn hơn giá gốc, hoặc thông tin thời gian không chính xác..."
+                  className="w-full p-3 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:border-rose-500 focus:ring-1 focus:ring-rose-500"
+                />
+              </FormField>
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
-              <button
+              <Button
+                variant="outline"
                 onClick={() => setIsRejectModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
               >
                 Hủy bỏ
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleConfirmReject}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+                className="bg-rose-600 hover:bg-rose-700 text-white"
               >
                 Xác nhận từ chối
-              </button>
+              </Button>
             </div>
           </div>
         </div>

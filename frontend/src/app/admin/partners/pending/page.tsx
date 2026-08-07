@@ -4,6 +4,11 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/components/shared/ui/Button";
+import { Input } from "@/components/shared/ui/Input";
+import FormField from "@/components/shared/ui/FormField";
+import StatusBadge from "@/components/shared/ui/StatusBadge";
+import Pagination from "@/components/shared/ui/Pagination";
 
 interface PendingPartner {
   id: string;
@@ -123,22 +128,21 @@ export default function PendingPartnersPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Tên doanh nghiệp Search */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">
-              Tên doanh nghiệp
-            </label>
-            <div className="relative">
-              <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-              <input
-                type="text"
-                placeholder="Nhập tên doanh nghiệp..."
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[38px] pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              />
-            </div>
+            <FormField label="Tên doanh nghiệp">
+              <div className="relative">
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+                <Input
+                  type="text"
+                  placeholder="Nhập tên doanh nghiệp..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
+                />
+              </div>
+            </FormField>
           </div>
 
           {/* Ngày đăng ký Filter */}
@@ -164,24 +168,23 @@ export default function PendingPartnersPage() {
 
           {/* Tình trạng Filter */}
           <div>
-            <label className="block text-xs font-bold text-slate-500 mb-1.5">
-              Tình trạng
-            </label>
-            <div className="relative">
-              <select
-                value={statusFilter}
-                onChange={(e) => {
-                  setStatusFilter(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-              >
-                <option value="ALL">Tất cả</option>
-                <option value="Chờ duyệt">Chờ duyệt</option>
-                <option value="Từ chối">Từ chối</option>
-              </select>
-              <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
-            </div>
+            <FormField label="Tình trạng">
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="Chờ duyệt">Chờ duyệt</option>
+                  <option value="Từ chối">Từ chối</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
         </div>
       </div>
@@ -192,15 +195,15 @@ export default function PendingPartnersPage() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-50/80 text-slate-500 text-xs font-bold uppercase tracking-wider border-b border-slate-200/80">
-                <th className="py-4 px-6">TÊN DOANH NGHIỆP</th>
-                <th className="py-4 px-6">ĐẠI DIỆN</th>
-                <th className="py-4 px-6">CHI NHÁNH</th>
-                <th className="py-4 px-6">NGÀY ĐĂNG KÝ</th>
-                <th className="py-4 px-6">TÌNH TRẠNG</th>
-                <th className="py-4 px-6 text-right">THAO TÁC</th>
+                <th className="py-4 px-5">TÊN DOANH NGHIỆP</th>
+                <th className="py-4 px-5">ĐẠI DIỆN</th>
+                <th className="py-4 px-5">CHI NHÁNH</th>
+                <th className="py-4 px-5">NGÀY ĐĂNG KÝ</th>
+                <th className="py-4 px-5">TÌNH TRẠNG</th>
+                <th className="py-4 px-5 text-right">THAO TÁC</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {filteredPartners.length === 0 ? (
                 <tr>
                   <td
@@ -217,18 +220,18 @@ export default function PendingPartnersPage() {
                     key={partner.id}
                     className="hover:bg-slate-50/60 transition"
                   >
-                    <td className="py-4 px-6 font-bold text-slate-900">
+                    <td className="py-4 px-5 font-bold text-slate-900">
                       {partner.companyName}
                     </td>
-                    <td className="py-4 px-6 text-slate-800 font-medium">
+                    <td className="py-4 px-5 text-slate-800 font-medium">
                       {partner.representative}
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-5">
                       <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs inline-block min-w-[28px] text-center">
                         {partner.branchesCount}
                       </span>
                     </td>
-                    <td className="py-4 px-6">
+                    <td className="py-4 px-5">
                       <div className="font-bold text-slate-900 text-xs sm:text-sm">
                         {partner.registrationDate}
                       </div>
@@ -236,27 +239,10 @@ export default function PendingPartnersPage() {
                         {partner.registrationTime}
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <span
-                        className={`px-3 py-1 font-semibold text-xs rounded-full inline-flex items-center gap-1.5 ${partner.status === "Chờ duyệt"
-                          ? "bg-amber-50 text-amber-600 border border-amber-200/70"
-                          : partner.status === "Đã duyệt"
-                            ? "bg-emerald-50 text-emerald-600 border border-emerald-200/70"
-                            : "bg-rose-50 text-rose-600 border border-rose-200/70"
-                          }`}
-                      >
-                        <span
-                          className={`w-1.5 h-1.5 rounded-full ${partner.status === "Chờ duyệt"
-                            ? "bg-amber-500"
-                            : partner.status === "Đã duyệt"
-                              ? "bg-emerald-500"
-                              : "bg-rose-500"
-                            }`}
-                        />
-                        {partner.status}
-                      </span>
+                    <td className="py-4 px-5">
+                      <StatusBadge status={partner.status} />
                     </td>
-                    <td className="py-4 px-6 text-right">
+                    <td className="py-4 px-5 text-right">
                       <Link
                         href={`/admin/partners/pending/${partner.id}`}
                         className="px-4 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block"
@@ -272,41 +258,14 @@ export default function PendingPartnersPage() {
         </div>
 
         {/* Footer & Pagination */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            Hiển thị <span className="font-bold text-slate-900">1</span> đến{" "}
-            <span className="font-bold text-slate-900">
-              {filteredPartners.length}
-            </span>{" "}
-            trong{" "}
-            <span className="font-bold text-slate-900">{partners.length}</span>{" "}
-            hồ sơ
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 disabled:opacity-40 transition"
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition ${currentPage === 1
-                ? "border border-blue-500 bg-blue-50/50 text-blue-600"
-                : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-                }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition"
-            >
-              &gt;
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredPartners.length / 10) || 1}
+          totalItems={filteredPartners.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+          itemName="hồ sơ"
+        />
       </div>
     </div>
   );
@@ -466,14 +425,15 @@ function DateRangePicker({
                 { label: "Tháng này", key: "THIS_MONTH" },
                 { label: "Tháng trước", key: "LAST_MONTH" },
               ].map((item) => (
-                <button
+                <Button
                   key={item.key}
+                  variant="outline"
                   type="button"
                   onClick={() => handleApplyPreset(item.key)}
-                  className="px-2.5 py-1 text-xs font-semibold rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 transition"
+                  className="px-2.5 py-1 text-xs text-slate-600 bg-slate-50 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-auto"
                 >
                   {item.label}
-                </button>
+                </Button>
               ))}
             </div>
           </div>
@@ -487,46 +447,47 @@ function DateRangePicker({
                 <label className="block text-[11px] font-medium text-slate-500 mb-1">
                   Từ ngày
                 </label>
-                <input
+                <Input
                   type="date"
                   value={startDate}
                   max={endDate || undefined}
                   onChange={(e) => onStartDateChange(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
                 />
               </div>
               <div>
                 <label className="block text-[11px] font-medium text-slate-500 mb-1">
                   Đến ngày
                 </label>
-                <input
+                <Input
                   type="date"
                   value={endDate}
                   min={startDate || undefined}
                   onChange={(e) => onEndDateChange(e.target.value)}
-                  className="w-full px-2.5 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-800 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition"
+                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
                 />
               </div>
             </div>
           </div>
 
           <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
-            <button
+            <Button
+              variant="ghost"
               type="button"
               onClick={() => {
                 onReset();
               }}
-              className="text-xs font-semibold text-slate-400 hover:text-rose-500 transition"
+              className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto"
             >
               Xóa chọn
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition shadow-xs"
+              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs h-auto"
             >
               Áp dụng
-            </button>
+            </Button>
           </div>
         </div>
       )}

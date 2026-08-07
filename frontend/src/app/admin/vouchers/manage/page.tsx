@@ -4,6 +4,10 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 import Link from "next/link";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import StatusBadge from "@/components/shared/ui/StatusBadge";
+import Pagination from "@/components/shared/ui/Pagination";
 
 interface ManagedVoucherItem {
   programCode: string;
@@ -20,7 +24,8 @@ interface ManagedVoucherItem {
 
 export default function ManageVouchersPage() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusTab, setStatusTab] = useState<"ALL" | "PUBLISHED" | "HIDDEN" | "ENDED">("ALL");
+  type StatusTab = "ALL" | "PUBLISHED" | "HIDDEN" | "ENDED";
+  const [statusTab, setStatusTab] = useState<StatusTab>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [vouchers, setVouchers] = useState<ManagedVoucherItem[]>([
@@ -168,8 +173,8 @@ export default function ManageVouchersPage() {
         {/* Search Input & Quick Controls */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="relative flex-1 max-w-md">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-            <input
+            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+            <Input
               type="text"
               placeholder="Nhập tên chương trình, mã voucher hoặc đối tác..."
               value={searchQuery}
@@ -177,7 +182,7 @@ export default function ManageVouchersPage() {
                 setSearchQuery(e.target.value);
                 setCurrentPage(1);
               }}
-              className="w-full h-[38px] pl-9 pr-3 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
+              className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
             />
           </div>
 
@@ -215,27 +220,24 @@ export default function ManageVouchersPage() {
               count: vouchers.filter((v) => v.displayStatus === "ENDED").length,
             },
           ].map((tab) => (
-            <button
+            <Button
               key={tab.key}
+              variant={statusTab === tab.key ? "default" : "outline"}
               onClick={() => {
                 setStatusTab(tab.key as any);
                 setCurrentPage(1);
               }}
-              className={`px-3.5 py-1.5 text-xs font-bold rounded-xl transition flex items-center gap-2 shrink-0 ${
-                statusTab === tab.key
-                  ? "bg-blue-600 text-white shadow-2xs"
-                  : "bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200"
-              }`}
+              className={`text-xs h-auto py-1.5 px-3.5 ${statusTab === tab.key ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
             >
               <span>{tab.label}</span>
               <span
-                className={`px-2 py-0.5 text-[10px] rounded-full ${
+                className={`px-2 py-0.5 text-[10px] rounded-full ml-2 ${
                   statusTab === tab.key ? "bg-white/20 text-white" : "bg-slate-200 text-slate-700"
                 }`}
               >
                 {tab.count}
               </span>
-            </button>
+            </Button>
           ))}
         </div>
       </div>
@@ -256,7 +258,7 @@ export default function ManageVouchersPage() {
                 <th className="py-4 px-5 text-right">THAO TÁC</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {filteredVouchers.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
@@ -309,50 +311,31 @@ export default function ManageVouchersPage() {
                         <div className="text-[11px] text-slate-400">Từ {formatDate(item.startDateSell)}</div>
                       </td>
                       <td className="py-4 px-5">
-                        <span
-                          className={`px-3 py-1 font-semibold text-xs rounded-full inline-flex items-center gap-1.5 ${
-                            item.displayStatus === "PUBLISHED"
-                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                              : item.displayStatus === "HIDDEN"
-                              ? "bg-amber-50 text-amber-700 border border-amber-200"
-                              : "bg-slate-100 text-slate-700 border border-slate-200"
-                          }`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              item.displayStatus === "PUBLISHED"
-                                ? "bg-emerald-500"
-                                : item.displayStatus === "HIDDEN"
-                                ? "bg-amber-500"
-                                : "bg-slate-500"
-                            }`}
-                          />
-                          {item.displayStatus === "PUBLISHED"
-                            ? "Đang bán"
-                            : item.displayStatus === "HIDDEN"
-                            ? "Tạm ngưng"
-                            : "Ngừng bán"}
-                        </span>
+                        <StatusBadge
+                          status={item.displayStatus === "PUBLISHED" ? "active" : item.displayStatus === "HIDDEN" ? "pending" : "ended"}
+                          label={item.displayStatus === "PUBLISHED" ? "Đang bán" : item.displayStatus === "HIDDEN" ? "Tạm ngưng" : "Ngừng bán"}
+                        />
                       </td>
                       <td className="py-4 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Nút Tạm ngưng */}
                           {item.displayStatus === "PUBLISHED" && (
-                            <button
+                            <Button
+                              variant="outline"
                               onClick={() => handleUpdateStatus(item.programCode, "HIDDEN")}
-                              className="px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-100 font-semibold text-xs rounded-xl transition shadow-2xs"
+                              className="px-3 py-1.5 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 text-xs h-auto"
                               title="Tạm ngưng hiển thị bán trên sàn"
                             >
                               Tạm ngưng
-                            </button>
+                            </Button>
                           )}
 
                           {/* Nút Khôi phục về Đang bán */}
                           {item.displayStatus !== "PUBLISHED" && (
-                            <button
+                            <Button
                               disabled={isRuleTriggered}
                               onClick={() => handleUpdateStatus(item.programCode, "PUBLISHED")}
-                              className={`px-3 py-1.5 font-semibold text-xs rounded-xl transition shadow-2xs ${
+                              className={`px-3 py-1.5 text-xs h-auto ${
                                 isRuleTriggered
                                   ? "bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed"
                                   : "bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white"
@@ -364,18 +347,19 @@ export default function ManageVouchersPage() {
                               }
                             >
                               Khôi phục
-                            </button>
+                            </Button>
                           )}
 
                           {/* Nút Ngừng bán */}
                           {item.displayStatus !== "ENDED" && (
-                            <button
+                            <Button
+                              variant="outline"
                               onClick={() => handleUpdateStatus(item.programCode, "ENDED")}
-                              className="px-3 py-1.5 bg-slate-100 border border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 font-semibold text-xs rounded-xl transition"
+                              className="px-3 py-1.5 bg-slate-100 border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-xs h-auto"
                               title="Ngừng bán chương trình voucher này"
                             >
                               Ngừng bán
-                            </button>
+                            </Button>
                           )}
                         </div>
                       </td>
@@ -388,38 +372,14 @@ export default function ManageVouchersPage() {
         </div>
 
         {/* Footer & Phân trang */}
-        <div className="px-6 py-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <div>
-            Hiển thị <span className="font-bold text-slate-900">1</span> đến{" "}
-            <span className="font-bold text-slate-900">{filteredVouchers.length}</span> trong{" "}
-            <span className="font-bold text-slate-900">{vouchers.length}</span> chương trình voucher
-          </div>
-          <div className="flex items-center gap-1.5">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 disabled:opacity-40 transition"
-            >
-              &lt;
-            </button>
-            <button
-              onClick={() => setCurrentPage(1)}
-              className={`w-8 h-8 rounded-lg font-bold flex items-center justify-center transition ${
-                currentPage === 1
-                  ? "border border-blue-500 bg-blue-50/50 text-blue-600"
-                  : "border border-slate-200 text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              1
-            </button>
-            <button
-              onClick={() => setCurrentPage((p) => p + 1)}
-              className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-700 hover:border-slate-300 transition"
-            >
-              &gt;
-            </button>
-          </div>
-        </div>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={Math.ceil(filteredVouchers.length / 10) || 1}
+          totalItems={filteredVouchers.length}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+          itemName="chương trình voucher"
+        />
       </div>
     </div>
   );

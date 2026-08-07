@@ -17,7 +17,8 @@ export default function EditCategoryPage() {
 
   const [categoryName, setCategoryName] = useState(initialCat.categoryName);
   const [description, setDescription] = useState(initialCat.description);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(initialCat.status);
+  type CatStatus = "ACTIVE" | "INACTIVE";
+  const [status, setStatus] = useState<CatStatus>(initialCat.status);
   const [vouchers, setVouchers] = useState<CategoryVoucher[]>(initialCat.vouchers);
 
   // States cho Khung Card 2 (Tìm kiếm voucher & Modal thêm voucher)

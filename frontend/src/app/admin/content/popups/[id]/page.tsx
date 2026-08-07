@@ -21,7 +21,8 @@ export default function EditPopupPage() {
   const [targetUrl, setTargetUrl] = useState(initialPopup.targetUrl);
   const [startAt, setStartAt] = useState(initialPopup.startAt);
   const [endAt, setEndAt] = useState(initialPopup.endAt);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(initialPopup.status);
+  type PopupStatus = "ACTIVE" | "INACTIVE";
+  const [status, setStatus] = useState<PopupStatus>(initialPopup.status);
 
   const handleSavePopupChanges = () => {
     if (!title.trim()) {

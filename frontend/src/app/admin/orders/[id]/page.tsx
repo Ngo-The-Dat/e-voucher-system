@@ -251,7 +251,7 @@ export default function OrderDetailPage() {
                 <th className="py-3.5 px-6 text-right">THÀNH TIỀN (LINE_TOTAL)</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 text-sm">
+            <tbody className="divide-y divide-slate-100 text-base">
               {order.orderItems.map((item, idx) => (
                 <tr key={idx} className="hover:bg-slate-50/60 transition">
                   <td className="py-4 px-6">

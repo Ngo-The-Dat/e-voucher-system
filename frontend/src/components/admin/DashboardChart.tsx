@@ -10,7 +10,8 @@ interface DashboardChartProps {
 }
 
 export default function DashboardChart({ hasData, setHasData, chartData }: DashboardChartProps) {
-  const [chartTab, setChartTab] = useState<"voucher" | "revenue">("voucher");
+  type ChartTab = "voucher" | "revenue";
+  const [chartTab, setChartTab] = useState<ChartTab>("voucher");
 
   return (
     <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">

@@ -15,10 +15,12 @@ export default function EditArticlePage() {
   const initialArticle = INITIAL_ARTICLES.find((a) => a.contentId === contentId) || INITIAL_ARTICLES[0];
 
   const [title, setTitle] = useState(initialArticle.title);
-  const [contentType, setContentType] = useState<"POLICY" | "ARTICLE">(initialArticle.contentType);
+  type ContentType = "POLICY" | "ARTICLE";
+  const [contentType, setContentType] = useState<ContentType>(initialArticle.contentType);
   const [programId, setProgramId] = useState(initialArticle.programId);
   const [body, setBody] = useState(initialArticle.body);
-  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">(initialArticle.status);
+  type ArticleStatus = "ACTIVE" | "INACTIVE";
+  const [status, setStatus] = useState<ArticleStatus>(initialArticle.status);
 
   const handleSaveArticleChanges = () => {
     if (!title.trim() || !body.trim()) {

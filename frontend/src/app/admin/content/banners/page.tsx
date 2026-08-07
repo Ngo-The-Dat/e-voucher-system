@@ -5,6 +5,9 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import ContentSubNavbar from "../SubNavbar";
+import { Input } from "@/components/shared/ui/Input";
+import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import { INITIAL_BANNERS, BannerData } from "./data";
 
 export default function BannersPage() {
@@ -20,7 +23,8 @@ export default function BannersPage() {
   const [newDisplayPosition, setNewDisplayPosition] = useState("Trượt trang chủ đầu trang");
   const [newDisplayFrom, setNewDisplayFrom] = useState("01/08/2026");
   const [newDisplayTo, setNewDisplayTo] = useState("31/08/2026");
-  const [newStatus, setNewStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
+  type BannerStatus = "ACTIVE" | "INACTIVE";
+  const [newStatus, setNewStatus] = useState<BannerStatus>("ACTIVE");
 
   // Confirm Delete Dialog
   const [confirmDeleteBanner, setConfirmDeleteBanner] = useState<BannerData | null>(null);
@@ -83,25 +87,25 @@ export default function BannersPage() {
             Quản lý vị trí hiển thị, thời gian chạy và chương trình voucher liên kết
           </p>
         </div>
-        <button
+        <Button
           onClick={() => setIsAddModalOpen(true)}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
         >
-          <Icon name="add_photo_alternate" className="text-base" />
+          <Icon name="add_photo_alternate" className="text-base mr-2" />
           Thêm Banner mới
-        </button>
+        </Button>
       </div>
 
       {/* Filter & Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative flex-1">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg" />
-          <input
+          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+          <Input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm banner theo tiêu đề, chương trình liên kết..."
-            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
           />
         </div>
         <div className="text-xs text-slate-500 font-semibold">
@@ -190,23 +194,16 @@ export default function BannersPage() {
             </div>
 
             <div className="space-y-4 text-xs sm:text-sm">
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Tiêu đề Banner <span className="text-rose-500">*</span>
-                </label>
-                <input
+              <FormField label="Tiêu đề Banner" required>
+                <Input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
                   placeholder="Nhập tiêu đề banner..."
-                  className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
                 />
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">
-                  Chương trình Voucher liên kết <span className="text-rose-500">*</span>
-                </label>
+              <FormField label="Chương trình Voucher liên kết" required>
                 <select
                   value={newProgramId}
                   onChange={(e) => setNewProgramId(e.target.value)}
@@ -216,32 +213,27 @@ export default function BannersPage() {
                   <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
                   <option value="PRG-KC-200K">PRG-KC-200K - Buffet Lẩu Kichi Kichi Giảm 20%</option>
                 </select>
-              </div>
+              </FormField>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Đường dẫn hình ảnh</label>
-                  <input
+                <FormField label="Đường dẫn hình ảnh">
+                  <Input
                     type="text"
                     value={newImageUrl}
                     onChange={(e) => setNewImageUrl(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
                   />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Đường dẫn liên kết</label>
-                  <input
+                </FormField>
+                <FormField label="Đường dẫn liên kết">
+                  <Input
                     type="text"
                     value={newTargetUrl}
                     onChange={(e) => setNewTargetUrl(e.target.value)}
                     placeholder="https://..."
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs focus:outline-none focus:border-blue-500"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Vị trí hiển thị</label>
+              <FormField label="Vị trí hiển thị">
                 <select
                   value={newDisplayPosition}
                   onChange={(e) => setNewDisplayPosition(e.target.value)}
@@ -251,31 +243,26 @@ export default function BannersPage() {
                   <option value="Banner thanh bên trái">Banner thanh bên trái</option>
                   <option value="Banner Khuyến Mãi Giữa Trang">Banner Khuyến Mãi Giữa Trang</option>
                 </select>
-              </div>
+              </FormField>
 
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Bắt đầu</label>
-                  <input
+                <FormField label="Bắt đầu">
+                  <Input
                     type="text"
                     value={newDisplayFrom}
                     onChange={(e) => setNewDisplayFrom(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Kết thúc</label>
-                  <input
+                </FormField>
+                <FormField label="Kết thúc">
+                  <Input
                     type="text"
                     value={newDisplayTo}
                     onChange={(e) => setNewDisplayTo(e.target.value)}
-                    className="w-full p-2.5 border border-slate-200 rounded-xl text-xs"
                   />
-                </div>
+                </FormField>
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 mb-1">Trạng thái</label>
+              <FormField label="Trạng thái">
                 <select
                   value={newStatus}
                   onChange={(e) => setNewStatus(e.target.value as "ACTIVE" | "INACTIVE")}
@@ -284,22 +271,22 @@ export default function BannersPage() {
                   <option value="ACTIVE">Đang chạy</option>
                   <option value="INACTIVE">Tạm ẩn</option>
                 </select>
-              </div>
+              </FormField>
             </div>
 
             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setIsAddModalOpen(false)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
               >
                 Hủy
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateBanner}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 Thêm Banner
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -317,18 +304,18 @@ export default function BannersPage() {
               Bạn có chắc chắn muốn xóa banner <span className="font-bold text-slate-800">"{confirmDeleteBanner.title}"</span> khỏi hệ thống không? Thao tác này không thể hoàn tác.
             </p>
             <div className="flex items-center justify-center gap-3 pt-2">
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => setConfirmDeleteBanner(null)}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
               >
                 Hủy thao tác
-              </button>
-              <button
+              </Button>
+              <Button
+                variant="destructive"
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
               >
                 Xác nhận xóa
-              </button>
+              </Button>
             </div>
           </div>
         </div>
