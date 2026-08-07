@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import TopAppBar from "@/components/layout/TopAppBar";
-import Icon from "@/components/ui/Icon";
-import StatusBadge from "@/components/ui/StatusBadge";
-import Toast from "@/components/ui/Toast";
-import ValidationErrorBanner from "@/components/ui/ValidationErrorBanner";
-import BranchModal from "@/components/profile/BranchModal";
-import LegalInfoSection from "@/components/profile/LegalInfoSection";
-import RepresentativeSection from "@/components/profile/RepresentativeSection";
-import BranchesSection from "@/components/profile/BranchesSection";
+import TopAppBar from "@/components/partner/layout/TopAppBar";
+import Icon from "@/components/shared/ui/Icon";
+import StatusBadge from "@/components/shared/ui/StatusBadge";
+import Toast from "@/components/shared/ui/Toast";
+import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
+import BranchModal from "@/components/partner/profile/BranchModal";
+import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
+import RepresentativeSection from "@/components/partner/profile/RepresentativeSection";
+import BranchesSection from "@/components/partner/profile/BranchesSection";
 import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileValidation } from "@/hooks/useProfileValidation";

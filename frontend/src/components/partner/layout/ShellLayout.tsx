@@ -1,6 +1,6 @@
 "use client";
 
-import SideNavBar from "@/components/layout/SideNavBar";
+import SideNavBar from "@/components/partner/layout/SideNavBar";
 import { useState } from "react";
 
 export default function ShellLayout({ children }: { children: React.ReactNode }) {

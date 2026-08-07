@@ -1,8 +1,8 @@
 import { Suspense } from "react";
 import { Inter } from "next/font/google";
 import { AppProvider } from "@/context/AppContext";
-import Header from "@/components/Header";
-import Footer from "@/components/Footer";
+import Header from "@/components/customer/layout/Header";
+import Footer from "@/components/customer/layout/Footer";
 
 const inter = Inter({
   variable: "--font-sans",

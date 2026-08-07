@@ -1,5 +1,5 @@
-import Icon from "@/components/ui/Icon";
-import FormField, { getInputClass } from "@/components/ui/FormField";
+import Icon from "@/components/shared/ui/Icon";
+import FormField, { getInputClass } from "@/components/shared/ui/FormField";
 import { Branch } from "@/lib/types/profile";
 import { CategoryOption, VoucherFormErrors } from "@/lib/types/voucher";
 

@@ -15,6 +15,7 @@ import {
   ShieldCheck,
   ShoppingCart
 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 export default function CartPage() {
   const router = useRouter();
@@ -85,12 +86,7 @@ export default function CartPage() {
   const discountAmount = (subtotal * discountPercent) / 100;
   const total = subtotal - discountAmount;
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND"
-    }).format(amount);
-  };
+
 
   const selectAllChecked = cart.length > 0 && cart.every((item) => selectedItems[item.voucher.id]);
 

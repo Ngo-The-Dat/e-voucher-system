@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import Icon from "@/components/ui/Icon";
-import RegisterStep1Form from "@/components/auth/RegisterStep1Form";
-import RegisterStep2Otp from "@/components/auth/RegisterStep2Otp";
-import RegisterStep3Password from "@/components/auth/RegisterStep3Password";
+import Icon from "@/components/shared/ui/Icon";
+import RegisterStep1Form from "@/components/partner/auth/RegisterStep1Form";
+import RegisterStep2Otp from "@/components/partner/auth/RegisterStep2Otp";
+import RegisterStep3Password from "@/components/partner/auth/RegisterStep3Password";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
 
 type FormData = {

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import Icon from "@/components/ui/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 const navItems = [
   { href: "/partner", label: "Tổng quan", icon: "dashboard" },

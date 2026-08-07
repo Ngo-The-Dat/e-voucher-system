@@ -1,8 +1,8 @@
 "use client";
 
-import TopAppBar from "@/components/layout/TopAppBar";
-import VoucherStatusBadge from "@/components/ui/VoucherStatusBadge";
-import Icon from "@/components/ui/Icon";
+import TopAppBar from "@/components/partner/layout/TopAppBar";
+import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
+import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useVouchers } from "@/hooks/useVouchers";

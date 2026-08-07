@@ -4,7 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import VoucherCard from "@/components/VoucherCard";
+import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
   AlertTriangle,
   ChevronRight,
@@ -25,6 +25,7 @@ import {
   Info,
   MapPin
 } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -68,24 +69,15 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     .filter((v) => v.category === voucher.category && v.id !== voucher.id)
     .slice(0, 4);
 
-  const formattedPrice = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND"
-  }).format(voucher.price);
+  const formattedPrice = formatCurrency(voucher.price);
 
   const formattedOriginalPrice = voucher.originalPrice
-    ? new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND"
-      }).format(voucher.originalPrice)
+    ? formatCurrency(voucher.originalPrice)
     : null;
 
   const savings = voucher.originalPrice ? voucher.originalPrice - voucher.price : 0;
   const formattedSavings = savings
-    ? new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND"
-      }).format(savings)
+    ? formatCurrency(savings)
     : null;
 
   const handleAddToCart = () => {

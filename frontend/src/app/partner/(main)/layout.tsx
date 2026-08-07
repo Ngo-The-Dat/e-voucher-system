@@ -1,4 +1,4 @@
-import ShellLayout from "@/components/layout/ShellLayout";
+import ShellLayout from "@/components/partner/layout/ShellLayout";
 
 export default function MainLayout({
   children,

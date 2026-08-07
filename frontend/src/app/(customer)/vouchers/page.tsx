@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useApp } from "@/context/AppContext";
-import VoucherCard from "@/components/VoucherCard";
+import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
   ChevronRight,
   Search,

@@ -1,7 +1,7 @@
 "use client";
 
-import TopAppBar from "@/components/layout/TopAppBar";
-import Icon from "@/components/ui/Icon";
+import TopAppBar from "@/components/partner/layout/TopAppBar";
+import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import { initialCategories } from "@/lib/mock-vouchers";
 import { VoucherItem } from "@/lib/types/voucher";
@@ -11,7 +11,7 @@ import {
   CheckResultInvalid,
   CheckResultValid,
   CheckResultRedeemed,
-} from "@/components/voucher/CheckResultStates";
+} from "@/components/partner/voucher/CheckResultStates";
 
 type CheckType = "code" | "qr";
 

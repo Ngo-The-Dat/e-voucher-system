@@ -1,15 +1,15 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import TopAppBar from "@/components/layout/TopAppBar";
-import Icon from "@/components/ui/Icon";
-import Toast from "@/components/ui/Toast";
-import ValidationErrorBanner from "@/components/ui/ValidationErrorBanner";
+import TopAppBar from "@/components/partner/layout/TopAppBar";
+import Icon from "@/components/shared/ui/Icon";
+import Toast from "@/components/shared/ui/Toast";
+import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import VoucherGeneralSection from "@/components/voucher/VoucherGeneralSection";
-import VoucherPricingSection from "@/components/voucher/VoucherPricingSection";
-import VoucherDateSection from "@/components/voucher/VoucherDateSection";
+import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSection";
+import VoucherPricingSection from "@/components/partner/voucher/VoucherPricingSection";
+import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection";
 import { createVoucher, initialCategories } from "@/lib/mock-vouchers";
 import { getStoredPartnerProfile } from "@/lib/mock-profile";
 import { VoucherFormErrors } from "@/lib/types/voucher";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Icon from "@/components/ui/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 interface TopAppBarProps {
   title?: string;

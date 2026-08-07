@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
-import MyVoucherCard from "@/components/MyVoucherCard";
+import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
 export default function MyVouchersPage() {

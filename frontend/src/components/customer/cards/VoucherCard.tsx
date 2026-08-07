@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Voucher } from "@/data/mockData";
 import { Star } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
 
 interface VoucherCardProps {
   voucher: Voucher;
@@ -8,16 +9,10 @@ interface VoucherCardProps {
 }
 
 export default function VoucherCard({ voucher, variant = "standard" }: VoucherCardProps) {
-  const formattedPrice = new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND"
-  }).format(voucher.price);
+  const formattedPrice = formatCurrency(voucher.price);
 
   const formattedOriginalPrice = voucher.originalPrice
-    ? new Intl.NumberFormat("vi-VN", {
-        style: "currency",
-        currency: "VND"
-      }).format(voucher.originalPrice)
+    ? formatCurrency(voucher.originalPrice)
     : null;
 
   if (variant === "grid") {

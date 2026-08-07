@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import Icon from "@/components/ui/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 interface RegisterStep3PasswordProps {
   password: string;

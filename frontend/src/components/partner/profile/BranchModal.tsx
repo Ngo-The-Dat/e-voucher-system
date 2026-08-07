@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Branch } from "@/lib/types/profile";
-import Icon from "@/components/ui/Icon";
+import Icon from "@/components/shared/ui/Icon";
 
 interface BranchModalProps {
   isOpen: boolean;
