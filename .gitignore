@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build and dist
+dist/
+build/
+.next/
+out/
+
+# Environment files
+.env
+.env*.local
+
+# Logs
+*.log
+
+# SRS documentation - track only main.pdf
+doc/SRS/*
+!doc/SRS/main.pdf
+.vscode/
+doc/report.md
+
+# OS / IDE
+.DS_Store
+.idea/
+*.swp
+*.swo
+
+# Frontend deployment
+frontend/build-package.sh
+frontend/deploy-vps.sh
+frontend/deploy-frontend/
+frontend/frontend-release.tar.gz

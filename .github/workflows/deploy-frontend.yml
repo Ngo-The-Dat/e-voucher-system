@@ -1,0 +1,94 @@
+name: Deploy Frontend to VPS
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/deploy-frontend.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.16.0'
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies & Build
+        working-directory: ./frontend
+        run: |
+          npm ci
+          npm run build
+
+      - name: Package Build
+        working-directory: ./frontend
+        run: |
+          rm -rf deploy-frontend frontend-release.tar.gz
+          mkdir -p deploy-frontend/.next
+          cp -a .next/standalone/. deploy-frontend/
+          cp -a .next/static deploy-frontend/.next/static
+          tar -czf frontend-release.tar.gz -C deploy-frontend .
+
+      - name: Upload to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "frontend/frontend-release.tar.gz"
+          target: "/tmp/"
+          strip_components: 1
+
+      - name: Deploy on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -euo pipefail
+            SERVICE="webapp-frontend"
+            REMOTE_DIR="/srv/webapp/frontend"
+            REMOTE_ARCHIVE="/tmp/frontend-release.tar.gz"
+            DOMAIN="https://vouchify.duckdns.org"
+
+            echo "Stopping frontend service..."
+            sudo systemctl stop "$SERVICE"
+
+            echo "Removing old deployment..."
+            sudo find "$REMOTE_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+
+            echo "Extracting new deployment..."
+            sudo tar -xzf "$REMOTE_ARCHIVE" -C "$REMOTE_DIR"
+
+            echo "Fixing permissions..."
+            sudo chown -R webapp:webapp "$REMOTE_DIR"
+
+            echo "Starting frontend service..."
+            sudo systemctl start "$SERVICE"
+
+            echo "Waiting for frontend..."
+            sleep 2
+
+            echo "Checking systemd service..."
+            sudo systemctl is-active --quiet "$SERVICE"
+
+            echo "Checking local frontend..."
+            curl --fail --silent --show-error http://127.0.0.1:3000/ >/dev/null
+
+            echo "Removing uploaded archive..."
+            rm -f "$REMOTE_ARCHIVE"
+
+            echo "==> Checking public website..."
+            curl --fail --silent --show-error --head "$DOMAIN"
+            
+            echo "VPS deployment completed successfully."
