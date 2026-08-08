@@ -1,0 +1,42 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "E-Voucher Development",
+	"image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
+
+	"features": {
+		"ghcr.io/devcontainer-config/features/dot-config:4": {}
+	},
+
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/e-voucher-system,type=bind",
+	"workspaceFolder": "/workspaces/e-voucher-system",
+
+	"mounts": [
+		"source=e-voucher-system-frontend-node-modules,target=/workspaces/e-voucher-system/frontend/node_modules,type=volume,volume-nocopy",
+		"source=e-voucher-system-backend-node-modules,target=/workspaces/e-voucher-system/backend/node_modules,type=volume,volume-nocopy"
+	],
+
+	"forwardPorts": [3000, 8000],
+	"portsAttributes": {
+		"3000": {
+			"label": "Frontend (Next.js)"
+		},
+		"8000": {
+			"label": "Backend (Express)"
+		}
+	},
+
+	"postCreateCommand": "sudo chown -R node:node frontend/node_modules backend/node_modules && npm --prefix frontend ci && npm --prefix backend ci",
+
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"files.exclude": {
+					".agents": true,
+					".codex": true,
+					"diagram": true,
+					"doc": true
+				}
+			}
+		}
+	}
+}
