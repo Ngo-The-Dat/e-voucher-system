@@ -223,7 +223,7 @@ export default function CreateVoucherPage() {
                 Hủy bỏ
               </Link>
             </Button>
-            <Button type="submit" size="lg" className="shadow-md gap-2">
+            <Button type="submit" size="lg" className="shadow-md gap-2 !text-white">
               <Icon name="add" className="text-xl" />
               <span>Tạo voucher</span>
             </Button>

@@ -83,7 +83,7 @@ export default function RegisterStep3Password({
         <Button variant="ghost" type="button" onClick={onBack}>
           Quay lại
         </Button>
-        <Button type="submit">
+        <Button type="submit" className="!text-white">
           Xác nhận
         </Button>
       </div>

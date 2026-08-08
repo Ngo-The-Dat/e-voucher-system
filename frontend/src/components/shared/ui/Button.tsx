@@ -8,7 +8,7 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-primary text-on-primary hover:opacity-90 shadow-sm",
+        default: "bg-primary text-white hover:opacity-90 shadow-sm",
         destructive: "bg-error text-on-error hover:opacity-90 shadow-sm",
         outline: "border border-outline-variant bg-transparent hover:bg-surface-container-low text-on-surface",
         secondary: "bg-secondary-container text-on-secondary-container hover:opacity-90",
