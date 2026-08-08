@@ -80,7 +80,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
               <Icon
                 name={item.icon}
                 className={`text-[22px] ${
-                  isActive ? "text-primary" : "text-outline"
+                  isActive ? "text-on-primary-container" : "text-outline"
                 }`}
               />
               {!isCollapsed && <span className="truncate">{item.label}</span>}

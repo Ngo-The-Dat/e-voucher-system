@@ -17,7 +17,7 @@ const STATUS_CONFIG: Record<VoucherApprovalStatus, StatusConfig> = {
   pending: {
     label: "Chờ duyệt",
     className:
-      "bg-tertiary-fixed-dim/30 text-tertiary-amber border-tertiary-amber/30",
+      "bg-tertiary-fixed-dim/30 text-tertiary border-tertiary-amber/30",
     dotColor: "bg-tertiary-amber",
     pulse: true,
   },
