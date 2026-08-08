@@ -27,6 +27,7 @@ doc/report.md
 *.swo
 
 # Frontend deployment
-frontend/deploy.sh
+frontend/build-package.sh
+frontend/deploy-vps.sh
 frontend/deploy-frontend/
 frontend/frontend-release.tar.gz
