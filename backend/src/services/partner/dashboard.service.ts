@@ -77,12 +77,16 @@ export const getVoucherStats = async (
        COUNT(iv.issued_voucher_id) AS sold_count,
        COUNT(iv.issued_voucher_id) FILTER (WHERE iv.usage_status = 'USED') AS used_count,
        COUNT(iv.issued_voucher_id) FILTER (WHERE iv.usage_status = 'EXPIRED') AS expired_count,
-       COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue
+       COALESCE((
+         SELECT SUM(oi2.unit_price * oi2.quantity)
+         FROM order_items oi2
+         JOIN orders o2 ON oi2.order_id = o2.order_id
+         WHERE oi2.program_id = vp.program_id
+           AND o2.payment_status = 'PAID'
+       ), 0) AS revenue
      FROM voucher_programs vp
      LEFT JOIN categories c ON vp.category_id = c.category_id
      LEFT JOIN issued_vouchers iv ON vp.program_id = iv.program_id
-     LEFT JOIN order_items oi ON iv.order_item_id = oi.order_item_id
-     LEFT JOIN orders o ON oi.order_id = o.order_id AND o.payment_status = 'PAID'
      ${whereClause}
      GROUP BY vp.program_id, c.category_name
      ORDER BY vp.program_id DESC`,

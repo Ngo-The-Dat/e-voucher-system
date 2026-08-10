@@ -150,8 +150,14 @@ SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) F
 SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT MAX(category_id) FROM categories));
 SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT MAX(branch_id) FROM branches));
 SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT MAX(program_id) FROM voucher_programs));
+SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), (SELECT MAX(approval_request_id) FROM voucher_approval_requests));
+SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), (SELECT MAX(cart_item_id) FROM cart_items));
 SELECT setval(pg_get_serial_sequence('orders', 'order_id'), (SELECT MAX(order_id) FROM orders));
 SELECT setval(pg_get_serial_sequence('order_items', 'order_item_id'), (SELECT MAX(order_item_id) FROM order_items));
 SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), (SELECT MAX(issued_voucher_id) FROM issued_vouchers));
+SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), (SELECT MAX(review_id) FROM reviews_feedback));
+SELECT setval(pg_get_serial_sequence('order_cancellations', 'cancellation_id'), (SELECT MAX(cancellation_id) FROM order_cancellations));
+SELECT setval(pg_get_serial_sequence('banners', 'banner_id'), (SELECT MAX(banner_id) FROM banners));
+SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), (SELECT MAX(popup_id) FROM popups));
+SELECT setval(pg_get_serial_sequence('contents', 'content_id'), (SELECT MAX(content_id) FROM contents));
 SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), (SELECT MAX(log_id) FROM system_logs));
-

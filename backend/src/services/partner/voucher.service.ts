@@ -24,6 +24,16 @@ interface GetVouchersQuery {
   limit?: number;
 }
 
+type VoucherValues = {
+  original_price: number;
+  sale_price: number;
+  issue_quantity: number;
+  sale_start_at: string | Date;
+  sale_end_at: string | Date;
+  use_start_at: string | Date;
+  use_end_at: string | Date;
+};
+
 // ─── Status Mapping ───────────────────────────────────────────────────────────
 //
 // Frontend        ↔  DB display_status        / DB approval_status
@@ -43,6 +53,28 @@ const FRONTEND_STATUS_TO_DB: Record<string, string[]> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+const validateVoucherValues = (input: VoucherValues) => {
+  if (!Number.isFinite(input.original_price) || input.original_price < 0 ||
+      !Number.isFinite(input.sale_price) || input.sale_price < 0) {
+    throw { status: 400, message: 'Giá voucher phải là số không âm.' };
+  }
+  if (input.sale_price > input.original_price) {
+    throw { status: 400, message: 'Giá bán không thể lớn hơn giá gốc.' };
+  }
+  if (!Number.isSafeInteger(input.issue_quantity) || input.issue_quantity <= 0) {
+    throw { status: 400, message: 'Số lượng phát hành phải là số nguyên dương.' };
+  }
+
+  const dates = [input.sale_start_at, input.sale_end_at, input.use_start_at, input.use_end_at]
+    .map((value) => new Date(value));
+  if (dates.some((date) => Number.isNaN(date.getTime()))) {
+    throw { status: 400, message: 'Ngày bắt đầu hoặc kết thúc không hợp lệ.' };
+  }
+  if (dates[1] <= dates[0] || dates[3] <= dates[2]) {
+    throw { status: 400, message: 'Ngày kết thúc phải sau ngày bắt đầu.' };
+  }
+};
+
 /** Kiểm tra voucher program thuộc về partner */
 const assertVoucherOwnership = async (programId: number, partnerId: number) => {
   const result = await pool.query(
@@ -56,13 +88,29 @@ const assertVoucherOwnership = async (programId: number, partnerId: number) => {
 
 /** Kiểm tra các branch_ids thuộc về partner */
 const assertBranchesOwnership = async (branchIds: number[], partnerId: number) => {
+  const uniqueBranchIds = [...new Set(branchIds)];
+  if (uniqueBranchIds.length !== branchIds.length ||
+      uniqueBranchIds.some((id) => !Number.isSafeInteger(id) || id <= 0)) {
+    throw { status: 400, message: 'Danh sách chi nhánh không hợp lệ hoặc bị trùng.' };
+  }
   const result = await pool.query(
     `SELECT COUNT(*) FROM branches
-     WHERE branch_id = ANY($1::bigint[]) AND partner_id = $2`,
-    [branchIds, partnerId]
+     WHERE branch_id = ANY($1::bigint[]) AND partner_id = $2 AND status = 'ACTIVE'`,
+    [uniqueBranchIds, partnerId]
   );
-  if (parseInt(result.rows[0].count) !== branchIds.length) {
+  if (parseInt(result.rows[0].count) !== uniqueBranchIds.length) {
     throw { status: 400, message: 'Một hoặc nhiều chi nhánh không thuộc về bạn.' };
+  }
+};
+
+const assertActiveCategory = async (categoryId: number) => {
+  const result = await pool.query(
+    `SELECT category_id FROM categories
+     WHERE category_id = $1 AND status = 'ACTIVE'`,
+    [categoryId]
+  );
+  if (result.rows.length === 0) {
+    throw { status: 400, message: 'Danh mục không tồn tại hoặc đã bị vô hiệu hóa.' };
   }
 };
 
@@ -111,11 +159,9 @@ export const createVoucherProgram = async (
     throw { status: 400, message: 'Cần chọn ít nhất 1 chi nhánh áp dụng.' };
   }
   await assertBranchesOwnership(branch_ids, partnerId);
+  await assertActiveCategory(category_id);
 
-  // Validate giá
-  if (sale_price > original_price) {
-    throw { status: 400, message: 'Giá bán không thể lớn hơn giá gốc.' };
-  }
+  validateVoucherValues(input);
 
   const client = await pool.connect();
   try {
@@ -300,6 +346,33 @@ export const updateVoucherProgram = async (
     };
   }
 
+  if (input.branch_ids !== undefined && input.branch_ids.length === 0) {
+    throw { status: 400, message: 'Cần chọn ít nhất 1 chi nhánh áp dụng.' };
+  }
+  if (input.category_id !== undefined) {
+    if (!Number.isSafeInteger(input.category_id) || input.category_id <= 0) {
+      throw { status: 400, message: 'Danh mục không hợp lệ.' };
+    }
+    await assertActiveCategory(input.category_id);
+  }
+
+  const currentResult = await pool.query(
+    `SELECT original_price, sale_price, issue_quantity, sale_start_at, sale_end_at,
+            use_start_at, use_end_at
+     FROM voucher_programs WHERE program_id = $1`,
+    [programId]
+  );
+  const currentValues = currentResult.rows[0];
+  validateVoucherValues({
+    original_price: input.original_price ?? Number(currentValues.original_price),
+    sale_price: input.sale_price ?? Number(currentValues.sale_price),
+    issue_quantity: input.issue_quantity ?? currentValues.issue_quantity,
+    sale_start_at: input.sale_start_at ?? currentValues.sale_start_at,
+    sale_end_at: input.sale_end_at ?? currentValues.sale_end_at,
+    use_start_at: input.use_start_at ?? currentValues.use_start_at,
+    use_end_at: input.use_end_at ?? currentValues.use_end_at,
+  });
+
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
@@ -327,7 +400,7 @@ export const updateVoucherProgram = async (
     );
 
     // Nếu có cập nhật branch_ids → sync lại
-    if (input.branch_ids && input.branch_ids.length > 0) {
+    if (input.branch_ids !== undefined) {
       await assertBranchesOwnership(input.branch_ids, partnerId);
       await client.query(
         'DELETE FROM voucher_program_branches WHERE program_id = $1',
@@ -354,23 +427,21 @@ export const updateVoucherProgram = async (
 export const submitForApproval = async (programId: number, partnerId: number) => {
   await assertVoucherOwnership(programId, partnerId);
 
-  const statusCheck = await pool.query(
-    'SELECT display_status FROM voucher_programs WHERE program_id = $1',
-    [programId]
-  );
-  if (statusCheck.rows[0]?.display_status !== 'DRAFT') {
-    throw { status: 400, message: 'Chỉ có thể gửi duyệt khi chương trình ở trạng thái DRAFT.' };
-  }
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Cập nhật trạng thái voucher
-    await client.query(
-      "UPDATE voucher_programs SET display_status = 'PENDING_APPROVAL' WHERE program_id = $1",
-      [programId]
+    // Atomic transition prevents duplicate approval requests under concurrency.
+    const updateResult = await client.query(
+      `UPDATE voucher_programs
+       SET display_status = 'PENDING_APPROVAL'
+       WHERE program_id = $1 AND partner_id = $2 AND display_status = 'DRAFT'
+       RETURNING program_id`,
+      [programId, partnerId]
     );
+    if (updateResult.rows.length === 0) {
+      throw { status: 400, message: 'Chỉ có thể gửi duyệt khi chương trình ở trạng thái DRAFT.' };
+    }
 
     // Tạo yêu cầu duyệt mới
     await client.query(

@@ -22,7 +22,13 @@ interface LoginInput {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const register = async (input: RegisterInput) => {
-  const { full_name, email, phone, identity_no, password, business_name, tax_code } = input;
+  const full_name = input.full_name.trim();
+  const email = input.email.trim().toLowerCase();
+  const phone = typeof input.phone === 'string' ? input.phone.trim() || null : null;
+  const identity_no = typeof input.identity_no === 'string' ? input.identity_no.trim() || null : null;
+  const password = input.password;
+  const business_name = input.business_name.trim();
+  const tax_code = input.tax_code.trim();
 
   // 1. Kiểm tra email đã tồn tại chưa
   const emailCheck = await pool.query(
@@ -80,6 +86,9 @@ export const register = async (input: RegisterInput) => {
     return user;
   } catch (err) {
     await client.query('ROLLBACK');
+    if ((err as { code?: string }).code === '23505') {
+      throw { status: 409, message: 'Email, số định danh hoặc mã số thuế đã được đăng ký.' };
+    }
     throw err;
   } finally {
     client.release();
@@ -87,7 +96,8 @@ export const register = async (input: RegisterInput) => {
 };
 
 export const login = async (input: LoginInput) => {
-  const { email, password } = input;
+  const email = input.email.trim().toLowerCase();
+  const { password } = input;
 
   // 1. Tìm user theo email với role PARTNER
   const userResult = await pool.query(

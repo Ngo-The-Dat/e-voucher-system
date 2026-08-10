@@ -1,6 +1,7 @@
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as voucherService from '../../services/partner/voucher.service.js';
+import { sendHttpError } from '../../utils/http-error.js';
 
 export const createVoucherProgram = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
@@ -10,8 +11,10 @@ export const createVoucherProgram = async (req: AuthRequest, res: Response): Pro
       issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, branch_ids,
     } = req.body;
 
-    if (!program_name || !category_id || !original_price || !sale_price ||
-        !issue_quantity || !sale_start_at || !sale_end_at || !use_start_at || !use_end_at) {
+    if (typeof program_name !== 'string' || !program_name.trim() ||
+        !Number.isSafeInteger(category_id) || category_id <= 0 ||
+        [original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at]
+          .some((value) => value === undefined || value === null || value === '')) {
       res.status(400).json({ message: 'Vui lòng điền đầy đủ thông tin chương trình voucher.' });
       return;
     }
@@ -28,8 +31,7 @@ export const createVoucherProgram = async (req: AuthRequest, res: Response): Pro
 
     res.status(201).json({ message: 'Tạo chương trình voucher thành công.', program });
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -43,17 +45,29 @@ export const getVoucherPrograms = async (req: AuthRequest, res: Response): Promi
       limit = '10',
     } = req.query as Record<string, string>;
 
+    const parsedPage = Number(page);
+    const parsedLimit = Number(limit);
+    const validStatuses = ['draft', 'pending', 'approved', 'rejected'];
+    if (!Number.isSafeInteger(parsedPage) || parsedPage <= 0 ||
+        !Number.isSafeInteger(parsedLimit) || parsedLimit <= 0 || parsedLimit > 100) {
+      res.status(400).json({ message: 'page phải >= 1 và limit phải từ 1 đến 100.' });
+      return;
+    }
+    if (status && !validStatuses.includes(status)) {
+      res.status(400).json({ message: 'status không hợp lệ.' });
+      return;
+    }
+
     const result = await voucherService.getVoucherPrograms(partnerId, {
       status,
       search,
-      page: parseInt(page),
-      limit: parseInt(limit),
+      page: parsedPage,
+      limit: parsedLimit,
     });
 
     res.status(200).json(result);
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -70,8 +84,7 @@ export const getVoucherProgramById = async (req: AuthRequest, res: Response): Pr
     const program = await voucherService.getVoucherProgramById(programId, partnerId);
     res.status(200).json(program);
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -88,8 +101,7 @@ export const updateVoucherProgram = async (req: AuthRequest, res: Response): Pro
     const program = await voucherService.updateVoucherProgram(programId, partnerId, req.body);
     res.status(200).json({ message: 'Cập nhật chương trình voucher thành công.', program });
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -106,8 +118,7 @@ export const submitForApproval = async (req: AuthRequest, res: Response): Promis
     await voucherService.submitForApproval(programId, partnerId);
     res.status(200).json({ message: 'Gửi yêu cầu phê duyệt thành công. Vui lòng chờ Admin xem xét.' });
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -124,8 +135,7 @@ export const getApprovalStatus = async (req: AuthRequest, res: Response): Promis
     const approval = await voucherService.getApprovalStatus(programId, partnerId);
     res.status(200).json(approval);
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
 
@@ -150,7 +160,6 @@ export const updateVisibility = async (req: AuthRequest, res: Response): Promise
       message: display_status === 'PUBLISHED' ? 'Đã hiển thị voucher.' : 'Đã ẩn voucher.',
     });
   } catch (err: unknown) {
-    const error = err as { status?: number; message?: string };
-    res.status(error.status || 500).json({ message: error.message || 'Lỗi hệ thống.' });
+    sendHttpError(res, err);
   }
 };
