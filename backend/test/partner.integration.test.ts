@@ -7,9 +7,12 @@ import pool from '../src/config/db.js';
 
 const TEST_CODE = 'TEST-PARTNER-REDEEM-RACE';
 const TEST_EMAIL = 'test.partner.integration@example.com';
+const PROFILE_TEST_EMAIL = 'test.partner.profile@example.com';
+const PROFILE_TEST_TAX_CODE = 'TEST-PARTNER-PROFILE-TAX';
 let server: ReturnType<typeof app.listen>;
 let baseUrl: string;
 let partnerToken: string;
+let profileToken: string;
 let createdProgramId: number | undefined;
 
 const request = (path: string, token?: string, init: RequestInit = {}) =>
@@ -26,6 +29,24 @@ before(async () => {
   const secret = process.env.JWT_SECRET;
   assert.ok(secret, 'JWT_SECRET must be configured');
   partnerToken = jwt.sign({ id: 3, role: 'PARTNER' }, secret, { expiresIn: '5m' });
+
+  await pool.query('DELETE FROM partners WHERE user_id IN (SELECT user_id FROM users WHERE email = $1)', [PROFILE_TEST_EMAIL]);
+  await pool.query('DELETE FROM users WHERE email = $1', [PROFILE_TEST_EMAIL]);
+  const profileUser = await pool.query(
+    `INSERT INTO users
+       (full_name, email, phone, identity_no, password_hash, role, status)
+     VALUES ($1, $2, $3, $4, $5, 'PARTNER', 'ACTIVE')
+     RETURNING user_id`,
+    ['Profile Representative', PROFILE_TEST_EMAIL, '0911111111', '079111111111', 'unused-test-hash']
+  );
+  const profileUserId = Number(profileUser.rows[0].user_id);
+  await pool.query(
+    `INSERT INTO partners
+       (user_id, business_name, tax_code, approval_status, activity_status, representative_title)
+     VALUES ($1, $2, $3, 'APPROVED', 'ACTIVE', $4)`,
+    [profileUserId, 'Profile Test Business', PROFILE_TEST_TAX_CODE, 'Giám đốc']
+  );
+  profileToken = jwt.sign({ id: profileUserId, role: 'PARTNER' }, secret, { expiresIn: '5m' });
 
   server = app.listen(0);
   await new Promise<void>((resolve) => server.once('listening', resolve));
@@ -57,6 +78,8 @@ after(async () => {
   }
   await pool.query('DELETE FROM partners WHERE user_id IN (SELECT user_id FROM users WHERE email = $1)', [TEST_EMAIL]);
   await pool.query('DELETE FROM users WHERE email = $1', [TEST_EMAIL]);
+  await pool.query('DELETE FROM partners WHERE tax_code = $1', [PROFILE_TEST_TAX_CODE]);
+  await pool.query('DELETE FROM users WHERE email = $1', [PROFILE_TEST_EMAIL]);
   await new Promise<void>((resolve, reject) =>
     server.close((error) => error ? reject(error) : resolve())
   );
@@ -68,6 +91,51 @@ test('protected routes reject unauthenticated requests', async () => {
   assert.equal(response.status, 401);
   assert.equal(response.headers.has('x-powered-by'), false);
   assert.ok(response.headers.get('x-content-type-options'));
+});
+
+test('partner profile reuses user identity fields and only stores representative title', async () => {
+  const getResponse = await request('/api/partner/profile', profileToken);
+  assert.equal(getResponse.status, 200);
+  const initial = await getResponse.json() as Record<string, string>;
+  assert.equal(initial.full_name, 'Profile Representative');
+  assert.equal(initial.email, PROFILE_TEST_EMAIL);
+  assert.equal(initial.phone, '0911111111');
+  assert.equal(initial.identity_no, '079111111111');
+  assert.equal(initial.representative_title, 'Giám đốc');
+  assert.equal('representative_full_name' in initial, false);
+
+  const updateResponse = await request('/api/partner/profile', profileToken, {
+    method: 'PUT',
+    body: JSON.stringify({
+      full_name: 'Updated Representative',
+      phone: '0922222222',
+      identity_no: '079222222222',
+      representative_title: 'Tổng giám đốc',
+      email: 'ignored.profile.email@example.com',
+    }),
+  });
+  assert.equal(updateResponse.status, 200);
+
+  const stored = await pool.query(
+    `SELECT u.full_name, u.email, u.phone, u.identity_no, p.representative_title
+     FROM users u
+     JOIN partners p ON p.user_id = u.user_id
+     WHERE u.email = $1`,
+    [PROFILE_TEST_EMAIL]
+  );
+  assert.deepEqual(stored.rows[0], {
+    full_name: 'Updated Representative',
+    email: PROFILE_TEST_EMAIL,
+    phone: '0922222222',
+    identity_no: '079222222222',
+    representative_title: 'Tổng giám đốc',
+  });
+
+  const duplicateResponse = await request('/api/partner/profile', profileToken, {
+    method: 'PUT',
+    body: JSON.stringify({ phone: '0902000001' }),
+  });
+  assert.equal(duplicateResponse.status, 409);
 });
 
 test('registration validates input, handles duplicates, and blocks pending login', async () => {
