@@ -7,9 +7,11 @@ import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useVouchers } from "@/hooks/useVouchers";
 import { formatCurrency } from "@/lib/utils";
+import { usePartner } from "@/context/PartnerContext";
 
 export default function DashboardPage() {
   const { vouchers, isLoading } = useVouchers();
+  const partner = usePartner();
 
   // Tính toán chỉ số KPI từ danh sách voucher thực tế
   const totalCount = vouchers.length;
@@ -28,7 +30,7 @@ export default function DashboardPage() {
         {/* Header Section */}
         <div>
           <h1 className="text-2xl font-bold text-on-surface mb-1">
-            Xin chào, Đối tác Highlands Coffee
+            Xin chào, {partner?.businessName ?? "Đối tác"}
           </h1>
           <p className="text-base text-on-surface-variant">
             Đây là tổng quan thông tin kinh doanh và trạng thái voucher của bạn.

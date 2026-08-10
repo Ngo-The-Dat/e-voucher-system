@@ -24,6 +24,7 @@ export interface Branch {
 }
 
 export interface PartnerProfile {
+  businessName: string;
   legalInfo: LegalInfo;
   representativeInfo: RepresentativeInfo;
   branches: Branch[];

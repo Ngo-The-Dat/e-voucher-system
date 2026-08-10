@@ -5,14 +5,15 @@ import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { partnerApi } from "@/lib/partner-api";
 import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-export default function VoucherDetailPage({ params }: { params: { id: string } }) {
+export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [voucher, setVoucher] = useState<VoucherItem | null>(null);
   const [partnerBranches, setPartnerBranches] = useState<Branch[]>([]);
@@ -38,7 +39,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([partnerApi.getBranches(), partnerApi.getCategories(), partnerApi.getVoucher(params.id)])
+    Promise.all([partnerApi.getBranches(), partnerApi.getCategories(), partnerApi.getVoucher(id)])
       .then(([branches, rows, loaded]) => {
       setPartnerBranches(branches); setCategories(rows);
       setVoucher(loaded);
@@ -54,12 +55,12 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       setEditUseEndDate(loaded.useEndDate);
       setEditDisplayStatus(loaded.displayStatus || "active");
     }).catch((error) => console.error("Failed to load voucher detail", error));
-  }, [params.id]);
+  }, [id]);
 
   if (!voucher) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen">
-        <TopAppBar title={`Chi tiết Voucher ${params.id}`} />
+        <TopAppBar title={`Chi tiết Voucher ${id}`} />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />

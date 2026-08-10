@@ -85,8 +85,9 @@ export function CheckResultIdleQr({ onScan, onError }: CheckResultIdleQrProps) {
     return () => {
       active = false;
       controls?.stop();
-      video.srcObject instanceof MediaStream
-        && video.srcObject.getTracks().forEach((track) => track.stop());
+      if (video.srcObject instanceof MediaStream) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+      }
     };
   }, []);
 

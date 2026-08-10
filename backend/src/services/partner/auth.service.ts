@@ -140,7 +140,7 @@ export const login = async (input: LoginInput) => {
 
   const jwtOptions = { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' } as SignOptions;
   const token = jwt.sign(
-    { id: user.user_id, role: user.role, email: user.email },
+    { id: Number(user.user_id), role: user.role, email: user.email },
     secret,
     jwtOptions
   );
