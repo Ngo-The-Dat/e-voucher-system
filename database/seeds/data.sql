@@ -9,16 +9,16 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
 
 -- 1. Insert users (10 rows)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, nationality, status, created_at) VALUES
-(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'ADMIN', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
-(2, 'Trần Thị QTV', 'admin2@voucher.vn', '0901000002', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'ADMIN', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
-(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
-(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'PARTNER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
-(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
-(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'PARTNER_EMPLOYEE', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
-(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'PARTNER_EMPLOYEE', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
-(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
-(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'CUSTOMER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
-(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2b$10$I2Svg2rRluLb1tL4ziZ04.a7yrllYUGgCtItv8GOs75lIwIEvVgdq', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00');
+(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
+(2, 'Trần Thị QTV', 'admin2@voucher.vn', '0901000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
+(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
+(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
+(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
+(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
+(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
+(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
+(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
+(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00');
 
 -- 2. Insert partners (3 rows)
 INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at) VALUES

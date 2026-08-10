@@ -11,8 +11,9 @@ import { useRouter } from "next/navigation";
 import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSection";
 import VoucherPricingSection from "@/components/partner/voucher/VoucherPricingSection";
 import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection";
-import { partnerApi } from "@/lib/partner-api";
-import { CategoryOption, VoucherFormErrors, VoucherItem } from "@/lib/types/voucher";
+import { createVoucher, initialCategories } from "@/lib/mock-vouchers";
+import { getStoredPartnerProfile } from "@/lib/mock-profile";
+import { VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 
 export default function CreateVoucherPage() {
@@ -20,10 +21,9 @@ export default function CreateVoucherPage() {
 
   // Form state
   const [partnerBranches, setPartnerBranches] = useState<Branch[]>([]);
-  const [code] = useState("Tự động tạo");
+  const [code, setCode] = useState(`VC-HL-${Math.floor(1000 + Math.random() * 9000)}`);
   const [title, setTitle] = useState("");
-  const [categories, setCategories] = useState<CategoryOption[]>([]);
-  const [categoryId, setCategoryId] = useState("");
+  const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || "cat-01");
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [originalPriceStr, setOriginalPriceStr] = useState("");
   const [sellingPriceStr, setSellingPriceStr] = useState("");
@@ -32,17 +32,16 @@ export default function CreateVoucherPage() {
   const [sellEndDate, setSellEndDate] = useState("");
   const [useStartDate, setUseStartDate] = useState("");
   const [useEndDate, setUseEndDate] = useState("");
+  const [displayStatus, setDisplayStatus] = useState<"active" | "hidden">("active");
   const [errors, setErrors] = useState<VoucherFormErrors>({});
   const [isSuccessToast, setIsSuccessToast] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([partnerApi.getBranches(), partnerApi.getCategories()]).then(([branches, categoryRows]) => {
-      setPartnerBranches(branches.filter((branch) => branch.status === "active"));
-      setSelectedBranchIds(branches.filter((branch) => branch.status === "active").map((b) => b.id));
-      setCategories(categoryRows); setCategoryId(categoryRows[0]?.id ?? "");
-    }).catch((err) => setApiError(err instanceof Error ? err.message : "Không thể tải dữ liệu."));
+    const profile = getStoredPartnerProfile();
+    if (profile?.branches) {
+      setPartnerBranches(profile.branches);
+      setSelectedBranchIds(profile.branches.map((b) => b.id));
+    }
   }, []);
 
   const originalPrice = parseFloat(originalPriceStr) || 0;
@@ -58,6 +57,7 @@ export default function CreateVoucherPage() {
 
   const validateForm = (): boolean => {
     const newErrors: VoucherFormErrors = {};
+    if (!code.trim()) newErrors.code = "Vui lòng nhập Mã chương trình.";
     if (!title.trim()) newErrors.title = "Vui lòng nhập Tên chương trình.";
     if (!categoryId) newErrors.category = "Vui lòng chọn Danh mục sản phẩm.";
     if (selectedBranchIds.length === 0) newErrors.branches = "Vui lòng chọn ít nhất 1 chi nhánh áp dụng.";
@@ -84,18 +84,19 @@ export default function CreateVoucherPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    const selectedCategory = categories.find((c) => c.id === categoryId);
+    const selectedCategory = initialCategories.find((c) => c.id === categoryId);
     const selectedBranches = partnerBranches.filter((b) => selectedBranchIds.includes(b.id));
 
-    const item: VoucherItem = {
-      id: "", code: "",
+    createVoucher({
+      id: code.trim(),
+      code: code.trim(),
       title: title.trim(),
       categoryId,
       categoryName: selectedCategory?.name ?? "Khác",
@@ -109,19 +110,15 @@ export default function CreateVoucherPage() {
       sellEndDate,
       useStartDate,
       useEndDate,
-      displayStatus: "hidden",
+      displayStatus,
       status: "draft",
       soldCount: 0,
       usedCount: 0,
       expiredCount: 0,
-    };
-    setIsSaving(true); setApiError(null);
-    try {
-      await partnerApi.createVoucher(item);
-      setIsSuccessToast(true);
-      setTimeout(() => router.push("/partner/vouchers"), 800);
-    } catch (err) { setApiError(err instanceof Error ? err.message : "Không thể tạo voucher."); }
-    finally { setIsSaving(false); }
+    });
+
+    setIsSuccessToast(true);
+    setTimeout(() => router.push("/partner/vouchers"), 1500);
   };
 
   const errorCount = Object.keys(errors).length;
@@ -149,7 +146,6 @@ export default function CreateVoucherPage() {
         </div>
 
         <ValidationErrorBanner errorCount={errorCount} submitLabel="Tạo voucher" />
-        {apiError && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{apiError}</div>}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -157,15 +153,14 @@ export default function CreateVoucherPage() {
             code={code}
             title={title}
             categoryId={categoryId}
-            categories={categories}
+            categories={initialCategories}
             partnerBranches={partnerBranches}
             selectedBranchIds={selectedBranchIds}
             errors={errors}
-            onCodeChange={() => undefined}
+            onCodeChange={(v) => { setCode(v); if (errors.code) setErrors((p) => ({ ...p, code: "" })); }}
             onTitleChange={(v) => { setTitle(v); if (errors.title) setErrors((p) => ({ ...p, title: "" })); }}
             onCategoryChange={setCategoryId}
             onBranchToggle={handleBranchToggle}
-            codeReadOnly
           />
 
           <VoucherPricingSection
@@ -191,6 +186,36 @@ export default function CreateVoucherPage() {
             onUseEndChange={(v) => { setUseEndDate(v); if (errors.useEndDate) setErrors((p) => ({ ...p, useEndDate: "" })); }}
           />
 
+          {/* Trạng thái hiển thị */}
+          <div className="bg-surface-bright rounded-xl border border-outline-variant p-6 shadow-sm">
+            <h3 className="text-lg font-bold text-on-surface pb-3 border-b border-outline-variant/40 flex items-center gap-2 mb-4">
+              <Icon name="visibility" className="text-primary" />
+              4. Trạng thái hiển thị
+            </h3>
+            <div className="flex items-center gap-4">
+              {(["active", "hidden"] as const).map((val) => (
+                <label key={val} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
+                  displayStatus === val
+                    ? "bg-primary-container/20 border-primary font-semibold"
+                    : "bg-surface border-outline-variant hover:bg-surface-container-high"
+                }`}>
+                  <input
+                    type="radio"
+                    name="displayStatus"
+                    value={val}
+                    checked={displayStatus === val}
+                    onChange={() => setDisplayStatus(val)}
+                    className="text-primary focus:ring-primary"
+                  />
+                  <div>
+                    <p className="font-bold text-on-surface">{val === "active" ? "Hiển thị" : "Ẩn"}</p>
+                    <p className="text-xs text-on-surface-variant">{val === "active" ? "Voucher hiển thị cho khách hàng" : "Chưa công khai, chỉ xem nội bộ"}</p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Actions */}
           <div className="flex justify-end items-center gap-4 pt-2">
             <Button variant="ghost" size="lg" asChild>
@@ -198,9 +223,9 @@ export default function CreateVoucherPage() {
                 Hủy bỏ
               </Link>
             </Button>
-            <Button type="submit" size="lg" disabled={isSaving} className="shadow-md gap-2 !text-white">
+            <Button type="submit" size="lg" className="shadow-md gap-2 !text-white">
               <Icon name="add" className="text-xl" />
-              <span>{isSaving ? "Đang tạo..." : "Tạo voucher"}</span>
+              <span>Tạo voucher</span>
             </Button>
           </div>
         </form>

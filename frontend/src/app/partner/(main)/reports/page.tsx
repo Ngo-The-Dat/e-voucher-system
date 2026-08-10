@@ -10,7 +10,7 @@ import { formatCurrency, formatDate, calcRate } from "@/lib/utils";
 import { VoucherItem } from "@/lib/types/voucher";
 
 export default function ReportsPage() {
-  const { vouchers, isLoading, error } = useVouchers();
+  const { vouchers, isLoading } = useVouchers();
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
 
 
@@ -25,7 +25,7 @@ export default function ReportsPage() {
     vouchers.find((v) => v.id === selectedVoucherId) || vouchers[0];
 
   // Các chỉ số tính toán cho voucher được chọn
-  const revenue = selectedVoucher?.revenue ?? 0;
+  const revenue = selectedVoucher ? (selectedVoucher.soldCount || 0) * selectedVoucher.sellingPrice : 0;
   const issuedQty = selectedVoucher?.issuedQuantity ?? 0;
   const soldQty = selectedVoucher?.soldCount ?? 0;
   const usedQty = selectedVoucher?.usedCount ?? 0;
@@ -40,7 +40,6 @@ export default function ReportsPage() {
       <TopAppBar title="Thống kê doanh thu" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-6">
-        {error && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{error}</div>}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h2 className="text-2xl font-bold text-on-surface mb-1">Thống kê & Báo cáo Hiệu quả Voucher</h2>
@@ -112,7 +111,7 @@ export default function ReportsPage() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {vouchers.map((item) => {
-                      const itemRevenue = item.revenue ?? 0;
+                      const itemRevenue = (item.soldCount || 0) * item.sellingPrice;
                       const isSelected = selectedVoucherId === item.id;
                       return (
                         <tr

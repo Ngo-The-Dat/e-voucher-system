@@ -20,7 +20,7 @@ const TABS: { id: string; label: string }[] = [
 ];
 
 export default function VouchersPage() {
-  const { vouchers, isLoading, error } = useVouchers();
+  const { vouchers, isLoading } = useVouchers();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -65,7 +65,6 @@ export default function VouchersPage() {
       <TopAppBar title="Quản lý voucher" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-6">
-        {error && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{error}</div>}
         {/* Header Tabs & Actions */}
         <div className="bg-surface-bright rounded-xl border border-outline-variant p-4 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center shadow-sm">
           {/* Status Tabs */}

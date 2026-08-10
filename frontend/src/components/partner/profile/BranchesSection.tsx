@@ -49,6 +49,7 @@ export default function BranchesSection({
                 <th className="p-4 font-semibold text-on-surface-variant">Tên chi nhánh</th>
                 <th className="p-4 font-semibold text-on-surface-variant">Khu vực</th>
                 <th className="p-4 font-semibold text-on-surface-variant">Địa chỉ</th>
+                <th className="p-4 font-semibold text-on-surface-variant">Số điện thoại</th>
                 <th className="p-4 font-semibold text-on-surface-variant">Trạng thái</th>
                 <th className="p-4 font-semibold text-on-surface-variant text-right">Thao tác</th>
               </tr>
@@ -63,6 +64,7 @@ export default function BranchesSection({
                     </span>
                   </td>
                   <td className="p-4 text-on-surface">{b.address}</td>
+                  <td className="p-4 font-mono text-on-surface">{b.phone}</td>
                   <td className="p-4">
                     <StatusBadge
                       status={b.status === "active" ? "running" : "stopped"}

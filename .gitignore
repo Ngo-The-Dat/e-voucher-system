@@ -6,7 +6,6 @@ dist/
 build/
 .next/
 out/
-*.tsbuildinfo
 
 # Environment files
 .env

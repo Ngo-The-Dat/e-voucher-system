@@ -1,29 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { partnerApi } from "@/lib/partner-api";
-import type { PartnerProfile } from "@/lib/types/profile";
+import { useState, useEffect, useCallback } from "react";
+import { PartnerProfile } from "@/lib/types/profile";
+import {
+  getStoredPartnerProfile,
+  savePartnerProfile,
+} from "@/lib/mock-profile";
 
+/**
+ * Hook lấy thông tin hồ sơ đối tác.
+ *
+ * Khi chuyển sang API thật, chỉ cần thay phần bên trong useEffect:
+ *   const data = await api.getProfile();
+ */
 export function useProfile() {
   const [profile, setProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(async () => {
-    setIsLoading(true); setError(null);
-    try { setProfile(await partnerApi.getProfile()); }
-    catch (err) { setError(err instanceof Error ? err.message : "Không thể tải hồ sơ."); }
-    finally { setIsLoading(false); }
+  const reload = useCallback(() => {
+    setIsLoading(true);
+    // TODO: thay bằng fetch API khi có backend
+    const data = getStoredPartnerProfile();
+    setProfile(data);
+    setIsLoading(false);
   }, []);
-  useEffect(() => { void reload(); }, [reload]);
 
-  const save = useCallback(async (updated: PartnerProfile) => {
-    setIsSaving(true); setError(null);
-    try { await partnerApi.updateProfile(updated); await reload(); }
-    catch (err) { const message = err instanceof Error ? err.message : "Không thể lưu hồ sơ."; setError(message); throw err; }
-    finally { setIsSaving(false); }
+  useEffect(() => {
+    reload();
   }, [reload]);
 
-  return { profile, isLoading, isSaving, error, setProfile, reload, save };
+  const save = useCallback((updated: PartnerProfile) => {
+    // TODO: thay bằng API call khi có backend
+    savePartnerProfile(updated);
+    setProfile(updated);
+  }, []);
+
+  return { profile, isLoading, setProfile, reload, save };
 }

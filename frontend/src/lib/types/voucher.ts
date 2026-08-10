@@ -34,7 +34,6 @@ export interface VoucherItem {
   soldCount?: number;
   usedCount?: number;
   expiredCount?: number;
-  revenue?: number;
   
   createdAt?: string;
   updatedAt?: string;
