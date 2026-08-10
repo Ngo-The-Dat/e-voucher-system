@@ -73,18 +73,19 @@ export default function RepresentativeSection({
         </FormField>
 
         <FormField
-          label="Email liên hệ đại diện"
-          required
-          error={errors.email}
+          label="Email đăng nhập"
           fullWidth
         >
           <input
             type="email"
             value={repInfo.email}
-            onChange={(e) => onChange("email", e.target.value)}
-            className={getInputClass(!!errors.email)}
-            placeholder="VD: nguyenvanan@company.com"
+            readOnly
+            aria-readonly="true"
+            className={`${getInputClass(false)} cursor-not-allowed bg-surface-container-low text-on-surface-variant`}
           />
+          <p className="text-sm text-on-surface-variant mt-1.5">
+            Email này dùng để đăng nhập và không thể thay đổi tại hồ sơ.
+          </p>
         </FormField>
       </div>
     </div>
