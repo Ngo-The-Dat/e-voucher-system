@@ -7,6 +7,7 @@ import RegisterStep1Form from "@/components/partner/auth/RegisterStep1Form";
 import RegisterStep2Otp from "@/components/partner/auth/RegisterStep2Otp";
 import RegisterStep3Password from "@/components/partner/auth/RegisterStep3Password";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
+import { partnerApi } from "@/lib/partner-api";
 
 type FormData = {
   fullName: string;
@@ -70,6 +71,7 @@ export default function RegisterPage() {
     if (!formData.cccd.trim()) errors.cccd = "Vui lòng nhập số CCCD / CMND";
     if (!formData.phone.trim()) errors.phone = "Vui lòng nhập Số điện thoại";
     if (!formData.email.trim()) errors.email = "Vui lòng nhập Email liên hệ";
+    if (!formData.businessName.trim()) errors.businessName = "Vui lòng nhập Tên thương hiệu / Cửa hàng";
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
 
     const isCccdDuplicate = formData.cccd === "012345678901";
@@ -155,7 +157,7 @@ export default function RegisterPage() {
   };
 
   // --- Step 3: Password ---
-  const handlePasswordSubmit = (e: React.FormEvent) => {
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password || password.length < 6) {
       setPasswordError("Mật khẩu phải có ít nhất 6 ký tự");
@@ -166,7 +168,18 @@ export default function RegisterPage() {
       return;
     }
     setPasswordError("");
-    setCurrentStep(4);
+    try {
+      await partnerApi.register({
+        full_name: formData.fullName, identity_no: formData.cccd,
+        phone: formData.phone, email: formData.email,
+        business_name: formData.businessName,
+        tax_code: formData.cccd,
+        password,
+      });
+      setCurrentStep(4);
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : "Đăng ký thất bại");
+    }
   };
 
   const progressWidth = currentStep === 1 ? "0%" : currentStep === 2 ? "33%" : currentStep === 3 ? "66%" : "100%";

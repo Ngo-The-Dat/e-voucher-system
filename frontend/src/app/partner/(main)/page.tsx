@@ -16,7 +16,7 @@ export default function DashboardPage() {
   const pendingCount = vouchers.filter((v) => v.status === "pending").length;
   const approvedCount = vouchers.filter((v) => v.status === "approved").length;
   const totalRevenue = vouchers.reduce(
-    (sum, v) => sum + (v.soldCount || 0) * v.sellingPrice,
+    (sum, v) => sum + (v.revenue ?? 0),
     0
   );
 

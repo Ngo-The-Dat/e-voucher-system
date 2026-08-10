@@ -2,8 +2,9 @@
 
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
-import { useState } from "react";
-import { initialCategories } from "@/lib/mock-vouchers";
+import { useEffect, useState } from "react";
+import { partnerApi } from "@/lib/partner-api";
+import { Branch } from "@/lib/types/profile";
 import { VoucherItem } from "@/lib/types/voucher";
 import {
   CheckResultIdleCode,
@@ -22,53 +23,53 @@ type CheckResultState =
   | { type: "valid"; voucher: VoucherItem }
   | { type: "redeemed_success"; voucherTitle: string; code: string; redeemedAt: string };
 
-// Demo Voucher cho trường hợp Hợp lệ
-const demoVoucher: VoucherItem = {
-  id: "VC-HL-2023-001",
-  code: "VC-HL-2023-001",
-  title: "Ưu đãi Giảm 50k cho Đơn Cuối Tuần",
-  categoryId: "cat-01",
-  categoryName: initialCategories[0]?.name || "Đồ uống & Cà phê",
-  branchIds: ["br-01", "br-02"],
-  branchNames: ["Highlands Nguyễn Du", "Highlands Lê Duẩn"],
-  originalPrice: 150000,
-  sellingPrice: 100000,
-  discountAmount: 50000,
-  issuedQuantity: 1000,
-  sellStartDate: "2023-12-01",
-  sellEndDate: "2023-12-25",
-  useStartDate: "2023-12-01",
-  useEndDate: "2024-12-31",
-  displayStatus: "active",
-  status: "approved",
-};
-
 export default function CheckVoucherPage() {
   const [checkType, setCheckType] = useState<CheckType>("code");
   const [inputCode, setInputCode] = useState("");
   const [resultState, setResultState] = useState<CheckResultState>({ type: "idle" });
+  const [branches, setBranches] = useState<Branch[]>([]);
 
-  const handleCheckCode = (codeVal?: string) => {
+  useEffect(() => {
+    partnerApi.getBranches().then((rows) => setBranches(rows.filter((b) => b.status === "active")))
+      .catch((error) => console.error("Failed to load branches", error));
+  }, []);
+
+  const handleCheckCode = async (codeVal?: string) => {
     const codeToTest = (codeVal !== undefined ? codeVal : inputCode).trim().toUpperCase();
-    if (!codeToTest || codeToTest.includes("SAI")) {
+    if (!codeToTest) {
       setResultState({ type: "invalid_code" });
-    } else {
-      setResultState({ type: "valid", voucher: { ...demoVoucher, code: codeToTest || demoVoucher.code } });
+      return;
     }
+    try {
+      const row = await partnerApi.lookupVoucher(codeToTest);
+      if (row.usage_status !== "UNUSED") { setResultState({ type: "invalid_code" }); return; }
+      setResultState({ type: "valid", voucher: {
+        id: String(row.issued_voucher_id), code: row.voucher_code, title: row.program_name,
+        categoryId: "", categoryName: row.category_name ?? "",
+        branchIds: (row.branch_ids ?? []).map(String), branchNames: row.branch_names ?? [],
+        originalPrice: Number(row.original_price), sellingPrice: Number(row.sale_price),
+        discountAmount: Number(row.discount_amount ?? 0), issuedQuantity: 1,
+        sellStartDate: "", sellEndDate: "", useStartDate: row.use_start_at,
+        useEndDate: row.expires_at ?? row.use_end_at, displayStatus: "active", status: "approved",
+      }});
+    } catch { setResultState({ type: "invalid_code" }); }
   };
 
   const handleCheckQr = () => {
-    setResultState({ type: "valid", voucher: demoVoucher });
+    setResultState({ type: "invalid_qr" });
   };
 
-  const handleConfirmRedeem = () => {
-    const targetVoucher = resultState.type === "valid" ? resultState.voucher : demoVoucher;
-    setResultState({
-      type: "redeemed_success",
-      voucherTitle: targetVoucher.title,
-      code: targetVoucher.code,
-      redeemedAt: new Date().toLocaleString("vi-VN"),
-    });
+  const handleConfirmRedeem = async () => {
+    if (resultState.type !== "valid") return;
+    const branch = branches.find((item) => resultState.voucher.branchIds.includes(item.id));
+    if (!branch) { setResultState({ type: "invalid_code" }); return; }
+    try {
+      const result = await partnerApi.redeemVoucher(resultState.voucher.code, branch.id);
+      setResultState({
+        type: "redeemed_success", voucherTitle: resultState.voucher.title,
+        code: resultState.voucher.code, redeemedAt: new Date(result.redeemed_at).toLocaleString("vi-VN"),
+      });
+    } catch { setResultState({ type: "invalid_code" }); }
   };
 
   const handleReset = () => {

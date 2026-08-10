@@ -292,6 +292,14 @@ export const getVoucherPrograms = async (
   };
 };
 
+export const getActiveCategories = async () => {
+  const result = await pool.query(
+    `SELECT category_id, category_name, description
+     FROM categories WHERE status = 'ACTIVE' ORDER BY category_name`
+  );
+  return result.rows;
+};
+
 export const getVoucherProgramById = async (programId: number, partnerId: number) => {
   await assertVoucherOwnership(programId, partnerId);
 

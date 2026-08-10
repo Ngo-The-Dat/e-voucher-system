@@ -6,7 +6,7 @@ import { sendHttpError } from '../../utils/http-error.js';
 export const createBranch = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const { branch_name, address, region } = req.body;
+    const { branch_name, address, region, phone } = req.body;
 
     if (typeof branch_name !== 'string' || !branch_name.trim() ||
         typeof address !== 'string' || !address.trim()) {
@@ -14,7 +14,7 @@ export const createBranch = async (req: AuthRequest, res: Response): Promise<voi
       return;
     }
 
-    const branch = await branchService.createBranch(partnerId, { branch_name, address, region });
+    const branch = await branchService.createBranch(partnerId, { branch_name, address, region, phone });
     res.status(201).json({ message: 'Tạo chi nhánh thành công.', branch });
   } catch (err: unknown) {
     sendHttpError(res, err);

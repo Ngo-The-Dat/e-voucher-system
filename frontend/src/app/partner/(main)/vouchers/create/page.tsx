@@ -11,9 +11,8 @@ import { useRouter } from "next/navigation";
 import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSection";
 import VoucherPricingSection from "@/components/partner/voucher/VoucherPricingSection";
 import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection";
-import { createVoucher, initialCategories } from "@/lib/mock-vouchers";
-import { getStoredPartnerProfile } from "@/lib/mock-profile";
-import { VoucherFormErrors } from "@/lib/types/voucher";
+import { partnerApi } from "@/lib/partner-api";
+import { CategoryOption, VoucherFormErrors, VoucherItem } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 
 export default function CreateVoucherPage() {
@@ -21,9 +20,10 @@ export default function CreateVoucherPage() {
 
   // Form state
   const [partnerBranches, setPartnerBranches] = useState<Branch[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
   const [code, setCode] = useState(`VC-HL-${Math.floor(1000 + Math.random() * 9000)}`);
   const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState(initialCategories[0]?.id || "cat-01");
+  const [categoryId, setCategoryId] = useState("");
   const [selectedBranchIds, setSelectedBranchIds] = useState<string[]>([]);
   const [originalPriceStr, setOriginalPriceStr] = useState("");
   const [sellingPriceStr, setSellingPriceStr] = useState("");
@@ -37,11 +37,13 @@ export default function CreateVoucherPage() {
   const [isSuccessToast, setIsSuccessToast] = useState(false);
 
   useEffect(() => {
-    const profile = getStoredPartnerProfile();
-    if (profile?.branches) {
-      setPartnerBranches(profile.branches);
-      setSelectedBranchIds(profile.branches.map((b) => b.id));
-    }
+    Promise.all([partnerApi.getBranches(), partnerApi.getCategories()])
+      .then(([branches, rows]) => {
+        setPartnerBranches(branches);
+        setSelectedBranchIds(branches.filter((b) => b.status === "active").map((b) => b.id));
+        setCategories(rows); setCategoryId(rows[0]?.id ?? "");
+      })
+      .catch((error) => console.error("Failed to load voucher form data", error));
   }, []);
 
   const originalPrice = parseFloat(originalPriceStr) || 0;
@@ -84,17 +86,17 @@ export default function CreateVoucherPage() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    const selectedCategory = initialCategories.find((c) => c.id === categoryId);
+    const selectedCategory = categories.find((c) => c.id === categoryId);
     const selectedBranches = partnerBranches.filter((b) => selectedBranchIds.includes(b.id));
 
-    createVoucher({
+    const voucher: VoucherItem = {
       id: code.trim(),
       code: code.trim(),
       title: title.trim(),
@@ -115,10 +117,12 @@ export default function CreateVoucherPage() {
       soldCount: 0,
       usedCount: 0,
       expiredCount: 0,
-    });
-
-    setIsSuccessToast(true);
-    setTimeout(() => router.push("/partner/vouchers"), 1500);
+    };
+    try {
+      await partnerApi.createVoucher(voucher);
+      setIsSuccessToast(true);
+      setTimeout(() => router.push("/partner/vouchers"), 1500);
+    } catch (error) { console.error("Failed to create voucher", error); }
   };
 
   const errorCount = Object.keys(errors).length;
@@ -153,7 +157,7 @@ export default function CreateVoucherPage() {
             code={code}
             title={title}
             categoryId={categoryId}
-            categories={initialCategories}
+            categories={categories}
             partnerBranches={partnerBranches}
             selectedBranchIds={selectedBranchIds}
             errors={errors}

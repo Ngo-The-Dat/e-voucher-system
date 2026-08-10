@@ -9,6 +9,8 @@ router.post('/', voucherController.createVoucherProgram);
 // GET    /api/partner/vouchers?status=&search=&page=&limit=
 router.get('/', voucherController.getVoucherPrograms);
 
+router.get('/categories', voucherController.getCategories);
+
 // GET    /api/partner/vouchers/:id
 router.get('/:id', voucherController.getVoucherProgramById);
 

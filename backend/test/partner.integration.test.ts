@@ -108,6 +108,18 @@ test('partner data is isolated by ownership', async () => {
   assert.equal((await request('/api/partner/branches/3', partnerToken)).status, 404);
 });
 
+test('frontend reference endpoints return categories and redeem details', async () => {
+  const categories = await request('/api/partner/vouchers/categories', partnerToken);
+  assert.equal(categories.status, 200);
+  assert.ok((await categories.json() as unknown[]).length > 0);
+
+  const lookup = await request('/api/partner/redeem/lookup?code=VCH-FB-0002', partnerToken);
+  assert.equal(lookup.status, 200);
+  const body = await lookup.json() as { category_name: string; branch_names: string[] };
+  assert.ok(body.category_name);
+  assert.ok(body.branch_names.length > 0);
+});
+
 test('JWT role must still match the current database role', async () => {
   const forgedRoleToken = jwt.sign(
     { id: 3, role: 'PARTNER_EMPLOYEE' },

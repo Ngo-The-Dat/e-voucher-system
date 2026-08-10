@@ -72,6 +72,7 @@ CREATE TABLE branches (
     branch_name VARCHAR(255) NOT NULL,
     address VARCHAR(500) NOT NULL,
     region VARCHAR(150),
+    phone VARCHAR(20),
     status VARCHAR(20) NOT NULL CONSTRAINT chk_branches_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
 );
 

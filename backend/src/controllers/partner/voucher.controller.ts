@@ -71,6 +71,14 @@ export const getVoucherPrograms = async (req: AuthRequest, res: Response): Promi
   }
 };
 
+export const getCategories = async (_req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    res.status(200).json(await voucherService.getActiveCategories());
+  } catch (err: unknown) {
+    sendHttpError(res, err);
+  }
+};
+
 export const getVoucherProgramById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;

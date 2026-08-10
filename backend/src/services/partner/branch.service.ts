@@ -6,12 +6,14 @@ interface CreateBranchInput {
   branch_name: string;
   address: string;
   region?: string;
+  phone?: string;
 }
 
 interface UpdateBranchInput {
   branch_name?: string;
   address?: string;
   region?: string;
+  phone?: string;
   status?: 'ACTIVE' | 'INACTIVE';
 }
 
@@ -31,13 +33,13 @@ const assertBranchOwnership = async (branchId: number, partnerId: number) => {
 // ─── Service ──────────────────────────────────────────────────────────────────
 
 export const createBranch = async (partnerId: number, input: CreateBranchInput) => {
-  const { branch_name, address, region } = input;
+  const { branch_name, address, region, phone } = input;
 
   const result = await pool.query(
-    `INSERT INTO branches (partner_id, branch_name, address, region, status)
-     VALUES ($1, $2, $3, $4, 'ACTIVE')
+    `INSERT INTO branches (partner_id, branch_name, address, region, phone, status)
+     VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
      RETURNING *`,
-    [partnerId, branch_name, address, region ?? null]
+    [partnerId, branch_name, address, region ?? null, phone ?? null]
   );
 
   return result.rows[0];
@@ -76,10 +78,11 @@ export const updateBranch = async (
        branch_name = COALESCE($1, branch_name),
        address     = COALESCE($2, address),
        region      = COALESCE($3, region),
-       status      = COALESCE($4, status)
-     WHERE branch_id = $5 AND partner_id = $6
+       phone       = COALESCE($4, phone),
+       status      = COALESCE($5, status)
+     WHERE branch_id = $6 AND partner_id = $7
      RETURNING *`,
-    [input.branch_name, input.address, input.region, input.status, branchId, partnerId]
+    [input.branch_name, input.address, input.region, input.phone, input.status, branchId, partnerId]
   );
 
   return result.rows[0];
