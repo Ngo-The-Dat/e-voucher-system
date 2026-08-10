@@ -50,12 +50,12 @@ CREATE TABLE partners (
     business_license_no VARCHAR(100),                           -- Số ĐKKD
     license_issue_date DATE,                                    -- Ngày cấp ĐKKD
     license_issue_place VARCHAR(255),                           -- Nơi cấp ĐKKD
-    -- -- Thông tin người đại diện
-    -- representative_full_name VARCHAR(150),
-    -- representative_title VARCHAR(100),
-    -- representative_identity_no VARCHAR(30),
-    -- representative_phone VARCHAR(20),
-    -- representative_email VARCHAR(255)
+    -- Thông tin người đại diện
+    representative_full_name VARCHAR(150),
+    representative_title VARCHAR(100),
+    representative_identity_no VARCHAR(30),
+    representative_phone VARCHAR(20),
+    representative_email VARCHAR(255)
 );
 
 -- 3. Bảng categories (Danh mục)
