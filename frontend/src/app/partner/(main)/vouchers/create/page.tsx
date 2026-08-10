@@ -12,7 +12,7 @@ import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSe
 import VoucherPricingSection from "@/components/partner/voucher/VoucherPricingSection";
 import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection";
 import { partnerApi } from "@/lib/partner-api";
-import { CategoryOption, VoucherFormErrors, VoucherItem } from "@/lib/types/voucher";
+import { CategoryOption, CreateVoucherInput, VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 
 export default function CreateVoucherPage() {
@@ -32,7 +32,6 @@ export default function CreateVoucherPage() {
   const [sellEndDate, setSellEndDate] = useState("");
   const [useStartDate, setUseStartDate] = useState("");
   const [useEndDate, setUseEndDate] = useState("");
-  const [displayStatus, setDisplayStatus] = useState<"active" | "hidden">("active");
   const [errors, setErrors] = useState<VoucherFormErrors>({});
   const [isSuccessToast, setIsSuccessToast] = useState(false);
 
@@ -96,7 +95,7 @@ export default function CreateVoucherPage() {
     const selectedCategory = categories.find((c) => c.id === categoryId);
     const selectedBranches = partnerBranches.filter((b) => selectedBranchIds.includes(b.id));
 
-    const voucher: VoucherItem = {
+    const voucher: CreateVoucherInput = {
       id: code.trim(),
       code: code.trim(),
       title: title.trim(),
@@ -112,7 +111,6 @@ export default function CreateVoucherPage() {
       sellEndDate,
       useStartDate,
       useEndDate,
-      displayStatus,
       status: "draft",
       soldCount: 0,
       usedCount: 0,
@@ -189,36 +187,6 @@ export default function CreateVoucherPage() {
             onUseStartChange={(v) => { setUseStartDate(v); if (errors.useStartDate) setErrors((p) => ({ ...p, useStartDate: "" })); }}
             onUseEndChange={(v) => { setUseEndDate(v); if (errors.useEndDate) setErrors((p) => ({ ...p, useEndDate: "" })); }}
           />
-
-          {/* Trạng thái hiển thị */}
-          <div className="bg-surface-bright rounded-xl border border-outline-variant p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-on-surface pb-3 border-b border-outline-variant/40 flex items-center gap-2 mb-4">
-              <Icon name="visibility" className="text-primary" />
-              4. Trạng thái hiển thị
-            </h3>
-            <div className="flex items-center gap-4">
-              {(["active", "hidden"] as const).map((val) => (
-                <label key={val} className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-colors ${
-                  displayStatus === val
-                    ? "bg-primary-container/20 border-primary font-semibold"
-                    : "bg-surface border-outline-variant hover:bg-surface-container-high"
-                }`}>
-                  <input
-                    type="radio"
-                    name="displayStatus"
-                    value={val}
-                    checked={displayStatus === val}
-                    onChange={() => setDisplayStatus(val)}
-                    className="text-primary focus:ring-primary"
-                  />
-                  <div>
-                    <p className="font-bold text-on-surface">{val === "active" ? "Hiển thị" : "Ẩn"}</p>
-                    <p className="text-xs text-on-surface-variant">{val === "active" ? "Voucher hiển thị cho khách hàng" : "Chưa công khai, chỉ xem nội bộ"}</p>
-                  </div>
-                </label>
-              ))}
-            </div>
-          </div>
 
           {/* Actions */}
           <div className="flex justify-end items-center gap-4 pt-2">

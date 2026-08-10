@@ -1,5 +1,5 @@
 import { Branch, PartnerProfile } from "./types/profile";
-import { CategoryOption, VoucherItem } from "./types/voucher";
+import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
@@ -97,7 +97,7 @@ export const partnerApi = {
     return list.data.map((row) => mapVoucher({ ...row, ...statMap.get(String(row.program_id)) }));
   },
   getVoucher: async (id: string) => mapVoucher(await request<any>(`/partner/vouchers/${id}`)),
-  createVoucher: (voucher: VoucherItem) => request("/partner/vouchers", {
+  createVoucher: (voucher: CreateVoucherInput) => request("/partner/vouchers", {
     method: "POST", body: JSON.stringify({
       program_name: voucher.title, category_id: Number(voucher.categoryId),
       original_price: voucher.originalPrice, sale_price: voucher.sellingPrice,
