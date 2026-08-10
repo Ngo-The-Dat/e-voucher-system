@@ -25,6 +25,8 @@ jobs:
 
       - name: Install dependencies & Build
         working-directory: ./frontend
+        env:
+          NEXT_PUBLIC_API_URL: /api
         run: |
           npm ci
           npm run build
