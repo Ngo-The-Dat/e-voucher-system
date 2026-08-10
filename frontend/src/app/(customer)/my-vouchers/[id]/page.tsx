@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
@@ -20,8 +20,8 @@ import {
   CheckSquare
 } from "lucide-react";
 
-export default function MyVoucherDetailPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
 
   const router = useRouter();
   const { myVouchers, vouchers, markAsUsed } = useApp();
