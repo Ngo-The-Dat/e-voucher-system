@@ -143,3 +143,15 @@ INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_va
 (8, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
 (9, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
 (10, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS');
+
+-- Reset IDENTITY sequences sau khi seed data tường minh
+-- Đảm bảo INSERT tiếp theo không bị duplicate key
+SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users));
+SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT MAX(category_id) FROM categories));
+SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT MAX(branch_id) FROM branches));
+SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT MAX(program_id) FROM voucher_programs));
+SELECT setval(pg_get_serial_sequence('orders', 'order_id'), (SELECT MAX(order_id) FROM orders));
+SELECT setval(pg_get_serial_sequence('order_items', 'order_item_id'), (SELECT MAX(order_item_id) FROM order_items));
+SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), (SELECT MAX(issued_voucher_id) FROM issued_vouchers));
+SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), (SELECT MAX(log_id) FROM system_logs));
+
