@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthRequest } from '../../middlewares/auth.middleware.js';
+import { type Response } from 'express';
+import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as profileService from '../../services/partner/profile.service.js';
 
 export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {

@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthRequest } from '../../middlewares/auth.middleware.js';
+import { type Response } from 'express';
+import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as redeemService from '../../services/partner/redeem.service.js';
 import pool from '../../config/db.js';
 

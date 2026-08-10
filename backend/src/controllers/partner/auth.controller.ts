@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import * as authService from '../../services/partner/auth.service.js';
 
 export const register = async (req: Request, res: Response): Promise<void> => {

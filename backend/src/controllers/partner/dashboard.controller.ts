@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthRequest } from '../../middlewares/auth.middleware.js';
+import { type Response } from 'express';
+import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as dashboardService from '../../services/partner/dashboard.service.js';
 
 export const getOverview = async (req: AuthRequest, res: Response): Promise<void> => {

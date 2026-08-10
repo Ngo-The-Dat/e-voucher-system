@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthRequest } from '../../middlewares/auth.middleware.js';
+import { type Response } from 'express';
+import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as voucherService from '../../services/partner/voucher.service.js';
 
 export const createVoucherProgram = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -60,7 +60,7 @@ export const getVoucherPrograms = async (req: AuthRequest, res: Response): Promi
 export const getVoucherProgramById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const programId = parseInt(req.params.id);
+    const programId = parseInt(String(req.params.id));
 
     if (isNaN(programId)) {
       res.status(400).json({ message: 'ID chương trình không hợp lệ.' });
@@ -78,7 +78,7 @@ export const getVoucherProgramById = async (req: AuthRequest, res: Response): Pr
 export const updateVoucherProgram = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const programId = parseInt(req.params.id);
+    const programId = parseInt(String(req.params.id));
 
     if (isNaN(programId)) {
       res.status(400).json({ message: 'ID chương trình không hợp lệ.' });
@@ -96,7 +96,7 @@ export const updateVoucherProgram = async (req: AuthRequest, res: Response): Pro
 export const submitForApproval = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const programId = parseInt(req.params.id);
+    const programId = parseInt(String(req.params.id));
 
     if (isNaN(programId)) {
       res.status(400).json({ message: 'ID chương trình không hợp lệ.' });
@@ -114,7 +114,7 @@ export const submitForApproval = async (req: AuthRequest, res: Response): Promis
 export const getApprovalStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const programId = parseInt(req.params.id);
+    const programId = parseInt(String(req.params.id));
 
     if (isNaN(programId)) {
       res.status(400).json({ message: 'ID chương trình không hợp lệ.' });
@@ -132,7 +132,7 @@ export const getApprovalStatus = async (req: AuthRequest, res: Response): Promis
 export const updateVisibility = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const programId = parseInt(req.params.id);
+    const programId = parseInt(String(req.params.id));
     const { display_status } = req.body as { display_status?: 'PUBLISHED' | 'HIDDEN' };
 
     if (isNaN(programId)) {

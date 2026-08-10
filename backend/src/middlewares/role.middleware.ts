@@ -1,5 +1,5 @@
-import { Response, NextFunction } from 'express';
-import { AuthRequest } from './auth.middleware.js';
+import { type Response, type NextFunction } from 'express';
+import type { AuthRequest } from './auth.middleware.js';
 
 /**
  * Middleware kiểm tra role người dùng.

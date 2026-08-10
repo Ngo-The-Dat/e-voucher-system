@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { AuthRequest } from '../../middlewares/auth.middleware.js';
+import { type Response } from 'express';
+import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as branchService from '../../services/partner/branch.service.js';
 
 export const createBranch = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -34,7 +34,7 @@ export const getBranches = async (req: AuthRequest, res: Response): Promise<void
 export const getBranchById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const branchId = parseInt(req.params.id);
+    const branchId = parseInt(String(req.params.id));
 
     if (isNaN(branchId)) {
       res.status(400).json({ message: 'ID chi nhánh không hợp lệ.' });
@@ -52,7 +52,7 @@ export const getBranchById = async (req: AuthRequest, res: Response): Promise<vo
 export const updateBranch = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const branchId = parseInt(req.params.id);
+    const branchId = parseInt(String(req.params.id));
 
     if (isNaN(branchId)) {
       res.status(400).json({ message: 'ID chi nhánh không hợp lệ.' });
@@ -70,7 +70,7 @@ export const updateBranch = async (req: AuthRequest, res: Response): Promise<voi
 export const deleteBranch = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
-    const branchId = parseInt(req.params.id);
+    const branchId = parseInt(String(req.params.id));
 
     if (isNaN(branchId)) {
       res.status(400).json({ message: 'ID chi nhánh không hợp lệ.' });

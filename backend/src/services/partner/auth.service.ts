@@ -1,6 +1,6 @@
 import pool from '../../config/db.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -128,10 +128,11 @@ export const login = async (input: LoginInput) => {
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET chưa được cấu hình');
 
+  const jwtOptions = { expiresIn: process.env.JWT_EXPIRES_IN ?? '7d' } as SignOptions;
   const token = jwt.sign(
     { id: user.user_id, role: user.role, email: user.email },
     secret,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    jwtOptions
   );
 
   // 6. Cập nhật last_login_at
