@@ -20,22 +20,19 @@ export default function BranchModal({
   const [name, setName] = useState("");
   const [region, setRegion] = useState("Miền Nam");
   const [address, setAddress] = useState("");
-  const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
-  const [errors, setErrors] = useState<{ name?: string; region?: string; address?: string; phone?: string }>({});
+  const [errors, setErrors] = useState<{ name?: string; region?: string; address?: string }>({});
 
   useEffect(() => {
     if (editingBranch) {
       setName(editingBranch.name);
       setRegion(editingBranch.region || "Miền Nam");
       setAddress(editingBranch.address);
-      setPhone(editingBranch.phone);
       setStatus(editingBranch.status);
     } else {
       setName("");
       setRegion("Miền Nam");
       setAddress("");
-      setPhone("");
       setStatus("active");
     }
     setErrors({});
@@ -45,7 +42,7 @@ export default function BranchModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const newErrors: { name?: string; region?: string; address?: string; phone?: string } = {};
+    const newErrors: { name?: string; region?: string; address?: string } = {};
 
     if (!name.trim()) {
       newErrors.name = "Vui lòng nhập tên chi nhánh.";
@@ -55,11 +52,6 @@ export default function BranchModal({
     }
     if (!address.trim()) {
       newErrors.address = "Vui lòng nhập địa chỉ chi nhánh.";
-    }
-    if (!phone.trim()) {
-      newErrors.phone = "Vui lòng nhập số điện thoại chi nhánh.";
-    } else if (!/^[0-9+\s-]{8,15}$/.test(phone.trim())) {
-      newErrors.phone = "Số điện thoại không đúng định dạng.";
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -72,7 +64,6 @@ export default function BranchModal({
       name: name.trim(),
       region: region.trim(),
       address: address.trim(),
-      phone: phone.trim(),
       status,
     });
     onClose();
@@ -175,32 +166,6 @@ export default function BranchModal({
             {errors.address && (
               <p className="text-sm text-error font-medium mt-1 flex items-center gap-1">
                 <Icon name="error" className="text-sm" /> {errors.address}
-              </p>
-            )}
-          </div>
-
-          {/* Số điện thoại */}
-          <div>
-            <label className="block font-semibold text-on-surface mb-1">
-              Số điện thoại chi nhánh <span className="text-error">*</span>
-            </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                if (errors.phone) setErrors((prev) => ({ ...prev, phone: undefined }));
-              }}
-              placeholder="VD: 028 3822 1234"
-              className={`w-full border rounded-lg px-4 py-2.5 text-on-surface outline-none transition-colors ${
-                errors.phone
-                  ? "border-error focus:ring-2 focus:ring-error/30 bg-error-container/10"
-                  : "border-outline-variant focus:ring-2 focus:ring-primary"
-              }`}
-            />
-            {errors.phone && (
-              <p className="text-sm text-error font-medium mt-1 flex items-center gap-1">
-                <Icon name="error" className="text-sm" /> {errors.phone}
               </p>
             )}
           </div>

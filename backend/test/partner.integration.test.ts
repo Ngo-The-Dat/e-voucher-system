@@ -92,6 +92,20 @@ test('registration validates input, handles duplicates, and blocks pending login
     body: JSON.stringify({ email: TEST_EMAIL.toUpperCase(), password: 'SecurePass123!' }),
   });
   assert.equal(login.status, 403);
+
+  await pool.query(
+    `UPDATE partners SET approval_status = 'APPROVED'
+     WHERE user_id = (SELECT user_id FROM users WHERE email = $1)`,
+    [TEST_EMAIL]
+  );
+  const approvedLogin = await request('/api/partner/auth/login', undefined, {
+    method: 'POST',
+    body: JSON.stringify({ email: TEST_EMAIL, password: 'SecurePass123!' }),
+  });
+  assert.equal(approvedLogin.status, 200);
+  const session = await approvedLogin.json() as { token: string; user: { id: number } };
+  assert.equal(typeof session.user.id, 'number');
+  assert.equal((await request('/api/partner/profile', session.token)).status, 200);
 });
 
 test('malformed JSON receives a JSON 400 response', async () => {
@@ -106,6 +120,20 @@ test('malformed JSON receives a JSON 400 response', async () => {
 test('partner data is isolated by ownership', async () => {
   assert.equal((await request('/api/partner/vouchers/3', partnerToken)).status, 404);
   assert.equal((await request('/api/partner/branches/3', partnerToken)).status, 404);
+});
+
+test('category and voucher lookup endpoints provide frontend reference data', async () => {
+  const categories = await request('/api/partner/vouchers/categories', partnerToken);
+  assert.equal(categories.status, 200);
+  const categoryBody = await categories.json() as Array<{ category_id: string }>;
+  assert.ok(categoryBody.some((row) => String(row.category_id) === '1'));
+
+  const lookup = await request('/api/partner/redeem/lookup?code=VCH-FB-0002', partnerToken);
+  assert.equal(lookup.status, 200);
+  const voucher = await lookup.json() as { category_name: string; branch_ids: string[]; branch_names: string[] };
+  assert.ok(voucher.category_name);
+  assert.ok(voucher.branch_ids.length > 0);
+  assert.equal(voucher.branch_ids.length, voucher.branch_names.length);
 });
 
 test('JWT role must still match the current database role', async () => {

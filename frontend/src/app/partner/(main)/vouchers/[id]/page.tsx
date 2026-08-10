@@ -7,16 +7,17 @@ import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getVoucherById, updateVoucherStatus, updateVoucher, initialCategories } from "@/lib/mock-vouchers";
-import { getStoredPartnerProfile } from "@/lib/mock-profile";
-import { VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
+import { partnerApi } from "@/lib/partner-api";
+import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useVoucherDetail } from "@/hooks/useVouchers";
 
 export default function VoucherDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();
-  const [voucher, setVoucher] = useState<VoucherItem | null>(null);
+  const { voucher, setVoucher, isLoading, error: loadError, reload } = useVoucherDetail(params.id);
   const [partnerBranches, setPartnerBranches] = useState<Branch[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   // Edit Mode state for UC 'Chỉnh sửa voucher' (UC Gửi duyệt Flow A1)
   const [isEditing, setIsEditing] = useState(false);
@@ -32,34 +33,30 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
   const [editSellEndDate, setEditSellEndDate] = useState("");
   const [editUseStartDate, setEditUseStartDate] = useState("");
   const [editUseEndDate, setEditUseEndDate] = useState("");
-  const [editDisplayStatus, setEditDisplayStatus] = useState<"active" | "hidden">("active");
 
   const [errors, setErrors] = useState<VoucherFormErrors>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const profile = getStoredPartnerProfile();
-    if (profile && profile.branches) {
-      setPartnerBranches(profile.branches);
-    }
+    Promise.all([partnerApi.getBranches(), partnerApi.getCategories()]).then(([branches, rows]) => {
+      setPartnerBranches(branches); setCategories(rows);
+    }).catch((err) => setApiError(err instanceof Error ? err.message : "Không thể tải dữ liệu."));
+  }, []);
 
-    const loaded = getVoucherById(params.id);
-    if (loaded) {
-      setVoucher(loaded);
-      setEditTitle(loaded.title);
-      setEditCategoryId(loaded.categoryId);
-      setEditSelectedBranchIds(loaded.branchIds || []);
-      setEditOriginalPriceStr(loaded.originalPrice.toString());
-      setEditSellingPriceStr(loaded.sellingPrice.toString());
-      setEditIssuedQuantityStr(loaded.issuedQuantity.toString());
-      setEditSellStartDate(loaded.sellStartDate);
-      setEditSellEndDate(loaded.sellEndDate);
-      setEditUseStartDate(loaded.useStartDate);
-      setEditUseEndDate(loaded.useEndDate);
-      setEditDisplayStatus(loaded.displayStatus || "active");
-    }
-  }, [params.id]);
+  useEffect(() => {
+    if (!voucher) return;
+    setEditTitle(voucher.title); setEditCategoryId(voucher.categoryId);
+    setEditSelectedBranchIds(voucher.branchIds || []);
+    setEditOriginalPriceStr(voucher.originalPrice.toString());
+    setEditSellingPriceStr(voucher.sellingPrice.toString());
+    setEditIssuedQuantityStr(voucher.issuedQuantity.toString());
+    setEditSellStartDate(voucher.sellStartDate); setEditSellEndDate(voucher.sellEndDate);
+    setEditUseStartDate(voucher.useStartDate); setEditUseEndDate(voucher.useEndDate);
+  }, [voucher]);
 
+  if (isLoading) return <div className="flex-1 flex items-center justify-center">Đang tải voucher...</div>;
   if (!voucher) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen">
@@ -67,7 +64,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />
-            <p className="font-bold text-lg text-on-surface">Không tìm thấy thông tin chương trình voucher.</p>
+            <p className="font-bold text-lg text-on-surface">{loadError ?? "Không tìm thấy thông tin chương trình voucher."}</p>
             <Link href="/partner/vouchers" className="text-primary font-bold hover:underline inline-block">
               Trở về danh sách voucher
             </Link>
@@ -83,17 +80,22 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
   const editDiscountAmount = editOriginalPrice > editSellingPrice ? editOriginalPrice - editSellingPrice : 0;
 
   // UC Gửi duyệt voucher - Step 3: Gửi yêu cầu xét duyệt đến quản trị viên
-  const handleSendForApproval = () => {
-    updateVoucherStatus(voucher.id, "pending");
-    setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
-    setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
-    setTimeout(() => {
-      router.push("/partner/vouchers");
-    }, 2000);
+  const handleSendForApproval = async () => {
+    setIsSaving(true); setApiError(null);
+    try { await partnerApi.submitVoucher(voucher.id); await reload(); setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!"); setTimeout(() => router.push("/partner/vouchers"), 800); }
+    catch (err) { setApiError(err instanceof Error ? err.message : "Không thể gửi duyệt."); }
+    finally { setIsSaving(false); }
+  };
+
+  const handleVisibility = async () => {
+    setIsSaving(true); setApiError(null);
+    try { await partnerApi.setVisibility(voucher.id, voucher.displayStatus === "hidden"); await reload(); setToastMessage(voucher.displayStatus === "hidden" ? "Đã hiển thị voucher." : "Đã ẩn voucher."); }
+    catch (err) { setApiError(err instanceof Error ? err.message : "Không thể đổi trạng thái hiển thị."); }
+    finally { setIsSaving(false); }
   };
 
   // UC Chỉnh sửa voucher (UC Gửi duyệt Flow A1 Step 2 - Save Edit)
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: VoucherFormErrors = {};
 
@@ -113,7 +115,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       return;
     }
 
-    const selectedCategory = initialCategories.find((c) => c.id === editCategoryId);
+    const selectedCategory = categories.find((c) => c.id === editCategoryId);
     const selectedBranches = partnerBranches.filter((b) => editSelectedBranchIds.includes(b.id));
 
     const updatedItem: VoucherItem = {
@@ -131,15 +133,13 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       sellEndDate: editSellEndDate,
       useStartDate: editUseStartDate,
       useEndDate: editUseEndDate,
-      displayStatus: editDisplayStatus,
+      displayStatus: voucher.displayStatus,
     };
 
-    updateVoucher(updatedItem);
-    setVoucher(updatedItem);
-    setIsEditing(false);
-    setErrors({});
-    setToastMessage("Cập nhật thông tin chương trình voucher thành công!");
-    setTimeout(() => setToastMessage(null), 3000);
+    setIsSaving(true); setApiError(null);
+    try { await partnerApi.updateVoucher(updatedItem); await reload(); setIsEditing(false); setErrors({}); setToastMessage("Cập nhật thông tin chương trình voucher thành công!"); setTimeout(() => setToastMessage(null), 3000); }
+    catch (err) { setApiError(err instanceof Error ? err.message : "Không thể cập nhật voucher."); }
+    finally { setIsSaving(false); }
   };
 
   // Sử dụng VoucherStatusBadge component thay vì inline function
@@ -151,6 +151,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       <Toast message={toastMessage} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-6xl w-full mx-auto space-y-6">
+        {apiError && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{apiError}</div>}
         {/* Header Bar */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant/40 pb-4">
           <div>
@@ -187,6 +188,12 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
                   <Icon name="send" /> Gửi duyệt
                 </button>
               </>
+            )}
+            {voucher.status === "approved" && !isEditing && (
+              <button disabled={isSaving} onClick={() => void handleVisibility()} className="bg-primary text-on-primary px-5 py-2.5 rounded-lg font-bold flex items-center gap-2">
+                <Icon name={voucher.displayStatus === "hidden" ? "visibility" : "visibility_off"} />
+                {voucher.displayStatus === "hidden" ? "Hiển thị" : "Ẩn voucher"}
+              </button>
             )}
           </div>
         </div>
@@ -364,7 +371,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
                   onChange={(e) => setEditCategoryId(e.target.value)}
                   className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                 >
-                  {initialCategories.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

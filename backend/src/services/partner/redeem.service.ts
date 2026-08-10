@@ -12,10 +12,14 @@ export const lookupVoucher = async (voucherCode: string, partnerId: number) => {
        iv.issued_voucher_id, iv.voucher_code, iv.usage_status,
        iv.issued_at, iv.expires_at, iv.used_at, iv.discount_amount,
        iv.applicable_region, iv.qr_code,
-       vp.program_name, vp.original_price, vp.sale_price, vp.use_end_at,
+       vp.program_name, vp.original_price, vp.sale_price, vp.use_start_at, vp.use_end_at,
+       c.category_name,
+       ARRAY(SELECT vpb.branch_id FROM voucher_program_branches vpb WHERE vpb.program_id = vp.program_id) AS branch_ids,
+       ARRAY(SELECT b.branch_name FROM voucher_program_branches vpb JOIN branches b ON b.branch_id = vpb.branch_id WHERE vpb.program_id = vp.program_id) AS branch_names,
        u.full_name AS owner_full_name, u.email AS owner_email, u.phone AS owner_phone
      FROM issued_vouchers iv
      JOIN voucher_programs vp ON iv.program_id = vp.program_id
+     LEFT JOIN categories c ON c.category_id = vp.category_id
      JOIN users u ON iv.owner_user_id = u.user_id
      -- Đảm bảo voucher thuộc chương trình của partner này
      WHERE iv.voucher_code = $1

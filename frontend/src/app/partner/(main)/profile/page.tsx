@@ -13,6 +13,7 @@ import BranchesSection from "@/components/partner/profile/BranchesSection";
 import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { partnerApi } from "@/lib/partner-api";
 
 const TABS = [
   { id: "all", label: "Tất cả thông tin hồ sơ", icon: "assignment" },
@@ -22,7 +23,7 @@ const TABS = [
 ];
 
 export default function ProfilePage() {
-  const { profile, isLoading, setProfile, reload, save } = useProfile();
+  const { profile, isLoading, isSaving, error: profileError, setProfile, reload, save } = useProfile();
   const { validate } = useProfileValidation();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -34,7 +35,7 @@ export default function ProfilePage() {
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
 
-  if (isLoading || !profile) {
+  if (isLoading) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-background min-h-screen">
         <div className="flex items-center gap-3 text-on-surface-variant font-medium text-lg">
@@ -44,6 +45,7 @@ export default function ProfilePage() {
       </div>
     );
   }
+  if (!profile) return <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8"><p className="text-error font-bold">{profileError ?? "Không thể tải hồ sơ."}</p><button onClick={() => void reload()} className="px-5 py-2 bg-primary text-on-primary rounded-lg font-bold">Thử lại</button></div>;
 
   // --- Change handlers ---
   const handleLegalChange = (field: keyof PartnerProfile["legalInfo"], value: string) => {
@@ -65,18 +67,15 @@ export default function ProfilePage() {
   // --- Validation moved to useProfileValidation hook ---
 
   // --- Submit / Reset ---
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const newErrors = validate(profile);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    save(profile);
-    setHasUnsavedChanges(false);
-    setErrors({});
-    setToastMessage("Cập nhật thành công!");
-    setTimeout(() => setToastMessage(null), 4000);
+    try { await save(profile); setHasUnsavedChanges(false); setErrors({}); setToastMessage("Cập nhật thành công!"); setTimeout(() => setToastMessage(null), 4000); }
+    catch { /* error is rendered by the hook */ }
   };
 
   const handleResetProfile = () => {
@@ -86,40 +85,24 @@ export default function ProfilePage() {
   };
 
   // --- Branch actions ---
-  const handleSaveBranch = (branch: Branch) => {
-    setProfile((prev) => {
-      if (!prev) return prev;
-      const idx = prev.branches.findIndex((b) => b.id === branch.id);
-      const updated = [...prev.branches];
-      if (idx >= 0) updated[idx] = branch;
-      else updated.push(branch);
-      return { ...prev, branches: updated };
-    });
-    setHasUnsavedChanges(true);
+  const handleSaveBranch = async (branch: Branch) => {
+    try {
+      if (editingBranch) await partnerApi.updateBranch(branch); else await partnerApi.createBranch(branch);
+      await reload(); setToastMessage(editingBranch ? "Đã cập nhật chi nhánh." : "Đã thêm chi nhánh.");
+    } catch (err) { setToastMessage(err instanceof Error ? err.message : "Không thể lưu chi nhánh."); }
   };
 
-  const handleDeleteBranch = (id: string) => {
+  const handleDeleteBranch = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa chi nhánh này?")) return;
-    setProfile((prev) =>
-      prev ? { ...prev, branches: prev.branches.filter((b) => b.id !== id) } : prev
-    );
-    setHasUnsavedChanges(true);
+    try { await partnerApi.deleteBranch(id); await reload(); setToastMessage("Đã vô hiệu hóa chi nhánh."); }
+    catch (err) { setToastMessage(err instanceof Error ? err.message : "Không thể xóa chi nhánh."); }
   };
 
-  const handleToggleBranchStatus = (id: string) => {
-    setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            branches: prev.branches.map((b) =>
-              b.id === id
-                ? { ...b, status: b.status === "active" ? "inactive" : "active" }
-                : b
-            ),
-          }
-        : prev
-    );
-    setHasUnsavedChanges(true);
+  const handleToggleBranchStatus = async (id: string) => {
+    const branch = profile.branches.find((item) => item.id === id);
+    if (!branch) return;
+    try { await partnerApi.updateBranch({ ...branch, status: branch.status === "active" ? "inactive" : "active" }); await reload(); }
+    catch (err) { setToastMessage(err instanceof Error ? err.message : "Không thể đổi trạng thái."); }
   };
 
   const errorCount = Object.keys(errors).length;
@@ -143,6 +126,7 @@ export default function ProfilePage() {
         </div>
 
         <ValidationErrorBanner errorCount={errorCount} submitLabel="Xác nhận" />
+        {profileError && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{profileError}</div>}
 
         {/* Tabs */}
         <div className="border-b border-outline-variant">
@@ -223,11 +207,12 @@ export default function ProfilePage() {
             </button>
             <button
               type="button"
-              onClick={handleSaveProfile}
+              onClick={() => void handleSaveProfile()}
+              disabled={isSaving}
               className="text-base font-bold px-7 py-2.5 bg-primary text-on-primary rounded-xl hover:bg-surface-tint shadow-md hover:shadow-lg transition-all flex items-center gap-2"
             >
               <Icon name="check_circle" className="text-[20px]" />
-              <span>Xác nhận</span>
+              <span>{isSaving ? "Đang lưu..." : "Xác nhận"}</span>
             </button>
           </div>
         </div>

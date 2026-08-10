@@ -2,20 +2,21 @@
 
 import Link from "next/link";
 import Icon from "@/components/shared/ui/Icon";
+import { authStore } from "@/lib/partner-api";
 
 interface TopAppBarProps {
   title?: string;
-  /** Tên đối tác hiển thị trên avatar. Truyền vào từ context hoặc props.
-   *  Mặc định tạm: "Highlands Coffee" — sẽ thay bằng PartnerContext khi có API. */
+  /** Tên đối tác hiển thị trên avatar; mặc định lấy từ phiên đăng nhập. */
   partnerName?: string;
 }
 
 export default function TopAppBar({
   title,
-  partnerName = "Highlands Coffee",
+  partnerName,
 }: TopAppBarProps) {
+  const resolvedName = partnerName ?? authStore.getUser()?.business_name ?? "Đối tác";
   // Lấy 2 chữ cái đầu của tên làm avatar initials
-  const initials = partnerName
+  const initials = resolvedName
     .split(" ")
     .filter(Boolean)
     .slice(0, 2)
@@ -48,7 +49,7 @@ export default function TopAppBar({
           </div>
           <div className="hidden sm:flex flex-col text-left">
             <span className="text-base font-bold text-on-surface leading-tight">
-              {partnerName}
+              {resolvedName}
             </span>
             <span className="text-xs text-on-surface-variant">Hồ sơ đối tác</span>
           </div>

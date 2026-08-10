@@ -7,28 +7,29 @@ import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useVouchers } from "@/hooks/useVouchers";
 import { formatCurrency } from "@/lib/utils";
+import { usePartnerOverview } from "@/hooks/usePartnerOverview";
+import { authStore } from "@/lib/partner-api";
 
 export default function DashboardPage() {
-  const { vouchers, isLoading } = useVouchers();
+  const { vouchers, isLoading, error: voucherError } = useVouchers();
+  const { data: overview, error: overviewError } = usePartnerOverview();
 
   // Tính toán chỉ số KPI từ danh sách voucher thực tế
-  const totalCount = vouchers.length;
-  const pendingCount = vouchers.filter((v) => v.status === "pending").length;
-  const approvedCount = vouchers.filter((v) => v.status === "approved").length;
-  const totalRevenue = vouchers.reduce(
-    (sum, v) => sum + (v.soldCount || 0) * v.sellingPrice,
-    0
-  );
+  const totalCount = overview?.total_programs ?? vouchers.length;
+  const pendingCount = overview?.pending_approval ?? vouchers.filter((v) => v.status === "pending").length;
+  const approvedCount = overview?.active_programs ?? vouchers.filter((v) => v.status === "approved").length;
+  const totalRevenue = overview?.total_revenue ?? 0;
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
       <TopAppBar title="Tổng quan" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-8">
+        {(voucherError || overviewError) && <div className="p-4 rounded-xl bg-error-container/40 text-error font-semibold">{voucherError ?? overviewError}</div>}
         {/* Header Section */}
         <div>
           <h1 className="text-2xl font-bold text-on-surface mb-1">
-            Xin chào, Đối tác Highlands Coffee
+            Xin chào, {authStore.getUser()?.business_name ?? "Đối tác"}
           </h1>
           <p className="text-base text-on-surface-variant">
             Đây là tổng quan thông tin kinh doanh và trạng thái voucher của bạn.

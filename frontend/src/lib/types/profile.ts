@@ -19,11 +19,14 @@ export interface Branch {
   name: string;
   region: string; // Khu vực (VD: Miền Nam, Miền Bắc, Miền Trung...)
   address: string;
-  phone: string;
   status: "active" | "inactive";
 }
 
 export interface PartnerProfile {
+  businessName: string;
+  fullName: string;
+  email: string;
+  phone: string;
   legalInfo: LegalInfo;
   representativeInfo: RepresentativeInfo;
   branches: Branch[];
