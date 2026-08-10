@@ -120,6 +120,29 @@ test('frontend reference endpoints return categories and redeem details', async 
   assert.ok(body.branch_names.length > 0);
 });
 
+test('QR lookup accepts stored payload and raw code while enforcing ownership', async () => {
+  assert.equal((await request('/api/partner/redeem/lookup-qr')).status, 401);
+  assert.equal((await request('/api/partner/redeem/lookup-qr', partnerToken, { method: 'POST' })).status, 400);
+
+  const invalidPayloads = [{}, { qr_value: '' }, { qr_value: 'x'.repeat(501) }];
+  for (const payload of invalidPayloads) {
+    const response = await request('/api/partner/redeem/lookup-qr', partnerToken, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    assert.equal(response.status, 400);
+  }
+
+  const lookup = (qrValue: string) => request('/api/partner/redeem/lookup-qr', partnerToken, {
+    method: 'POST',
+    body: JSON.stringify({ qr_value: qrValue }),
+  });
+  assert.equal((await lookup('https://qr.voucher.vn/VCH-FB-0002')).status, 200);
+  assert.equal((await lookup('vch-fb-0002')).status, 200);
+  assert.equal((await lookup('https://qr.voucher.vn/VCH-SPA-0001')).status, 404);
+  assert.equal((await lookup('not-an-e-voucher')).status, 404);
+});
+
 test('JWT role must still match the current database role', async () => {
   const forgedRoleToken = jwt.sign(
     { id: 3, role: 'PARTNER_EMPLOYEE' },

@@ -23,6 +23,16 @@ type CheckResultState =
   | { type: "valid"; voucher: VoucherItem }
   | { type: "redeemed_success"; voucherTitle: string; code: string; redeemedAt: string };
 
+const mapLookupVoucher = (row: any): VoucherItem => ({
+  id: String(row.issued_voucher_id), code: row.voucher_code, title: row.program_name,
+  categoryId: "", categoryName: row.category_name ?? "",
+  branchIds: (row.branch_ids ?? []).map(String), branchNames: row.branch_names ?? [],
+  originalPrice: Number(row.original_price), sellingPrice: Number(row.sale_price),
+  discountAmount: Number(row.discount_amount ?? 0), issuedQuantity: 1,
+  sellStartDate: "", sellEndDate: "", useStartDate: row.use_start_at,
+  useEndDate: row.expires_at ?? row.use_end_at, displayStatus: "active", status: "approved",
+});
+
 export default function CheckVoucherPage() {
   const [checkType, setCheckType] = useState<CheckType>("code");
   const [inputCode, setInputCode] = useState("");
@@ -43,20 +53,16 @@ export default function CheckVoucherPage() {
     try {
       const row = await partnerApi.lookupVoucher(codeToTest);
       if (row.usage_status !== "UNUSED") { setResultState({ type: "invalid_code" }); return; }
-      setResultState({ type: "valid", voucher: {
-        id: String(row.issued_voucher_id), code: row.voucher_code, title: row.program_name,
-        categoryId: "", categoryName: row.category_name ?? "",
-        branchIds: (row.branch_ids ?? []).map(String), branchNames: row.branch_names ?? [],
-        originalPrice: Number(row.original_price), sellingPrice: Number(row.sale_price),
-        discountAmount: Number(row.discount_amount ?? 0), issuedQuantity: 1,
-        sellStartDate: "", sellEndDate: "", useStartDate: row.use_start_at,
-        useEndDate: row.expires_at ?? row.use_end_at, displayStatus: "active", status: "approved",
-      }});
+      setResultState({ type: "valid", voucher: mapLookupVoucher(row) });
     } catch { setResultState({ type: "invalid_code" }); }
   };
 
-  const handleCheckQr = () => {
-    setResultState({ type: "invalid_qr" });
+  const handleCheckQr = async (qrValue: string) => {
+    try {
+      const row = await partnerApi.lookupVoucherByQr(qrValue);
+      if (row.usage_status !== "UNUSED") { setResultState({ type: "invalid_qr" }); return; }
+      setResultState({ type: "valid", voucher: mapLookupVoucher(row) });
+    } catch { setResultState({ type: "invalid_qr" }); }
   };
 
   const handleConfirmRedeem = async () => {
@@ -130,7 +136,10 @@ export default function CheckVoucherPage() {
             />
           )}
           {resultState.type === "idle" && checkType === "qr" && (
-            <CheckResultIdleQr />
+            <CheckResultIdleQr
+              onScan={handleCheckQr}
+              onError={() => setResultState({ type: "invalid_qr" })}
+            />
           )}
         </div>
       </main>

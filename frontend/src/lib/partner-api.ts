@@ -117,6 +117,9 @@ export const partnerApi = {
   }),
   submitVoucher: (id: string) => request(`/partner/vouchers/${id}/submit`, { method: "POST" }),
   lookupVoucher: (code: string) => request<any>(`/partner/redeem/lookup?code=${encodeURIComponent(code)}`),
+  lookupVoucherByQr: (qrValue: string) => request<any>("/partner/redeem/lookup-qr", {
+    method: "POST", body: JSON.stringify({ qr_value: qrValue }),
+  }),
   redeemVoucher: (code: string, branchId: string) => request<any>("/partner/redeem", {
     method: "POST", body: JSON.stringify({ voucher_code: code, branch_id: Number(branchId) }),
   }),

@@ -38,6 +38,47 @@ export const lookupVoucher = async (voucherCode: string, partnerId: number) => {
 };
 
 /**
+ * Tra cứu voucher từ payload QR đã lưu. Raw voucher code cũng được chấp nhận
+ * để tương thích với các QR cũ chỉ chứa mã voucher.
+ */
+export const lookupVoucherByQr = async (qrValue: string, partnerId: number) => {
+  const result = await pool.query(
+    `SELECT
+       iv.issued_voucher_id, iv.voucher_code, iv.usage_status,
+       iv.issued_at, iv.expires_at, iv.used_at, iv.discount_amount,
+       iv.applicable_region, iv.qr_code,
+       vp.program_name, vp.original_price, vp.sale_price, vp.use_start_at, vp.use_end_at,
+       c.category_name,
+       ARRAY(SELECT vpb.branch_id FROM voucher_program_branches vpb WHERE vpb.program_id = vp.program_id) AS branch_ids,
+       ARRAY(SELECT b.branch_name FROM voucher_program_branches vpb JOIN branches b ON b.branch_id = vpb.branch_id WHERE vpb.program_id = vp.program_id) AS branch_names,
+       u.full_name AS owner_full_name, u.email AS owner_email, u.phone AS owner_phone
+     FROM issued_vouchers iv
+     JOIN voucher_programs vp ON iv.program_id = vp.program_id
+     LEFT JOIN categories c ON c.category_id = vp.category_id
+     JOIN users u ON iv.owner_user_id = u.user_id
+     WHERE (iv.qr_code = $1 OR iv.voucher_code = UPPER($1))
+       AND vp.partner_id = $2
+     LIMIT 2`,
+    [qrValue, partnerId]
+  );
+
+  if (result.rows.length === 0) {
+    throw {
+      status: 404,
+      message: 'Không tìm thấy voucher hoặc voucher không thuộc hệ thống của bạn.',
+    };
+  }
+  if (result.rows.length > 1) {
+    throw {
+      status: 409,
+      message: 'Mã QR bị trùng trong hệ thống. Vui lòng liên hệ quản trị viên.',
+    };
+  }
+
+  return result.rows[0];
+};
+
+/**
  * Xác nhận sử dụng (redeem) voucher tại điểm bán.
  * partnerId có thể là PARTNER hoặc PARTNER_EMPLOYEE (đã xác nhận branch ownership ở caller).
  */

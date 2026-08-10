@@ -53,6 +53,22 @@ export const lookupVoucher = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+export const lookupVoucherByQr = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { qr_value } = req.body ?? {};
+    if (typeof qr_value !== 'string' || !qr_value.trim() || qr_value.trim().length > 500) {
+      res.status(400).json({ message: 'qr_value phải là chuỗi từ 1 đến 500 ký tự.' });
+      return;
+    }
+
+    const { partnerId } = await resolvePartnerContext(req.user!.id, req.user!.role);
+    const voucher = await redeemService.lookupVoucherByQr(qr_value.trim(), partnerId);
+    res.status(200).json(voucher);
+  } catch (err: unknown) {
+    sendHttpError(res, err);
+  }
+};
+
 export const redeemVoucher = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { voucher_code, branch_id } = req.body;
