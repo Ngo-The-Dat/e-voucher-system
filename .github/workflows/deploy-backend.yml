@@ -100,14 +100,19 @@ jobs:
             SERVICE="webapp-backend"
             REMOTE_DIR="/srv/webapp/backend"
             REMOTE_ARCHIVE="/tmp/backend-release.tar.gz"
+            ENV_FILE="/etc/webapp/backend.env"
 
             sudo install -d -o webapp -g webapp "$REMOTE_DIR"
+
+            echo "Checking backend environment file..."
+            sudo test -f "$ENV_FILE"
+            sudo -u webapp test -r "$ENV_FILE"
 
             echo "Stopping backend service..."
             sudo systemctl stop "$SERVICE"
 
-            echo "Replacing backend release while preserving .env..."
-            sudo find "$REMOTE_DIR" -mindepth 1 -maxdepth 1 ! -name ".env" -exec rm -rf {} +
+            echo "Replacing backend release..."
+            sudo find "$REMOTE_DIR" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
             sudo tar -xzf "$REMOTE_ARCHIVE" -C "$REMOTE_DIR"
             sudo chown -R webapp:webapp "$REMOTE_DIR"
 
