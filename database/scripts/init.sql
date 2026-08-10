@@ -19,6 +19,7 @@ DROP TABLE IF EXISTS partner_employees CASCADE;
 DROP TABLE IF EXISTS branches CASCADE;
 DROP TABLE IF EXISTS categories CASCADE;
 DROP TABLE IF EXISTS partners CASCADE;
+DROP TABLE IF EXISTS user_locks CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
 -- 1. Bảng users (Người dùng)
@@ -49,12 +50,12 @@ CREATE TABLE partners (
     business_license_no VARCHAR(100),                           -- Số ĐKKD
     license_issue_date DATE,                                    -- Ngày cấp ĐKKD
     license_issue_place VARCHAR(255),                           -- Nơi cấp ĐKKD
-    -- Thông tin người đại diện
-    representative_full_name VARCHAR(150),
-    representative_title VARCHAR(100),
-    representative_identity_no VARCHAR(30),
-    representative_phone VARCHAR(20),
-    representative_email VARCHAR(255)
+    -- -- Thông tin người đại diện
+    -- representative_full_name VARCHAR(150),
+    -- representative_title VARCHAR(100),
+    -- representative_identity_no VARCHAR(30),
+    -- representative_phone VARCHAR(20),
+    -- representative_email VARCHAR(255)
 );
 
 -- 3. Bảng categories (Danh mục)
@@ -244,6 +245,13 @@ CREATE TABLE contents (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
     status VARCHAR(20) NOT NULL CONSTRAINT chk_contents_status CHECK (status IN ('ACTIVE', 'INACTIVE'))
+);
+
+
+-- 19. Bảng user_locks (Lý do khóa tài khoản)
+CREATE TABLE user_locks (
+    user_id BIGINT PRIMARY KEY REFERENCES users(user_id),
+    reason TEXT NOT NULL
 );
 
 -- INDEXES SECTION
