@@ -2,10 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { PartnerProfile } from "@/lib/types/profile";
-import {
-  getStoredPartnerProfile,
-  savePartnerProfile,
-} from "@/lib/mock-profile";
+import { partnerApi } from "@/lib/partner-api";
 
 /**
  * Hook lấy thông tin hồ sơ đối tác.
@@ -17,22 +14,20 @@ export function useProfile() {
   const [profile, setProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const reload = useCallback(() => {
+  const reload = useCallback(async () => {
     setIsLoading(true);
-    // TODO: thay bằng fetch API khi có backend
-    const data = getStoredPartnerProfile();
-    setProfile(data);
-    setIsLoading(false);
+    try { setProfile(await partnerApi.getProfile()); }
+    catch (error) { console.error("Failed to load partner profile", error); setProfile(null); }
+    finally { setIsLoading(false); }
   }, []);
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   const save = useCallback((updated: PartnerProfile) => {
-    // TODO: thay bằng API call khi có backend
-    savePartnerProfile(updated);
     setProfile(updated);
+    void partnerApi.updateProfile(updated).catch((error) => console.error("Failed to save partner profile", error));
   }, []);
 
   return { profile, isLoading, setProfile, reload, save };

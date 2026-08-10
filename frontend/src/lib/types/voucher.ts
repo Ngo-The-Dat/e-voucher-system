@@ -34,9 +34,33 @@ export interface VoucherItem {
   soldCount?: number;
   usedCount?: number;
   expiredCount?: number;
+  revenue?: number;
   
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type CreateVoucherInput = Pick<
+  VoucherItem,
+  | "id"
+  | "code"
+  | "title"
+  | "categoryId"
+  | "categoryName"
+  | "branchIds"
+  | "branchNames"
+  | "originalPrice"
+  | "sellingPrice"
+  | "discountAmount"
+  | "issuedQuantity"
+  | "sellStartDate"
+  | "sellEndDate"
+  | "useStartDate"
+  | "useEndDate"
+  | "status"
+  | "soldCount"
+  | "usedCount"
+  | "expiredCount"
+>;
 
 export type VoucherFormErrors = Record<string, string>;

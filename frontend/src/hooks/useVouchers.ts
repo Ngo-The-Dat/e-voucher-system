@@ -2,11 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { VoucherItem } from "@/lib/types/voucher";
-import {
-  getStoredVouchers,
-  saveVouchers,
-  getVoucherById as _getVoucherById,
-} from "@/lib/mock-vouchers";
+import { partnerApi } from "@/lib/partner-api";
 
 /**
  * Hook lấy toàn bộ danh sách voucher.
@@ -18,22 +14,20 @@ export function useVouchers() {
   const [vouchers, setVouchers] = useState<VoucherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const reload = useCallback(() => {
+  const reload = useCallback(async () => {
     setIsLoading(true);
-    // TODO: thay bằng fetch API khi có backend
-    const data = getStoredVouchers();
-    setVouchers(data);
-    setIsLoading(false);
+    try { setVouchers(await partnerApi.getVouchers()); }
+    catch (error) { console.error("Failed to load partner vouchers", error); setVouchers([]); }
+    finally { setIsLoading(false); }
   }, []);
 
   useEffect(() => {
-    reload();
+    void reload();
   }, [reload]);
 
   const updateVoucher = useCallback((updated: VoucherItem) => {
     setVouchers((prev) => {
       const next = prev.map((v) => (v.id === updated.id ? updated : v));
-      saveVouchers(next);
       return next;
     });
   }, []);
@@ -51,10 +45,9 @@ export function useVoucherDetail(id: string) {
   useEffect(() => {
     if (!id) return;
     setIsLoading(true);
-    // TODO: thay bằng fetch API khi có backend
-    const data = _getVoucherById(id);
-    setVoucher(data);
-    setIsLoading(false);
+    partnerApi.getVoucher(id).then(setVoucher)
+      .catch((error) => { console.error("Failed to load voucher", error); setVoucher(null); })
+      .finally(() => setIsLoading(false));
   }, [id]);
 
   return { voucher, isLoading, setVoucher };

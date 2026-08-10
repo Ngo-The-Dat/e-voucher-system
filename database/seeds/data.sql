@@ -34,12 +34,12 @@ INSERT INTO categories (category_id, category_name, description, status) VALUES
 (4, 'Giải trí & Sự kiện', 'Vé xem phim, khu vui chơi, nghe nhạc', 'ACTIVE');
 
 -- 4. Insert branches (5 rows)
-INSERT INTO branches (branch_id, partner_id, branch_name, address, region, status) VALUES
-(1, 3, 'Ẩm Thực Việt - Chi nhánh Quận 1', '123 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM', 'Miền Nam', 'ACTIVE'),
-(2, 3, 'Ẩm Thực Việt - Chi nhánh Hoàn Kiếm', '45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Miền Bắc', 'ACTIVE'),
-(3, 4, 'Spa Hương Sen - Chi nhánh Cầu Giấy', '88 Xuân Thủy, Quận Cầu Giấy, Hà Nội', 'Miền Bắc', 'ACTIVE'),
-(4, 4, 'Spa Hương Sen - Chi nhánh Quận 3', '200 Điện Biên Phủ, Quận 3, TP.HCM', 'Miền Nam', 'ACTIVE'),
-(5, 5, 'Biển Bạc Hotel - Chi nhánh Nha Trang', '01 Trần Phú, TP. Nha Trang, Khánh Hòa', 'Miền Trung', 'ACTIVE');
+INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES
+(1, 3, 'Ẩm Thực Việt - Chi nhánh Quận 1', '123 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM', 'Miền Nam', '02838221234', 'ACTIVE'),
+(2, 3, 'Ẩm Thực Việt - Chi nhánh Hoàn Kiếm', '45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Miền Bắc', '02439349999', 'ACTIVE'),
+(3, 4, 'Spa Hương Sen - Chi nhánh Cầu Giấy', '88 Xuân Thủy, Quận Cầu Giấy, Hà Nội', 'Miền Bắc', '02437681234', 'ACTIVE'),
+(4, 4, 'Spa Hương Sen - Chi nhánh Quận 3', '200 Điện Biên Phủ, Quận 3, TP.HCM', 'Miền Nam', '02839305678', 'ACTIVE'),
+(5, 5, 'Biển Bạc Hotel - Chi nhánh Nha Trang', '01 Trần Phú, TP. Nha Trang, Khánh Hòa', 'Miền Trung', '02583521234', 'ACTIVE');
 
 -- 5. Insert partner_employees (2 rows)
 INSERT INTO partner_employees (user_id, branch_id) VALUES
@@ -143,3 +143,21 @@ INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_va
 (8, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
 (9, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
 (10, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS');
+
+-- Reset IDENTITY sequences sau khi seed data tường minh
+-- Đảm bảo INSERT tiếp theo không bị duplicate key
+SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users));
+SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT MAX(category_id) FROM categories));
+SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT MAX(branch_id) FROM branches));
+SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT MAX(program_id) FROM voucher_programs));
+SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), (SELECT MAX(approval_request_id) FROM voucher_approval_requests));
+SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), (SELECT MAX(cart_item_id) FROM cart_items));
+SELECT setval(pg_get_serial_sequence('orders', 'order_id'), (SELECT MAX(order_id) FROM orders));
+SELECT setval(pg_get_serial_sequence('order_items', 'order_item_id'), (SELECT MAX(order_item_id) FROM order_items));
+SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), (SELECT MAX(issued_voucher_id) FROM issued_vouchers));
+SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), (SELECT MAX(review_id) FROM reviews_feedback));
+SELECT setval(pg_get_serial_sequence('order_cancellations', 'cancellation_id'), (SELECT MAX(cancellation_id) FROM order_cancellations));
+SELECT setval(pg_get_serial_sequence('banners', 'banner_id'), (SELECT MAX(banner_id) FROM banners));
+SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), (SELECT MAX(popup_id) FROM popups));
+SELECT setval(pg_get_serial_sequence('contents', 'content_id'), (SELECT MAX(content_id) FROM contents));
+SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), (SELECT MAX(log_id) FROM system_logs));

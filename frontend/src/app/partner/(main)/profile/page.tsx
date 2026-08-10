@@ -13,6 +13,7 @@ import BranchesSection from "@/components/partner/profile/BranchesSection";
 import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { partnerApi } from "@/lib/partner-api";
 
 const TABS = [
   { id: "all", label: "Tất cả thông tin hồ sơ", icon: "assignment" },
@@ -86,40 +87,27 @@ export default function ProfilePage() {
   };
 
   // --- Branch actions ---
-  const handleSaveBranch = (branch: Branch) => {
-    setProfile((prev) => {
-      if (!prev) return prev;
-      const idx = prev.branches.findIndex((b) => b.id === branch.id);
-      const updated = [...prev.branches];
-      if (idx >= 0) updated[idx] = branch;
-      else updated.push(branch);
-      return { ...prev, branches: updated };
-    });
-    setHasUnsavedChanges(true);
+  const handleSaveBranch = async (branch: Branch) => {
+    try {
+      if (editingBranch) await partnerApi.updateBranch(branch);
+      else await partnerApi.createBranch(branch);
+      await reload();
+    } catch (error) { console.error("Failed to save branch", error); }
   };
 
-  const handleDeleteBranch = (id: string) => {
+  const handleDeleteBranch = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa chi nhánh này?")) return;
-    setProfile((prev) =>
-      prev ? { ...prev, branches: prev.branches.filter((b) => b.id !== id) } : prev
-    );
-    setHasUnsavedChanges(true);
+    try { await partnerApi.deleteBranch(id); await reload(); }
+    catch (error) { console.error("Failed to delete branch", error); }
   };
 
-  const handleToggleBranchStatus = (id: string) => {
-    setProfile((prev) =>
-      prev
-        ? {
-            ...prev,
-            branches: prev.branches.map((b) =>
-              b.id === id
-                ? { ...b, status: b.status === "active" ? "inactive" : "active" }
-                : b
-            ),
-          }
-        : prev
-    );
-    setHasUnsavedChanges(true);
+  const handleToggleBranchStatus = async (id: string) => {
+    const branch = profile.branches.find((b) => b.id === id);
+    if (!branch) return;
+    try {
+      await partnerApi.updateBranch({ ...branch, status: branch.status === "active" ? "inactive" : "active" });
+      await reload();
+    } catch (error) { console.error("Failed to toggle branch", error); }
   };
 
   const errorCount = Object.keys(errors).length;

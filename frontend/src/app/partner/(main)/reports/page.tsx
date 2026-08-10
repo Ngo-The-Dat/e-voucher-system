@@ -25,7 +25,7 @@ export default function ReportsPage() {
     vouchers.find((v) => v.id === selectedVoucherId) || vouchers[0];
 
   // Các chỉ số tính toán cho voucher được chọn
-  const revenue = selectedVoucher ? (selectedVoucher.soldCount || 0) * selectedVoucher.sellingPrice : 0;
+  const revenue = selectedVoucher?.revenue ?? 0;
   const issuedQty = selectedVoucher?.issuedQuantity ?? 0;
   const soldQty = selectedVoucher?.soldCount ?? 0;
   const usedQty = selectedVoucher?.usedCount ?? 0;
@@ -111,7 +111,7 @@ export default function ReportsPage() {
                   </thead>
                   <tbody className="divide-y divide-outline-variant">
                     {vouchers.map((item) => {
-                      const itemRevenue = (item.soldCount || 0) * item.sellingPrice;
+                      const itemRevenue = item.revenue ?? 0;
                       const isSelected = selectedVoucherId === item.id;
                       return (
                         <tr

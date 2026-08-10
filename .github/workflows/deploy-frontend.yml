@@ -36,6 +36,7 @@ jobs:
           mkdir -p deploy-frontend/.next
           cp -a .next/standalone/. deploy-frontend/
           cp -a .next/static deploy-frontend/.next/static
+          cp -a public deploy-frontend/public
           tar -czf frontend-release.tar.gz -C deploy-frontend .
 
       - name: Upload to VPS

@@ -5,18 +5,19 @@ import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getVoucherById, updateVoucherStatus, updateVoucher, initialCategories } from "@/lib/mock-vouchers";
-import { getStoredPartnerProfile } from "@/lib/mock-profile";
-import { VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
+import { partnerApi } from "@/lib/partner-api";
+import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-export default function VoucherDetailPage({ params }: { params: { id: string } }) {
+export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [voucher, setVoucher] = useState<VoucherItem | null>(null);
   const [partnerBranches, setPartnerBranches] = useState<Branch[]>([]);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   // Edit Mode state for UC 'Chỉnh sửa voucher' (UC Gửi duyệt Flow A1)
   const [isEditing, setIsEditing] = useState(false);
@@ -38,13 +39,9 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const profile = getStoredPartnerProfile();
-    if (profile && profile.branches) {
-      setPartnerBranches(profile.branches);
-    }
-
-    const loaded = getVoucherById(params.id);
-    if (loaded) {
+    Promise.all([partnerApi.getBranches(), partnerApi.getCategories(), partnerApi.getVoucher(id)])
+      .then(([branches, rows, loaded]) => {
+      setPartnerBranches(branches); setCategories(rows);
       setVoucher(loaded);
       setEditTitle(loaded.title);
       setEditCategoryId(loaded.categoryId);
@@ -57,13 +54,13 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       setEditUseStartDate(loaded.useStartDate);
       setEditUseEndDate(loaded.useEndDate);
       setEditDisplayStatus(loaded.displayStatus || "active");
-    }
-  }, [params.id]);
+    }).catch((error) => console.error("Failed to load voucher detail", error));
+  }, [id]);
 
   if (!voucher) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen">
-        <TopAppBar title={`Chi tiết Voucher ${params.id}`} />
+        <TopAppBar title={`Chi tiết Voucher ${id}`} />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />
@@ -83,17 +80,17 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
   const editDiscountAmount = editOriginalPrice > editSellingPrice ? editOriginalPrice - editSellingPrice : 0;
 
   // UC Gửi duyệt voucher - Step 3: Gửi yêu cầu xét duyệt đến quản trị viên
-  const handleSendForApproval = () => {
-    updateVoucherStatus(voucher.id, "pending");
-    setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
-    setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
-    setTimeout(() => {
-      router.push("/partner/vouchers");
-    }, 2000);
+  const handleSendForApproval = async () => {
+    try {
+      await partnerApi.submitVoucher(voucher.id);
+      setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
+      setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
+      setTimeout(() => router.push("/partner/vouchers"), 2000);
+    } catch (error) { console.error("Failed to submit voucher", error); }
   };
 
   // UC Chỉnh sửa voucher (UC Gửi duyệt Flow A1 Step 2 - Save Edit)
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: VoucherFormErrors = {};
 
@@ -113,7 +110,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       return;
     }
 
-    const selectedCategory = initialCategories.find((c) => c.id === editCategoryId);
+    const selectedCategory = categories.find((c) => c.id === editCategoryId);
     const selectedBranches = partnerBranches.filter((b) => editSelectedBranchIds.includes(b.id));
 
     const updatedItem: VoucherItem = {
@@ -134,12 +131,12 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
       displayStatus: editDisplayStatus,
     };
 
-    updateVoucher(updatedItem);
-    setVoucher(updatedItem);
-    setIsEditing(false);
-    setErrors({});
-    setToastMessage("Cập nhật thông tin chương trình voucher thành công!");
-    setTimeout(() => setToastMessage(null), 3000);
+    try {
+      await partnerApi.updateVoucher(updatedItem);
+      setVoucher(updatedItem); setIsEditing(false); setErrors({});
+      setToastMessage("Cập nhật thông tin chương trình voucher thành công!");
+      setTimeout(() => setToastMessage(null), 3000);
+    } catch (error) { console.error("Failed to update voucher", error); }
   };
 
   // Sử dụng VoucherStatusBadge component thay vì inline function
@@ -364,7 +361,7 @@ export default function VoucherDetailPage({ params }: { params: { id: string } }
                   onChange={(e) => setEditCategoryId(e.target.value)}
                   className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                 >
-                  {initialCategories.map((c) => (
+                  {categories.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

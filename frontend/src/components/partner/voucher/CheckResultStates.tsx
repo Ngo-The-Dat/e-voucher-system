@@ -1,6 +1,7 @@
 import Icon from "@/components/shared/ui/Icon";
 import { VoucherItem } from "@/lib/types/voucher";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useEffect, useRef } from "react";
 
 interface CheckResultIdleCodeProps {
   inputCode: string;
@@ -34,9 +35,62 @@ export function CheckResultIdleCode({
   );
 }
 
-interface CheckResultIdleQrProps {}
+interface CheckResultIdleQrProps {
+  onScan: (value: string) => void;
+  onError: () => void;
+}
 
-export function CheckResultIdleQr({}: CheckResultIdleQrProps) {
+export function CheckResultIdleQr({ onScan, onError }: CheckResultIdleQrProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const onScanRef = useRef(onScan);
+  const onErrorRef = useRef(onError);
+
+  useEffect(() => { onScanRef.current = onScan; }, [onScan]);
+  useEffect(() => { onErrorRef.current = onError; }, [onError]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !navigator.mediaDevices?.getUserMedia) {
+      onErrorRef.current();
+      return;
+    }
+
+    let active = true;
+    let controls: { stop: () => void } | undefined;
+
+    const startScanner = async () => {
+      const { BrowserQRCodeReader } = await import("@zxing/browser");
+      if (!active) return;
+      const reader = new BrowserQRCodeReader();
+      const scannerControls = await reader.decodeFromConstraints(
+        { video: { facingMode: { ideal: "environment" } } },
+        video,
+        (result) => {
+          if (!active || !result) return;
+          active = false;
+          controls?.stop();
+          onScanRef.current(result.getText());
+        },
+      );
+      controls = scannerControls;
+      if (!active) scannerControls.stop();
+    };
+
+    startScanner().catch(() => {
+      if (!active) return;
+      active = false;
+      onErrorRef.current();
+    });
+
+    return () => {
+      active = false;
+      controls?.stop();
+      if (video.srcObject instanceof MediaStream) {
+        video.srcObject.getTracks().forEach((track) => track.stop());
+      }
+    };
+  }, []);
+
   return (
     <div className="space-y-6 max-w-lg mx-auto w-full text-center">
       <div className="w-16 h-16 bg-primary-container/30 text-primary rounded-full flex items-center justify-center mx-auto shadow-sm">
@@ -46,9 +100,11 @@ export function CheckResultIdleQr({}: CheckResultIdleQrProps) {
         <h3 className="text-xl font-bold text-on-surface">Quét mã QR Voucher</h3>
         <p className="text-base text-on-surface-variant mt-1">Đưa camera đối diện mã QR trên thiết bị của khách hàng để quét mã.</p>
       </div>
-      <div className="w-64 h-64 border-4 border-dashed border-primary rounded-2xl mx-auto flex flex-col items-center justify-center bg-primary/5 shadow-inner">
-        <Icon name="qr_code_2" className="text-6xl text-primary/60 animate-pulse mb-2" />
-        <span className="text-xs text-on-surface-variant font-medium px-4">Đang bật Camera quét mã QR...</span>
+      <div className="w-64 h-64 border-4 border-dashed border-primary rounded-2xl mx-auto overflow-hidden bg-black shadow-inner relative">
+        <video ref={videoRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+        <span className="absolute bottom-2 inset-x-2 text-xs text-white font-medium px-3 py-1.5 rounded-lg bg-black/60">
+          Đưa mã QR vào giữa khung hình
+        </span>
       </div>
     </div>
   );
