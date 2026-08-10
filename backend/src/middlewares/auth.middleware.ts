@@ -32,10 +32,12 @@ export const authenticate = async (
 
   let decoded: AuthRequest['user'];
   try {
-    decoded = jwt.verify(token, secret) as AuthRequest['user'];
-    if (!decoded || !Number.isSafeInteger(decoded.id) || typeof decoded.role !== 'string') {
+    const payload = jwt.verify(token, secret) as { id?: unknown; role?: unknown; email?: unknown };
+    const id = Number(payload.id);
+    if (!Number.isSafeInteger(id) || id <= 0 || typeof payload.role !== 'string') {
       throw new Error('Payload token không hợp lệ');
     }
+    decoded = { id, role: payload.role, email: typeof payload.email === 'string' ? payload.email : '' };
   } catch {
     res.status(401).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
     return;

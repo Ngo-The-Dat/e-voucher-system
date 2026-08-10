@@ -7,8 +7,21 @@ class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
 
+const getStoredPartnerToken = (): string | null => {
+  if (typeof window === "undefined") return null;
+
+  const token = localStorage.getItem("partner_access_token");
+  const isJwt = token !== null && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token);
+  if (!isJwt) {
+    localStorage.removeItem("partner_access_token");
+    return null;
+  }
+
+  return token;
+};
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const token = typeof window === "undefined" ? null : localStorage.getItem("partner_access_token");
+  const token = getStoredPartnerToken();
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
@@ -18,7 +31,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     },
   });
   const body = await response.json().catch(() => ({})) as { message?: string };
-  if (!response.ok) throw new ApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
+  if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("partner_access_token");
+    }
+    throw new ApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
+  }
   return body as T;
 }
 
@@ -47,12 +65,18 @@ const mapVoucher = (row: any): VoucherItem => ({
 });
 
 export const partnerApi = {
+  login: (payload: { email: string; password: string }) =>
+    request<{ token: string; user: { full_name: string; email: string } }>("/partner/auth/login", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   register: (payload: object) => request("/partner/auth/register", { method: "POST", body: JSON.stringify(payload) }),
   getProfile: async (): Promise<PartnerProfile> => {
     const [row, branches] = await Promise.all([
       request<any>("/partner/profile"), request<any[]>("/partner/branches"),
     ]);
     return {
+      businessName: row.business_name ?? "Đối tác",
       legalInfo: {
         taxId: row.tax_code, businessLicenseNo: row.business_license_no ?? "",
         issueDate: row.license_issue_date?.slice(0, 10) ?? "", issuePlace: row.license_issue_place ?? "",
@@ -68,6 +92,7 @@ export const partnerApi = {
   },
   updateProfile: (profile: PartnerProfile) => request("/partner/profile", {
     method: "PUT", body: JSON.stringify({
+      business_name: profile.businessName,
       business_license_no: profile.legalInfo.businessLicenseNo,
       license_issue_date: profile.legalInfo.issueDate || null,
       license_issue_place: profile.legalInfo.issuePlace,
