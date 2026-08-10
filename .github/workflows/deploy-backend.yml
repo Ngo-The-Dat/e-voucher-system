@@ -86,8 +86,7 @@ jobs:
             sudo chown -R webapp:webapp "$REMOTE_DIR"
 
             echo "Installing production dependencies..."
-            cd "$REMOTE_DIR"
-            sudo -u webapp npm ci --omit=dev
+            sudo -u webapp npm --prefix "$REMOTE_DIR" ci --omit=dev
 
             echo "Starting backend service..."
             sudo systemctl start "$SERVICE"
