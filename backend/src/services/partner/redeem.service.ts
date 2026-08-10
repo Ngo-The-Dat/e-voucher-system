@@ -1,0 +1,103 @@
+import pool from '../../config/db.js';
+
+// ─── Service ──────────────────────────────────────────────────────────────────
+
+/**
+ * Tra cứu issued voucher theo mã.
+ * Kiểm tra voucher phải thuộc chương trình của partner đang đăng nhập.
+ */
+export const lookupVoucher = async (voucherCode: string, partnerId: number) => {
+  const result = await pool.query(
+    `SELECT
+       iv.issued_voucher_id, iv.voucher_code, iv.usage_status,
+       iv.issued_at, iv.expires_at, iv.used_at, iv.discount_amount,
+       iv.applicable_region, iv.qr_code,
+       vp.program_name, vp.original_price, vp.sale_price, vp.use_end_at,
+       u.full_name AS owner_full_name, u.email AS owner_email, u.phone AS owner_phone
+     FROM issued_vouchers iv
+     JOIN voucher_programs vp ON iv.program_id = vp.program_id
+     JOIN users u ON iv.owner_user_id = u.user_id
+     -- Đảm bảo voucher thuộc chương trình của partner này
+     WHERE iv.voucher_code = $1
+       AND vp.partner_id = $2`,
+    [voucherCode, partnerId]
+  );
+
+  if (result.rows.length === 0) {
+    throw {
+      status: 404,
+      message: 'Không tìm thấy voucher hoặc voucher không thuộc hệ thống của bạn.',
+    };
+  }
+
+  return result.rows[0];
+};
+
+/**
+ * Xác nhận sử dụng (redeem) voucher tại điểm bán.
+ * partnerId có thể là PARTNER hoặc PARTNER_EMPLOYEE (đã xác nhận branch ownership ở caller).
+ */
+export const redeemVoucher = async (
+  voucherCode: string,
+  branchId: number,
+  partnerId: number  // partner_id của người đang đăng nhập (lấy từ partner_employees nếu là employee)
+) => {
+  // 1. Lấy thông tin voucher
+  const voucherResult = await pool.query(
+    `SELECT
+       iv.issued_voucher_id, iv.usage_status, iv.expires_at, iv.program_id
+     FROM issued_vouchers iv
+     JOIN voucher_programs vp ON iv.program_id = vp.program_id
+     WHERE iv.voucher_code = $1 AND vp.partner_id = $2`,
+    [voucherCode, partnerId]
+  );
+
+  if (voucherResult.rows.length === 0) {
+    throw { status: 404, message: 'Không tìm thấy voucher hoặc voucher không thuộc hệ thống của bạn.' };
+  }
+
+  const voucher = voucherResult.rows[0];
+
+  // 2. Kiểm tra trạng thái
+  if (voucher.usage_status !== 'UNUSED') {
+    const statusMessages: Record<string, string> = {
+      USED: 'Voucher này đã được sử dụng rồi.',
+      EXPIRED: 'Voucher đã hết hạn.',
+      CANCELLED: 'Voucher đã bị hủy.',
+    };
+    throw {
+      status: 400,
+      message: statusMessages[voucher.usage_status] || `Voucher ở trạng thái không hợp lệ: ${voucher.usage_status}`,
+    };
+  }
+
+  // 3. Kiểm tra hạn sử dụng
+  if (new Date(voucher.expires_at) < new Date()) {
+    throw { status: 400, message: 'Voucher đã hết hạn sử dụng.' };
+  }
+
+  // 4. Kiểm tra branch có trong chương trình voucher không
+  const branchCheck = await pool.query(
+    `SELECT 1 FROM voucher_program_branches
+     WHERE program_id = $1 AND branch_id = $2`,
+    [voucher.program_id, branchId]
+  );
+  if (branchCheck.rows.length === 0) {
+    throw { status: 400, message: 'Chi nhánh này không nằm trong danh sách áp dụng của voucher.' };
+  }
+
+  // 5. Cập nhật trạng thái
+  await pool.query(
+    `UPDATE issued_vouchers
+     SET usage_status = 'USED', used_at = NOW()
+     WHERE issued_voucher_id = $1`,
+    [voucher.issued_voucher_id]
+  );
+
+  return {
+    issued_voucher_id: voucher.issued_voucher_id,
+    voucher_code: voucherCode,
+    redeemed_at: new Date().toISOString(),
+    message: 'Voucher đã được xác nhận sử dụng thành công.',
+  };
+};

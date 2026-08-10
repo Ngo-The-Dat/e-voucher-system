@@ -30,6 +30,7 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role VARCHAR(30) NOT NULL CONSTRAINT chk_users_role CHECK (role IN ('CUSTOMER', 'PARTNER', 'ADMIN', 'PARTNER_EMPLOYEE')),
     gender VARCHAR(20) CONSTRAINT chk_users_gender CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE', 'OTHER')),
+    identity_no VARCHAR(30) UNIQUE,                             -- Số CCCD / CMND
     nationality VARCHAR(100),
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CONSTRAINT chk_users_status CHECK (status IN ('ACTIVE', 'LOCKED')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -43,7 +44,17 @@ CREATE TABLE partners (
     tax_code VARCHAR(50) NOT NULL UNIQUE,
     approval_status VARCHAR(30) NOT NULL CONSTRAINT chk_partners_approval_status CHECK (approval_status IN ('PENDING', 'APPROVED', 'REJECTED')),
     activity_status VARCHAR(20) NOT NULL CONSTRAINT chk_partners_activity_status CHECK (activity_status IN ('ACTIVE', 'INACTIVE', 'LOCKED')),
-    registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- Thông tin pháp lý
+    business_license_no VARCHAR(100),                           -- Số ĐKKD
+    license_issue_date DATE,                                    -- Ngày cấp ĐKKD
+    license_issue_place VARCHAR(255),                           -- Nơi cấp ĐKKD
+    -- Thông tin người đại diện
+    representative_full_name VARCHAR(150),
+    representative_title VARCHAR(100),
+    representative_identity_no VARCHAR(30),
+    representative_phone VARCHAR(20),
+    representative_email VARCHAR(255)
 );
 
 -- 3. Bảng categories (Danh mục)
