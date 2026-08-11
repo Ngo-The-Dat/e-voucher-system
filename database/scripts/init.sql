@@ -43,7 +43,7 @@ CREATE TABLE partners (
     user_id BIGINT PRIMARY KEY REFERENCES users(user_id),
     business_name VARCHAR(255) NOT NULL,
     tax_code VARCHAR(50) NOT NULL UNIQUE,
-    approval_status VARCHAR(30) NOT NULL CONSTRAINT chk_partners_approval_status CHECK (approval_status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    approval_status VARCHAR(30) NOT NULL CONSTRAINT chk_partners_approval_status CHECK (approval_status IN ('PENDING', 'REVISION_REQUESTED', 'APPROVED', 'REJECTED')),
     activity_status VARCHAR(20) NOT NULL CONSTRAINT chk_partners_activity_status CHECK (activity_status IN ('ACTIVE', 'INACTIVE', 'LOCKED')),
     registered_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     -- Thông tin pháp lý

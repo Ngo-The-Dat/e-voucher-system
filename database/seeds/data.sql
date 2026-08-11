@@ -18,13 +18,23 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender
 (7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'FEMALE', '001194000007', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
 (8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001196000008', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
 (9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001097000009', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
-(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000010', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00');
+(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000010', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00'),
+(11, 'Nguyễn Thị Sen', 'partner_sen@senvang.vn', '0905000011', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001196000011', 'Việt Nam', 'ACTIVE', '2026-08-01 14:30:00'),
+(12, 'Trần Văn Hải', 'partner_haisanx@gmail.com', '0905000012', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001097000012', 'Việt Nam', 'ACTIVE', '2026-07-31 09:15:00'),
+(13, 'Nguyễn Thị Hương', 'partner_highlands@coffee.vn', '0905000013', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001198000013', 'Việt Nam', 'ACTIVE', '2026-07-28 10:20:00'),
+(14, 'Lê Quốc Trung', 'partner_cgv@cinema.vn', '0905000014', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001099000014', 'Việt Nam', 'ACTIVE', '2026-07-25 11:00:00'),
+(15, 'Hoàng Văn Tuấn', 'partner_tocotoco@bubbletea.vn', '0905000015', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001090000015', 'Việt Nam', 'ACTIVE', '2026-08-02 16:15:00');
 
--- 2. Insert partners (3 rows)
+-- 2. Insert partners (8 rows)
 INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place) VALUES
 (3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'APPROVED', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội'),
 (4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'APPROVED', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội'),
-(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh');
+(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh'),
+(11, 'Công ty TNHH Dịch vụ Spa Sen Vàng', '0102123456', 'PENDING', 'INACTIVE', '2026-08-01 14:30:00', '0102123456-001', '2022-03-15', 'Sở KH&ĐT TP. Hà Nội'),
+(12, 'Công ty Cổ phần Nhà hàng Hải Sản X', '0103456789', 'REJECTED', 'INACTIVE', '2026-07-31 09:15:00', '0103456789-001', '2021-06-10', 'Sở KH&ĐT TP. Hồ Chí Minh'),
+(13, 'Công ty TNHH Highlands Coffee Nhượng Quyền', '0104567890', 'PENDING', 'INACTIVE', '2026-07-28 10:20:00', '0104567890-001', '2020-01-18', 'Sở KH&ĐT TP. Hà Nội'),
+(14, 'Công ty TNHH CGV Cinemas Việt Nam', '0105678901', 'REJECTED', 'INACTIVE', '2026-07-25 11:00:00', '0105678901-001', '2018-09-05', 'Sở KH&ĐT TP. Hồ Chí Minh'),
+(15, 'Công ty Cổ phần Trà sữa TocoToco', '0106789012', 'PENDING', 'INACTIVE', '2026-08-02 16:15:00', '0106789012-001', '2023-02-20', 'Sở KH&ĐT TP. Hà Nội');
 
 -- 3. Insert categories (4 rows)
 INSERT INTO categories (category_id, category_name, description, status) VALUES
@@ -33,13 +43,18 @@ INSERT INTO categories (category_id, category_name, description, status) VALUES
 (3, 'Du lịch & Khách sạn', 'Voucher nghỉ dưỡng khách sạn, tour du lịch', 'ACTIVE'),
 (4, 'Giải trí & Sự kiện', 'Vé xem phim, khu vui chơi, nghe nhạc', 'ACTIVE');
 
--- 4. Insert branches (5 rows)
+-- 4. Insert branches (10 rows)
 INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES
 (1, 3, 'Ẩm Thực Việt - Chi nhánh Quận 1', '123 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM', 'Miền Nam', '02838221234', 'ACTIVE'),
 (2, 3, 'Ẩm Thực Việt - Chi nhánh Hoàn Kiếm', '45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Miền Bắc', '02439349999', 'ACTIVE'),
 (3, 4, 'Spa Hương Sen - Chi nhánh Cầu Giấy', '88 Xuân Thủy, Quận Cầu Giấy, Hà Nội', 'Miền Bắc', '02437681234', 'ACTIVE'),
 (4, 4, 'Spa Hương Sen - Chi nhánh Quận 3', '200 Điện Biên Phủ, Quận 3, TP.HCM', 'Miền Nam', '02839305678', 'ACTIVE'),
-(5, 5, 'Biển Bạc Hotel - Chi nhánh Nha Trang', '01 Trần Phú, TP. Nha Trang, Khánh Hòa', 'Miền Trung', '02583521234', 'ACTIVE');
+(5, 5, 'Biển Bạc Hotel - Chi nhánh Nha Trang', '01 Trần Phú, TP. Nha Trang, Khánh Hòa', 'Miền Trung', '02583521234', 'ACTIVE'),
+(6, 11, 'Spa Sen Vàng - Chi nhánh Liễu Giai', '54 Liễu Giai, Cống Vị, Ba Đình, Hà Nội', 'Miền Bắc', '02438889999', 'INACTIVE'),
+(7, 11, 'Spa Sen Vàng - Chi nhánh Nguyễn Trãi', '234 Nguyễn Trãi, Thanh Xuân, Hà Nội', 'Miền Bắc', '02438888888', 'INACTIVE'),
+(8, 12, 'Hải Sản X - Chi nhánh Quận 1', '99 Trần Hưng Đạo, Quận 1, TP.HCM', 'Miền Nam', '02839998888', 'INACTIVE'),
+(9, 13, 'Highlands Coffee - Vincom Bà Triệu', '191 Bà Triệu, Hai Bà Trưng, Hà Nội', 'Miền Bắc', '02437776666', 'INACTIVE'),
+(10, 15, 'TocoToco - Cầu Giấy', '101 Cầu Giấy, Hà Nội', 'Miền Bắc', '02435554444', 'INACTIVE');
 
 -- 5. Insert partner_employees (2 rows)
 INSERT INTO partner_employees (user_id, branch_id) VALUES

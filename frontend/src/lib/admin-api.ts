@@ -95,6 +95,63 @@ export interface LogsResponse {
   };
 }
 
+export interface AdminPartnerListItem {
+  user_id: number;
+  business_name: string;
+  tax_code: string;
+  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  activity_status: "ACTIVE" | "INACTIVE" | "LOCKED";
+  registered_at: string;
+  business_license_no: string | null;
+  license_issue_date: string | null;
+  license_issue_place: string | null;
+  representative_name: string;
+  email: string;
+  phone: string | null;
+  branches_count?: number;
+  voucher_programs_count?: number;
+  user_status?: string;
+}
+
+export interface AdminBranchItem {
+  branch_id: number;
+  branch_name: string;
+  address: string;
+  region: string | null;
+  phone: string | null;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+export interface AdminVoucherProgramItem {
+  program_id: number;
+  program_name: string;
+  original_price: string | number;
+  sale_price: string | number;
+  issue_quantity: number;
+  display_status: string;
+  sale_start_at: string;
+  sale_end_at: string;
+}
+
+export interface AdminPartnerDetail extends AdminPartnerListItem {
+  identity_no?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  lock_reason?: string | null;
+  branches?: AdminBranchItem[];
+  voucher_programs?: AdminVoucherProgramItem[];
+}
+
+export interface PartnersResponse {
+  partners: AdminPartnerListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export const adminApi = {
   // Users
   getUsers: async (params?: {
@@ -167,5 +224,128 @@ export const adminApi = {
 
   getLog: async (id: string | number): Promise<SystemLogDetail> => {
     return adminRequest<SystemLogDetail>(`/admin/logs/${id}`);
+  },
+
+  // Partners - Pending
+  getPendingPartners: async (params?: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PartnersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<PartnersResponse>(`/admin/partners/pending${qs}`);
+  },
+
+  getPendingPartner: async (id: string | number): Promise<AdminPartnerDetail> => {
+    return adminRequest<AdminPartnerDetail>(`/admin/partners/pending/${id}`);
+  },
+
+  approvePartner: async (id: string | number): Promise<{ message: string; partner_id: number }> => {
+    return adminRequest(`/admin/partners/${id}/approve`, {
+      method: "POST",
+    });
+  },
+
+  rejectPartner: async (
+    id: string | number,
+    reason?: string
+  ): Promise<{ message: string; partner_id: number }> => {
+    return adminRequest(`/admin/partners/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason || "" }),
+    });
+  },
+
+  requestRevisionPartner: async (
+    id: string | number,
+    note?: string
+  ): Promise<{ message: string; partner_id: number }> => {
+    return adminRequest(`/admin/partners/${id}/request-revision`, {
+      method: "POST",
+      body: JSON.stringify({ note: note || "" }),
+    });
+  },
+
+  // Partners - Managed
+  getManagedPartners: async (params?: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PartnersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<PartnersResponse>(`/admin/partners/manage${qs}`);
+  },
+
+  getManagedPartner: async (id: string | number): Promise<AdminPartnerDetail> => {
+    return adminRequest<AdminPartnerDetail>(`/admin/partners/manage/${id}`);
+  },
+
+  lockPartner: async (
+    id: string | number,
+    reason: string
+  ): Promise<{ message: string; partner_id: number }> => {
+    return adminRequest(`/admin/partners/${id}/lock`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  unlockPartner: async (id: string | number): Promise<{ message: string; partner_id: number }> => {
+    return adminRequest(`/admin/partners/${id}/unlock`, {
+      method: "POST",
+    });
+  },
+
+  // Branch Management
+  createPartnerBranch: async (
+    partnerId: string | number,
+    data: { branch_name: string; address: string; region?: string; phone?: string; status?: "ACTIVE" | "INACTIVE" }
+  ): Promise<AdminBranchItem> => {
+    return adminRequest<AdminBranchItem>(`/admin/partners/${partnerId}/branches`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePartnerBranch: async (
+    partnerId: string | number,
+    branchId: string | number,
+    data: { branch_name?: string; address?: string; region?: string; phone?: string; status?: "ACTIVE" | "INACTIVE" }
+  ): Promise<AdminBranchItem> => {
+    return adminRequest<AdminBranchItem>(`/admin/partners/${partnerId}/branches/${branchId}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deletePartnerBranch: async (
+    partnerId: string | number,
+    branchId: string | number
+  ): Promise<{ message: string; branch_id: number }> => {
+    return adminRequest(`/admin/partners/${partnerId}/branches/${branchId}`, {
+      method: "DELETE",
+    });
   },
 };

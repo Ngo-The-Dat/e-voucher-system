@@ -13,6 +13,7 @@ import partnerDashboardRouter from './partner/dashboard.router.js';
 // Admin sub-routers
 import adminUserRouter from './admin/user.router.js';
 import adminLogRouter from './admin/log.router.js';
+import adminPartnerRouter from './admin/partner.router.js';
 
 const router = Router();
 
@@ -62,6 +63,12 @@ router.use('/admin/logs',
   authenticate,
   requireRole('ADMIN'),
   adminLogRouter
+);
+
+router.use('/admin/partners',
+  authenticate,
+  requireRole('ADMIN'),
+  adminPartnerRouter
 );
 
 export default router;

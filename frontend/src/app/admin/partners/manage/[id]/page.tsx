@@ -1,239 +1,189 @@
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import FormField from "@/components/shared/ui/FormField";
-
-interface Branch {
-  code: string;
-  name: string;
-  address: string;
-  region: string;
-  status: "Hoạt động" | "Tạm ngưng";
-}
-
-interface PartnerDetailData {
-  id: string;
-  companyName: string;
-  taxId: string;
-  registrationDate: string;
-  status: "Đang hoạt động" | "Tạm khóa";
-  representative: {
-    name: string;
-    email: string;
-    phone: string;
-    gender: string;
-    nationality: string;
-  };
-  branches: Branch[];
-}
-
-const partnerDataMap: Record<string, PartnerDetailData> = {
-  "MER-910": {
-    id: "MER-910",
-    companyName: "Trung tâm Fitness California",
-    taxId: "0108889990",
-    registrationDate: "10/07/2026",
-    status: "Tạm khóa",
-    representative: {
-      name: "Lê Văn Tiến",
-      email: "tien.le@cali.vn",
-      phone: "0903 111 222",
-      gender: "Nam",
-      nationality: "Việt Nam",
-    },
-    branches: [
-      {
-        code: "CN-CALI-01",
-        name: "California Fitness - Landmark 81",
-        address: "720A Điện Biên Phủ, Q. Bình Thạnh, TP.HCM",
-        region: "TP. Hồ Chí Minh",
-        status: "Tạm ngưng",
-      },
-      {
-        code: "CN-CALI-02",
-        name: "California Fitness - Royal City",
-        address: "72A Nguyễn Trãi, Thanh Xuân, Hà Nội",
-        region: "Hà Nội",
-        status: "Tạm ngưng",
-      },
-    ],
-  },
-  "MER-907": {
-    id: "MER-907",
-    companyName: "Siêu thị WinMart+",
-    taxId: "0109988776",
-    registrationDate: "15/07/2026",
-    status: "Đang hoạt động",
-    representative: {
-      name: "Đỗ Anh Tuấn",
-      email: "tuan.do@winmart.vn",
-      phone: "0909 888 777",
-      gender: "Nam",
-      nationality: "Việt Nam",
-    },
-    branches: [
-      {
-        code: "CN-WM-01",
-        name: "WinMart+ - Cầu Giấy",
-        address: "123 Cầu Giấy, Quan Hoa, Cầu Giấy, Hà Nội",
-        region: "Hà Nội",
-        status: "Hoạt động",
-      },
-    ],
-  },
-  "MER-903": {
-    id: "MER-903",
-    companyName: "Tập đoàn Ẩm thực Golden Gate",
-    taxId: "0101239876",
-    registrationDate: "30/07/2026",
-    status: "Đang hoạt động",
-    representative: {
-      name: "Trần Minh Đức",
-      email: "duc.tran@ggg.com.vn",
-      phone: "0912 345 678",
-      gender: "Nam",
-      nationality: "Việt Nam",
-    },
-    branches: [
-      {
-        code: "CN-GG-01",
-        name: "Golden Gate - Vincom Ba Triệu",
-        address: "191 Bà Triệu, Lê Đại Hành, Hai Bà Trưng, Hà Nội",
-        region: "Hà Nội",
-        status: "Hoạt động",
-      },
-      {
-        code: "CN-GG-02",
-        name: "Golden Gate - Royal City",
-        address: "B2-R3 72A Nguyễn Trãi, Thượng Đình, Thanh Xuân, Hà Nội",
-        region: "Hà Nội",
-        status: "Hoạt động",
-      },
-      {
-        code: "CN-GG-03",
-        name: "Golden Gate - Aeon Mall Hà Đông",
-        address: "Tầng 2 Aeon Mall, Dương Nội, Hà Đông, Hà Nội",
-        region: "Hà Nội",
-        status: "Hoạt động",
-      },
-    ],
-  },
-};
+import { adminApi, AdminPartnerDetail, AdminBranchItem } from "@/lib/admin-api";
 
 export default function ManagePartnerDetailPage() {
   const params = useParams();
-  const partnerId = (params?.id as string) || "MER-903";
+  const partnerIdStr = (params?.id as string) || "";
 
-  const partnerInfo = partnerDataMap[partnerId] || {
-    id: partnerId,
-    companyName: "Đối tác thương mại " + partnerId,
-    taxId: "0101239876",
-    registrationDate: "30/07/2026",
-    status: "Đang hoạt động" as const,
-    representative: {
-      name: "Trần Minh Đức",
-      email: "duc.tran@ggg.com.vn",
-      phone: "0912 345 678",
-      gender: "Nam",
-      nationality: "Việt Nam",
-    },
-    branches: [],
-  };
+  const [partner, setPartner] = useState<AdminPartnerDetail | null>(null);
+  const [branches, setBranches] = useState<AdminBranchItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  type PartnerStatus = "Đang hoạt động" | "Tạm khóa";
-  const [partnerStatus, setPartnerStatus] = useState<PartnerStatus>(
-    partnerInfo.status
-  );
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // Lock Modal State
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReason, setLockReason] = useState("");
 
-  // Branch Management State
-  const [branches, setBranches] = useState<Branch[]>(partnerInfo.branches);
-
-  // Branch Modal States (Add / Edit)
+  // Branch Modal States
   const [branchModalOpen, setBranchModalOpen] = useState(false);
-  const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
-  const [branchForm, setBranchForm] = useState<Branch>({
-    code: "",
-    name: "",
+  const [editingBranch, setEditingBranch] = useState<AdminBranchItem | null>(null);
+  const [branchForm, setBranchForm] = useState<{
+    branch_name: string;
+    address: string;
+    region: string;
+    phone: string;
+    status: "ACTIVE" | "INACTIVE";
+  }>({
+    branch_name: "",
     address: "",
     region: "Hà Nội",
-    status: "Hoạt động",
+    phone: "",
+    status: "ACTIVE",
   });
+  const [deleteBranchId, setDeleteBranchId] = useState<number | null>(null);
 
-  // Delete Branch State
-  const [deleteBranchCode, setDeleteBranchCode] = useState<string | null>(null);
-
-  // Toggle Lock/Unlock Handlers
-  const handleConfirmLockToggle = () => {
-    if (partnerStatus === "Đang hoạt động") {
-      setPartnerStatus("Tạm khóa");
-      setToastMessage(
-        `Đã khóa tài khoản đối tác. Lý do: "${lockReason || "Theo chính sách quản lý đối tác"}"`
-      );
-    } else {
-      setPartnerStatus("Đang hoạt động");
-      setToastMessage(
-        "Đã mở khóa tài khoản đối tác. Đối tác hiện đã có thể hoạt động bình thường."
-      );
+  const fetchPartnerDetail = useCallback(async () => {
+    if (!partnerIdStr) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.getManagedPartner(partnerIdStr);
+      setPartner(data);
+      setBranches(data.branches ?? []);
+    } catch (err: any) {
+      console.error("Lỗi tải chi tiết đối tác:", err);
+      setError(err?.message || "Không thể kết nối máy chủ.");
+    } finally {
+      setIsLoading(false);
     }
-    setLockModalOpen(false);
-    setLockReason("");
+  }, [partnerIdStr]);
+
+  useEffect(() => {
+    fetchPartnerDetail();
+  }, [fetchPartnerDetail]);
+
+  const handleConfirmLockToggle = async () => {
+    if (!partner || !partnerIdStr) return;
+    setActionLoading(true);
+    try {
+      if (partner.activity_status === "ACTIVE") {
+        if (!lockReason.trim()) {
+          alert("Vui lòng nhập lý do khóa.");
+          setActionLoading(false);
+          return;
+        }
+        const res = await adminApi.lockPartner(partnerIdStr, lockReason.trim());
+        setToastMessage(res.message || `Đã khóa đối tác. Lý do: "${lockReason}"`);
+      } else {
+        const res = await adminApi.unlockPartner(partnerIdStr);
+        setToastMessage(res.message || "Đã mở khóa tài khoản đối tác thành công.");
+      }
+      setLockModalOpen(false);
+      setLockReason("");
+      fetchPartnerDetail();
+    } catch (err: any) {
+      alert(`Lỗi thực hiện: ${err?.message || "Không thể xử lý."}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  // Branch Add / Edit Openers
+  // Branch Modal Handlers
   const handleOpenAddBranch = () => {
     setEditingBranch(null);
     setBranchForm({
-      code: `CN-00${branches.length + 1}`,
-      name: "",
+      branch_name: "",
       address: "",
       region: "Hà Nội",
-      status: "Hoạt động",
+      phone: "",
+      status: "ACTIVE",
     });
     setBranchModalOpen(true);
   };
 
-  const handleOpenEditBranch = (branch: Branch) => {
+  const handleOpenEditBranch = (branch: AdminBranchItem) => {
     setEditingBranch(branch);
-    setBranchForm({ ...branch });
+    setBranchForm({
+      branch_name: branch.branch_name,
+      address: branch.address,
+      region: branch.region || "Hà Nội",
+      phone: branch.phone || "",
+      status: branch.status,
+    });
     setBranchModalOpen(true);
   };
 
-  // Save Branch Handler
-  const handleSaveBranch = () => {
-    if (!branchForm.code.trim() || !branchForm.name.trim() || !branchForm.address.trim()) return;
-
-    if (editingBranch) {
-      setBranches((prev) =>
-        prev.map((b) => (b.code === editingBranch.code ? { ...branchForm } : b))
-      );
-      setToastMessage(`Đã cập nhật thông tin chi nhánh "${branchForm.name}"`);
-    } else {
-      setBranches((prev) => [...prev, { ...branchForm }]);
-      setToastMessage(`Đã thêm chi nhánh mới "${branchForm.name}" thành công!`);
+  const handleSaveBranch = async () => {
+    if (!branchForm.branch_name.trim() || !branchForm.address.trim()) return;
+    setActionLoading(true);
+    try {
+      if (editingBranch) {
+        await adminApi.updatePartnerBranch(partnerIdStr, editingBranch.branch_id, branchForm);
+        setToastMessage(`Đã cập nhật chi nhánh "${branchForm.branch_name}" thành công!`);
+      } else {
+        await adminApi.createPartnerBranch(partnerIdStr, branchForm);
+        setToastMessage(`Đã thêm chi nhánh mới "${branchForm.branch_name}" thành công!`);
+      }
+      setBranchModalOpen(false);
+      fetchPartnerDetail();
+    } catch (err: any) {
+      alert(`Lỗi lưu chi nhánh: ${err?.message || "Không thể thực hiện."}`);
+    } finally {
+      setActionLoading(false);
     }
-
-    setBranchModalOpen(false);
   };
 
-  // Delete Branch Handler
-  const handleConfirmDeleteBranch = () => {
-    if (!deleteBranchCode) return;
-    const branchToDelete = branches.find((b) => b.code === deleteBranchCode);
-    setBranches((prev) => prev.filter((b) => b.code !== deleteBranchCode));
-    setToastMessage(`Đã xóa chi nhánh "${branchToDelete?.name || deleteBranchCode}"`);
-    setDeleteBranchCode(null);
+  const handleConfirmDeleteBranch = async () => {
+    if (!deleteBranchId) return;
+    setActionLoading(true);
+    try {
+      await adminApi.deletePartnerBranch(partnerIdStr, deleteBranchId);
+      setToastMessage("Đã xóa chi nhánh thành công!");
+      setDeleteBranchId(null);
+      fetchPartnerDetail();
+    } catch (err: any) {
+      alert(`Lỗi xóa chi nhánh: ${err?.message || "Không thể thực hiện."}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  const formatDateDisplay = (dateStr?: string | null) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch {
+      return dateStr;
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-12 text-center">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs text-slate-500 font-medium">Đang tải thông tin chi tiết đối tác...</p>
+      </div>
+    );
+  }
+
+  if (error || !partner) {
+    return (
+      <div className="p-12 text-center max-w-lg mx-auto">
+        <Icon name="error" className="text-4xl text-rose-500 mb-2 mx-auto" />
+        <h3 className="text-base font-bold text-slate-800">Không tìm thấy đối tác</h3>
+        <p className="text-xs text-slate-500 mt-1 mb-4">{error || "Thông tin đối tác không tồn tại hoặc đã bị xóa."}</p>
+        <Link
+          href="/admin/partners/manage"
+          className="px-4 py-2 bg-blue-600 text-white font-semibold text-xs rounded-xl hover:bg-blue-700 transition"
+        >
+          Quay lại danh sách
+        </Link>
+      </div>
+    );
+  }
+
+  const isLocked = partner.activity_status === "LOCKED";
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -270,21 +220,21 @@ export default function ManagePartnerDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              {partnerInfo.companyName}
+              {partner.business_name}
             </h1>
             <span
-              className={`px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 ${
-                partnerStatus === "Đang hoạt động"
-                  ? "bg-emerald-50 text-emerald-600 border border-emerald-200/70"
-                  : "bg-rose-50 text-rose-600 border border-rose-200/70"
+              className={`px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 border ${
+                !isLocked
+                  ? "bg-emerald-50 text-emerald-600 border-emerald-200/70"
+                  : "bg-rose-50 text-rose-600 border-rose-200/70"
               }`}
             >
               <span
                 className={`w-1.5 h-1.5 rounded-full ${
-                  partnerStatus === "Đang hoạt động" ? "bg-emerald-500" : "bg-rose-500"
+                  !isLocked ? "bg-emerald-500" : "bg-rose-500"
                 }`}
               />
-              {partnerStatus}
+              {!isLocked ? "Đang hoạt động" : "Tạm khóa"}
             </span>
           </div>
         </div>
@@ -298,16 +248,28 @@ export default function ManagePartnerDetailPage() {
             Quay lại
           </Link>
           <Button
-            variant={partnerStatus === "Đang hoạt động" ? "destructive" : "default"}
+            variant={!isLocked ? "destructive" : "default"}
             type="button"
             onClick={() => setLockModalOpen(true)}
+            disabled={actionLoading}
             className="px-4 py-2 text-xs"
           >
-            <Icon name={partnerStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-base mr-1.5" />
-            {partnerStatus === "Đang hoạt động" ? "Tạm khóa" : "Mở khóa"}
+            <Icon name={!isLocked ? "lock" : "lock_open"} className="text-base mr-1.5" />
+            {actionLoading ? "Đang xử lý..." : !isLocked ? "Tạm khóa" : "Mở khóa"}
           </Button>
         </div>
       </div>
+
+      {/* Lock Reason Warning Banner */}
+      {isLocked && partner.lock_reason && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1">
+          <div className="font-bold flex items-center gap-1.5 text-rose-700">
+            <Icon name="warning" className="text-base" />
+            <span>Tài khoản đối tác đang bị khóa</span>
+          </div>
+          <p className="text-slate-700">Lý do khóa: "{partner.lock_reason}"</p>
+        </div>
+      )}
 
       {/* Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -322,21 +284,21 @@ export default function ManagePartnerDetailPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
-                  Mã đối tác
+                  Mã đối tác (ID)
                 </span>
-                <span className="font-bold text-slate-900 text-sm">{partnerInfo.id}</span>
+                <span className="font-bold text-slate-900 text-sm font-mono">MER-{partner.user_id}</span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
                   Mã số thuế
                 </span>
-                <span className="font-bold text-slate-900 text-sm">{partnerInfo.taxId}</span>
+                <span className="font-bold text-slate-900 text-sm font-mono">{partner.tax_code}</span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
                   Ngày đăng ký
                 </span>
-                <span className="font-semibold text-slate-700">{partnerInfo.registrationDate}</span>
+                <span className="font-semibold text-slate-700 font-mono">{formatDateDisplay(partner.registered_at)}</span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
@@ -345,9 +307,36 @@ export default function ManagePartnerDetailPage() {
                 <span className="font-bold text-blue-600">{branches.length} chi nhánh</span>
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-3 border-t border-slate-100">
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Số ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {partner.business_license_no || "Chưa cập nhật"}
+                </span>
+              </div>
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Ngày cấp ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {formatDateDisplay(partner.license_issue_date)}
+                </span>
+              </div>
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Nơi cấp ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800">
+                  {partner.license_issue_place || "Chưa cập nhật"}
+                </span>
+              </div>
+            </div>
           </div>
 
-          {/* Section: Điều chỉnh & Quản lý Chi nhánh theo ERD */}
+          {/* Section: Danh sách chi nhánh */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
@@ -362,14 +351,14 @@ export default function ManagePartnerDetailPage() {
               <Button
                 type="button"
                 onClick={handleOpenAddBranch}
-                className="px-3.5 py-2 text-xs"
+                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-xs shrink-0 flex items-center gap-1.5"
               >
-                <Icon name="add" className="text-base mr-1.5" />
+                <Icon name="add" className="text-base" />
                 Thêm chi nhánh
               </Button>
             </div>
 
-            {/* Branches Table matching ERD */}
+            {/* Branches Table */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -378,38 +367,38 @@ export default function ManagePartnerDetailPage() {
                     <th className="py-3 px-4">TÊN CHI NHÁNH</th>
                     <th className="py-3 px-4">ĐỊA CHỈ</th>
                     <th className="py-3 px-4">KHU VỰC</th>
-                    <th className="py-3 px-4">TRẠNG THÁI</th>
-                    <th className="py-3 px-4 text-right">THAO TÁC</th>
+                    <th className="py-3 px-4 whitespace-nowrap">TRẠNG THÁI</th>
+                    <th className="py-3 px-4 text-right whitespace-nowrap">THAO TÁC</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {branches.length === 0 ? (
                     <tr>
                       <td colSpan={6} className="py-8 text-center text-slate-400">
-                        Chưa có chi nhánh nào. Nhấp "Thêm chi nhánh" để khởi tạo.
+                        Chưa có chi nhánh nào. Nhấp "+ Thêm chi nhánh" để tạo mới.
                       </td>
                     </tr>
                   ) : (
                     branches.map((b) => (
-                      <tr key={b.code} className="hover:bg-slate-50/60 transition">
-                        <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{b.code}</td>
-                        <td className="py-3.5 px-4 font-bold text-slate-900">{b.name}</td>
-                        <td className="py-3.5 px-4 text-slate-700">{b.address}</td>
-                        <td className="py-3.5 px-4 font-semibold text-slate-700">{b.region}</td>
-                        <td className="py-3.5 px-4">
+                      <tr key={b.branch_id} className="hover:bg-slate-50/60 transition">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-800">CN-{b.branch_id}</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{b.branch_name}</td>
+                        <td className="py-3.5 px-4 text-slate-700 max-w-xs">{b.address}</td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-700 whitespace-nowrap">{b.region || "Hà Nội"}</td>
+                        <td className="py-3.5 px-4 whitespace-nowrap">
                           <span
-                            className={`px-2.5 py-0.5 font-bold text-[11px] rounded-full inline-flex items-center gap-1 ${
-                              b.status === "Hoạt động"
+                            className={`px-2.5 py-0.5 font-bold text-[11px] rounded-full inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${
+                              b.status === "ACTIVE"
                                 ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                                 : "bg-rose-50 text-rose-700 border border-rose-200"
                             }`}
                           >
                             <span
                               className={`w-1.5 h-1.5 rounded-full ${
-                                b.status === "Hoạt động" ? "bg-emerald-500" : "bg-rose-500"
+                                b.status === "ACTIVE" ? "bg-emerald-500" : "bg-rose-500"
                               }`}
                             />
-                            {b.status}
+                            {b.status === "ACTIVE" ? "Hoạt động" : "Tạm ngưng"}
                           </span>
                         </td>
                         <td className="py-3.5 px-4 text-right">
@@ -418,15 +407,15 @@ export default function ManagePartnerDetailPage() {
                               variant="outline"
                               type="button"
                               onClick={() => handleOpenEditBranch(b)}
-                              className="px-2.5 py-1 text-slate-700 font-semibold h-auto text-xs"
+                              className="px-2.5 py-1 text-slate-700 bg-slate-100 hover:bg-slate-200 border-slate-200 font-semibold h-auto text-xs"
                             >
                               Sửa
                             </Button>
                             <Button
                               variant="destructive"
                               type="button"
-                              onClick={() => setDeleteBranchCode(b.code)}
-                              className="px-2.5 py-1 text-xs h-auto bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700"
+                              onClick={() => setDeleteBranchId(b.branch_id)}
+                              className="px-2.5 py-1 text-xs h-auto bg-rose-50 hover:bg-rose-100 text-rose-600 hover:text-rose-700 border-rose-100"
                             >
                               Xóa
                             </Button>
@@ -439,6 +428,50 @@ export default function ManagePartnerDetailPage() {
               </table>
             </div>
           </div>
+
+          {/* Section: Danh sách chương trình Voucher */}
+          {partner.voucher_programs && partner.voucher_programs.length > 0 && (
+            <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
+              <div className="border-b border-slate-100 pb-3">
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <Icon name="confirmation_number" className="text-blue-600" />
+                  Chương trình Voucher ({partner.voucher_programs.length})
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider border-b border-slate-200/70">
+                      <th className="py-3 px-4">MÃ VP</th>
+                      <th className="py-3 px-4">TÊN CHƯƠNG TRÌNH</th>
+                      <th className="py-3 px-4">GIÁ GỐC</th>
+                      <th className="py-3 px-4">GIÁ BÁN</th>
+                      <th className="py-3 px-4">SỐ LƯỢNG</th>
+                      <th className="py-3 px-4">TRẠNG THÁI</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {partner.voucher_programs.map((vp) => (
+                      <tr key={vp.program_id} className="hover:bg-slate-50/60 transition">
+                        <td className="py-3.5 px-4 font-mono font-bold text-slate-800">VP-{vp.program_id}</td>
+                        <td className="py-3.5 px-4 font-bold text-slate-900">{vp.program_name}</td>
+                        <td className="py-3.5 px-4 text-slate-600 font-mono">
+                          {Number(vp.original_price).toLocaleString("vi-VN")} đ
+                        </td>
+                        <td className="py-3.5 px-4 font-bold text-blue-600 font-mono">
+                          {Number(vp.sale_price).toLocaleString("vi-VN")} đ
+                        </td>
+                        <td className="py-3.5 px-4 font-semibold text-slate-800">{vp.issue_quantity}</td>
+                        <td className="py-3.5 px-4 font-bold text-[11px] text-slate-700">
+                          {vp.display_status}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column (1 Col): Representative Info */}
@@ -450,56 +483,56 @@ export default function ManagePartnerDetailPage() {
             </h2>
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-full bg-blue-600 text-white font-bold text-lg flex items-center justify-center shrink-0">
-                {partnerInfo.representative.name.substring(0, 2).toUpperCase()}
+                {partner.representative_name ? partner.representative_name.slice(0, 2).toUpperCase() : "ND"}
               </div>
               <div>
                 <div className="font-bold text-slate-900 text-sm">
-                  {partnerInfo.representative.name}
+                  {partner.representative_name}
                 </div>
                 <div className="text-xs text-slate-400 font-medium">
-                  {partnerInfo.representative.email}
+                  {partner.email}
                 </div>
               </div>
             </div>
             <div className="space-y-2.5 pt-2 border-t border-slate-100 text-xs">
               <div>
-                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                   Họ và tên
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.name}
+                  {partner.representative_name}
                 </span>
               </div>
               <div>
-                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                   Email
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.email}
+                  {partner.email}
                 </span>
               </div>
               <div>
-                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                   Số điện thoại
                 </span>
-                <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.phone}
+                <span className="font-semibold text-slate-800 font-mono">
+                  {partner.phone || "Chưa cập nhật"}
                 </span>
               </div>
               <div>
-                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                   Giới tính
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.gender}
+                  {partner.gender === "MALE" ? "Nam" : partner.gender === "FEMALE" ? "Nữ" : partner.gender || "Chưa cập nhật"}
                 </span>
               </div>
               <div>
-                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                   Quốc tịch
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.nationality}
+                  {partner.nationality || "Việt Nam"}
                 </span>
               </div>
             </div>
@@ -513,8 +546,8 @@ export default function ManagePartnerDetailPage() {
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center justify-between">
               <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <Icon name={partnerStatus === "Đang hoạt động" ? "lock" : "lock_open"} className={`${ partnerStatus === "Đang hoạt động" ? "text-rose-500" : "text-emerald-500" }`} />
-                {partnerStatus === "Đang hoạt động"
+                <Icon name={!isLocked ? "lock" : "lock_open"} className={`${ !isLocked ? "text-rose-500" : "text-emerald-500" }`} />
+                {!isLocked
                   ? "Xác nhận tạm khóa đối tác"
                   : "Xác nhận mở khóa đối tác"}
               </h3>
@@ -527,11 +560,11 @@ export default function ManagePartnerDetailPage() {
               </Button>
             </div>
             <p className="text-xs text-slate-500">
-              {partnerStatus === "Đang hoạt động"
+              {!isLocked
                 ? "Khi bị khóa, đối tác này và tất cả các chi nhánh sẽ tạm thời không thể phát sinh giao dịch mới trên hệ thống."
                 : "Đối tác sẽ quay trở lại trạng thái Đang hoạt động và tiếp tục kinh doanh bình thường."}
             </p>
-            {partnerStatus === "Đang hoạt động" && (
+            {!isLocked && (
               <textarea
                 rows={3}
                 placeholder="Nhập lý do khóa tài khoản đối tác..."
@@ -549,18 +582,19 @@ export default function ManagePartnerDetailPage() {
                 Hủy bỏ
               </Button>
               <Button
-                variant={partnerStatus === "Đang hoạt động" ? "destructive" : "default"}
+                variant={!isLocked ? "destructive" : "default"}
                 type="button"
                 onClick={handleConfirmLockToggle}
+                disabled={(!isLocked && !lockReason.trim()) || actionLoading}
               >
-                {partnerStatus === "Đang hoạt động" ? "Khóa ngay" : "Mở khóa ngay"}
+                {actionLoading ? "Đang xử lý..." : !isLocked ? "Khóa ngay" : "Mở khóa ngay"}
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Modal Thêm / Sửa Chi nhánh chuẩn theo ERD */}
+      {/* Modal Thêm / Sửa Chi nhánh */}
       {branchModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -579,16 +613,25 @@ export default function ManagePartnerDetailPage() {
             </div>
 
             <div className="space-y-3.5 text-xs">
+              <FormField label="Tên chi nhánh *">
+                <Input
+                  type="text"
+                  placeholder="e.g. Golden Gate - Vincom Ba Triệu..."
+                  value={branchForm.branch_name}
+                  onChange={(e) => setBranchForm({ ...branchForm, branch_name: e.target.value })}
+                />
+              </FormField>
+
+              <FormField label="Địa chỉ chi nhánh *">
+                <Input
+                  type="text"
+                  placeholder="e.g. 191 Bà Triệu, Lê Đại Hành, Hai Bà Trưng, Hà Nội..."
+                  value={branchForm.address}
+                  onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
+                />
+              </FormField>
+
               <div className="grid grid-cols-2 gap-3">
-                <FormField label="Mã chi nhánh *">
-                  <Input
-                    type="text"
-                    placeholder="e.g. CN-001..."
-                    value={branchForm.code}
-                    disabled={Boolean(editingBranch)}
-                    onChange={(e) => setBranchForm({ ...branchForm, code: e.target.value })}
-                  />
-                </FormField>
                 <FormField label="Khu vực *">
                   <select
                     value={branchForm.region}
@@ -605,25 +648,16 @@ export default function ManagePartnerDetailPage() {
                     <option value="Miền Nam">Miền Nam</option>
                   </select>
                 </FormField>
+
+                <FormField label="Số điện thoại">
+                  <Input
+                    type="text"
+                    placeholder="e.g. 02439349999..."
+                    value={branchForm.phone}
+                    onChange={(e) => setBranchForm({ ...branchForm, phone: e.target.value })}
+                  />
+                </FormField>
               </div>
-
-              <FormField label="Tên chi nhánh *">
-                <Input
-                  type="text"
-                  placeholder="e.g. Golden Gate - Vincom Ba Triệu..."
-                  value={branchForm.name}
-                  onChange={(e) => setBranchForm({ ...branchForm, name: e.target.value })}
-                />
-              </FormField>
-
-              <FormField label="Địa chỉ chi nhánh *">
-                <Input
-                  type="text"
-                  placeholder="e.g. 191 Bà Triệu, Lê Đại Hành, Hai Bà Trưng, Hà Nội..."
-                  value={branchForm.address}
-                  onChange={(e) => setBranchForm({ ...branchForm, address: e.target.value })}
-                />
-              </FormField>
 
               <FormField label="Trạng thái *">
                 <select
@@ -631,13 +665,13 @@ export default function ManagePartnerDetailPage() {
                   onChange={(e) =>
                     setBranchForm({
                       ...branchForm,
-                      status: e.target.value as "Hoạt động" | "Tạm ngưng",
+                      status: e.target.value as "ACTIVE" | "INACTIVE",
                     })
                   }
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 font-medium focus:bg-white focus:border-blue-500 outline-none transition"
                 >
-                  <option value="Hoạt động">Hoạt động</option>
-                  <option value="Tạm ngưng">Tạm ngưng</option>
+                  <option value="ACTIVE">Hoạt động</option>
+                  <option value="INACTIVE">Tạm ngưng</option>
                 </select>
               </FormField>
             </div>
@@ -653,9 +687,10 @@ export default function ManagePartnerDetailPage() {
               <Button
                 type="button"
                 onClick={handleSaveBranch}
-                disabled={!branchForm.code.trim() || !branchForm.name.trim() || !branchForm.address.trim()}
+                disabled={!branchForm.branch_name.trim() || !branchForm.address.trim() || actionLoading}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {editingBranch ? "Lưu thay đổi" : "Thêm ngay"}
+                {actionLoading ? "Đang lưu..." : editingBranch ? "Lưu thay đổi" : "Thêm ngay"}
               </Button>
             </div>
           </div>
@@ -663,15 +698,15 @@ export default function ManagePartnerDetailPage() {
       )}
 
       {/* Modal Xóa Chi nhánh */}
-      {deleteBranchCode && (
+      {deleteBranchId && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center gap-3">
-              <Icon name="delete" className="text-rose-500 text-3xl" />
+              <Icon name="delete" className="text-rose-500 text-3xl shrink-0" />
               <div>
                 <h3 className="font-bold text-slate-900 text-base">Xác nhận xóa chi nhánh</h3>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Hành động này sẽ loại bỏ chi nhánh (Mã: {deleteBranchCode}) khỏi hệ thống.
+                  Hành động này sẽ xóa chi nhánh khỏi hệ thống.
                 </p>
               </div>
             </div>
@@ -679,7 +714,7 @@ export default function ManagePartnerDetailPage() {
               <Button
                 variant="outline"
                 type="button"
-                onClick={() => setDeleteBranchCode(null)}
+                onClick={() => setDeleteBranchId(null)}
               >
                 Hủy
               </Button>
@@ -687,8 +722,10 @@ export default function ManagePartnerDetailPage() {
                 variant="destructive"
                 type="button"
                 onClick={handleConfirmDeleteBranch}
+                disabled={actionLoading}
+                className="bg-rose-600 hover:bg-rose-700 text-white"
               >
-                Xóa chi nhánh
+                {actionLoading ? "Đang xóa..." : "Xóa chi nhánh"}
               </Button>
             </div>
           </div>

@@ -2,79 +2,143 @@
 
 import Icon from "@/components/shared/ui/Icon";
 
-import { useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button } from "@/components/shared/ui/Button";
-import FormField from "@/components/shared/ui/FormField";
+import { adminApi, AdminPartnerDetail } from "@/lib/admin-api";
 
 export default function PendingPartnerDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const partnerId = (params?.id as string) || "MER-901";
+  const partnerIdStr = (params?.id as string) || "";
 
-  type PartnerStatus = "Chờ duyệt" | "Đã duyệt" | "Từ chối";
-  const [status, setStatus] = useState<PartnerStatus>("Chờ duyệt");
+  const [partner, setPartner] = useState<AdminPartnerDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
   const [revisionNote, setRevisionNote] = useState("");
 
-  const partnerInfo = {
-    id: partnerId,
-    companyName: partnerId === "MER-904" ? "Highlands Coffee (Nhượng quyền)" : "Công ty TNHH Dịch vụ Spa Sen Vàng",
-    taxId: "0102123456",
-    businessType: "Công ty TNHH Hai Thành Viên Trở Lên",
-    registrationDate: "01/08/2026",
-    address: "Tầng 5, Tòa nhà Lotte Center, 54 Liễu Giai, Ba Đình, Hà Nội",
-    representative: {
-      name: "Nguyễn Thị Sen",
-      email: "sen.nguyen@senvangspa.vn",
-      phone: "0987 654 321",
-      gender: "Nữ",
-      nationality: "Việt Nam",
-    },
-    documents: [
-      { name: "Giấy chứng nhận Đăng ký kinh doanh.pdf", size: "2.4 MB", type: "PDF" },
-      { name: "CCCD Người đại diện pháp luật.png", size: "1.1 MB", type: "Image" },
-      { name: "Giấy chứng nhận An toàn VSTP.pdf", size: "3.8 MB", type: "PDF" },
-    ],
-    branches: [
-      {
-        code: "CN-SV-01",
-        name: "Spa Sen Vàng - Liễu Giai",
-        address: "54 Liễu Giai, Cống Vị, Ba Đình, Hà Nội",
-        region: "Hà Nội",
-        status: "Chờ duyệt",
-      },
-      {
-        code: "CN-SV-02",
-        name: "Spa Sen Vàng - Nguyễn Trãi",
-        address: "234 Nguyễn Trãi, Thanh Xuân, Hà Nội",
-        region: "Hà Nội",
-        status: "Chờ duyệt",
-      },
-    ],
+  const fetchPartnerDetail = useCallback(async () => {
+    if (!partnerIdStr) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await adminApi.getPendingPartner(partnerIdStr);
+      setPartner(data);
+    } catch (err: any) {
+      console.error("Lỗi tải chi tiết đối tác pending:", err);
+      setError(err?.message || "Không thể kết nối máy chủ.");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [partnerIdStr]);
+
+  useEffect(() => {
+    fetchPartnerDetail();
+  }, [fetchPartnerDetail]);
+
+  const handleApprove = async () => {
+    if (!partnerIdStr) return;
+    setActionLoading(true);
+    try {
+      await adminApi.approvePartner(partnerIdStr);
+      setPartner((prev) => (prev ? { ...prev, approval_status: "APPROVED", activity_status: "ACTIVE" } : null));
+      setToastMessage("Phê duyệt hồ sơ thành công! Hồ sơ đối tác đã được duyệt và chuyển sang danh sách Quản lý đối tác.");
+    } catch (err: any) {
+      alert(`Lỗi phê duyệt: ${err?.message || "Không thể thực hiện."}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleApprove = () => {
-    setStatus("Đã duyệt");
-    setToastMessage("Hồ sơ đối tác đã được phê duyệt thành công! Đối tác đã được chuyển sang danh sách Quản lý đối tác.");
+  const handleConfirmReject = async () => {
+    if (!partnerIdStr || !rejectionReason.trim()) return;
+    setActionLoading(true);
+    try {
+      const res = await adminApi.rejectPartner(partnerIdStr, rejectionReason.trim());
+      setPartner((prev) => (prev ? { ...prev, approval_status: "REJECTED" } : null));
+      setRejectModalOpen(false);
+      setToastMessage(res.message || `Đã từ chối hồ sơ đối tác với lý do: "${rejectionReason}"`);
+    } catch (err: any) {
+      alert(`Lỗi từ chối: ${err?.message || "Không thể thực hiện."}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleConfirmReject = () => {
-    if (!rejectionReason.trim()) return;
-    setStatus("Từ chối");
-    setRejectModalOpen(false);
-    setToastMessage(`Đã từ chối hồ sơ đối tác với lý do: "${rejectionReason}"`);
+  const handleConfirmRevision = async () => {
+    if (!partnerIdStr || !revisionNote.trim()) return;
+    setActionLoading(true);
+    try {
+      const res = await adminApi.requestRevisionPartner(partnerIdStr, revisionNote.trim());
+      setPartner((prev) => (prev ? { ...prev, approval_status: "REVISION_REQUESTED" } : null));
+      setRevisionModalOpen(false);
+      setToastMessage(res.message || `Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
+    } catch (err: any) {
+      alert(`Lỗi gửi yêu cầu bổ sung: ${err?.message || "Không thể thực hiện."}`);
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const handleConfirmRevision = () => {
-    if (!revisionNote.trim()) return;
-    setRevisionModalOpen(false);
-    setToastMessage(`Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
+  const formatDateDisplay = (dateStr?: string | null) => {
+    if (!dateStr) return "N/A";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit", year: "numeric" });
+    } catch {
+      return dateStr;
+    }
   };
+
+  const getStatusDisplay = (approvalStatus?: string) => {
+    switch (approvalStatus) {
+      case "PENDING":
+        return { label: "Chờ duyệt", color: "bg-amber-50 text-amber-600 border-amber-200/70", dot: "bg-amber-500" };
+      case "REVISION_REQUESTED":
+        return { label: "Yêu cầu bổ sung", color: "bg-blue-50 text-blue-600 border-blue-200/70", dot: "bg-blue-500" };
+      case "APPROVED":
+        return { label: "Đã duyệt", color: "bg-emerald-50 text-emerald-600 border-emerald-200/70", dot: "bg-emerald-500" };
+      case "REJECTED":
+        return { label: "Từ chối", color: "bg-rose-50 text-rose-600 border-rose-200/70", dot: "bg-rose-500" };
+      default:
+        return { label: approvalStatus || "Chờ duyệt", color: "bg-amber-50 text-amber-600 border-amber-200/70", dot: "bg-amber-500" };
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="p-12 text-center">
+        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-xs text-slate-500 font-medium">Đang tải thông tin hồ sơ đối tác...</p>
+      </div>
+    );
+  }
+
+  if (error || !partner) {
+    return (
+      <div className="p-12 text-center max-w-lg mx-auto">
+        <Icon name="error" className="text-4xl text-rose-500 mb-2 mx-auto" />
+        <h3 className="text-base font-bold text-slate-800">Không tìm thấy đối tác</h3>
+        <p className="text-xs text-slate-500 mt-1 mb-4">{error || "Hồ sơ đối tác không tồn tại hoặc đã bị xóa."}</p>
+        <Link
+          href="/admin/partners/pending"
+          className="px-4 py-2 bg-blue-600 text-white font-semibold text-xs rounded-xl hover:bg-blue-700 transition"
+        >
+          Quay lại danh sách
+        </Link>
+      </div>
+    );
+  }
+
+  const statusInfo = getStatusDisplay(partner.approval_status);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
@@ -111,27 +175,13 @@ export default function PendingPartnerDetailPage() {
           </div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-              {partnerInfo.companyName}
+              {partner.business_name}
             </h1>
             <span
-              className={`px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 ${
-                status === "Chờ duyệt"
-                  ? "bg-amber-50 text-amber-600 border border-amber-200/70"
-                  : status === "Đã duyệt"
-                    ? "bg-emerald-50 text-emerald-600 border border-emerald-200/70"
-                    : "bg-rose-50 text-rose-600 border border-rose-200/70"
-              }`}
+              className={`px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 border ${statusInfo.color}`}
             >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  status === "Chờ duyệt"
-                    ? "bg-amber-500"
-                    : status === "Đã duyệt"
-                      ? "bg-emerald-500"
-                      : "bg-rose-500"
-                }`}
-              />
-              {status}
+              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`} />
+              {statusInfo.label}
             </span>
           </div>
         </div>
@@ -144,12 +194,13 @@ export default function PendingPartnerDetailPage() {
           >
             Quay lại
           </Link>
-          {status === "Chờ duyệt" && (
+          {partner.approval_status === "PENDING" && (
             <>
               <Button
                 variant="outline"
                 type="button"
                 onClick={() => setRevisionModalOpen(true)}
+                disabled={actionLoading}
               >
                 Yêu cầu bổ sung
               </Button>
@@ -157,6 +208,7 @@ export default function PendingPartnerDetailPage() {
                 variant="destructive"
                 type="button"
                 onClick={() => setRejectModalOpen(true)}
+                disabled={actionLoading}
                 className="bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100"
               >
                 Từ chối hồ sơ
@@ -164,10 +216,11 @@ export default function PendingPartnerDetailPage() {
               <Button
                 type="button"
                 onClick={handleApprove}
+                disabled={actionLoading}
                 className="bg-blue-600 hover:bg-blue-700 text-white"
               >
                 <Icon name="check" className="text-base mr-1.5" />
-                Phê duyệt hồ sơ
+                {actionLoading ? "Đang xử lý..." : "Phê duyệt hồ sơ"}
               </Button>
             </>
           )}
@@ -189,31 +242,64 @@ export default function PendingPartnerDetailPage() {
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
                   Tên doanh nghiệp
                 </span>
-                <span className="font-bold text-slate-900 text-sm">{partnerInfo.companyName}</span>
+                <span className="font-bold text-slate-900 text-sm">{partner.business_name}</span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
                   Mã số thuế
                 </span>
-                <span className="font-bold text-slate-900 text-sm">{partnerInfo.taxId}</span>
+                <span className="font-bold text-slate-900 text-sm font-mono">{partner.tax_code}</span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
                   Ngày đăng ký
                 </span>
-                <span className="font-semibold text-slate-800 text-sm">{partnerInfo.registrationDate}</span>
+                <span className="font-semibold text-slate-800 text-sm font-mono">
+                  {formatDateDisplay(partner.registered_at)}
+                </span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs pt-3 border-t border-slate-100">
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Số ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {partner.business_license_no || "Chưa cập nhật"}
+                </span>
+              </div>
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Ngày cấp ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {formatDateDisplay(partner.license_issue_date)}
+                </span>
+              </div>
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider mb-1">
+                  Nơi cấp ĐKKD
+                </span>
+                <span className="font-semibold text-slate-800">
+                  {partner.license_issue_place || "Chưa cập nhật"}
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Hồ sơ & Giấy phép đính kèm */}
+          {/* Giấy phép & Hồ sơ đính kèm */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="folder_open" className="text-blue-600" />
               Giấy phép & Hồ sơ nộp kèm
             </h2>
             <div className="space-y-2.5">
-              {partnerInfo.documents.map((doc, idx) => (
+              {[
+                { name: "Giấy chứng nhận Đăng ký kinh doanh.pdf", size: "2.4 MB", type: "PDF" },
+                { name: "CCCD Người đại diện pháp luật.png", size: "1.1 MB", type: "Image" },
+                { name: "Giấy chứng nhận An toàn VSTP.pdf", size: "3.8 MB", type: "PDF" },
+              ].map((doc, idx) => (
                 <div
                   key={idx}
                   className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition group"
@@ -240,15 +326,14 @@ export default function PendingPartnerDetailPage() {
             </div>
           </div>
 
-          {/* Danh sách chi nhánh đăng ký */}
+          {/* Danh sách chi nhánh nộp duyệt */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Icon name="location_on" className="text-blue-600" />
-                Danh sách chi nhánh nộp duyệt ({partnerInfo.branches.length})
+                Danh sách chi nhánh nộp duyệt ({partner.branches?.length ?? partner.branches_count ?? 0})
               </h2>
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -257,24 +342,35 @@ export default function PendingPartnerDetailPage() {
                     <th className="py-3 px-4">TÊN CHI NHÁNH</th>
                     <th className="py-3 px-4">ĐỊA CHỈ</th>
                     <th className="py-3 px-4">KHU VỰC</th>
-                    <th className="py-3 px-4">TRẠNG THÁI</th>
+                    <th className="py-3 px-4 whitespace-nowrap">TRẠNG THÁI</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {partnerInfo.branches.map((b, i) => (
-                    <tr key={i} className="hover:bg-slate-50/60 transition">
-                      <td className="py-3 px-4 font-mono font-bold text-slate-800">{b.code}</td>
-                      <td className="py-3 px-4 font-bold text-slate-900">{b.name}</td>
-                      <td className="py-3 px-4 text-slate-700">{b.address}</td>
-                      <td className="py-3 px-4 font-semibold text-slate-700">{b.region}</td>
-                      <td className="py-3 px-4">
-                        <span className="px-2.5 py-0.5 font-bold text-[11px] rounded-full bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1">
-                          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                          {b.status}
-                        </span>
+                  {!partner.branches || partner.branches.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-slate-400 font-medium">
+                        Chưa có chi nhánh nào nộp duyệt.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    partner.branches.map((b, index) => {
+                      const branchCode = `CN-SV-0${index + 1}`;
+                      return (
+                        <tr key={b.branch_id} className="hover:bg-slate-50/60 transition">
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-800">{branchCode}</td>
+                          <td className="py-3.5 px-4 font-bold text-slate-900">{b.branch_name}</td>
+                          <td className="py-3.5 px-4 text-slate-700 max-w-xs">{b.address}</td>
+                          <td className="py-3.5 px-4 font-semibold text-slate-700">{b.region || "Hà Nội"}</td>
+                          <td className="py-3.5 px-4 whitespace-nowrap">
+                            <span className="px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 border bg-amber-50 text-amber-600 border-amber-200/70 whitespace-nowrap shrink-0">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                              Chờ duyệt
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -291,14 +387,14 @@ export default function PendingPartnerDetailPage() {
             </h2>
             <div className="flex items-center gap-3.5">
               <div className="w-12 h-12 rounded-full bg-blue-100 text-blue-700 font-bold text-lg flex items-center justify-center shrink-0">
-                NS
+                {partner.representative_name ? partner.representative_name.slice(0, 2).toUpperCase() : "ND"}
               </div>
               <div>
                 <div className="font-bold text-slate-900 text-sm">
-                  {partnerInfo.representative.name}
+                  {partner.representative_name}
                 </div>
                 <div className="text-xs text-slate-400 font-medium">
-                  {partnerInfo.representative.email}
+                  {partner.email}
                 </div>
               </div>
             </div>
@@ -308,7 +404,7 @@ export default function PendingPartnerDetailPage() {
                   Họ và tên
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.name}
+                  {partner.representative_name}
                 </span>
               </div>
               <div>
@@ -316,15 +412,23 @@ export default function PendingPartnerDetailPage() {
                   Email
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.email}
+                  {partner.email}
                 </span>
               </div>
               <div>
                 <span className="block text-slate-400 font-bold uppercase tracking-wider">
                   Số điện thoại
                 </span>
-                <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.phone}
+                <span className="font-semibold text-slate-800 font-mono">
+                  {partner.phone || "Chưa cập nhật"}
+                </span>
+              </div>
+              <div>
+                <span className="block text-slate-400 font-bold uppercase tracking-wider">
+                  Số CCCD / CMND
+                </span>
+                <span className="font-semibold text-slate-800 font-mono">
+                  {partner.identity_no || "Chưa cập nhật"}
                 </span>
               </div>
               <div>
@@ -332,7 +436,7 @@ export default function PendingPartnerDetailPage() {
                   Giới tính
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.gender}
+                  {partner.gender === "MALE" ? "Nam" : partner.gender === "FEMALE" ? "Nữ" : partner.gender || "Chưa cập nhật"}
                 </span>
               </div>
               <div>
@@ -340,7 +444,7 @@ export default function PendingPartnerDetailPage() {
                   Quốc tịch
                 </span>
                 <span className="font-semibold text-slate-800">
-                  {partnerInfo.representative.nationality}
+                  {partner.nationality || "Việt Nam"}
                 </span>
               </div>
             </div>
@@ -387,9 +491,9 @@ export default function PendingPartnerDetailPage() {
                 variant="destructive"
                 type="button"
                 onClick={handleConfirmReject}
-                disabled={!rejectionReason.trim()}
+                disabled={!rejectionReason.trim() || actionLoading}
               >
-                Xác nhận từ chối
+                {actionLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
               </Button>
             </div>
           </div>
@@ -418,7 +522,7 @@ export default function PendingPartnerDetailPage() {
             </p>
             <textarea
               rows={3}
-              placeholder="Ví dụ: Vui lòng bổ sung bản scan Giấy phép An toàn vệ sinh thực phẩm có công chứng..."
+              placeholder="Ví dụ: Vui lòng bổ sung bản scan Giấy phép An toàn vệ sinh thực phẩm..."
               value={revisionNote}
               onChange={(e) => setRevisionNote(e.target.value)}
               className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition"
