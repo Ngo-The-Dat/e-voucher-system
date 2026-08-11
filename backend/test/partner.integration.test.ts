@@ -6,6 +6,7 @@ import app from '../src/app.js';
 import pool from '../src/config/db.js';
 
 const TEST_CODE = 'TEST-PARTNER-REDEEM-RACE';
+const EARLY_TEST_CODE = 'TEST-PARTNER-REDEEM-EARLY';
 const TEST_EMAIL = 'test.partner.integration@example.com';
 const PROFILE_TEST_EMAIL = 'test.partner.profile@example.com';
 const PROFILE_TEST_TAX_CODE = 'TEST-PARTNER-PROFILE-TAX';
@@ -14,6 +15,7 @@ let baseUrl: string;
 let partnerToken: string;
 let profileToken: string;
 let createdProgramId: number | undefined;
+let earlyProgramId: number | undefined;
 
 const request = (path: string, token?: string, init: RequestInit = {}) =>
   fetch(`${baseUrl}${path}`, {
@@ -67,10 +69,36 @@ before(async () => {
      VALUES (1, 1, 8, $1, 'UNUSED', NOW() + INTERVAL '1 day')`,
     [TEST_CODE]
   );
+
+  const earlyProgram = await pool.query(
+    `INSERT INTO voucher_programs
+       (partner_id, category_id, program_name, original_price, sale_price,
+        issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status)
+     VALUES (3, 1, 'TEST future-use voucher', 100000, 80000,
+             1, NOW(), NOW() + INTERVAL '1 day', NOW() + INTERVAL '1 day',
+             NOW() + INTERVAL '2 days', 'PUBLISHED')
+     RETURNING program_id`
+  );
+  earlyProgramId = Number(earlyProgram.rows[0].program_id);
+  await pool.query(
+    'INSERT INTO voucher_program_branches (program_id, branch_id) VALUES ($1, 1)',
+    [earlyProgramId]
+  );
+  await pool.query(
+    `INSERT INTO issued_vouchers
+       (program_id, order_item_id, owner_user_id, voucher_code, usage_status, expires_at)
+     VALUES ($1, 1, 8, $2, 'UNUSED', NOW() + INTERVAL '2 days')`,
+    [earlyProgramId, EARLY_TEST_CODE]
+  );
 });
 
 after(async () => {
   await pool.query('DELETE FROM issued_vouchers WHERE voucher_code = $1', [TEST_CODE]);
+  await pool.query('DELETE FROM issued_vouchers WHERE voucher_code = $1', [EARLY_TEST_CODE]);
+  if (earlyProgramId) {
+    await pool.query('DELETE FROM voucher_program_branches WHERE program_id = $1', [earlyProgramId]);
+    await pool.query('DELETE FROM voucher_programs WHERE program_id = $1', [earlyProgramId]);
+  }
   if (createdProgramId) {
     await pool.query('DELETE FROM voucher_approval_requests WHERE program_id = $1', [createdProgramId]);
     await pool.query('DELETE FROM voucher_program_branches WHERE program_id = $1', [createdProgramId]);
@@ -103,6 +131,12 @@ test('partner profile reuses user identity fields and only stores representative
   assert.equal(initial.identity_no, '079111111111');
   assert.equal(initial.representative_title, 'Giám đốc');
   assert.equal('representative_full_name' in initial, false);
+
+  const invalidUpdate = await request('/api/partner/profile', profileToken, {
+    method: 'PUT',
+    body: JSON.stringify({ full_name: { unexpected: true } }),
+  });
+  assert.equal(invalidUpdate.status, 400);
 
   const updateResponse = await request('/api/partner/profile', profileToken, {
     method: 'PUT',
@@ -176,6 +210,14 @@ test('partner data is isolated by ownership', async () => {
   assert.equal((await request('/api/partner/branches/3', partnerToken)).status, 404);
 });
 
+test('partner update endpoints reject malformed runtime payloads', async () => {
+  const emptyBranchName = await request('/api/partner/branches/1', partnerToken, {
+    method: 'PUT',
+    body: JSON.stringify({ branch_name: '' }),
+  });
+  assert.equal(emptyBranchName.status, 400);
+});
+
 test('frontend reference endpoints return categories and redeem details', async () => {
   const categories = await request('/api/partner/vouchers/categories', partnerToken);
   assert.equal(categories.status, 200);
@@ -233,6 +275,36 @@ test('employees cannot redeem at a branch other than their assignment', async ()
   assert.equal(response.status, 403);
 });
 
+test('employees inherit partner and assigned branch authorization status', async () => {
+  const employeeToken = jwt.sign(
+    { id: 6, role: 'PARTNER_EMPLOYEE' },
+    process.env.JWT_SECRET!,
+    { expiresIn: '5m' }
+  );
+
+  await pool.query("UPDATE partners SET activity_status = 'LOCKED' WHERE user_id = 3");
+  try {
+    const lockedPartner = await request(
+      '/api/partner/redeem/lookup?code=VCH-FB-0002',
+      employeeToken
+    );
+    assert.equal(lockedPartner.status, 403);
+  } finally {
+    await pool.query("UPDATE partners SET activity_status = 'ACTIVE' WHERE user_id = 3");
+  }
+
+  await pool.query("UPDATE branches SET status = 'INACTIVE' WHERE branch_id = 1");
+  try {
+    const inactiveBranch = await request(
+      '/api/partner/redeem/lookup?code=VCH-FB-0002',
+      employeeToken
+    );
+    assert.equal(inactiveBranch.status, 403);
+  } finally {
+    await pool.query("UPDATE branches SET status = 'ACTIVE' WHERE branch_id = 1");
+  }
+});
+
 test('invalid query parameters return 400', async () => {
   assert.equal((await request('/api/partner/vouchers?page=abc', partnerToken)).status, 400);
   assert.equal((await request('/api/partner/vouchers?status=invalid', partnerToken)).status, 400);
@@ -286,6 +358,18 @@ test('voucher validation rejects inconsistent updates and duplicate approval sub
   });
   assert.equal(emptyBranches.status, 400);
 
+  const invalidName = await request(`/api/partner/vouchers/${createdProgramId}`, partnerToken, {
+    method: 'PUT',
+    body: JSON.stringify({ program_name: '' }),
+  });
+  assert.equal(invalidName.status, 400);
+
+  const nullBranches = await request(`/api/partner/vouchers/${createdProgramId}`, partnerToken, {
+    method: 'PUT',
+    body: JSON.stringify({ branch_ids: null }),
+  });
+  assert.equal(nullBranches.status, 400);
+
   const submissions = await Promise.all([
     request(`/api/partner/vouchers/${createdProgramId}/submit`, partnerToken, { method: 'POST' }),
     request(`/api/partner/vouchers/${createdProgramId}/submit`, partnerToken, { method: 'POST' }),
@@ -311,4 +395,19 @@ test('concurrent redeem requests can only consume a voucher once', async () => {
     [TEST_CODE]
   );
   assert.equal(result.rows[0]?.usage_status, 'USED');
+});
+
+test('voucher cannot be redeemed before its use period starts', async () => {
+  const response = await request('/api/partner/redeem', partnerToken, {
+    method: 'POST',
+    body: JSON.stringify({ voucher_code: EARLY_TEST_CODE, branch_id: 1 }),
+  });
+  assert.equal(response.status, 400);
+  assert.deepEqual(await response.json(), { message: 'Voucher chưa đến thời gian sử dụng.' });
+
+  const result = await pool.query(
+    'SELECT usage_status FROM issued_vouchers WHERE voucher_code = $1',
+    [EARLY_TEST_CODE]
+  );
+  assert.equal(result.rows[0]?.usage_status, 'UNUSED');
 });

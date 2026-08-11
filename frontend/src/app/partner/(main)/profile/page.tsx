@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   // Branch Modal State
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -66,17 +67,23 @@ export default function ProfilePage() {
   // --- Validation moved to useProfileValidation hook ---
 
   // --- Submit / Reset ---
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const newErrors = validate(profile);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    save(profile);
-    setHasUnsavedChanges(false);
-    setErrors({});
-    setToastMessage("Cập nhật thành công!");
+    try {
+      await save(profile);
+      setHasUnsavedChanges(false);
+      setErrors({});
+      setToastType("success");
+      setToastMessage("Cập nhật thành công!");
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật hồ sơ.");
+    }
     setTimeout(() => setToastMessage(null), 4000);
   };
 
@@ -116,7 +123,7 @@ export default function ProfilePage() {
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
       <TopAppBar title="Quản lý hồ sơ đối tác" />
 
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} type={toastType} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-8">
         {/* Header */}
