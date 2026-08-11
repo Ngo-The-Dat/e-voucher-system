@@ -2,12 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-inter: 'Inter', sans-serif;
-}
-
 html, body, input, select, textarea, button {
-  font-family: var(--font-inter);
+  font-family: var(--font-inter), sans-serif;
   font-size: 16px; /* Standard 16px (1rem) base */
 }
 
@@ -32,50 +28,14 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   'opsz' 24;
 }
 
-/* Custom typography classes to match design system configuration */
-.text-title-md {
-  font-size: 20px;
-  line-height: 28px;
-  font-weight: 600;
-}
-.text-headline-xl-mobile {
-  font-size: 36px;
-  line-height: 44px;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-}
-.text-body-lg {
-  font-size: 18px;
-  line-height: 28px;
-  font-weight: 400;
-}
-.text-label-md {
-  font-size: 14px;
-  line-height: 20px;
-  font-weight: 500;
-}
-.text-label-sm {
-  font-size: 12px;
-  line-height: 16px;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-}
-.text-headline-xl {
-  font-size: 48px;
-  line-height: 56px;
-  letter-spacing: -0.02em;
-  font-weight: 700;
-}
-.text-headline-lg {
-  font-size: 32px;
-  line-height: 40px;
-  letter-spacing: -0.01em;
-  font-weight: 600;
-}
-.text-body-md {
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
+@layer utilities {
+  .fade-in {
+    --tw-enter-opacity: 0;
+  }
+
+  .zoom-in-95 {
+    --tw-enter-scale: 0.95;
+  }
 }
 
 .voucher-divider {

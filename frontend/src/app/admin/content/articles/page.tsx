@@ -8,6 +8,7 @@ import ContentSubNavbar from "../SubNavbar";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 import { INITIAL_ARTICLES, ContentArticleData } from "./data";
 
 export default function ArticlesPage() {
@@ -204,6 +205,7 @@ export default function ArticlesPage() {
 
       {/* Modal Thêm Bài Viết Mới */}
       {isAddModalOpen && (
+        <AccessibleDialog onClose={() => setIsAddModalOpen(false)} ariaLabel="Soạn thảo bài viết hoặc chính sách mới">
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -279,10 +281,12 @@ export default function ArticlesPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog Xác nhận xóa Bài viết */}
       {confirmDeleteArticle && (
+        <AccessibleDialog onClose={() => setConfirmDeleteArticle(null)} ariaLabel="Xác nhận gỡ bỏ bài viết hoặc chính sách">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -302,6 +306,7 @@ export default function ArticlesPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

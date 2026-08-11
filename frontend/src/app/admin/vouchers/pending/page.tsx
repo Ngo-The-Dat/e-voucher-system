@@ -8,6 +8,7 @@ import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 interface VoucherApprovalItem {
   requestId: string;
@@ -171,7 +172,7 @@ export default function PendingVouchersPage() {
       )
     );
     setSelectedVoucher(null);
-    alert(`Đã phê duyệt thành công Voucher [${voucher.programName}]. Hệ thống đã ghi nhận nhật ký.`);
+    alert(`Bản xem trước: Voucher [${voucher.programName}] đã được cập nhật cục bộ sang trạng thái phê duyệt.`);
   };
 
   // Từ chối Voucher
@@ -197,7 +198,7 @@ export default function PendingVouchersPage() {
     setIsRejectModalOpen(false);
     setSelectedVoucher(null);
     setRejectReason("");
-    alert(`Đã từ chối duyệt Voucher [${selectedVoucher.programName}] và gửi phản hồi đến đối tác.`);
+    alert(`Bản xem trước: Voucher [${selectedVoucher.programName}] đã được cập nhật cục bộ sang trạng thái từ chối.`);
   };
 
   return (
@@ -313,6 +314,7 @@ export default function PendingVouchersPage() {
 
       {/* Modal Chi Tiết & Duyệt Voucher */}
       {selectedVoucher && (
+        <AccessibleDialog onClose={() => setSelectedVoucher(null)} ariaLabel="Chi tiết yêu cầu duyệt voucher">
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-2xl overflow-hidden max-h-[90vh] flex flex-col">
             {/* Modal Header */}
@@ -482,10 +484,12 @@ export default function PendingVouchersPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog con: Nhập lý do từ chối */}
       {isRejectModalOpen && selectedVoucher && (
+        <AccessibleDialog onClose={() => setIsRejectModalOpen(false)} ariaLabel="Từ chối duyệt voucher">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4">
             <h4 className="font-bold text-slate-900 text-base">Từ chối duyệt Voucher</h4>
@@ -520,6 +524,7 @@ export default function PendingVouchersPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

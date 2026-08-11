@@ -1,11 +1,25 @@
 import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
+
+let isRedirectingToLogin = false;
+
+const redirectToPartnerLogin = () => {
+  if (typeof window === "undefined" || isRedirectingToLogin) return;
+
+  const isProtectedPartnerRoute = window.location.pathname.startsWith("/partner")
+    && !window.location.pathname.startsWith("/partner/login")
+    && !window.location.pathname.startsWith("/partner/register");
+  if (!isProtectedPartnerRoute) return;
+
+  isRedirectingToLogin = true;
+  window.location.replace("/partner/login");
+};
 
 const getStoredPartnerToken = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -34,6 +48,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("partner_access_token");
+      redirectToPartnerLogin();
     }
     throw new ApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
   }

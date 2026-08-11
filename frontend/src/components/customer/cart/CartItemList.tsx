@@ -3,6 +3,7 @@
 import { Trash2, Ticket, X, Minus, Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CartItem } from "@/hooks/useCustomerCart";
+import Image from "next/image";
 
 interface CartItemListProps {
   cart: CartItem[];
@@ -74,7 +75,9 @@ export default function CartItemList({
               </div>
               {/* Image */}
               <div className="w-full sm:w-32 h-24 rounded-md overflow-hidden shrink-0 border border-outline-variant/50">
-                <img
+                <Image
+                  width={128}
+                  height={96}
                   src={voucher.thumbnail}
                   alt={voucher.title}
                   className="w-full h-full object-cover"

@@ -5,7 +5,7 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_ARTICLES, ContentArticleData } from "../data";
+import { INITIAL_ARTICLES } from "../data";
 
 export default function EditArticlePage() {
   const params = useParams();
@@ -28,7 +28,7 @@ export default function EditArticlePage() {
       return;
     }
 
-    alert(`Đã lưu thay đổi cho nội dung "${title}" thành công!`);
+    alert(`Bản xem trước: thay đổi cho nội dung "${title}" chỉ được lưu trong phiên hiện tại.`);
     router.push("/admin/content/articles");
   };
 

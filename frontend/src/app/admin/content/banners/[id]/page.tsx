@@ -5,7 +5,8 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_BANNERS, BannerData } from "../data";
+import { INITIAL_BANNERS } from "../data";
+import Image from "next/image";
 
 export default function EditBannerPage() {
   const params = useParams();
@@ -31,7 +32,7 @@ export default function EditBannerPage() {
       return;
     }
 
-    alert(`Đã lưu thay đổi cho Banner "${title}" thành công!`);
+    alert(`Bản xem trước: thay đổi cho Banner "${title}" chỉ được lưu trong phiên hiện tại.`);
     router.push("/admin/content/banners");
   };
 
@@ -117,7 +118,7 @@ export default function EditBannerPage() {
               XEM TRƯỚC HÌNH ẢNH BANNER (LIVE PREVIEW)
             </span>
             <div className="w-full h-48 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-300">
-              <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+              <Image width={640} height={240} src={imageUrl} alt={title} className="w-full h-full object-cover" />
             </div>
           </div>
         </div>

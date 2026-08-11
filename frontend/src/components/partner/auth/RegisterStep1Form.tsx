@@ -83,7 +83,7 @@ export default function RegisterStep1Form({
       ))}
 
       <div className="pt-4 flex justify-end">
-        <Button type="submit" className="gap-2 !text-white">
+        <Button type="submit" className="gap-2">
           <span>Xác nhận đăng ký</span>
           <Icon name="arrow_forward" className="text-base" />
         </Button>

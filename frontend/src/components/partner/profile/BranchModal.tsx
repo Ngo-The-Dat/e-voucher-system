@@ -3,11 +3,12 @@
 import { useState, useEffect } from "react";
 import { Branch } from "@/lib/types/profile";
 import Icon from "@/components/shared/ui/Icon";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 interface BranchModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (branch: Branch) => void;
+  onSave: (branch: Branch) => Promise<void>;
   editingBranch: Branch | null;
 }
 
@@ -23,6 +24,8 @@ export default function BranchModal({
   const [phone, setPhone] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
   const [errors, setErrors] = useState<{ name?: string; region?: string; address?: string; phone?: string }>({});
+  const [saveError, setSaveError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (editingBranch) {
@@ -39,12 +42,15 @@ export default function BranchModal({
       setStatus("active");
     }
     setErrors({});
+    setSaveError("");
+    setIsSaving(false);
   }, [editingBranch, isOpen]);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSaving) return;
     const newErrors: { name?: string; region?: string; address?: string; phone?: string } = {};
 
     if (!name.trim()) {
@@ -67,19 +73,28 @@ export default function BranchModal({
       return;
     }
 
-    onSave({
-      id: editingBranch ? editingBranch.id : `br-${Date.now()}`,
-      name: name.trim(),
-      region: region.trim(),
-      address: address.trim(),
-      phone: phone.trim(),
-      status,
-    });
-    onClose();
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      await onSave({
+        id: editingBranch ? editingBranch.id : `br-${Date.now()}`,
+        name: name.trim(),
+        region: region.trim(),
+        address: address.trim(),
+        phone: phone.trim(),
+        status,
+      });
+      onClose();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Không thể lưu chi nhánh. Vui lòng thử lại.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
+    <AccessibleDialog onClose={onClose} ariaLabel={editingBranch ? "Chỉnh sửa chi nhánh" : "Thêm chi nhánh mới"}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fadeIn">
       <div className="bg-surface-bright rounded-2xl border border-outline-variant shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-outline-variant/40 flex justify-between items-center bg-surface-container-low">
@@ -97,6 +112,12 @@ export default function BranchModal({
 
         {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-base">
+          {saveError && (
+            <div className="p-3 rounded-lg bg-error-container/40 border border-error/50 text-error flex items-center gap-2" role="alert">
+              <Icon name="error" className="text-base" />
+              <span className="font-semibold text-sm">{saveError}</span>
+            </div>
+          )}
           {/* Tên chi nhánh */}
           <div>
             <label className="block font-semibold text-on-surface mb-1">
@@ -229,13 +250,15 @@ export default function BranchModal({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 bg-primary text-on-primary font-bold rounded-lg hover:bg-surface-tint shadow-sm transition-colors"
+              disabled={isSaving}
+              className="px-5 py-2 bg-primary text-on-primary font-bold rounded-lg hover:bg-surface-tint shadow-sm transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {editingBranch ? "Lưu thay đổi" : "Thêm mới"}
+              {isSaving ? "Đang lưu..." : editingBranch ? "Lưu thay đổi" : "Thêm mới"}
             </button>
           </div>
         </form>
       </div>
-    </div>
+      </div>
+    </AccessibleDialog>
   );
 }

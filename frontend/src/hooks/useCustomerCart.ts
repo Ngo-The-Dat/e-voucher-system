@@ -34,16 +34,6 @@ export function useCustomerCart() {
     }
   }, []);
 
-  const saveCart = useCallback((newCart: CartItem[]) => {
-    setCart(newCart);
-    localStorage.setItem("lumina_cart", JSON.stringify(newCart));
-  }, []);
-
-  const saveMyVouchers = useCallback((newMyVouchers: MyVoucher[]) => {
-    setMyVouchers(newMyVouchers);
-    localStorage.setItem("lumina_my_vouchers", JSON.stringify(newMyVouchers));
-  }, []);
-
   const addToCart = useCallback((voucher: Voucher, quantity = 1, selectedDate?: string) => {
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.voucher.id === voucher.id);

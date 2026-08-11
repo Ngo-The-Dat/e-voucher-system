@@ -37,6 +37,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const [errors, setErrors] = useState<VoucherFormErrors>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   useEffect(() => {
     Promise.all([partnerApi.getBranches(), partnerApi.getCategories(), partnerApi.getVoucher(id)])
@@ -77,6 +78,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   // Calculated derived attribute for edit mode
   const editOriginalPrice = parseFloat(editOriginalPriceStr) || 0;
   const editSellingPrice = parseFloat(editSellingPriceStr) || 0;
+  const editIssuedQuantity = Number(editIssuedQuantityStr);
   const editDiscountAmount = editOriginalPrice > editSellingPrice ? editOriginalPrice - editSellingPrice : 0;
 
   // UC Gửi duyệt voucher - Step 3: Gửi yêu cầu xét duyệt đến quản trị viên
@@ -84,9 +86,14 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     try {
       await partnerApi.submitVoucher(voucher.id);
       setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
+      setToastType("success");
       setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
       setTimeout(() => router.push("/partner/vouchers"), 2000);
-    } catch (error) { console.error("Failed to submit voucher", error); }
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể gửi voucher để xét duyệt.");
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   // UC Chỉnh sửa voucher (UC Gửi duyệt Flow A1 Step 2 - Save Edit)
@@ -95,15 +102,19 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     const newErrors: VoucherFormErrors = {};
 
     if (!editTitle.trim()) newErrors.title = "Vui lòng nhập tên chương trình.";
+    if (!editCategoryId) newErrors.category = "Vui lòng chọn danh mục sản phẩm.";
     if (editSelectedBranchIds.length === 0) newErrors.branches = "Vui lòng chọn ít nhất 1 chi nhánh.";
     if (!editOriginalPriceStr.trim() || editOriginalPrice <= 0) newErrors.originalPrice = "Giá gốc phải lớn hơn 0.";
     if (!editSellingPriceStr.trim() || editSellingPrice < 0) newErrors.sellingPrice = "Giá bán không hợp lệ.";
     else if (editSellingPrice > editOriginalPrice) newErrors.sellingPrice = "Giá bán không thể lớn hơn Giá gốc.";
+    if (!Number.isSafeInteger(editIssuedQuantity) || editIssuedQuantity <= 0) newErrors.issuedQuantity = "Số lượng phát hành phải là số nguyên dương.";
 
     if (!editSellStartDate.trim()) newErrors.sellStartDate = "Chọn thời gian bắt đầu bán.";
     if (!editSellEndDate.trim()) newErrors.sellEndDate = "Chọn thời gian kết thúc bán.";
+    else if (editSellStartDate && new Date(editSellEndDate) <= new Date(editSellStartDate)) newErrors.sellEndDate = "Thời gian kết thúc bán phải sau thời gian bắt đầu bán.";
     if (!editUseStartDate.trim()) newErrors.useStartDate = "Chọn thời gian bắt đầu sử dụng.";
     if (!editUseEndDate.trim()) newErrors.useEndDate = "Chọn thời gian kết thúc sử dụng.";
+    else if (editUseStartDate && new Date(editUseEndDate) <= new Date(editUseStartDate)) newErrors.useEndDate = "Thời gian kết thúc sử dụng phải sau thời gian bắt đầu sử dụng.";
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -123,7 +134,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       originalPrice: editOriginalPrice,
       sellingPrice: editSellingPrice,
       discountAmount: editDiscountAmount,
-      issuedQuantity: parseInt(editIssuedQuantityStr) || voucher.issuedQuantity,
+      issuedQuantity: editIssuedQuantity,
       sellStartDate: editSellStartDate,
       sellEndDate: editSellEndDate,
       useStartDate: editUseStartDate,
@@ -134,9 +145,14 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     try {
       await partnerApi.updateVoucher(updatedItem);
       setVoucher(updatedItem); setIsEditing(false); setErrors({});
+      setToastType("success");
       setToastMessage("Cập nhật thông tin chương trình voucher thành công!");
       setTimeout(() => setToastMessage(null), 3000);
-    } catch (error) { console.error("Failed to update voucher", error); }
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật chương trình voucher.");
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   // Sử dụng VoucherStatusBadge component thay vì inline function
@@ -145,7 +161,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-20 w-full">
       <TopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
 
-      <Toast message={toastMessage} />
+      <Toast message={toastMessage} type={toastType} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-6xl w-full mx-auto space-y-6">
         {/* Header Bar */}
@@ -355,7 +371,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               </div>
 
               <div>
-                <label className="block font-semibold text-on-surface mb-1">Danh mục sản phẩm</label>
+                <label className="block font-semibold text-on-surface mb-1">Danh mục sản phẩm *</label>
                 <select
                   value={editCategoryId}
                   onChange={(e) => setEditCategoryId(e.target.value)}
@@ -367,6 +383,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                     </option>
                   ))}
                 </select>
+                {errors.category && <p className="text-sm text-error mt-1">{errors.category}</p>}
               </div>
 
               {/* Giá gốc, Giá bán, Mức giảm */}
@@ -410,6 +427,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   onChange={(e) => setEditIssuedQuantityStr(e.target.value)}
                   className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                 />
+                {errors.issuedQuantity && <p className="text-sm text-error mt-1">{errors.issuedQuantity}</p>}
               </div>
 
               {/* Thời gian bán & Thời gian sử dụng */}
@@ -417,20 +435,22 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 <div>
                   <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu bán *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={editSellStartDate}
                     onChange={(e) => setEditSellStartDate(e.target.value)}
                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                   />
+                  {errors.sellStartDate && <p className="text-sm text-error mt-1">{errors.sellStartDate}</p>}
                 </div>
                 <div>
                   <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc bán *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={editSellEndDate}
                     onChange={(e) => setEditSellEndDate(e.target.value)}
                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                   />
+                  {errors.sellEndDate && <p className="text-sm text-error mt-1">{errors.sellEndDate}</p>}
                 </div>
               </div>
 
@@ -438,20 +458,22 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 <div>
                   <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu sử dụng *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={editUseStartDate}
                     onChange={(e) => setEditUseStartDate(e.target.value)}
                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                   />
+                  {errors.useStartDate && <p className="text-sm text-error mt-1">{errors.useStartDate}</p>}
                 </div>
                 <div>
                   <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc sử dụng *</label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     value={editUseEndDate}
                     onChange={(e) => setEditUseEndDate(e.target.value)}
                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
                   />
+                  {errors.useEndDate && <p className="text-sm text-error mt-1">{errors.useEndDate}</p>}
                 </div>
               </div>
 

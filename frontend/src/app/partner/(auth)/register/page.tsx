@@ -164,8 +164,8 @@ export default function RegisterPage() {
   // --- Step 3: Password ---
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password || password.length < 6) {
-      setPasswordError("Mật khẩu phải có ít nhất 6 ký tự");
+    if (password.length < 8 || password.length > 128) {
+      setPasswordError("Mật khẩu phải có từ 8 đến 128 ký tự");
       return;
     }
     if (password !== confirmPassword) {

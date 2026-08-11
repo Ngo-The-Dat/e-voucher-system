@@ -5,7 +5,8 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_POPUPS, PopupData } from "../data";
+import { INITIAL_POPUPS } from "../data";
+import Image from "next/image";
 
 export default function EditPopupPage() {
   const params = useParams();
@@ -30,7 +31,7 @@ export default function EditPopupPage() {
       return;
     }
 
-    alert(`Đã lưu thay đổi cho Popup "${title}" thành công!`);
+    alert(`Bản xem trước: thay đổi cho Popup "${title}" chỉ được lưu trong phiên hiện tại.`);
     router.push("/admin/content/popups");
   };
 
@@ -128,7 +129,7 @@ export default function EditPopupPage() {
 
             <div className="bg-white rounded-3xl border border-slate-200 shadow-xl w-full max-w-xs overflow-hidden relative">
               <div className="h-40 bg-slate-100 overflow-hidden relative">
-                <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+                <Image width={384} height={176} src={imageUrl} alt={title} className="w-full h-full object-cover" />
               </div>
               <div className="p-4 text-center space-y-2">
                 <h4 className="font-bold text-slate-900 text-sm leading-snug">{title}</h4>

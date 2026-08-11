@@ -8,7 +8,9 @@ import ContentSubNavbar from "../SubNavbar";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 import { INITIAL_BANNERS, BannerData } from "./data";
+import Image from "next/image";
 
 export default function BannersPage() {
   const [banners, setBanners] = useState<BannerData[]>(INITIAL_BANNERS);
@@ -129,7 +131,7 @@ export default function BannersPage() {
               {/* Hình ảnh preview & Thông tin Banner */}
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-28 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                  <img src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
+                  <Image width={384} height={176} src={banner.imageUrl} alt={banner.title} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="space-y-1 min-w-0">
@@ -184,6 +186,7 @@ export default function BannersPage() {
 
       {/* Modal Thêm Banner Mới */}
       {isAddModalOpen && (
+        <AccessibleDialog onClose={() => setIsAddModalOpen(false)} ariaLabel="Thêm banner quảng cáo mới">
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -290,10 +293,12 @@ export default function BannersPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog Xác nhận xóa Banner */}
       {confirmDeleteBanner && (
+        <AccessibleDialog onClose={() => setConfirmDeleteBanner(null)} ariaLabel="Xác nhận xóa banner quảng cáo">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -319,6 +324,7 @@ export default function BannersPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

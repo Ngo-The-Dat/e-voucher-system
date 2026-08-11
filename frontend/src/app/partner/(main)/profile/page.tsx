@@ -95,17 +95,22 @@ export default function ProfilePage() {
 
   // --- Branch actions ---
   const handleSaveBranch = async (branch: Branch) => {
-    try {
-      if (editingBranch) await partnerApi.updateBranch(branch);
-      else await partnerApi.createBranch(branch);
-      await reload();
-    } catch (error) { console.error("Failed to save branch", error); }
+    if (editingBranch) await partnerApi.updateBranch(branch);
+    else await partnerApi.createBranch(branch);
+    await reload();
+    setToastType("success");
+    setToastMessage(editingBranch ? "Cập nhật chi nhánh thành công!" : "Thêm chi nhánh thành công!");
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleDeleteBranch = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa chi nhánh này?")) return;
     try { await partnerApi.deleteBranch(id); await reload(); }
-    catch (error) { console.error("Failed to delete branch", error); }
+    catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể xóa chi nhánh.");
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   const handleToggleBranchStatus = async (id: string) => {
@@ -114,7 +119,11 @@ export default function ProfilePage() {
     try {
       await partnerApi.updateBranch({ ...branch, status: branch.status === "active" ? "inactive" : "active" });
       await reload();
-    } catch (error) { console.error("Failed to toggle branch", error); }
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật trạng thái chi nhánh.");
+      setTimeout(() => setToastMessage(null), 4000);
+    }
   };
 
   const errorCount = Object.keys(errors).length;
@@ -203,7 +212,7 @@ export default function ProfilePage() {
 
       {/* Sticky Save Bar */}
       {hasUnsavedChanges && (
-        <div className="fixed bottom-0 right-0 left-0 md:left-64 bg-surface-bright/95 backdrop-blur-md border-t border-outline-variant px-8 py-4 z-40 flex justify-between items-center shadow-2xl">
+        <div className="fixed bottom-0 right-0 left-0 md:left-[var(--partner-sidebar-width)] bg-surface-bright/95 backdrop-blur-md border-t border-outline-variant px-4 sm:px-8 py-4 z-40 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center shadow-2xl transition-[left] duration-300">
           <div className="flex items-center gap-3 text-base">
             <span className="w-3 h-3 rounded-full bg-tertiary-amber animate-pulse" />
             <span className="font-semibold text-on-surface">Bạn có thông tin thay đổi chưa lưu.</span>

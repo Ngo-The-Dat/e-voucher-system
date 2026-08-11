@@ -4,6 +4,7 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 import { Button } from "@/components/shared/ui/Button";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 interface RolePermission {
   module: string;
@@ -148,6 +149,7 @@ export default function PermissionsPage() {
 
       {/* Save Modal (Screen b8bed576) */}
       {showSaveModal && (
+        <AccessibleDialog onClose={() => setShowSaveModal(false)} ariaLabel="Xác nhận lưu phân quyền">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-border max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3 text-primary">
@@ -172,7 +174,7 @@ export default function PermissionsPage() {
               <Button
                 onClick={() => {
                   setShowSaveModal(false);
-                  alert("Cập nhật phân quyền thành công!");
+                  alert("Bản xem trước: phân quyền đã được cập nhật trong phiên hiện tại.");
                 }}
                 className="bg-primary-container text-white hover:bg-blue-700"
               >
@@ -181,6 +183,7 @@ export default function PermissionsPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );
