@@ -761,12 +761,15 @@ export default function UserDetailPage() {
               </Button>
               <Button
                 type="button"
-                disabled={actionLoading}
+                disabled={
+                  actionLoading ||
+                  (userData.status === "Đang hoạt động" && !lockReasonInput.trim())
+                }
                 onClick={handleConfirmLockToggle}
                 className={
                   userData.status === "Đang hoạt động"
-                    ? "bg-rose-600 hover:bg-rose-700 text-white"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                    ? "bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
                 }
               >
                 {actionLoading
