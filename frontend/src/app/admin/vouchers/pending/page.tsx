@@ -163,10 +163,10 @@ export default function PendingVouchersPage() {
       prev.map((item) =>
         item.requestId === voucher.requestId
           ? {
-              ...item,
-              approvalStatus: "APPROVED",
-              displayStatus: "PUBLISHED",
-            }
+            ...item,
+            approvalStatus: "APPROVED",
+            displayStatus: "PUBLISHED",
+          }
           : item
       )
     );
@@ -186,11 +186,11 @@ export default function PendingVouchersPage() {
       prev.map((item) =>
         item.requestId === selectedVoucher.requestId
           ? {
-              ...item,
-              approvalStatus: "REJECTED",
-              displayStatus: "DRAFT",
-              adminFeedback: rejectReason,
-            }
+            ...item,
+            approvalStatus: "REJECTED",
+            displayStatus: "DRAFT",
+            adminFeedback: rejectReason,
+          }
           : item
       )
     );

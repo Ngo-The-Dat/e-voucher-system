@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "@/components/shared/ui/Icon";
 
 export default function ContentSubNavbar() {
   const pathname = usePathname();
@@ -46,6 +47,7 @@ export default function ContentSubNavbar() {
                   : "border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-t-lg"
               }`}
             >
+              <Icon name={item.icon} className="mr-2 text-base" />
               <span>{item.name}</span>
             </Link>
           );

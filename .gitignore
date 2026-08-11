@@ -32,3 +32,6 @@ frontend/build-package.sh
 frontend/deploy-vps.sh
 frontend/deploy-frontend/
 frontend/frontend-release.tar.gz
+
+Database specification.docx
+plan.md

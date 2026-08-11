@@ -33,7 +33,7 @@ export default function DashboardOverview() {
               className={hasData ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"}
               title="Bấm để thử nghiệm luồng A1: Trạng thái Chưa có dữ liệu"
             >
-              <Icon name={hasData ? "check_circle" : "warning"} className="w-4 h-4 mr-1.5 fill-current" />
+              <Icon name={hasData ? "database" : "warning"} className="w-4 h-4 mr-1.5" />
               <span>{hasData ? "Dữ liệu: Có" : "Mô phỏng Luồng A1 (Rỗng)"}</span>
             </Button>
           </div>
