@@ -1,21 +1,23 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon from "@/components/shared/ui/Icon";
+import { adminApi } from "@/lib/admin-api";
 
 export interface NavItem {
   label: string;
   href: string;
   icon: string;
-  badge?: number | string;
+  badgeKey?: "partners" | "vouchers";
 }
 
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: "dashboard" },
   { label: "Quản lý người dùng", href: "/admin/users", icon: "group" },
-  { label: "Đối tác", href: "/admin/partners/pending", icon: "store", badge: 4 },
-  { label: "Voucher", href: "/admin/vouchers/pending", icon: "confirmation_number", badge: 12 },
+  { label: "Đối tác", href: "/admin/partners/pending", icon: "store", badgeKey: "partners" },
+  { label: "Voucher", href: "/admin/vouchers/pending", icon: "confirmation_number", badgeKey: "vouchers" },
   { label: "Đơn hàng", href: "/admin/orders", icon: "shopping_cart" },
   { label: "Quản lý nội dung", href: "/admin/content", icon: "article" },
   { label: "Nhật ký hệ thống", href: "/admin/logs", icon: "history" },
@@ -28,6 +30,36 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const [pendingCounts, setPendingCounts] = useState<{
+    partners: number;
+    vouchers: number;
+  }>({ partners: 0, vouchers: 0 });
+
+  // Tự động load số lượng chờ duyệt thực tế từ database
+  const loadPendingCounts = useCallback(async () => {
+    try {
+      const [partnerRes, voucherRes] = await Promise.allSettled([
+        adminApi.getPendingPartners({ limit: 1 }),
+        adminApi.getPendingVouchers({ limit: 1 }),
+      ]);
+
+      const partnersCount =
+        partnerRes.status === "fulfilled" ? partnerRes.value.pagination.total : 0;
+      const vouchersCount =
+        voucherRes.status === "fulfilled" ? voucherRes.value.pagination.total : 0;
+
+      setPendingCounts({
+        partners: partnersCount,
+        vouchers: vouchersCount,
+      });
+    } catch {
+      // Fallback giữ nguyên
+    }
+  }, []);
+
+  useEffect(() => {
+    loadPendingCounts();
+  }, [pathname, loadPendingCounts]);
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
@@ -77,6 +109,8 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           <nav className="space-y-1">
             {navItems.map((item) => {
               const active = isActive(item.href);
+              const badgeValue = item.badgeKey ? pendingCounts[item.badgeKey] : undefined;
+
               return (
                 <Link
                   key={item.href}
@@ -97,7 +131,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                     />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge && (
+                  {Boolean(badgeValue && badgeValue > 0) && (
                     <span
                       className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
                         active
@@ -105,7 +139,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                           : "bg-amber-100 text-amber-800"
                       }`}
                     >
-                      {item.badge}
+                      {badgeValue}
                     </span>
                   )}
                 </Link>

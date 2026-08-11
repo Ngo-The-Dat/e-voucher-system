@@ -99,7 +99,7 @@ export interface AdminPartnerListItem {
   user_id: number;
   business_name: string;
   tax_code: string;
-  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  approval_status: "PENDING" | "APPROVED" | "REJECTED" | "REVISION_REQUESTED";
   activity_status: "ACTIVE" | "INACTIVE" | "LOCKED";
   registered_at: string;
   business_license_no: string | null;
@@ -144,6 +144,96 @@ export interface AdminPartnerDetail extends AdminPartnerListItem {
 
 export interface PartnersResponse {
   partners: AdminPartnerListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminVoucherBranch {
+  branch_id: number;
+  branch_name: string;
+  address: string;
+  region?: string | null;
+  phone?: string | null;
+  status?: string;
+}
+
+export interface AdminPendingVoucherItem {
+  approval_request_id: number;
+  program_id: number;
+  submitted_at: string;
+  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  admin_feedback?: string | null;
+  program_name: string;
+  category_id: number;
+  category_name?: string | null;
+  original_price: string | number;
+  sale_price: string | number;
+  discount_amount?: string | number;
+  issue_quantity: number;
+  sale_start_at: string;
+  sale_end_at: string;
+  use_start_at: string;
+  use_end_at: string;
+  display_status: string;
+  partner_id: number;
+  partner_name: string;
+  tax_code: string;
+  partner_representative: string;
+  partner_email: string;
+  partner_phone: string | null;
+  branches?: AdminVoucherBranch[];
+}
+
+export interface AdminPendingVoucherDetail extends AdminPendingVoucherItem {
+  reviewed_at?: string | null;
+  admin_id?: number | null;
+  business_license_no?: string | null;
+}
+
+export interface PendingVouchersResponse {
+  vouchers: AdminPendingVoucherItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminManagedVoucherItem {
+  program_id: number;
+  program_name: string;
+  category_id: number;
+  category_name?: string | null;
+  original_price: string | number;
+  sale_price: string | number;
+  discount_amount?: string | number;
+  issue_quantity: number;
+  sale_start_at: string;
+  sale_end_at: string;
+  use_start_at: string;
+  use_end_at: string;
+  display_status: "PUBLISHED" | "HIDDEN" | "ENDED";
+  partner_id: number;
+  partner_name: string;
+  tax_code: string;
+  branch_name: string;
+  sold_count: number;
+  stock: number;
+}
+
+export interface ManagedVouchersResponse {
+  vouchers: AdminManagedVoucherItem[];
+  stats: {
+    all: number;
+    published: number;
+    hidden: number;
+    ended: number;
+  };
   pagination: {
     page: number;
     limit: number;
@@ -348,4 +438,75 @@ export const adminApi = {
       method: "DELETE",
     });
   },
+
+  // Vouchers - Pending
+  getPendingVouchers: async (params?: {
+    search?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PendingVouchersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<PendingVouchersResponse>(`/admin/vouchers/pending${qs}`);
+  },
+
+  getPendingVoucher: async (requestId: string | number): Promise<AdminPendingVoucherDetail> => {
+    return adminRequest<AdminPendingVoucherDetail>(`/admin/vouchers/pending/${requestId}`);
+  },
+
+  approveVoucher: async (
+    requestId: string | number
+  ): Promise<{ message: string; approval_request_id: number; program_id: number }> => {
+    return adminRequest(`/admin/vouchers/pending/${requestId}/approve`, {
+      method: "POST",
+    });
+  },
+
+  rejectVoucher: async (
+    requestId: string | number,
+    reason: string
+  ): Promise<{ message: string; approval_request_id: number; program_id: number }> => {
+    return adminRequest(`/admin/vouchers/pending/${requestId}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  // Vouchers - Managed
+  getManagedVouchers: async (params?: {
+    search?: string;
+    status?: string;
+    categoryId?: number;
+    page?: number;
+    limit?: number;
+  }): Promise<ManagedVouchersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.categoryId) query.set("category_id", String(params.categoryId));
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<ManagedVouchersResponse>(`/admin/vouchers/manage${qs}`);
+  },
+
+  updateVoucherStatus: async (
+    programId: string | number,
+    status: "PUBLISHED" | "HIDDEN" | "ENDED"
+  ): Promise<{ message: string; program_id: number; display_status: string }> => {
+    return adminRequest(`/admin/vouchers/${programId}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status }),
+    });
+  },
 };
+

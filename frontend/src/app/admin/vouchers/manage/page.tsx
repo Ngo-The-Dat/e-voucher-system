@@ -1,172 +1,208 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
-import Link from "next/link";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
+import VoucherNavTabs from "../_components/VoucherNavTabs";
+import VoucherStatusModal from "../_components/VoucherStatusModal";
+import {
+  adminApi,
+  AdminManagedVoucherItem,
+  AdminApiError,
+} from "@/lib/admin-api";
 
-interface ManagedVoucherItem {
-  programCode: string;
-  programName: string;
-  partnerName: string;
-  branchName: string;
-  originalPrice: number;
-  salePrice: number;
-  stock: number;
-  startDateSell: string;
-  endDateSell: string;
-  displayStatus: "PUBLISHED" | "HIDDEN" | "ENDED";
-}
+type StatusTab = "ALL" | "PUBLISHED" | "HIDDEN" | "ENDED";
 
 export default function ManageVouchersPage() {
+  const [vouchers, setVouchers] = useState<AdminManagedVoucherItem[]>([]);
+  const [stats, setStats] = useState({
+    all: 0,
+    published: 0,
+    hidden: 0,
+    ended: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  // Search & Filter State
   const [searchQuery, setSearchQuery] = useState("");
-  type StatusTab = "ALL" | "PUBLISHED" | "HIDDEN" | "ENDED";
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
 
-  const [vouchers, setVouchers] = useState<ManagedVoucherItem[]>([
-    {
-      programCode: "VCH-HG-050",
-      programName: "Voucher 50.000đ áp dụng toàn hệ thống Highlands Coffee",
-      partnerName: "Công ty Cổ phần DV Cà Phê Cao Nguyên (Highlands)",
-      branchName: "Highlands Coffee - Chi nhánh Quận 1",
-      originalPrice: 50000,
-      salePrice: 35000,
-      stock: 4500,
-      startDateSell: "2026-08-01",
-      endDateSell: "2026-09-05",
-      displayStatus: "PUBLISHED",
-    },
-    {
-      programCode: "VCH-KC-200",
-      programName: "Buffet Lẩu Băng Chuyền Kichi Kichi Ưu Đãi 20%",
-      partnerName: "Công ty Cổ phần Thương mại Dịch vụ Cổng Vàng (Golden Gate)",
-      branchName: "Kichi Kichi - Vincom Đồng Khởi",
-      originalPrice: 350000,
-      salePrice: 280000,
-      stock: 800,
-      startDateSell: "2026-08-01",
-      endDateSell: "2026-08-30",
-      displayStatus: "PUBLISHED",
-    },
-    {
-      programCode: "VCH-CGV-100",
-      programName: "Vé Xem Phim 2D Cuối Tuần CGV Cinemas Tặng Popcorn",
-      partnerName: "Công ty TNHH CJ CGV Việt Nam",
-      branchName: "CGV Sư Vạn Hạnh Mall",
-      originalPrice: 120000,
-      salePrice: 79000,
-      stock: 0,
-      startDateSell: "2026-07-01",
-      endDateSell: "2026-08-15",
-      displayStatus: "HIDDEN",
-    },
-    {
-      programCode: "VCH-PAUSE-02",
-      programName: "Voucher Ưu Đãi Trà Sữa Tocotoco Mua 1 Tặng 1",
-      partnerName: "Công ty TNHH Tocotoco Việt Nam",
-      branchName: "Tocotoco - Chi nhánh Nguyễn Trãi",
-      originalPrice: 60000,
-      salePrice: 42000,
-      stock: 1500,
-      startDateSell: "2026-07-15",
-      endDateSell: "2026-08-31",
-      displayStatus: "HIDDEN",
-    },
-    {
-      programCode: "VCH-EXPIRED-99",
-      programName: "Chiến dịch Mùa Hè Rực Rỡ - Giảm 50% Vé Công Viên Nước",
-      partnerName: "Công ty Du Lịch Đầm Sen",
-      branchName: "Công viên Nước Đầm Sen",
-      originalPrice: 200000,
-      salePrice: 100000,
-      stock: 0,
-      startDateSell: "2026-06-01",
-      endDateSell: "2026-07-31",
-      displayStatus: "ENDED",
-    },
-  ]);
+  // Modal Dialog Box State (thay thế cho alert / confirm)
+  const [statusDialog, setStatusDialog] = useState<{
+    isOpen: boolean;
+    voucher: AdminManagedVoucherItem | null;
+    targetStatus: "PUBLISHED" | "HIDDEN" | "ENDED";
+  } | null>(null);
+  const [isStatusSubmitting, setIsStatusSubmitting] = useState(false);
+  const [modalErrorMessage, setModalErrorMessage] = useState<string | null>(null);
 
-  const todayStr = "2026-08-04";
+  // Search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const filteredVouchers = vouchers.filter((item) => {
-    if (
-      searchQuery &&
-      !item.programName.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !item.programCode.toLowerCase().includes(searchQuery.toLowerCase()) &&
-      !item.partnerName.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
+  // Load vouchers from API
+  const loadManagedVouchers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await adminApi.getManagedVouchers({
+        search: debouncedSearch.trim() || undefined,
+        status: statusTab !== "ALL" ? statusTab : undefined,
+        page: currentPage,
+        limit: 5,
+      });
+      setVouchers(res.vouchers);
+      setStats(res.stats);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.total);
+    } catch (err: any) {
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải danh sách voucher quản lý.");
+      }
+    } finally {
+      setIsLoading(false);
     }
-    if (statusTab !== "ALL" && item.displayStatus !== statusTab) {
-      return false;
-    }
-    return true;
-  });
+  }, [debouncedSearch, statusTab, currentPage]);
 
-  const formatCurrency = (val: number) => {
-    return val.toLocaleString("vi-VN") + " ₫";
+  // Load pending count for NavTabs badge
+  const loadPendingCount = useCallback(async () => {
+    try {
+      const res = await adminApi.getPendingVouchers({ limit: 1 });
+      setPendingCount(res.pagination.total);
+    } catch {
+      // silent fallback
+    }
+  }, []);
+
+  useEffect(() => {
+    loadManagedVouchers();
+  }, [loadManagedVouchers]);
+
+  useEffect(() => {
+    loadPendingCount();
+  }, [loadPendingCount]);
+
+  // Auto clear notification message
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
+  const formatCurrency = (val: number | string) => {
+    const num = Number(val) || 0;
+    return num.toLocaleString("vi-VN") + " ₫";
   };
 
   const formatDate = (dateStr: string) => {
-    if (!dateStr) return "";
-    const parts = dateStr.split("-");
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
-    return dateStr;
+    if (!dateStr) return "—";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
   };
 
-  const handleUpdateStatus = (programCode: string, newStatus: "PUBLISHED" | "HIDDEN" | "ENDED") => {
-    setVouchers((prev) =>
-      prev.map((item) =>
-        item.programCode === programCode
-          ? {
-              ...item,
-              displayStatus: newStatus,
-            }
-          : item
-      )
-    );
+  // Mở Dialog Box xác nhận đổi trạng thái
+  const handleOpenStatusModal = (
+    voucher: AdminManagedVoucherItem,
+    targetStatus: "PUBLISHED" | "HIDDEN" | "ENDED"
+  ) => {
+    setModalErrorMessage(null);
+    setStatusDialog({
+      isOpen: true,
+      voucher,
+      targetStatus,
+    });
+  };
 
-    const statusTextMap = {
+  // Thực hiện đổi trạng thái khi xác nhận trong Dialog Box
+  const handleConfirmStatusChange = async () => {
+    if (!statusDialog || !statusDialog.voucher) return;
+    const { voucher, targetStatus } = statusDialog;
+
+    const statusTextMap: Record<string, string> = {
       PUBLISHED: "Đang bán",
       HIDDEN: "Tạm ngưng",
       ENDED: "Ngừng bán",
     };
 
-    alert(`Đã cập nhật trạng thái hiển thị voucher [${programCode}] thành: ${statusTextMap[newStatus]}. Hệ thống đã ghi nhận nhật ký.`);
+    try {
+      setIsStatusSubmitting(true);
+      setModalErrorMessage(null);
+      await adminApi.updateVoucherStatus(voucher.program_id, targetStatus);
+      setSuccessMessage(
+        `Đã cập nhật trạng thái voucher [${voucher.program_name}] thành: ${statusTextMap[targetStatus]}.`
+      );
+      setStatusDialog(null);
+      await loadManagedVouchers();
+    } catch (err: any) {
+      setModalErrorMessage(err.message || "Lỗi khi cập nhật trạng thái voucher.");
+    } finally {
+      setIsStatusSubmitting(false);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Navigation Bar */}
-      <div className="border-b border-slate-200 pb-1">
-        <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-          <span>VOUCHER</span>
-          <span>&rsaquo;</span>
-          <span className="text-slate-600">Quản lý voucher</span>
-        </div>
-        <div className="flex items-center gap-8">
-          <Link
-            href="/admin/vouchers/pending"
-            className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-400 hover:text-slate-700"
+      <VoucherNavTabs pendingCount={pendingCount} />
+
+      {/* Thông báo thành công / lỗi */}
+      {successMessage && (
+        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Icon name="check_circle" className="text-emerald-600 text-lg" />
+            <span className="font-semibold">{successMessage}</span>
+          </div>
+          <button
+            onClick={() => setSuccessMessage(null)}
+            className="text-emerald-600 hover:text-emerald-800 text-xs"
           >
-            <span>Duyệt voucher</span>
-            <span className="px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-              3 chờ duyệt
-            </span>
-          </Link>
-          <Link
-            href="/admin/vouchers/manage"
-            className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-900 border-b-2 border-blue-600"
-          >
-            <span>Quản lý voucher</span>
-          </Link>
+            Đóng
+          </button>
         </div>
-      </div>
+      )}
+
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <Icon name="error" className="text-rose-600 text-lg" />
+            <span>{error}</span>
+          </div>
+          <Button
+            variant="outline"
+            onClick={loadManagedVouchers}
+            className="text-xs h-auto py-1 px-3 bg-white"
+          >
+            Thử lại
+          </Button>
+        </div>
+      )}
 
       {/* Filter Header & Status Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-4">
@@ -178,10 +214,7 @@ export default function ManageVouchersPage() {
               type="text"
               placeholder="Nhập tên chương trình, mã voucher hoặc đối tác..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
             />
           </div>
@@ -189,45 +222,35 @@ export default function ManageVouchersPage() {
           {/* Quick Count Stats */}
           <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
             <span className="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl">
-              Đang bán: {vouchers.filter((v) => v.displayStatus === "PUBLISHED").length}
+              Đang bán: {stats.published}
             </span>
             <span className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl">
-              Tạm ngưng: {vouchers.filter((v) => v.displayStatus === "HIDDEN").length}
+              Tạm ngưng: {stats.hidden}
             </span>
             <span className="px-3 py-1.5 bg-slate-100 text-slate-700 border border-slate-200 rounded-xl">
-              Ngừng bán: {vouchers.filter((v) => v.displayStatus === "ENDED").length}
+              Ngừng bán: {stats.ended}
             </span>
           </div>
         </div>
 
-        {/* Filter Tabs by Display Status (Bỏ chữ tiếng Anh) */}
+        {/* Filter Tabs by Display Status */}
         <div className="flex items-center gap-2 border-t border-slate-100 pt-3 overflow-x-auto">
           {[
-            { key: "ALL", label: "Tất cả voucher", count: vouchers.length },
-            {
-              key: "PUBLISHED",
-              label: "Đang bán",
-              count: vouchers.filter((v) => v.displayStatus === "PUBLISHED").length,
-            },
-            {
-              key: "HIDDEN",
-              label: "Tạm ngưng",
-              count: vouchers.filter((v) => v.displayStatus === "HIDDEN").length,
-            },
-            {
-              key: "ENDED",
-              label: "Ngừng bán",
-              count: vouchers.filter((v) => v.displayStatus === "ENDED").length,
-            },
+            { key: "ALL", label: "Tất cả voucher", count: stats.all },
+            { key: "PUBLISHED", label: "Đang bán", count: stats.published },
+            { key: "HIDDEN", label: "Tạm ngưng", count: stats.hidden },
+            { key: "ENDED", label: "Ngừng bán", count: stats.ended },
           ].map((tab) => (
             <Button
               key={tab.key}
               variant={statusTab === tab.key ? "default" : "outline"}
               onClick={() => {
-                setStatusTab(tab.key as any);
+                setStatusTab(tab.key as StatusTab);
                 setCurrentPage(1);
               }}
-              className={`text-xs h-auto py-1.5 px-3.5 ${statusTab === tab.key ? "bg-blue-600 hover:bg-blue-700 text-white" : ""}`}
+              className={`text-xs h-auto py-1.5 px-3.5 ${
+                statusTab === tab.key ? "bg-blue-600 hover:bg-blue-700 text-white" : ""
+              }`}
             >
               <span>{tab.label}</span>
               <span
@@ -259,28 +282,70 @@ export default function ManageVouchersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-base">
-              {filteredVouchers.length === 0 ? (
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-20" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-48 mb-1" />
+                      <div className="h-3 bg-slate-100 rounded w-24" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-36" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-24 mb-1" />
+                      <div className="h-3 bg-slate-100 rounded w-16" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-20" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-24" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-6 bg-slate-200 rounded-full w-24" />
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="h-8 bg-slate-200 rounded-lg w-28 ml-auto" />
+                    </td>
+                  </tr>
+                ))
+              ) : vouchers.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
                     <Icon name="inventory_2" className="text-4xl block mb-2 text-slate-300" />
-                    Không có voucher nào phù hợp với bộ lọc.
+                    {debouncedSearch
+                      ? "Không tìm thấy voucher nào phù hợp với từ khóa tìm kiếm."
+                      : "Không có voucher nào trong danh mục này."}
                   </td>
                 </tr>
               ) : (
-                filteredVouchers.map((item) => {
-                  const isStockOut = item.stock <= 0;
-                  const isExpired = item.endDateSell < todayStr;
+                vouchers.map((item) => {
+                  const stockNum = Number(item.stock) || 0;
+                  const isStockOut = stockNum <= 0;
+                  const isExpired = new Date(item.sale_end_at).getTime() < Date.now();
                   const isRuleTriggered = isStockOut || isExpired;
 
+                  const originalPriceNum = Number(item.original_price) || 0;
+                  const salePriceNum = Number(item.sale_price) || 0;
+
                   return (
-                    <tr key={item.programCode} className="hover:bg-slate-50/60 transition">
+                    <tr key={item.program_id} className="hover:bg-slate-50/60 transition">
                       <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs">
-                        {item.programCode}
+                        VCH-{item.program_id}
                       </td>
                       <td className="py-4 px-5 max-w-xs">
                         <div className="font-bold text-slate-900 leading-snug line-clamp-2">
-                          {item.programName}
+                          {item.program_name}
                         </div>
+                        {item.category_name && (
+                          <span className="text-[11px] text-blue-600 font-semibold block mt-0.5">
+                            {item.category_name}
+                          </span>
+                        )}
                         {isRuleTriggered && (
                           <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-amber-50 border border-amber-200 text-amber-800 text-[10px] font-bold rounded-md">
                             ⚠️ {isStockOut ? "Hết số lượng" : "Hết hạn bán"} (Đề xuất Ngừng bán)
@@ -288,41 +353,66 @@ export default function ManageVouchersPage() {
                         )}
                       </td>
                       <td className="py-4 px-5">
-                        <div className="font-bold text-slate-800 text-xs">{item.partnerName}</div>
-                        <div className="text-xs text-slate-500 mt-0.5">{item.branchName}</div>
+                        <div className="font-bold text-slate-800 text-xs">{item.partner_name}</div>
+                        {item.branch_name && (
+                          <div className="text-xs text-slate-500 mt-0.5 line-clamp-1">
+                            {item.branch_name}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4 px-5">
-                        <div className="font-bold text-emerald-700">{formatCurrency(item.salePrice)}</div>
+                        <div className="font-bold text-emerald-700">{formatCurrency(salePriceNum)}</div>
                         <div className="text-xs text-slate-400 line-through">
-                          {formatCurrency(item.originalPrice)}
+                          {formatCurrency(originalPriceNum)}
                         </div>
                       </td>
                       <td className="py-4 px-5">
                         <span
                           className={`font-bold text-xs ${
-                            isStockOut ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200" : "text-slate-800"
+                            isStockOut
+                              ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200"
+                              : "text-slate-800"
                           }`}
                         >
-                          {item.stock.toLocaleString("vi-VN")} lượt
+                          {stockNum.toLocaleString("vi-VN")} / {item.issue_quantity.toLocaleString("vi-VN")}
                         </span>
+                        {item.sold_count > 0 && (
+                          <span className="text-[10px] text-slate-400 block mt-0.5">
+                            Đã bán: {item.sold_count}
+                          </span>
+                        )}
                       </td>
                       <td className="py-4 px-5 text-xs text-slate-700">
-                        <div className="font-semibold">{formatDate(item.endDateSell)}</div>
-                        <div className="text-[11px] text-slate-400">Từ {formatDate(item.startDateSell)}</div>
+                        <div className={`font-semibold ${isExpired ? "text-rose-600" : ""}`}>
+                          {formatDate(item.sale_end_at)}
+                        </div>
+                        <div className="text-[11px] text-slate-400">Từ {formatDate(item.sale_start_at)}</div>
                       </td>
                       <td className="py-4 px-5">
                         <StatusBadge
-                          status={item.displayStatus === "PUBLISHED" ? "active" : item.displayStatus === "HIDDEN" ? "pending" : "ended"}
-                          label={item.displayStatus === "PUBLISHED" ? "Đang bán" : item.displayStatus === "HIDDEN" ? "Tạm ngưng" : "Ngừng bán"}
+                          status={
+                            item.display_status === "PUBLISHED"
+                              ? "active"
+                              : item.display_status === "HIDDEN"
+                              ? "pending"
+                              : "ended"
+                          }
+                          label={
+                            item.display_status === "PUBLISHED"
+                              ? "Đang bán"
+                              : item.display_status === "HIDDEN"
+                              ? "Tạm ngưng"
+                              : "Ngừng bán"
+                          }
                         />
                       </td>
                       <td className="py-4 px-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           {/* Nút Tạm ngưng */}
-                          {item.displayStatus === "PUBLISHED" && (
+                          {item.display_status === "PUBLISHED" && (
                             <Button
                               variant="outline"
-                              onClick={() => handleUpdateStatus(item.programCode, "HIDDEN")}
+                              onClick={() => handleOpenStatusModal(item, "HIDDEN")}
                               className="px-3 py-1.5 bg-amber-50 border-amber-200 text-amber-700 hover:bg-amber-100 text-xs h-auto"
                               title="Tạm ngưng hiển thị bán trên sàn"
                             >
@@ -331,10 +421,10 @@ export default function ManageVouchersPage() {
                           )}
 
                           {/* Nút Khôi phục về Đang bán */}
-                          {item.displayStatus !== "PUBLISHED" && (
+                          {item.display_status !== "PUBLISHED" && (
                             <Button
                               disabled={isRuleTriggered}
-                              onClick={() => handleUpdateStatus(item.programCode, "PUBLISHED")}
+                              onClick={() => handleOpenStatusModal(item, "PUBLISHED")}
                               className={`px-3 py-1.5 text-xs h-auto ${
                                 isRuleTriggered
                                   ? "bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed"
@@ -351,10 +441,10 @@ export default function ManageVouchersPage() {
                           )}
 
                           {/* Nút Ngừng bán */}
-                          {item.displayStatus !== "ENDED" && (
+                          {item.display_status !== "ENDED" && (
                             <Button
                               variant="outline"
-                              onClick={() => handleUpdateStatus(item.programCode, "ENDED")}
+                              onClick={() => handleOpenStatusModal(item, "ENDED")}
                               className="px-3 py-1.5 bg-slate-100 border-slate-200 text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-xs h-auto"
                               title="Ngừng bán chương trình voucher này"
                             >
@@ -372,15 +462,31 @@ export default function ManageVouchersPage() {
         </div>
 
         {/* Footer & Phân trang */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredVouchers.length / 10) || 1}
-          totalItems={filteredVouchers.length}
-          itemsPerPage={10}
-          onPageChange={setCurrentPage}
-          itemName="chương trình voucher"
-        />
+        {!isLoading && totalItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={5}
+            onPageChange={setCurrentPage}
+            itemName="chương trình voucher"
+          />
+        )}
       </div>
+
+      {/* Dialog Box xác nhận đổi trạng thái voucher */}
+      <VoucherStatusModal
+        isOpen={Boolean(statusDialog?.isOpen)}
+        voucher={statusDialog?.voucher ?? null}
+        targetStatus={statusDialog?.targetStatus ?? null}
+        onClose={() => {
+          setStatusDialog(null);
+          setModalErrorMessage(null);
+        }}
+        onConfirm={handleConfirmStatusChange}
+        isSubmitting={isStatusSubmitting}
+        errorMessage={modalErrorMessage}
+      />
     </div>
   );
 }

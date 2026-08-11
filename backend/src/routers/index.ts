@@ -14,6 +14,7 @@ import partnerDashboardRouter from './partner/dashboard.router.js';
 import adminUserRouter from './admin/user.router.js';
 import adminLogRouter from './admin/log.router.js';
 import adminPartnerRouter from './admin/partner.router.js';
+import adminVoucherRouter from './admin/voucher.router.js';
 
 const router = Router();
 
@@ -69,6 +70,12 @@ router.use('/admin/partners',
   authenticate,
   requireRole('ADMIN'),
   adminPartnerRouter
+);
+
+router.use('/admin/vouchers',
+  authenticate,
+  requireRole('ADMIN'),
+  adminVoucherRouter
 );
 
 export default router;

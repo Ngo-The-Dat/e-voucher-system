@@ -252,10 +252,10 @@ export default function PendingPartnersPage() {
                         <td className="py-4 px-5 whitespace-nowrap">
                           <StatusBadge status={mapStatusLabel(partner.approval_status)} />
                         </td>
-                        <td className="py-4 px-5 text-right">
+                        <td className="py-4 px-5 text-right whitespace-nowrap">
                           <Link
                             href={`/admin/partners/pending/${partner.user_id}`}
-                            className="px-4 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block"
+                            className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block whitespace-nowrap"
                           >
                             Xem chi tiết
                           </Link>
