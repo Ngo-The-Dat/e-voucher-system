@@ -5,26 +5,26 @@
 TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                reviews_feedback, issued_vouchers, order_items, orders, cart_items,
                voucher_approval_requests, voucher_program_branches, voucher_programs,
-               partner_employees, branches, categories, partners, users RESTART IDENTITY CASCADE;
+               partner_employees, branches, categories, partners, user_locks, users RESTART IDENTITY CASCADE;
 
--- 1. Insert users (10 rows)
-INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, nationality, status, created_at) VALUES
-(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
-(2, 'Trần Thị QTV', 'admin2@voucher.vn', '0901000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
-(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
-(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
-(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
-(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
-(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
-(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
-(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
-(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00');
+-- 1. Insert users (10 rows, exactly 1 ADMIN with user_id = 1)
+INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
+(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
+(2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
+(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001088000003', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
+(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001185000004', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
+(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001089000005', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
+(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'MALE', '001092000006', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
+(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'FEMALE', '001194000007', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
+(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001196000008', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
+(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001097000009', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
+(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000010', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00');
 
 -- 2. Insert partners (3 rows)
-INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at) VALUES
-(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'APPROVED', 'ACTIVE', '2026-01-02 09:05:00'),
-(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'APPROVED', 'ACTIVE', '2026-01-02 09:35:00'),
-(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00');
+INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place) VALUES
+(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'APPROVED', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội'),
+(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'APPROVED', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội'),
+(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh');
 
 -- 3. Insert categories (4 rows)
 INSERT INTO categories (category_id, category_name, description, status) VALUES
@@ -47,7 +47,6 @@ INSERT INTO partner_employees (user_id, branch_id) VALUES
 (7, 3);
 
 -- 6. Insert voucher_programs (5 rows)
--- Note: discount_amount is automatically computed as (original_price - sale_price)
 INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status) VALUES
 (1, 3, 1, 'Buffet Lẩu Nướng Cao Cấp Giảm 30%', 100000.00, 70000.00, 500, '2026-01-05 00:00:00', '2026-12-31 23:59:59', '2026-01-05 00:00:00', '2027-01-05 23:59:59', 'PUBLISHED'),
 (2, 3, 1, 'Voucher Ăn Trưa 500k Giảm Còn 350k', 500000.00, 350000.00, 200, '2026-01-05 00:00:00', '2026-12-31 23:59:59', '2026-01-05 00:00:00', '2027-01-05 23:59:59', 'PUBLISHED'),
@@ -65,12 +64,12 @@ INSERT INTO voucher_program_branches (program_id, branch_id) VALUES
 (3, 4),
 (5, 5);
 
--- 8. Insert voucher_approval_requests (5 rows)
+-- 8. Insert voucher_approval_requests (5 rows, admin_id = 1 for single ADMIN)
 INSERT INTO voucher_approval_requests (approval_request_id, program_id, admin_id, submitted_at, reviewed_at, approval_status, admin_feedback) VALUES
 (1, 1, 1, '2026-01-04 10:00:00', '2026-01-04 11:00:00', 'APPROVED', 'Chương trình đáp ứng đủ điều kiện.'),
 (2, 2, 1, '2026-01-04 10:30:00', '2026-01-04 11:30:00', 'APPROVED', 'Duyệt chương trình ăn trưa.'),
-(3, 3, 2, '2026-01-05 09:00:00', '2026-01-05 10:00:00', 'APPROVED', 'Chương trình Spa hợp lệ.'),
-(4, 4, 2, '2026-01-05 09:30:00', NULL, 'PENDING', NULL),
+(3, 3, 1, '2026-01-05 09:00:00', '2026-01-05 10:00:00', 'APPROVED', 'Chương trình Spa hợp lệ.'),
+(4, 4, NULL, '2026-01-05 09:30:00', NULL, 'PENDING', NULL),
 (5, 5, 1, '2026-01-06 08:00:00', '2026-01-06 09:00:00', 'APPROVED', 'Duyệt voucher khách sạn Nha Trang.');
 
 -- 9. Insert cart_items (4 rows)
@@ -88,7 +87,6 @@ INSERT INTO orders (order_id, buyer_user_id, recipient_user_id, created_at, tota
 (4, 10, NULL, '2026-01-13 16:00:00', 100000.00, 'BANK_TRANSFER', 'REFUNDED', 'CANCELLED');
 
 -- 11. Insert order_items (4 rows)
--- Note: line_total is automatically computed as (quantity * unit_price)
 INSERT INTO order_items (order_item_id, order_id, program_id, quantity, unit_price) VALUES
 (1, 1, 1, 2, 70000.00),
 (2, 2, 2, 1, 350000.00),
@@ -145,7 +143,6 @@ INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_va
 (10, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS');
 
 -- Reset IDENTITY sequences sau khi seed data tường minh
--- Đảm bảo INSERT tiếp theo không bị duplicate key
 SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT MAX(user_id) FROM users));
 SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT MAX(category_id) FROM categories));
 SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT MAX(branch_id) FROM branches));
