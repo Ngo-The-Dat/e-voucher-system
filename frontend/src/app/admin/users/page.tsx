@@ -1,79 +1,125 @@
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Input } from "@/components/shared/ui/Input";
+import Pagination from "@/components/shared/ui/Pagination";
+import { adminApi, AdminUserListItem } from "@/lib/admin-api";
 
-interface User {
-  id: string;
+interface UserDisplay {
+  id: string | number;
   name: string;
   avatarInitials: string;
   avatarBg: string;
   email: string;
-  role: "Khách hàng" | "Đối tác" | "Quản trị viên";
+  phone: string;
+  role: "Khách hàng" | "Đối tác" | "Quản trị viên" | "Nhân viên đối tác";
+  rawRole: string;
   status: "Đang hoạt động" | "Đã khóa";
 }
+
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(" ");
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const getAvatarBg = (role: string, index: number): string => {
+  if (role === "PARTNER") return "bg-amber-100 text-amber-800";
+  if (role === "ADMIN") return "bg-purple-100 text-purple-800";
+  const colors = [
+    "bg-blue-100 text-blue-700",
+    "bg-emerald-100 text-emerald-700",
+    "bg-indigo-100 text-indigo-700",
+    "bg-rose-100 text-rose-700",
+  ];
+  return colors[index % colors.length];
+};
+
+const mapRole = (role: string): UserDisplay["role"] => {
+  switch (role) {
+    case "PARTNER":
+      return "Đối tác";
+    case "ADMIN":
+      return "Quản trị viên";
+    case "PARTNER_EMPLOYEE":
+      return "Nhân viên đối tác";
+    default:
+      return "Khách hàng";
+  }
+};
+
+const mapStatus = (status: string): UserDisplay["status"] => {
+  return status === "LOCKED" ? "Đã khóa" : "Đang hoạt động";
+};
 
 export default function UserManagementPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
 
-  const initialUsers: User[] = [
-    {
-      id: "USR-001",
-      name: "Nguyễn Văn A",
-      avatarInitials: "NA",
-      avatarBg: "bg-blue-100 text-blue-700",
-      email: "nva@email.com",
-      role: "Khách hàng",
-      status: "Đang hoạt động",
-    },
-    {
-      id: "USR-002",
-      name: "Trần Thị B",
-      avatarInitials: "TB",
-      avatarBg: "bg-amber-100 text-amber-800",
-      email: "bpartner@email.com",
-      role: "Đối tác",
-      status: "Đang hoạt động",
-    },
-    {
-      id: "USR-003",
-      name: "Lê Văn C",
-      avatarInitials: "LC",
-      avatarBg: "bg-slate-200 text-slate-600",
-      email: "lvc_lock@email.com",
-      role: "Khách hàng",
-      status: "Đã khóa",
-    },
-  ];
+  const [users, setUsers] = useState<UserDisplay[]>([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  const fetchUsers = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await adminApi.getUsers({
+        search: search.trim() || undefined,
+        role: roleFilter || undefined,
+        status: statusFilter || undefined,
+        page: currentPage,
+        limit: itemsPerPage,
+      });
+
+      if (res && Array.isArray(res.users)) {
+        const formatted: UserDisplay[] = res.users.map((u: AdminUserListItem, idx: number) => ({
+          id: u.user_id,
+          name: u.full_name,
+          avatarInitials: getInitials(u.full_name),
+          avatarBg: u.status === "LOCKED" ? "bg-slate-200 text-slate-600" : getAvatarBg(u.role, idx),
+          email: u.email,
+          phone: u.phone || "—",
+          role: mapRole(u.role),
+          rawRole: u.role,
+          status: mapStatus(u.status),
+        }));
+        setUsers(formatted);
+        setTotalPages(res.pagination?.totalPages || 1);
+        setTotalItems(res.pagination?.total || formatted.length);
+      } else {
+        setUsers([]);
+        setTotalPages(1);
+        setTotalItems(0);
+      }
+    } catch {
+      setUsers([]);
+      setTotalPages(1);
+      setTotalItems(0);
+    } finally {
+      setLoading(false);
+    }
+  }, [search, roleFilter, statusFilter, currentPage]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchUsers();
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [fetchUsers]);
 
   const handleReset = () => {
     setSearch("");
     setRoleFilter("");
     setStatusFilter("");
+    setCurrentPage(1);
   };
-
-  const filteredUsers = initialUsers.filter((u) => {
-    const matchesSearch =
-      u.name.toLowerCase().includes(search.toLowerCase()) ||
-      u.email.toLowerCase().includes(search.toLowerCase());
-
-    const matchesRole =
-      !roleFilter ||
-      (roleFilter === "customer" && u.role === "Khách hàng") ||
-      (roleFilter === "partner" && u.role === "Đối tác") ||
-      (roleFilter === "admin" && u.role === "Quản trị viên");
-
-    const matchesStatus =
-      !statusFilter ||
-      (statusFilter === "active" && u.status === "Đang hoạt động") ||
-      (statusFilter === "locked" && u.status === "Đã khóa");
-
-    return matchesSearch && matchesRole && matchesStatus;
-  });
 
   return (
     <div className="space-y-6">
@@ -95,7 +141,10 @@ export default function UserManagementPage() {
           <Input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Tìm theo tên đăng nhập, email hoặc số điện thoại"
             className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 text-slate-800 focus:bg-white transition"
           />
@@ -105,23 +154,29 @@ export default function UserManagementPage() {
         <div className="flex flex-wrap gap-3 w-full md:w-auto items-center">
           <select
             value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
+            onChange={(e) => {
+              setRoleFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none pr-10 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_12px_center] bg-[length:16px_16px]"
           >
             <option value="">Vai trò: Tất cả</option>
-            <option value="customer">Khách hàng</option>
-            <option value="partner">Đối tác</option>
-            <option value="admin">Quản trị viên</option>
+            <option value="CUSTOMER">Khách hàng</option>
+            <option value="PARTNER">Đối tác</option>
+            <option value="PARTNER_EMPLOYEE">Nhân viên đối tác</option>
           </select>
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
             className="px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-700 font-medium focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 appearance-none pr-10 relative bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%2364748B%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-no-repeat bg-[position:right_12px_center] bg-[length:16px_16px]"
           >
             <option value="">Trạng thái: Tất cả</option>
-            <option value="active">Đang hoạt động</option>
-            <option value="locked">Đã khóa</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="LOCKED">Đã khóa</option>
           </select>
 
           <button
@@ -149,74 +204,103 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
-              {filteredUsers.map((user) => (
-                <tr
-                  key={user.id}
-                  className="hover:bg-slate-50/60 transition"
-                >
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-3.5">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${user.avatarBg}`}
-                      >
-                        {user.avatarInitials}
-                      </div>
-                      <div>
+              {loading && users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                    <Icon name="progress_activity" className="inline-block animate-spin text-2xl mb-2 text-primary" />
+                    <p className="text-sm">Đang tải danh sách người dùng...</p>
+                  </td>
+                </tr>
+              ) : users.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="py-12 text-center text-slate-400">
+                    <Icon name="search" className="inline-block text-3xl mb-2 text-slate-300" />
+                    <p className="text-sm font-medium">Không tìm thấy người dùng phù hợp</p>
+                  </td>
+                </tr>
+              ) : (
+                users.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-slate-50/60 transition"
+                  >
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-3.5">
                         <div
-                          className={`font-bold text-slate-900 text-sm ${user.status === "Đã khóa"
-                              ? "line-through text-slate-500"
-                              : ""
-                            }`}
+                          className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm shrink-0 ${user.avatarBg}`}
                         >
-                          {user.name}
+                          {user.avatarInitials}
                         </div>
-                        <div className="text-slate-400 text-xs md:hidden mt-0.5">
-                          {user.email}
+                        <div>
+                          <div className="font-bold text-slate-900 text-sm">
+                            {user.name}
+                          </div>
+                          <div className="text-slate-400 text-xs md:hidden mt-0.5">
+                            {user.email} {user.phone !== "—" && `• ${user.phone}`}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-slate-500 text-sm hidden md:table-cell">
-                    {user.email}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span
-                      className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${user.role === "Đối tác"
-                          ? "bg-amber-100 text-amber-800 font-semibold"
-                          : user.role === "Quản trị viên"
+                    </td>
+                    <td className="py-4 px-6 text-slate-500 text-sm hidden md:table-cell">
+                      <div>{user.email}</div>
+                      {user.phone && user.phone !== "—" && (
+                        <div className="text-xs text-slate-400 mt-0.5">{user.phone}</div>
+                      )}
+                    </td>
+                    <td className="py-4 px-6">
+                      <span
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${
+                          user.role === "Đối tác"
+                            ? "bg-amber-100 text-amber-800 font-semibold"
+                            : user.role === "Quản trị viên"
                             ? "bg-purple-100 text-purple-800 font-semibold"
                             : "bg-slate-100 text-slate-600 font-medium"
                         }`}
-                    >
-                      {user.role}
-                    </span>
-                  </td>
-                  <td className="py-4 px-6">
-                    {user.status === "Đang hoạt động" ? (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                        Đang hoạt động
+                      >
+                        {user.role}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
-                        <Icon name="lock" className="text-xs" />
-                        Đã khóa
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-4 px-6 text-right">
-                    <Link
-                      href={`/admin/users/${user.id}`}
-                      className="px-3.5 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold transition-colors inline-flex items-center"
-                    >
-                      Xem chi tiết
-                    </Link>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="py-4 px-6">
+                      {user.status === "Đang hoạt động" ? (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                          Đang hoạt động
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
+                          <Icon name="lock" className="text-xs" />
+                          Đã khóa
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-4 px-6 text-right">
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="px-3.5 py-1.5 text-blue-600 bg-blue-50 hover:bg-blue-600 hover:text-white rounded-lg text-xs font-semibold transition-colors inline-flex items-center"
+                      >
+                        Xem chi tiết
+                      </Link>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination Bar */}
+        {totalItems > 0 && (
+          <div className="p-4 border-t border-slate-100">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => setCurrentPage(page)}
+              itemName="người dùng"
+            />
+          </div>
+        )}
       </div>
     </div>
   );

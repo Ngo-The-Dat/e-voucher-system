@@ -49,7 +49,7 @@ CREATE TABLE partners (
     -- Thông tin pháp lý
     business_license_no VARCHAR(100),                           -- Số ĐKKD
     license_issue_date DATE,                                    -- Ngày cấp ĐKKD
-    license_issue_place VARCHAR(255),                           -- Nơi cấp ĐKKD
+    license_issue_place VARCHAR(255)                          -- Nơi cấp ĐKKD
     -- -- Thông tin người đại diện
     -- representative_full_name VARCHAR(150),
     -- representative_title VARCHAR(100),

@@ -10,6 +10,9 @@ import partnerVoucherRouter from './partner/voucher.router.js';
 import partnerRedeemRouter from './partner/redeem.router.js';
 import partnerDashboardRouter from './partner/dashboard.router.js';
 
+// Admin sub-routers
+import adminUserRouter from './admin/user.router.js';
+
 const router = Router();
 
 // ─── Partner Auth (Public) ────────────────────────────────────────────────────
@@ -45,6 +48,13 @@ router.use('/partner/dashboard',
   authenticate,
   requireRole('PARTNER'),
   partnerDashboardRouter
+);
+
+// ─── Admin Protected Routes ───────────────────────────────────────────────────
+router.use('/admin/users',
+  authenticate,
+  requireRole('ADMIN'),
+  adminUserRouter
 );
 
 export default router;
