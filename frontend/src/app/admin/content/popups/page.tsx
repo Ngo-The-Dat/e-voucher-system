@@ -8,7 +8,9 @@ import ContentSubNavbar from "../SubNavbar";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 import { INITIAL_POPUPS, PopupData } from "./data";
+import Image from "next/image";
 
 export default function PopupsPage() {
   const [popups, setPopups] = useState<PopupData[]>(INITIAL_POPUPS);
@@ -126,7 +128,7 @@ export default function PopupsPage() {
               {/* Hình ảnh preview & Nội dung Popup */}
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                  <img src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover" />
+                  <Image width={320} height={160} src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover" />
                 </div>
 
                 <div className="space-y-1 min-w-0">
@@ -186,6 +188,7 @@ export default function PopupsPage() {
 
       {/* Modal Thêm Popup Mới */}
       {isAddModalOpen && (
+        <AccessibleDialog onClose={() => setIsAddModalOpen(false)} ariaLabel="Thêm popup mới">
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -283,10 +286,12 @@ export default function PopupsPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Modal Live Preview Popup */}
       {previewPopup && (
+        <AccessibleDialog onClose={() => setPreviewPopup(null)} ariaLabel="Xem trước popup">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden relative">
             <button
@@ -296,7 +301,7 @@ export default function PopupsPage() {
               <Icon name="close" className="text-base" />
             </button>
             <div className="h-44 bg-slate-100 overflow-hidden relative">
-              <img src={previewPopup.imageUrl} alt={previewPopup.title} className="w-full h-full object-cover" />
+              <Image width={384} height={176} src={previewPopup.imageUrl} alt={previewPopup.title} className="w-full h-full object-cover" />
             </div>
             <div className="p-5 text-center space-y-3">
               <h4 className="font-bold text-slate-900 text-base leading-snug">{previewPopup.title}</h4>
@@ -312,10 +317,12 @@ export default function PopupsPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog Xác nhận xóa Popup */}
       {confirmDeletePopup && (
+        <AccessibleDialog onClose={() => setConfirmDeletePopup(null)} ariaLabel="Xác nhận xóa popup">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -335,6 +342,7 @@ export default function PopupsPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

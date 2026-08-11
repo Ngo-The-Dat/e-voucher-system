@@ -15,6 +15,7 @@ type FormData = {
   phone: string;
   email: string;
   businessName: string;
+  taxCode: string;
 };
 
 type FieldErrors = Partial<Record<keyof FormData | "global", string>>;
@@ -36,6 +37,7 @@ export default function RegisterPage() {
     phone: "0912345678",
     email: "doitac@lumina.vn",
     businessName: "Cửa hàng Lumina Store",
+    taxCode: "0101234567",
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
@@ -72,6 +74,9 @@ export default function RegisterPage() {
     if (!formData.phone.trim()) errors.phone = "Vui lòng nhập Số điện thoại";
     if (!formData.email.trim()) errors.email = "Vui lòng nhập Email liên hệ";
     if (!formData.businessName.trim()) errors.businessName = "Vui lòng nhập Tên thương hiệu / Cửa hàng";
+    if (!/^[0-9]{10,13}$/.test(formData.taxCode.trim())) {
+      errors.taxCode = "Mã số thuế phải gồm 10 đến 13 chữ số";
+    }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
 
     const isCccdDuplicate = formData.cccd === "012345678901";
@@ -159,8 +164,8 @@ export default function RegisterPage() {
   // --- Step 3: Password ---
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!password || password.length < 6) {
-      setPasswordError("Mật khẩu phải có ít nhất 6 ký tự");
+    if (password.length < 8 || password.length > 128) {
+      setPasswordError("Mật khẩu phải có từ 8 đến 128 ký tự");
       return;
     }
     if (password !== confirmPassword) {
@@ -173,7 +178,7 @@ export default function RegisterPage() {
         full_name: formData.fullName, identity_no: formData.cccd,
         phone: formData.phone, email: formData.email,
         business_name: formData.businessName,
-        tax_code: formData.cccd,
+        tax_code: formData.taxCode,
         password,
       });
       setCurrentStep(4);

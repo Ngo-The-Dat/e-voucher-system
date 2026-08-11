@@ -6,7 +6,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { Button } from "@/components/shared/ui/Button";
-import { Input } from "@/components/shared/ui/Input";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
+import Image from "next/image";
 
 interface UserRecord {
   id: string;
@@ -131,7 +132,7 @@ export default function UserDetailPage() {
     const newRoleName = selectedRole === "customer" ? "Khách hàng" : "Đối tác";
     setCurrentRole(newRoleName);
     setShowConfirmModal(false);
-    setSavedNotification(`Đã cập nhật vai trò người dùng thành "${newRoleName}". Người dùng sẽ cần đăng nhập lại.`);
+    setSavedNotification(`Bản xem trước: vai trò đã được cập nhật cục bộ thành "${newRoleName}".`);
     setTimeout(() => setSavedNotification(null), 5000);
   };
 
@@ -139,11 +140,11 @@ export default function UserDetailPage() {
     if (accountStatus === "Đang hoạt động") {
       setAccountStatus("Đã khóa");
       setSavedNotification(
-        `Tài khoản người dùng đã bị khóa. Lý do: "${lockReason || "Vi phạm điều khoản dịch vụ"}"`
+        `Bản xem trước: tài khoản đã được cập nhật cục bộ sang trạng thái khóa. Lý do: "${lockReason || "Vi phạm điều khoản dịch vụ"}"`
       );
     } else {
       setAccountStatus("Đang hoạt động");
-      setSavedNotification("Tài khoản người dùng đã được mở khóa thành công.");
+      setSavedNotification("Bản xem trước: tài khoản đã được cập nhật cục bộ sang trạng thái hoạt động.");
     }
     setLockModalOpen(false);
     setLockReason("");
@@ -177,7 +178,9 @@ export default function UserDetailPage() {
         <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-end mt-12">
           {/* Avatar */}
           <div className="w-24 h-24 rounded-full border-4 border-surface shadow-md overflow-hidden bg-white shrink-0">
-            <img
+            <Image
+              width={96}
+              height={96}
               className="w-full h-full object-cover"
               src={userDetail.avatar}
               alt={userDetail.name}
@@ -504,6 +507,7 @@ export default function UserDetailPage() {
 
       {/* Role Update Confirmation Modal (Stitch Screen b8bed576) */}
       {showConfirmModal && (
+        <AccessibleDialog onClose={() => setShowConfirmModal(false)} ariaLabel="Xác nhận cập nhật vai trò người dùng">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-border max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3 text-primary">
@@ -539,10 +543,12 @@ export default function UserDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Modal Khóa / Mở khóa Tài khoản */}
       {lockModalOpen && (
+        <AccessibleDialog onClose={() => setLockModalOpen(false)} ariaLabel="Xác nhận thay đổi trạng thái tài khoản">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-xl shadow-xl border border-border max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3">
@@ -600,6 +606,7 @@ export default function UserDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

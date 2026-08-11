@@ -6,6 +6,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { MOCK_ORDERS, OrderData } from "../data";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -89,7 +90,7 @@ export default function OrderDetailPage() {
     setIsCancelModalOpen(false);
     setCancelReason("");
     alert(
-      `Đã hủy đơn hàng [${order.orderId}] thành công. Hệ thống đã ghi nhận hoàn tiền mô phỏng và vô hiệu hóa các voucher phát hành.`
+      `Bản xem trước: đơn hàng [${order.orderId}] đã được cập nhật cục bộ sang trạng thái hủy; không có hoàn tiền thực tế.`
     );
   };
 
@@ -352,6 +353,7 @@ export default function OrderDetailPage() {
 
       {/* Dialog con: Nhập lý do hủy đơn hàng (UC-ADM-10) */}
       {isCancelModalOpen && (
+        <AccessibleDialog onClose={() => setIsCancelModalOpen(false)} ariaLabel="Xác nhận hủy đơn hàng và hoàn tiền">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4">
             <h4 className="font-bold text-slate-900 text-base">Xác nhận Hủy đơn hàng & Hoàn tiền</h4>
@@ -398,6 +400,7 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

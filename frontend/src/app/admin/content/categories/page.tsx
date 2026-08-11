@@ -8,6 +8,7 @@ import ContentSubNavbar from "../SubNavbar";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 import { INITIAL_CATEGORIES, CategoryData } from "./data";
 
 export default function CategoriesPage() {
@@ -174,6 +175,7 @@ export default function CategoriesPage() {
 
       {/* Modal Thêm Danh Mục Mới */}
       {isAddModalOpen && (
+        <AccessibleDialog onClose={() => setIsAddModalOpen(false)} ariaLabel="Thêm danh mục mới">
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -226,10 +228,12 @@ export default function CategoriesPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog Cảnh báo Từ chối xóa (Luồng A1: Có voucher gắn vào) */}
       {warningCat && (
+        <AccessibleDialog onClose={() => setWarningCat(null)} ariaLabel="Không thể gỡ bỏ danh mục">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-rose-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -250,10 +254,12 @@ export default function CategoriesPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Dialog Xác nhận xóa (Khi số lượng voucher === 0) */}
       {confirmDeleteCat && (
+        <AccessibleDialog onClose={() => setConfirmDeleteCat(null)} ariaLabel="Xác nhận gỡ bỏ danh mục">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto">
@@ -273,6 +279,7 @@ export default function CategoriesPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

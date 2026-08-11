@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { Search, ShoppingCart, Bell, Ticket, Menu, X } from "lucide-react";
+import Image from "next/image";
 
 export default function Header() {
   const router = useRouter();
@@ -48,13 +49,13 @@ export default function Header() {
 
   return (
     <header className="bg-primary border-b border-white/10 shadow-sm top-0 sticky z-50 w-full transition-all">
-      <div className="flex items-center justify-between h-24 px-margin-mobile md:px-6 xl:px-margin-desktop max-w-container-max mx-auto gap-4">
+      <div className="flex items-center justify-between h-20 md:h-24 px-margin-mobile md:px-6 xl:px-margin-desktop max-w-container-max mx-auto gap-2 md:gap-4">
         {/* Brand */}
         <Link
           href="/"
-          className="font-headline-lg text-headline-lg font-bold text-white tracking-tight shrink-0 whitespace-nowrap"
+          className="text-xl sm:text-2xl lg:text-headline-lg font-bold text-white tracking-tight shrink-0 whitespace-nowrap"
         >
-          Lumina Marketplace
+          Lumina<span className="hidden sm:inline"> Marketplace</span>
         </Link>
 
         {/* Search Bar (Desktop) */}
@@ -92,7 +93,7 @@ export default function Header() {
         </form>
 
         {/* Navigation & Actions */}
-        <div className="flex items-center gap-2 md:gap-4 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-4 shrink-0">
           <nav className="hidden lg:flex items-center gap-4 xl:gap-6 mr-4">
             <Link
               href="/"
@@ -158,8 +159,10 @@ export default function Header() {
           </Link>
 
           {/* Avatar (Mock) */}
-          <div className="w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer ml-2 relative">
-            <img
+          <div className="hidden sm:block w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer ml-1 md:ml-2 relative">
+            <Image
+              width={40}
+              height={40}
               alt="Ảnh đại diện người dùng"
               className="w-full h-full object-cover"
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqGdpRficcqsgdz-i0dIgDVTErKxUqYhHMUQnh_Kz9yj1HPD9DIKVtvZg-YBsJFLFv4VFYtsS3r4FylIVrLhCew3c_JFPQnZRUrTPHcV8Pfa771gYZewmF9k5LER3RWzoGwjixjPtLVbfXxLqHD5fUUIxeTN6AB7iZJUdX0BXWTSZQ0vqbOCBkDT77vETSGdpWLq7g6ySvbCZk0OKmqqVSjtB71THFtD1-BFzgHsT6KT1-gRW87gOi"

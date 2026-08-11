@@ -25,9 +25,9 @@ export function useProfile() {
     void reload();
   }, [reload]);
 
-  const save = useCallback((updated: PartnerProfile) => {
+  const save = useCallback(async (updated: PartnerProfile) => {
+    await partnerApi.updateProfile(updated);
     setProfile(updated);
-    void partnerApi.updateProfile(updated).catch((error) => console.error("Failed to save partner profile", error));
   }, []);
 
   return { profile, isLoading, setProfile, reload, save };

@@ -1,4 +1,3 @@
-import { useRef } from "react";
 import Icon from "@/components/shared/ui/Icon";
 
 interface RegisterStep2OtpProps {

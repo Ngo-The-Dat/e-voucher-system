@@ -14,17 +14,19 @@ const navItems = [
 interface SideNavBarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
 }
 
-export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBarProps) {
+export default function SideNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }: SideNavBarProps) {
   const pathname = usePathname();
   const router = useRouter();
 
   return (
     <aside
-      className={`${
-        isCollapsed ? "w-20" : "w-64"
-      } bg-surface-bright border-r border-outline-variant/40 flex flex-col h-screen sticky top-0 shrink-0 transition-all duration-300 z-30 shadow-sm`}
+      className={`w-64 ${isCollapsed ? "md:w-20" : "md:w-64"} ${
+        isMobileOpen ? "translate-x-0" : "-translate-x-full"
+      } md:translate-x-0 bg-surface-bright border-r border-outline-variant/40 flex flex-col h-screen fixed inset-y-0 left-0 md:sticky md:top-0 shrink-0 transition-all duration-300 z-50 md:z-30 shadow-sm`}
     >
       {/* Header / Brand & Collapse Toggle Button */}
       <div className={`p-4 flex items-center ${isCollapsed ? "justify-center relative" : "justify-between"} border-b border-outline-variant/30 h-16`}>
@@ -44,7 +46,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
         <button
           onClick={onToggleCollapse}
           title={isCollapsed ? "Mở rộng menu" : "Thu hẹp menu"}
-          className={`${
+          className={`hidden md:flex ${
             isCollapsed
               ? "absolute -right-3 top-1/2 -translate-y-1/2 bg-surface-bright border border-outline-variant shadow-md w-7 h-7 rounded-full"
               : "w-8 h-8 rounded-lg hover:bg-surface-container-high"
@@ -68,6 +70,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse }: SideNavBar
             <Link
               key={item.href}
               href={item.href}
+              onClick={onMobileClose}
               title={isCollapsed ? item.label : undefined}
               className={`flex items-center gap-3.5 ${
                 isCollapsed ? "justify-center px-0 py-3.5" : "px-4 py-3.5"

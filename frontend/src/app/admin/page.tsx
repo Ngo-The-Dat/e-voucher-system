@@ -15,7 +15,7 @@ export default function DashboardOverview() {
   const [startDate, setStartDate] = useState<string>("2026-08-01");
   const [endDate, setEndDate] = useState<string>("2026-08-05");
 
-  const { isLoading, hasData, setHasData, stats, pendingApprovals, chartData } = useAdminDashboard();
+  const { hasData, setHasData, stats, pendingApprovals, chartData } = useAdminDashboard();
 
   return (
     <div className="space-y-8">
@@ -110,5 +110,4 @@ export default function DashboardOverview() {
     </div>
   );
 }
-
 

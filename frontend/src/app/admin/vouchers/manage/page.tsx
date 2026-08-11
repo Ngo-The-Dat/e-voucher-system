@@ -137,7 +137,7 @@ export default function ManageVouchersPage() {
       ENDED: "Ngừng bán",
     };
 
-    alert(`Đã cập nhật trạng thái hiển thị voucher [${programCode}] thành: ${statusTextMap[newStatus]}. Hệ thống đã ghi nhận nhật ký.`);
+    alert(`Bản xem trước: trạng thái voucher [${programCode}] đã được cập nhật cục bộ thành ${statusTextMap[newStatus]}.`);
   };
 
   return (

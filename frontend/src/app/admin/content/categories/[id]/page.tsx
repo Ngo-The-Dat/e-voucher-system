@@ -5,7 +5,8 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_CATEGORIES, CategoryData, CategoryVoucher, AVAILABLE_VOUCHERS_POOL } from "../data";
+import { INITIAL_CATEGORIES, CategoryVoucher, AVAILABLE_VOUCHERS_POOL } from "../data";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 export default function EditCategoryPage() {
   const params = useParams();
@@ -55,7 +56,7 @@ export default function EditCategoryPage() {
       return;
     }
 
-    alert(`Đã lưu thay đổi cho danh mục "${categoryName}" thành công!`);
+    alert(`Bản xem trước: thay đổi cho danh mục "${categoryName}" chỉ được lưu trong phiên hiện tại.`);
     router.push("/admin/content/categories");
   };
 
@@ -241,6 +242,7 @@ export default function EditCategoryPage() {
 
       {/* Modal Chọn Thêm Voucher vào Danh Mục */}
       {isAddVoucherModalOpen && (
+        <AccessibleDialog onClose={() => setIsAddVoucherModalOpen(false)} ariaLabel="Thêm voucher vào danh mục">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[85vh] flex flex-col">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -318,6 +320,7 @@ export default function EditCategoryPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

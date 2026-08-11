@@ -8,6 +8,7 @@ type FormData = {
   phone: string;
   email: string;
   businessName: string;
+  taxCode: string;
 };
 
 type FieldErrors = Partial<Record<keyof FormData | "global", string>>;
@@ -58,6 +59,7 @@ export default function RegisterStep1Form({
           { key: "phone", label: "Số điện thoại", type: "tel", placeholder: "09xx xxx xxx", required: true },
           { key: "email", label: "Email liên hệ", type: "email", placeholder: "doitac@domain.com", required: true },
           { key: "businessName", label: "Tên thương hiệu / Cửa hàng", type: "text", placeholder: "Nhập tên doanh nghiệp hoặc cửa hàng", required: false },
+          { key: "taxCode", label: "Mã số thuế", type: "text", placeholder: "Nhập mã số thuế doanh nghiệp", required: true },
         ] as const
       ).map(({ key, label, type, placeholder, required }) => (
         <div key={key}>
@@ -81,7 +83,7 @@ export default function RegisterStep1Form({
       ))}
 
       <div className="pt-4 flex justify-end">
-        <Button type="submit" className="gap-2 !text-white">
+        <Button type="submit" className="gap-2">
           <span>Xác nhận đăng ký</span>
           <Icon name="arrow_forward" className="text-base" />
         </Button>

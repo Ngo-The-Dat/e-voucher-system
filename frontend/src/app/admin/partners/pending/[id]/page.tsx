@@ -4,13 +4,12 @@ import Icon from "@/components/shared/ui/Icon";
 
 import { useState } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { Button } from "@/components/shared/ui/Button";
-import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 export default function PendingPartnerDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const partnerId = (params?.id as string) || "MER-901";
 
   type PartnerStatus = "Chờ duyệt" | "Đã duyệt" | "Từ chối";
@@ -60,20 +59,20 @@ export default function PendingPartnerDetailPage() {
 
   const handleApprove = () => {
     setStatus("Đã duyệt");
-    setToastMessage("Hồ sơ đối tác đã được phê duyệt thành công! Đối tác đã được chuyển sang danh sách Quản lý đối tác.");
+    setToastMessage("Bản xem trước: hồ sơ đã được cập nhật cục bộ sang trạng thái phê duyệt.");
   };
 
   const handleConfirmReject = () => {
     if (!rejectionReason.trim()) return;
     setStatus("Từ chối");
     setRejectModalOpen(false);
-    setToastMessage(`Đã từ chối hồ sơ đối tác với lý do: "${rejectionReason}"`);
+    setToastMessage(`Bản xem trước: hồ sơ đã được cập nhật cục bộ sang trạng thái từ chối với lý do: "${rejectionReason}"`);
   };
 
   const handleConfirmRevision = () => {
     if (!revisionNote.trim()) return;
     setRevisionModalOpen(false);
-    setToastMessage(`Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
+    setToastMessage(`Bản xem trước: yêu cầu bổ sung đã được ghi nhận cục bộ: "${revisionNote}"`);
   };
 
   return (
@@ -350,6 +349,7 @@ export default function PendingPartnerDetailPage() {
 
       {/* Modal Từ chối */}
       {rejectModalOpen && (
+        <AccessibleDialog onClose={() => setRejectModalOpen(false)} ariaLabel="Từ chối hồ sơ đối tác">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center justify-between">
@@ -394,10 +394,12 @@ export default function PendingPartnerDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Modal Yêu cầu bổ sung */}
       {revisionModalOpen && (
+        <AccessibleDialog onClose={() => setRevisionModalOpen(false)} ariaLabel="Yêu cầu bổ sung hồ sơ đối tác">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center justify-between">
@@ -442,6 +444,7 @@ export default function PendingPartnerDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

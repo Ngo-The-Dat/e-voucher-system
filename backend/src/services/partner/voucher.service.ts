@@ -341,19 +341,6 @@ export const updateVoucherProgram = async (
 ) => {
   await assertVoucherOwnership(programId, partnerId);
 
-  // Chỉ cho phép cập nhật khi trạng thái là DRAFT
-  const statusCheck = await pool.query(
-    'SELECT display_status FROM voucher_programs WHERE program_id = $1',
-    [programId]
-  );
-  const currentStatus = statusCheck.rows[0]?.display_status;
-  if (currentStatus !== 'DRAFT') {
-    throw {
-      status: 400,
-      message: `Chỉ có thể chỉnh sửa khi chương trình ở trạng thái DRAFT. Trạng thái hiện tại: ${currentStatus}.`,
-    };
-  }
-
   if (input.branch_ids !== undefined && input.branch_ids.length === 0) {
     throw { status: 400, message: 'Cần chọn ít nhất 1 chi nhánh áp dụng.' };
   }
@@ -364,26 +351,38 @@ export const updateVoucherProgram = async (
     await assertActiveCategory(input.category_id);
   }
 
-  const currentResult = await pool.query(
-    `SELECT original_price, sale_price, issue_quantity, sale_start_at, sale_end_at,
-            use_start_at, use_end_at
-     FROM voucher_programs WHERE program_id = $1`,
-    [programId]
-  );
-  const currentValues = currentResult.rows[0];
-  validateVoucherValues({
-    original_price: input.original_price ?? Number(currentValues.original_price),
-    sale_price: input.sale_price ?? Number(currentValues.sale_price),
-    issue_quantity: input.issue_quantity ?? currentValues.issue_quantity,
-    sale_start_at: input.sale_start_at ?? currentValues.sale_start_at,
-    sale_end_at: input.sale_end_at ?? currentValues.sale_end_at,
-    use_start_at: input.use_start_at ?? currentValues.use_start_at,
-    use_end_at: input.use_end_at ?? currentValues.use_end_at,
-  });
-
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
+
+    const currentResult = await client.query(
+      `SELECT display_status, original_price, sale_price, issue_quantity,
+              sale_start_at, sale_end_at, use_start_at, use_end_at
+       FROM voucher_programs
+       WHERE program_id = $1 AND partner_id = $2
+       FOR UPDATE`,
+      [programId, partnerId]
+    );
+    const currentValues = currentResult.rows[0];
+    if (!currentValues) {
+      throw { status: 404, message: 'Chương trình voucher không tồn tại hoặc không thuộc về bạn.' };
+    }
+    if (currentValues.display_status !== 'DRAFT') {
+      throw {
+        status: 400,
+        message: `Chỉ có thể chỉnh sửa khi chương trình ở trạng thái DRAFT. Trạng thái hiện tại: ${currentValues.display_status}.`,
+      };
+    }
+
+    validateVoucherValues({
+      original_price: input.original_price ?? Number(currentValues.original_price),
+      sale_price: input.sale_price ?? Number(currentValues.sale_price),
+      issue_quantity: input.issue_quantity ?? currentValues.issue_quantity,
+      sale_start_at: input.sale_start_at ?? currentValues.sale_start_at,
+      sale_end_at: input.sale_end_at ?? currentValues.sale_end_at,
+      use_start_at: input.use_start_at ?? currentValues.use_start_at,
+      use_end_at: input.use_end_at ?? currentValues.use_end_at,
+    });
 
     await client.query(
       `UPDATE voucher_programs SET

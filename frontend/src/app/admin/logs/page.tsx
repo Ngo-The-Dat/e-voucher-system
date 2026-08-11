@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import Pagination from "@/components/shared/ui/Pagination";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 // Data Model matching system_logs table in ERD & UC-ADM-13
 export interface SystemLog {
@@ -436,6 +437,7 @@ export default function SystemLogsPage() {
 
       {/* Log Detail Modal (UC-ADM-13 Step 5: Xem chi tiết người thực hiện, thời gian, loại thao tác, đối tượng, old_value vs new_value) */}
       {selectedLog && (
+        <AccessibleDialog onClose={() => setSelectedLog(null)} ariaLabel="Chi tiết nhật ký hệ thống">
         <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4"
           onClick={() => setSelectedLog(null)}
@@ -563,6 +565,7 @@ export default function SystemLogsPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

@@ -4,6 +4,7 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
   AlertTriangle,
@@ -136,7 +137,10 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
         {/* Gallery Column */}
         <div className="lg:col-span-7 flex flex-col gap-4">
           <div className="relative w-full aspect-[4/3] rounded-xl overflow-hidden bg-surface-container-low border border-outline-variant">
-            <img
+            <Image
+              width={960}
+              height={720}
+              priority
               src={voucher.images?.[selectedImageIndex] || voucher.thumbnail}
               alt={voucher.title}
               className="w-full h-full object-cover transition-all duration-300"
@@ -158,7 +162,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   selectedImageIndex === index ? "border-primary" : "border-outline-variant opacity-70 hover:opacity-100"
                 }`}
               >
-                <img src={img} alt={`${voucher.title} ${index + 1}`} className="w-full h-full object-cover" />
+                <Image width={96} height={96} src={img} alt={`${voucher.title} ${index + 1}`} className="w-full h-full object-cover" />
                 {selectedImageIndex === index && <div className="absolute inset-0 bg-primary/10" />}
               </button>
             ))}

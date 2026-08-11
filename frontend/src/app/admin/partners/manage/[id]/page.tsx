@@ -8,6 +8,7 @@ import { useParams } from "next/navigation";
 import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import FormField from "@/components/shared/ui/FormField";
+import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 
 interface Branch {
   code: string;
@@ -178,12 +179,12 @@ export default function ManagePartnerDetailPage() {
     if (partnerStatus === "Đang hoạt động") {
       setPartnerStatus("Tạm khóa");
       setToastMessage(
-        `Đã khóa tài khoản đối tác. Lý do: "${lockReason || "Theo chính sách quản lý đối tác"}"`
+        `Bản xem trước: đối tác đã được cập nhật cục bộ sang trạng thái khóa. Lý do: "${lockReason || "Theo chính sách quản lý đối tác"}"`
       );
     } else {
       setPartnerStatus("Đang hoạt động");
       setToastMessage(
-        "Đã mở khóa tài khoản đối tác. Đối tác hiện đã có thể hoạt động bình thường."
+        "Bản xem trước: đối tác đã được cập nhật cục bộ sang trạng thái hoạt động."
       );
     }
     setLockModalOpen(false);
@@ -217,10 +218,10 @@ export default function ManagePartnerDetailPage() {
       setBranches((prev) =>
         prev.map((b) => (b.code === editingBranch.code ? { ...branchForm } : b))
       );
-      setToastMessage(`Đã cập nhật thông tin chi nhánh "${branchForm.name}"`);
+      setToastMessage(`Bản xem trước: chi nhánh "${branchForm.name}" đã được cập nhật cục bộ.`);
     } else {
       setBranches((prev) => [...prev, { ...branchForm }]);
-      setToastMessage(`Đã thêm chi nhánh mới "${branchForm.name}" thành công!`);
+      setToastMessage(`Bản xem trước: chi nhánh "${branchForm.name}" đã được thêm cục bộ.`);
     }
 
     setBranchModalOpen(false);
@@ -231,7 +232,7 @@ export default function ManagePartnerDetailPage() {
     if (!deleteBranchCode) return;
     const branchToDelete = branches.find((b) => b.code === deleteBranchCode);
     setBranches((prev) => prev.filter((b) => b.code !== deleteBranchCode));
-    setToastMessage(`Đã xóa chi nhánh "${branchToDelete?.name || deleteBranchCode}"`);
+    setToastMessage(`Bản xem trước: chi nhánh "${branchToDelete?.name || deleteBranchCode}" đã được xóa cục bộ.`);
     setDeleteBranchCode(null);
   };
 
@@ -509,6 +510,7 @@ export default function ManagePartnerDetailPage() {
 
       {/* Modal Khóa / Mở khóa Đối tác */}
       {lockModalOpen && (
+        <AccessibleDialog onClose={() => setLockModalOpen(false)} ariaLabel="Xác nhận thay đổi trạng thái đối tác">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center justify-between">
@@ -558,10 +560,12 @@ export default function ManagePartnerDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Modal Thêm / Sửa Chi nhánh chuẩn theo ERD */}
       {branchModalOpen && (
+        <AccessibleDialog onClose={() => setBranchModalOpen(false)} ariaLabel="Thêm hoặc chỉnh sửa chi nhánh">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -660,10 +664,12 @@ export default function ManagePartnerDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
 
       {/* Modal Xóa Chi nhánh */}
       {deleteBranchCode && (
+        <AccessibleDialog onClose={() => setDeleteBranchCode(null)} ariaLabel="Xác nhận xóa chi nhánh">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
             <div className="flex items-center gap-3">
@@ -693,6 +699,7 @@ export default function ManagePartnerDetailPage() {
             </div>
           </div>
         </div>
+        </AccessibleDialog>
       )}
     </div>
   );

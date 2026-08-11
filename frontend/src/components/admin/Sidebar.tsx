@@ -31,6 +31,8 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
 
   const isActive = (href: string) => {
     if (href === "/admin") return pathname === "/admin";
+    if (href === "/admin/partners/pending") return pathname.startsWith("/admin/partners/");
+    if (href === "/admin/vouchers/pending") return pathname.startsWith("/admin/vouchers/");
     return pathname.startsWith(href);
   };
 
@@ -120,6 +122,8 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             type="button"
             onClick={() => {
               if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
+                // Keep the existing full-page logout navigation behavior.
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 window.location.href = "/";
               }
             }}

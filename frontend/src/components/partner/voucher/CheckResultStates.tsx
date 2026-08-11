@@ -7,10 +7,11 @@ interface CheckResultIdleCodeProps {
   inputCode: string;
   onInputChange: (v: string) => void;
   onSubmit: () => void;
+  isChecking: boolean;
 }
 
 export function CheckResultIdleCode({
-  inputCode, onInputChange, onSubmit,
+  inputCode, onInputChange, onSubmit, isChecking,
 }: CheckResultIdleCodeProps) {
   return (
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-6 max-w-lg mx-auto w-full text-center">
@@ -28,8 +29,8 @@ export function CheckResultIdleCode({
         placeholder="VD: VC-HL-2023-001"
         className="w-full border-2 border-outline-variant rounded-xl px-5 py-4 text-center text-xl uppercase tracking-widest text-on-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-all bg-surface"
       />
-      <button type="submit" className="w-full py-4 bg-primary text-on-primary font-bold rounded-xl hover:bg-surface-tint transition-all shadow-md text-base flex items-center justify-center gap-2">
-        <Icon name="search" className="text-xl" /><span>Xác nhận</span>
+      <button type="submit" disabled={isChecking} className="w-full py-4 bg-primary text-on-primary font-bold rounded-xl hover:bg-surface-tint transition-all shadow-md text-base flex items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+        <Icon name="search" className="text-xl" /><span>{isChecking ? "Đang kiểm tra..." : "Xác nhận"}</span>
       </button>
     </form>
   );
@@ -140,9 +141,10 @@ interface CheckResultValidProps {
   voucher: VoucherItem;
   onConfirm: () => void;
   onReset: () => void;
+  isConfirming: boolean;
 }
 
-export function CheckResultValid({ voucher, onConfirm, onReset }: CheckResultValidProps) {
+export function CheckResultValid({ voucher, onConfirm, onReset, isConfirming }: CheckResultValidProps) {
   return (
     <div className="space-y-6 animate-fadeIn">
       <div className="bg-secondary-container/20 border-2 border-secondary rounded-2xl p-6 shadow-sm space-y-4">
@@ -181,10 +183,27 @@ export function CheckResultValid({ voucher, onConfirm, onReset }: CheckResultVal
       </div>
       <div className="flex justify-end gap-4 pt-2">
         <button onClick={onReset} className="px-6 py-3 rounded-xl font-semibold text-on-surface-variant hover:bg-surface-container-high transition-colors text-base">Hủy bỏ</button>
-        <button onClick={onConfirm} className="px-8 py-3 rounded-xl font-bold bg-secondary text-on-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-all shadow-lg text-base flex items-center gap-2">
-          <Icon name="task_alt" className="text-xl" /><span>Xác nhận sử dụng</span>
+        <button onClick={onConfirm} disabled={isConfirming} className="px-8 py-3 rounded-xl font-bold bg-secondary text-on-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-all shadow-lg text-base flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60">
+          <Icon name="task_alt" className="text-xl" /><span>{isConfirming ? "Đang xác nhận..." : "Xác nhận sử dụng"}</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+export function CheckResultRequestError({ message, onReset }: { message: string; onReset: () => void }) {
+  return (
+    <div className="text-center p-8 bg-error-container/20 rounded-2xl border-2 border-error space-y-4" role="alert">
+      <div className="w-16 h-16 rounded-full bg-error text-on-error flex items-center justify-center mx-auto shadow-md">
+        <Icon name="error" className="text-3xl" />
+      </div>
+      <div>
+        <h3 className="text-2xl font-bold text-error">Không thể xử lý yêu cầu</h3>
+        <p className="text-base text-on-surface mt-1">{message}</p>
+      </div>
+      <button onClick={onReset} className="px-6 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-bold rounded-xl transition-colors border border-outline-variant text-base">
+        Kiểm tra lại
+      </button>
     </div>
   );
 }

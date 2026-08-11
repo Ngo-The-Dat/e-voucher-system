@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Voucher } from "@/data/mockData";
 import { Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import Image from "next/image";
 
 interface VoucherCardProps {
   voucher: Voucher;
@@ -22,7 +23,10 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
         className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col"
       >
         <div className="relative w-full aspect-video overflow-hidden">
-          <img
+          <Image
+            width={640}
+            height={360}
+            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
             src={voucher.thumbnail}
             alt={voucher.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -79,7 +83,9 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
         )}
         {/* Merchant Logo */}
         <div className="absolute -bottom-6 right-4 w-12 h-12 bg-surface-container-lowest rounded-full border border-outline-variant shadow-sm flex items-center justify-center p-1 z-10">
-          <img
+          <Image
+            width={48}
+            height={48}
             className="w-full h-full object-contain rounded-full"
             src={voucher.brandLogo}
             alt={voucher.brand}

@@ -1,4 +1,5 @@
 import Icon from "@/components/shared/ui/Icon";
+import { cloneElement, isValidElement, useId } from "react";
 
 interface FormFieldProps {
   label: string;
@@ -22,15 +23,34 @@ export default function FormField({
   children,
   fullWidth,
 }: FormFieldProps) {
+  const generatedId = useId();
+  const child = isValidElement<{
+    id?: string;
+    "aria-describedby"?: string;
+    "aria-invalid"?: boolean | "true" | "false";
+  }>(children) ? children : null;
+  const fieldId = child?.props.id ?? `field-${generatedId.replace(/:/g, "")}`;
+  const errorId = `${fieldId}-error`;
+  const describedBy = [child?.props["aria-describedby"], error ? errorId : null]
+    .filter(Boolean)
+    .join(" ") || undefined;
+  const associatedChild = child
+    ? cloneElement(child, {
+        id: fieldId,
+        "aria-invalid": error ? true : child.props["aria-invalid"],
+        "aria-describedby": describedBy,
+      })
+    : children;
+
   return (
     <div className={fullWidth ? "sm:col-span-2" : undefined}>
-      <label className="block font-semibold text-on-surface mb-1.5">
+      <label htmlFor={child ? fieldId : undefined} className="block font-semibold text-on-surface mb-1.5">
         {label}
         {required && <span className="text-error ml-1">*</span>}
       </label>
-      {children}
+      {associatedChild}
       {error && (
-        <p className="text-sm text-error font-medium mt-1 flex items-center gap-1">
+        <p id={errorId} className="text-sm text-error font-medium mt-1 flex items-center gap-1">
           <Icon name="error" className="text-sm" />
           {error}
         </p>

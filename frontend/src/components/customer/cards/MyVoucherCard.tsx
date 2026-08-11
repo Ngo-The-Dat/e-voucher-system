@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MyVoucher, Voucher } from "@/data/mockData";
 import { Ticket, CheckCircle2, Clock, XCircle } from "lucide-react";
+import Image from "next/image";
 
 interface MyVoucherCardProps {
   myVoucher: MyVoucher;
@@ -46,7 +47,9 @@ export default function MyVoucherCard({ myVoucher, voucher }: MyVoucherCardProps
       {/* Top Section */}
       <div className="flex gap-4 p-5 items-center bg-surface-container-low/50">
         <div className="w-16 h-16 rounded-lg overflow-hidden shrink-0 border border-outline-variant/30">
-          <img
+          <Image
+            width={64}
+            height={64}
             src={voucher.thumbnail}
             alt={voucher.title}
             className="w-full h-full object-cover"

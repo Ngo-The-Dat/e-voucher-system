@@ -2,8 +2,8 @@
 
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
-import { useEffect, useState } from "react";
-import { partnerApi } from "@/lib/partner-api";
+import { useEffect, useRef, useState } from "react";
+import { ApiError, partnerApi } from "@/lib/partner-api";
 import { Branch } from "@/lib/types/profile";
 import { VoucherItem } from "@/lib/types/voucher";
 import {
@@ -12,6 +12,7 @@ import {
   CheckResultInvalid,
   CheckResultValid,
   CheckResultRedeemed,
+  CheckResultRequestError,
 } from "@/components/partner/voucher/CheckResultStates";
 
 type CheckType = "code" | "qr";
@@ -20,6 +21,7 @@ type CheckResultState =
   | { type: "idle" }
   | { type: "invalid_code" }
   | { type: "invalid_qr" }
+  | { type: "request_error"; message: string }
   | { type: "valid"; voucher: VoucherItem }
   | { type: "redeemed_success"; voucherTitle: string; code: string; redeemedAt: string };
 
@@ -38,6 +40,10 @@ export default function CheckVoucherPage() {
   const [inputCode, setInputCode] = useState("");
   const [resultState, setResultState] = useState<CheckResultState>({ type: "idle" });
   const [branches, setBranches] = useState<Branch[]>([]);
+  const [isChecking, setIsChecking] = useState(false);
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const checkLockRef = useRef(false);
+  const redeemLockRef = useRef(false);
 
   useEffect(() => {
     partnerApi.getBranches().then((rows) => setBranches(rows.filter((b) => b.status === "active")))
@@ -45,37 +51,70 @@ export default function CheckVoucherPage() {
   }, []);
 
   const handleCheckCode = async (codeVal?: string) => {
+    if (checkLockRef.current) return;
     const codeToTest = (codeVal !== undefined ? codeVal : inputCode).trim().toUpperCase();
     if (!codeToTest) {
       setResultState({ type: "invalid_code" });
       return;
     }
+    checkLockRef.current = true;
+    setIsChecking(true);
     try {
       const row = await partnerApi.lookupVoucher(codeToTest);
       if (row.usage_status !== "UNUSED") { setResultState({ type: "invalid_code" }); return; }
       setResultState({ type: "valid", voucher: mapLookupVoucher(row) });
-    } catch { setResultState({ type: "invalid_code" }); }
+    } catch (error) {
+      setResultState(error instanceof ApiError && error.status === 404
+        ? { type: "invalid_code" }
+        : { type: "request_error", message: error instanceof Error ? error.message : "Không thể kiểm tra voucher. Vui lòng thử lại." });
+    } finally {
+      checkLockRef.current = false;
+      setIsChecking(false);
+    }
   };
 
   const handleCheckQr = async (qrValue: string) => {
+    if (checkLockRef.current) return;
+    checkLockRef.current = true;
+    setIsChecking(true);
     try {
       const row = await partnerApi.lookupVoucherByQr(qrValue);
       if (row.usage_status !== "UNUSED") { setResultState({ type: "invalid_qr" }); return; }
       setResultState({ type: "valid", voucher: mapLookupVoucher(row) });
-    } catch { setResultState({ type: "invalid_qr" }); }
+    } catch (error) {
+      setResultState(error instanceof ApiError && error.status === 404
+        ? { type: "invalid_qr" }
+        : { type: "request_error", message: error instanceof Error ? error.message : "Không thể kiểm tra mã QR. Vui lòng thử lại." });
+    } finally {
+      checkLockRef.current = false;
+      setIsChecking(false);
+    }
   };
 
   const handleConfirmRedeem = async () => {
-    if (resultState.type !== "valid") return;
+    if (resultState.type !== "valid" || redeemLockRef.current) return;
     const branch = branches.find((item) => resultState.voucher.branchIds.includes(item.id));
-    if (!branch) { setResultState({ type: "invalid_code" }); return; }
+    if (!branch) {
+      setResultState({ type: "request_error", message: "Không tìm thấy chi nhánh đang hoạt động phù hợp với voucher." });
+      return;
+    }
+    redeemLockRef.current = true;
+    setIsRedeeming(true);
     try {
       const result = await partnerApi.redeemVoucher(resultState.voucher.code, branch.id);
       setResultState({
         type: "redeemed_success", voucherTitle: resultState.voucher.title,
         code: resultState.voucher.code, redeemedAt: new Date(result.redeemed_at).toLocaleString("vi-VN"),
       });
-    } catch { setResultState({ type: "invalid_code" }); }
+    } catch (error) {
+      setResultState({
+        type: "request_error",
+        message: error instanceof Error ? error.message : "Không thể xác nhận sử dụng voucher. Vui lòng kiểm tra lại.",
+      });
+    } finally {
+      redeemLockRef.current = false;
+      setIsRedeeming(false);
+    }
   };
 
   const handleReset = () => {
@@ -118,7 +157,10 @@ export default function CheckVoucherPage() {
             <CheckResultInvalid type="qr" onReset={handleReset} />
           )}
           {resultState.type === "valid" && (
-            <CheckResultValid voucher={resultState.voucher} onConfirm={handleConfirmRedeem} onReset={handleReset} />
+            <CheckResultValid voucher={resultState.voucher} onConfirm={handleConfirmRedeem} onReset={handleReset} isConfirming={isRedeeming} />
+          )}
+          {resultState.type === "request_error" && (
+            <CheckResultRequestError message={resultState.message} onReset={handleReset} />
           )}
           {resultState.type === "redeemed_success" && (
             <CheckResultRedeemed
@@ -133,6 +175,7 @@ export default function CheckVoucherPage() {
               inputCode={inputCode}
               onInputChange={setInputCode}
               onSubmit={() => handleCheckCode()}
+              isChecking={isChecking}
             />
           )}
           {resultState.type === "idle" && checkType === "qr" && (
