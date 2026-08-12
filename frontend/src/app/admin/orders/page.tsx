@@ -1,88 +1,131 @@
 "use client";
 
-import Icon from "@/components/shared/ui/Icon";
-
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Icon from "@/components/shared/ui/Icon";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
-import { MOCK_ORDERS, OrderData } from "./data";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
+import { adminApi, AdminOrderListItem, AdminApiError } from "@/lib/admin-api";
 
 export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
   const [paymentStatusFilter, setPaymentStatusFilter] = useState("ALL");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
-  const [orders] = useState<OrderData[]>(MOCK_ORDERS);
-
-  // Bộ lọc Tra cứu Đơn hàng (UC-ADM-09) - Giữ nguyên các bộ lọc chính
-  const filteredOrders = orders.filter((item) => {
-    // Search query match (Khách hàng / Mã đơn)
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch =
-        item.orderId.toLowerCase().includes(q) ||
-        item.buyerName.toLowerCase().includes(q) ||
-        item.buyerEmail.toLowerCase().includes(q) ||
-        item.buyerPhone.toLowerCase().includes(q) ||
-        (item.recipientName && item.recipientName.toLowerCase().includes(q));
-      if (!matchesSearch) return false;
-    }
-    // Filter Order Status
-    if (orderStatusFilter !== "ALL" && item.orderStatus !== orderStatusFilter) {
-      return false;
-    }
-    // Filter Payment Status
-    if (paymentStatusFilter !== "ALL" && item.paymentStatus !== paymentStatusFilter) {
-      return false;
-    }
-    // Filter Date Range
-    if (startDate || endDate) {
-      const [day, month, year] = item.orderDate.split("/");
-      const oDate = `${year}-${month}-${day}`;
-      if (startDate && oDate < startDate) return false;
-      if (endDate && oDate > endDate) return false;
-    }
-    return true;
+  const [orders, setOrders] = useState<AdminOrderListItem[]>([]);
+  const [stats, setStats] = useState({
+    all: 0,
+    completed: 0,
+    confirmed: 0,
+    pending: 0,
+    cancelled: 0,
   });
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const formatCurrency = (val: number) => {
-    return val.toLocaleString("vi-VN") + " ₫";
+  // Search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Load orders from API
+  const loadOrders = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await adminApi.getOrders({
+        search: debouncedSearch.trim() || undefined,
+        orderStatus: orderStatusFilter !== "ALL" ? orderStatusFilter : undefined,
+        paymentStatus: paymentStatusFilter !== "ALL" ? paymentStatusFilter : undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        page: currentPage,
+        limit: 10,
+      });
+      setOrders(res.orders);
+      setStats(res.stats);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.total);
+    } catch (err: any) {
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải danh sách đơn hàng.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch, orderStatusFilter, paymentStatusFilter, startDate, endDate, currentPage]);
+
+  useEffect(() => {
+    loadOrders();
+  }, [loadOrders]);
+
+  const formatCurrency = (val: number | string) => {
+    const num = Number(val) || 0;
+    return num.toLocaleString("vi-VN") + " ₫";
+  };
+
+  const formatDateDisplay = (dateStr: string) => {
+    if (!dateStr) return { date: "—", time: "" };
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return { date: dateStr, time: "" };
+      const date = d.toLocaleDateString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+      });
+      const time = d.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return { date, time };
+    } catch {
+      return { date: dateStr, time: "" };
+    }
   };
 
   const getOrderStatusBadge = (status: string) => {
     switch (status) {
       case "PENDING":
-        return { label: "Chờ xử lý", class: "bg-amber-50 text-amber-700 border-amber-200" };
+        return { label: "Chờ xử lý", status: "pending" };
       case "CONFIRMED":
-        return { label: "Đã xác nhận", class: "bg-blue-50 text-blue-700 border-blue-200" };
+        return { label: "Đã xác nhận", status: "confirmed" };
       case "COMPLETED":
-        return { label: "Hoàn thành", class: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+        return { label: "Hoàn thành", status: "published" };
       case "CANCELLED":
-        return { label: "Đã hủy", class: "bg-rose-50 text-rose-700 border-rose-200" };
+        return { label: "Đã hủy", status: "rejected" };
       default:
-        return { label: status, class: "bg-slate-100 text-slate-700 border-slate-200" };
+        return { label: status, status: "draft" };
     }
   };
 
   const getPaymentStatusBadge = (status: string) => {
     switch (status) {
       case "UNPAID":
-        return { label: "Chưa thanh toán", class: "bg-amber-50 text-amber-700 border-amber-200" };
+        return { label: "Chưa thanh toán", status: "pending" };
       case "PAID":
-        return { label: "Đã thanh toán", class: "bg-emerald-50 text-emerald-700 border-emerald-200" };
+        return { label: "Đã thanh toán", status: "published" };
       case "FAILED":
-        return { label: "Thanh toán thất bại", class: "bg-rose-50 text-rose-700 border-rose-200" };
+        return { label: "Thanh toán thất bại", status: "rejected" };
       case "REFUNDED":
-        return { label: "Đã hoàn tiền", class: "bg-purple-50 text-purple-700 border-purple-200" };
+        return { label: "Đã hoàn tiền", status: "hidden" };
       default:
-        return { label: status, class: "bg-slate-100 text-slate-700 border-slate-200" };
+        return { label: status, status: "draft" };
     }
   };
 
@@ -98,7 +141,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Tra cứu & Bộ lọc Nâng cao (UC-ADM-09) - Giữ nguyên bộ lọc */}
+      {/* Tra cứu & Bộ lọc Nâng cao (UC-ADM-09) */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {/* Ô Tìm kiếm */}
@@ -110,10 +153,7 @@ export default function OrdersPage() {
                   type="text"
                   placeholder="Mã đơn, người mua, người nhận..."
                   value={searchQuery}
-                  onChange={(e) => {
-                    setSearchQuery(e.target.value);
-                    setCurrentPage(1);
-                  }}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
                 />
               </div>
@@ -132,11 +172,11 @@ export default function OrdersPage() {
                   }}
                   className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                 >
-                  <option value="ALL">Tất cả trạng thái đơn</option>
-                  <option value="PENDING">Chờ xử lý</option>
-                  <option value="CONFIRMED">Đã xác nhận</option>
-                  <option value="COMPLETED">Hoàn thành</option>
-                  <option value="CANCELLED">Đã hủy</option>
+                  <option value="ALL">Tất cả trạng thái ({stats.all})</option>
+                  <option value="PENDING">Chờ xử lý ({stats.pending})</option>
+                  <option value="CONFIRMED">Đã xác nhận ({stats.confirmed})</option>
+                  <option value="COMPLETED">Hoàn thành ({stats.completed})</option>
+                  <option value="CANCELLED">Đã hủy ({stats.cancelled})</option>
                 </select>
                 <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
               </div>
@@ -168,26 +208,41 @@ export default function OrdersPage() {
 
           {/* Lọc ngày đặt hàng */}
           <div>
-            <DateRangePicker
-              startDate={startDate}
-              endDate={endDate}
-              onStartDateChange={(val) => {
-                setStartDate(val);
-                setCurrentPage(1);
-              }}
-              onEndDateChange={(val) => {
-                setEndDate(val);
-                setCurrentPage(1);
-              }}
-              onReset={() => {
-                setStartDate("");
-                setEndDate("");
-                setCurrentPage(1);
-              }}
-            />
+            <FormField label="Ngày đặt hàng">
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={(val) => {
+                  setStartDate(val);
+                  setCurrentPage(1);
+                }}
+                onEndDateChange={(val) => {
+                  setEndDate(val);
+                  setCurrentPage(1);
+                }}
+                onReset={() => {
+                  setStartDate("");
+                  setEndDate("");
+                  setCurrentPage(1);
+                }}
+              />
+            </FormField>
           </div>
         </div>
       </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-xs text-rose-700">
+          <div className="flex items-center gap-2">
+            <Icon name="error" className="text-lg text-rose-500" />
+            <span>{error}</span>
+          </div>
+          <Button variant="outline" onClick={loadOrders} className="text-xs text-rose-700 border-rose-200 bg-white">
+            Thử lại
+          </Button>
+        </div>
+      )}
 
       {/* Bảng Danh Sách Đơn Hàng */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
@@ -199,43 +254,73 @@ export default function OrdersPage() {
                 <th className="py-4 px-5">NGƯỜI MUA (BUYER)</th>
                 <th className="py-4 px-5">NGƯỜI NHẬN (RECIPIENT)</th>
                 <th className="py-4 px-5">TỔNG TIỀN</th>
-                <th className="py-4 px-5">TRẠNG THÁI ĐƠN</th>
-                <th className="py-4 px-5">THANH TOÁN</th>
-                <th className="py-4 px-5">NGÀY ĐẶT</th>
-                <th className="py-4 px-5 text-right">THAO TÁC</th>
+                <th className="py-4 px-5 whitespace-nowrap">TRẠNG THÁI ĐƠN</th>
+                <th className="py-4 px-5 whitespace-nowrap">THANH TOÁN</th>
+                <th className="py-4 px-5 whitespace-nowrap">NGÀY ĐẶT</th>
+                <th className="py-4 px-5 text-right whitespace-nowrap">THAO TÁC</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-base">
-              {filteredOrders.length === 0 ? (
-                /* Thông báo rỗng (Luồng A1) */
+              {isLoading ? (
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="animate-pulse">
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-16" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-32 mb-1" />
+                      <div className="h-3 bg-slate-100 rounded w-24" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-28" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-20" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-6 bg-slate-200 rounded-full w-24" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-6 bg-slate-200 rounded-full w-24" />
+                    </td>
+                    <td className="py-4 px-5">
+                      <div className="h-4 bg-slate-200 rounded w-24" />
+                    </td>
+                    <td className="py-4 px-5 text-right">
+                      <div className="h-8 bg-slate-200 rounded-xl w-24 ml-auto" />
+                    </td>
+                  </tr>
+                ))
+              ) : orders.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
-                    <Icon name="search_off" className="text-4xl block mb-2 text-slate-300" />
-                    Không tìm thấy kết quả phù hợp.
+                    <Icon name="search_off" className="text-4xl block mb-2 text-slate-300 mx-auto" />
+                    Không tìm thấy đơn hàng nào phù hợp với bộ lọc.
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map((order) => {
-                  const oBadge = getOrderStatusBadge(order.orderStatus);
-                  const pBadge = getPaymentStatusBadge(order.paymentStatus);
+                orders.map((order) => {
+                  const { date, time } = formatDateDisplay(order.created_at);
+                  const oBadge = getOrderStatusBadge(order.order_status);
+                  const pBadge = getPaymentStatusBadge(order.payment_status);
 
                   return (
-                    <tr key={order.orderId} className="hover:bg-slate-50/60 transition">
-                      <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs">
-                        {order.orderId}
+                    <tr key={order.order_id} className="hover:bg-slate-50/60 transition">
+                      <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs whitespace-nowrap">
+                        ORD-{order.order_id}
                       </td>
                       <td className="py-4 px-5">
-                        <div className="font-bold text-slate-900">{order.buyerName}</div>
-                        <div className="text-xs text-slate-400 mt-0.5">{order.buyerPhone}</div>
+                        <div className="font-bold text-slate-900">{order.buyer_name}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">{order.buyer_phone || order.buyer_email}</div>
                       </td>
                       <td className="py-4 px-5">
-                        {order.isGift && order.recipientName ? (
+                        {order.recipient_name ? (
                           <div>
                             <div className="font-bold text-slate-900 flex items-center gap-1">
-                              <span>🎁 {order.recipientName}</span>
+                              <span>🎁 {order.recipient_name}</span>
                             </div>
                             <div className="text-xs text-slate-400 mt-0.5">
-                              {order.recipientPhone}
+                              {order.recipient_phone || order.recipient_email}
                             </div>
                           </div>
                         ) : (
@@ -244,24 +329,26 @@ export default function OrdersPage() {
                           </span>
                         )}
                       </td>
-                      <td className="py-4 px-5 font-bold text-slate-900">
-                        {formatCurrency(order.totalAmount)}
+                      <td className="py-4 px-5 font-bold text-slate-900 whitespace-nowrap">
+                        {formatCurrency(order.total_amount)}
+                        <span className="text-[11px] text-slate-400 font-normal block">
+                          ({order.total_quantity} voucher)
+                        </span>
                       </td>
-                      <td className="py-4 px-5">
-                        <StatusBadge status={order.orderStatus} label={oBadge.label} />
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        <StatusBadge status={oBadge.status} label={oBadge.label} />
                       </td>
-                      <td className="py-4 px-5">
-                        <StatusBadge status={order.paymentStatus} label={pBadge.label} />
+                      <td className="py-4 px-5 whitespace-nowrap">
+                        <StatusBadge status={pBadge.status} label={pBadge.label} />
                       </td>
-                      <td className="py-4 px-5 text-xs text-slate-600">
-                        <div className="font-semibold text-slate-800">{order.orderDate}</div>
-                        <div className="text-slate-400">{order.orderTime}</div>
+                      <td className="py-4 px-5 text-xs text-slate-600 whitespace-nowrap">
+                        <div className="font-semibold text-slate-800">{date}</div>
+                        <div className="text-slate-400">{time}</div>
                       </td>
-                      <td className="py-4 px-5 text-right">
-                        {/* Dẫn sang trang Chi tiết Đơn hàng riêng biệt (/orders/[id]) */}
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link
-                          href={`/admin/orders/${order.orderId}`}
-                          className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block"
+                          href={`/admin/orders/${order.order_id}`}
+                          className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block whitespace-nowrap"
                         >
                           Xem chi tiết
                         </Link>
@@ -275,14 +362,16 @@ export default function OrdersPage() {
         </div>
 
         {/* Footer & Phân trang */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={Math.ceil(filteredOrders.length / 10) || 1}
-          totalItems={filteredOrders.length}
-          itemsPerPage={10}
-          onPageChange={setCurrentPage}
-          itemName="đơn hàng"
-        />
+        {!isLoading && totalItems > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            itemsPerPage={10}
+            onPageChange={setCurrentPage}
+            itemName="đơn hàng"
+          />
+        )}
       </div>
     </div>
   );
@@ -319,42 +408,43 @@ function DateRangePicker({
 
   return (
     <div className="relative" ref={containerRef}>
-      <div className="flex items-center justify-between mb-1.5">
-        <label className="block text-xs font-bold text-slate-500">Ngày đặt hàng</label>
-        {hasFilter && (
-          <button
-            type="button"
-            onClick={() => {
-              onReset();
-              setIsOpen(false);
-            }}
-            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-rose-500 hover:text-rose-600 transition"
-          >
-            Xóa
-          </button>
-        )}
-      </div>
-
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className={`w-full h-[38px] px-3 bg-white border rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-all gap-2 shadow-2xs ${
+        className={`w-full h-[38px] px-3 bg-white border rounded-xl text-sm font-medium flex items-center justify-between transition-all gap-2 ${
           hasFilter
             ? "border-blue-500 bg-blue-50/40 text-blue-900 ring-2 ring-blue-500/10"
             : "border-slate-200 text-slate-700 hover:border-slate-300"
         }`}
       >
         <div className="flex items-center gap-2 truncate">
-          <Icon name="calendar_today" className={`text-lg ${hasFilter ? "text-blue-600" : "text-slate-400"}`} />
-          <span className={`truncate ${hasFilter ? "font-semibold text-slate-900" : "text-slate-400"}`}>
+          <Icon name="calendar_today" className={`text-base ${hasFilter ? "text-blue-600" : "text-slate-400"}`} />
+          <span className={`truncate text-sm ${hasFilter ? "font-semibold text-slate-900" : "text-slate-500"}`}>
             {hasFilter ? `${startDate} đến ${endDate}` : "Tất cả thời gian"}
           </span>
         </div>
-        <Icon name={isOpen ? "expand_less" : "expand_more"} className="text-lg text-slate-400 shrink-0" />
+        <div className="flex items-center gap-1 shrink-0">
+          {hasFilter && (
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={(e) => {
+                e.stopPropagation();
+                onReset();
+                setIsOpen(false);
+              }}
+              className="p-0.5 rounded-full hover:bg-slate-200 text-slate-400 hover:text-rose-600 transition"
+              title="Xóa lọc ngày"
+            >
+              <Icon name="close" className="text-sm" />
+            </span>
+          )}
+          <Icon name={isOpen ? "expand_less" : "expand_more"} className="text-lg text-slate-400" />
+        </div>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 top-full mt-2 z-50 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5">
+        <div className="absolute right-0 top-full mt-2 z-50 w-72 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5 animate-in fade-in zoom-in-95">
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <label className="block text-[11px] font-medium text-slate-500 mb-1">Từ ngày</label>

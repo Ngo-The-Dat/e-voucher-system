@@ -242,6 +242,87 @@ export interface ManagedVouchersResponse {
   };
 }
 
+export interface AdminIssuedVoucher {
+  issued_voucher_id: number;
+  voucher_code: string;
+  qr_code: string;
+  usage_status: "UNUSED" | "USED" | "CANCELLED" | "EXPIRED";
+  issued_at: string;
+  expires_at: string;
+  used_at: string | null;
+  applicable_region: string | null;
+  discount_amount: number | string;
+}
+
+export interface AdminOrderItemDetail {
+  order_item_id: number;
+  order_id: number;
+  program_id: number;
+  quantity: number;
+  unit_price: number | string;
+  program_name: string;
+  original_unit_price: number | string;
+  partner_name: string;
+  vouchers: AdminIssuedVoucher[];
+}
+
+export interface AdminOrderDetail {
+  order_id: number;
+  created_at: string;
+  total_amount: number | string;
+  payment_method: string;
+  payment_status: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";
+  order_status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  buyer_id: number;
+  buyer_name: string;
+  buyer_email: string;
+  buyer_phone: string | null;
+  recipient_id: number | null;
+  recipient_name: string | null;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  cancel_reason: string | null;
+  cancel_at: string | null;
+  cancel_admin_name: string | null;
+  items: AdminOrderItemDetail[];
+}
+
+export interface AdminOrderListItem {
+  order_id: number;
+  created_at: string;
+  total_amount: number | string;
+  payment_method: string;
+  payment_status: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";
+  order_status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  buyer_id: number;
+  buyer_name: string;
+  buyer_email: string;
+  buyer_phone: string | null;
+  recipient_id: number | null;
+  recipient_name: string | null;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  items_count: number | string;
+  total_quantity: number | string;
+}
+
+export interface AdminOrdersResponse {
+  orders: AdminOrderListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  stats: {
+    all: number;
+    completed: number;
+    confirmed: number;
+    pending: number;
+    cancelled: number;
+  };
+}
+
 export const adminApi = {
   // Users
   getUsers: async (params?: {
@@ -506,6 +587,43 @@ export const adminApi = {
     return adminRequest(`/admin/vouchers/${programId}/status`, {
       method: "PUT",
       body: JSON.stringify({ status }),
+    });
+  },
+
+  // Orders
+  getOrders: async (params?: {
+    search?: string;
+    orderStatus?: string;
+    paymentStatus?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<AdminOrdersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.orderStatus && params.orderStatus !== "ALL") query.set("order_status", params.orderStatus);
+    if (params?.paymentStatus && params.paymentStatus !== "ALL") query.set("payment_status", params.paymentStatus);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<AdminOrdersResponse>(`/admin/orders${qs}`);
+  },
+
+  getOrder: async (orderId: string | number): Promise<AdminOrderDetail> => {
+    return adminRequest<AdminOrderDetail>(`/admin/orders/${orderId}`);
+  },
+
+  cancelOrder: async (
+    orderId: string | number,
+    reason: string
+  ): Promise<{ success: boolean; message: string; order_id: number; order_status: string; payment_status: string }> => {
+    return adminRequest(`/admin/orders/${orderId}/cancel`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
     });
   },
 };
