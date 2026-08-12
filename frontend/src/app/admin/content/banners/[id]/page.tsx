@@ -1,43 +1,157 @@
 "use client";
 
-import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_BANNERS, BannerData } from "../data";
+import Icon from "@/components/shared/ui/Icon";
+import { toast } from "sonner";
+import {
+  adminApi,
+  AdminBannerDetail,
+  VoucherProgramOption,
+  AdminApiError,
+} from "@/lib/admin-api";
 
 export default function EditBannerPage() {
   const params = useParams();
   const router = useRouter();
-  const bannerId = (params?.id as string) || "BNR-101";
+  const bannerId = params?.id ? Number(params.id) : null;
 
-  // Tìm dữ liệu banner theo ID
-  const initialBanner = INITIAL_BANNERS.find((b) => b.bannerId === bannerId) || INITIAL_BANNERS[0];
+  const [banner, setBanner] = useState<AdminBannerDetail | null>(null);
+  const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
 
-  const [title, setTitle] = useState(initialBanner.title);
-  const [programId, setProgramId] = useState(initialBanner.programId);
-  const [imageUrl, setImageUrl] = useState(initialBanner.imageUrl);
-  const [targetUrl, setTargetUrl] = useState(initialBanner.targetUrl);
-  const [displayPosition, setDisplayPosition] = useState(initialBanner.displayPosition);
-  const [displayFrom, setDisplayFrom] = useState(initialBanner.displayFrom);
-  const [displayTo, setDisplayTo] = useState(initialBanner.displayTo);
-  type BannerStatus = "ACTIVE" | "INACTIVE";
-  const [status, setStatus] = useState<BannerStatus>(initialBanner.status);
+  const [title, setTitle] = useState("");
+  const [programId, setProgramId] = useState<number | "">("");
+  const [imageUrl, setImageUrl] = useState("");
+  const [targetUrl, setTargetUrl] = useState("");
+  const [displayPosition, setDisplayPosition] = useState("HOME_TOP");
+  const [displayFrom, setDisplayFrom] = useState("");
+  const [displayTo, setDisplayTo] = useState("");
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
-  const handleSaveBannerChanges = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Helper convert ISO timestamp to date input value YYYY-MM-DD
+  const toDateInputValue = (dateStr: string | null) => {
+    if (!dateStr) return "";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "";
+      return d.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
+
+  const loadData = useCallback(async () => {
+    if (!bannerId) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const [bannerData, optionsRes] = await Promise.all([
+        adminApi.getBanner(bannerId),
+        adminApi.getVoucherOptions(),
+      ]);
+
+      setBanner(bannerData);
+      setVoucherOptions(optionsRes.options);
+
+      setTitle(bannerData.title);
+      setProgramId(bannerData.program_id);
+      setImageUrl(bannerData.image_url);
+      setTargetUrl(bannerData.target_url || "");
+      setDisplayPosition(bannerData.display_position || "HOME_TOP");
+      setDisplayFrom(toDateInputValue(bannerData.display_from));
+      setDisplayTo(toDateInputValue(bannerData.display_to));
+      setStatus(bannerData.status);
+    } catch (err: any) {
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải thông tin banner quảng cáo.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [bannerId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSaveBannerChanges = async () => {
     if (!title.trim()) {
-      alert("Vui lòng nhập tiêu đề banner!");
+      toast.error("Vui lòng nhập tiêu đề banner!");
       return;
     }
+    if (!programId) {
+      toast.error("Vui lòng chọn chương trình voucher liên kết!");
+      return;
+    }
+    if (!imageUrl.trim()) {
+      toast.error("Vui lòng nhập đường dẫn hình ảnh banner!");
+      return;
+    }
+    if (!bannerId) return;
 
-    alert(`Đã lưu thay đổi cho Banner "${title}" thành công!`);
-    router.push("/admin/content/banners");
+    try {
+      setIsSaving(true);
+      await adminApi.updateBanner(bannerId, {
+        program_id: Number(programId),
+        title: title.trim(),
+        image_url: imageUrl.trim(),
+        target_url: targetUrl.trim(),
+        display_position: displayPosition,
+        display_from: displayFrom || undefined,
+        display_to: displayTo || undefined,
+        status,
+      });
+
+      toast.success(`Đã lưu thay đổi cho Banner "${title}" thành công!`);
+      setTimeout(() => {
+        router.push("/admin/content/banners");
+      }, 1000);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể lưu thay đổi.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
+        <div className="h-10 bg-slate-200 rounded-xl animate-pulse w-1/3" />
+        <div className="h-96 bg-white border border-slate-200 rounded-2xl p-6 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error || !banner) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-16 text-center">
+        <div className="p-8 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700">
+          <Icon name="error" className="text-3xl mb-2" />
+          <p className="font-bold">{error || "Không tìm thấy banner yêu cầu."}</p>
+          <div className="mt-4">
+            <Link
+              href="/admin/content/banners"
+              className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold"
+            >
+              Quay lại danh sách
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
-      {/* Top Header Navigation (Breadcrumb dạng ‹ Tên Banner) */}
+      {/* Top Header Navigation */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200">
         <div className="flex items-center gap-3 min-w-0">
           <Link
@@ -47,7 +161,10 @@ export default function EditBannerPage() {
           >
             <Icon name="chevron_left" className="text-lg" />
           </Link>
-          <h1 className="text-xl font-bold text-slate-900 truncate">{title}</h1>
+          <div>
+            <div className="text-xs text-slate-400 font-mono font-bold">Mã: #{bannerId}</div>
+            <h1 className="text-xl font-bold text-slate-900 truncate">{title || "Chỉnh sửa banner"}</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -59,9 +176,10 @@ export default function EditBannerPage() {
           </Link>
           <button
             onClick={handleSaveBannerChanges}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+            disabled={isSaving}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-xs"
           >
-            Lưu thay đổi
+            {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>
       </div>
@@ -92,18 +210,22 @@ export default function EditBannerPage() {
           </label>
           <select
             value={programId}
-            onChange={(e) => setProgramId(e.target.value)}
+            onChange={(e) => setProgramId(Number(e.target.value))}
             className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
           >
-            <option value="PRG-HG-50K">PRG-HG-50K - Voucher Highlands Coffee 50.000đ</option>
-            <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
-            <option value="PRG-KC-200K">PRG-KC-200K - Buffet Lẩu Kichi Kichi Giảm 20%</option>
+            {voucherOptions.map((opt) => (
+              <option key={opt.program_id} value={opt.program_id}>
+                #{opt.program_id} - {opt.program_name} ({opt.partner_name})
+              </option>
+            ))}
           </select>
         </div>
 
-        {/* Đường dẫn hình ảnh & Xem trước (Preview Box) */}
+        {/* Đường dẫn hình ảnh & Xem trước */}
         <div className="space-y-3">
-          <label className="block text-xs font-bold text-slate-800">Đường dẫn hình ảnh & Xem trước Banner</label>
+          <label className="block text-xs font-bold text-slate-800">
+            Đường dẫn hình ảnh & Xem trước Banner <span className="text-rose-500">*</span>
+          </label>
           <input
             type="text"
             value={imageUrl}
@@ -116,8 +238,19 @@ export default function EditBannerPage() {
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
               XEM TRƯỚC HÌNH ẢNH BANNER (LIVE PREVIEW)
             </span>
-            <div className="w-full h-48 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-300">
-              <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+            <div className="w-full h-48 bg-slate-200 rounded-lg overflow-hidden relative border border-slate-300 flex items-center justify-center">
+              {imageUrl ? (
+                <img
+                  src={imageUrl}
+                  alt={title}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-xs text-slate-400">Chưa có ảnh preview</span>
+              )}
             </div>
           </div>
         </div>
@@ -143,9 +276,10 @@ export default function EditBannerPage() {
               onChange={(e) => setDisplayPosition(e.target.value)}
               className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-800 font-semibold focus:outline-none focus:border-blue-500"
             >
-              <option value="Trượt trang chủ đầu trang">Trượt trang chủ đầu trang</option>
-              <option value="Banner thanh bên trái">Banner thanh bên trái</option>
-              <option value="Banner Khuyến Mãi Giữa Trang">Banner Khuyến Mãi Giữa Trang</option>
+              <option value="HOME_TOP">HOME_TOP (Trượt trang chủ đầu trang)</option>
+              <option value="HOME_MIDDLE">HOME_MIDDLE (Banner Khuyến Mãi Giữa Trang)</option>
+              <option value="CATEGORY_HEADER">CATEGORY_HEADER (Banner đầu danh mục)</option>
+              <option value="SIDEBAR">SIDEBAR (Banner thanh bên)</option>
             </select>
           </div>
 
@@ -167,7 +301,7 @@ export default function EditBannerPage() {
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">Thời gian bắt đầu</label>
             <input
-              type="text"
+              type="date"
               value={displayFrom}
               onChange={(e) => setDisplayFrom(e.target.value)}
               className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
@@ -176,29 +310,13 @@ export default function EditBannerPage() {
           <div>
             <label className="block text-xs font-bold text-slate-800 mb-1.5">Thời gian kết thúc</label>
             <input
-              type="text"
+              type="date"
               value={displayTo}
               onChange={(e) => setDisplayTo(e.target.value)}
               className="w-full h-10 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none"
             />
           </div>
         </div>
-      </div>
-
-      {/* Action Footer */}
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Link
-          href="/admin/content/banners"
-          className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-        >
-          Hủy / Quay lại
-        </Link>
-        <button
-          onClick={handleSaveBannerChanges}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-        >
-          Lưu thay đổi Banner
-        </button>
       </div>
     </div>
   );

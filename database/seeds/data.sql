@@ -215,7 +215,7 @@ INSERT INTO popups (popup_id, program_id, title, content, target_url, image_url,
 INSERT INTO contents (content_id, program_id, title, body, content_type, created_at, updated_at, status) VALUES
 (1, 1, 'Điều khoản & Điều kiện sử dụng Voucher Buffet', 'Voucher áp dụng tất cả các ngày trong tuần, không áp dụng lễ tết...', 'POLICY', '2026-01-05 08:00:00', NULL, 'ACTIVE'),
 (2, 3, 'Trải nghiệm liệu trình Spa Hương Sen', 'Bài viết đánh giá chi tiết về quy trình chăm sóc da mặt...', 'ARTICLE', '2026-01-06 09:00:00', NULL, 'ACTIVE'),
-(3, 5, 'Hướng dẫn đặt phòng tại Biển Bạc Hotel', 'Quy trình đặt phòng và xác nhận mã voucher khi nhận phòng...', 'GUIDE', '2026-01-07 10:00:00', NULL, 'ACTIVE');
+(3, 5, 'Hướng dẫn đặt phòng tại Biển Bạc Hotel', 'Quy trình đặt phòng và xác nhận mã voucher khi nhận phòng...', 'ARTICLE', '2026-01-07 10:00:00', NULL, 'ACTIVE');
 
 -- 18. Insert system_logs (10 rows)
 INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_value, new_value, performed_at, result) VALUES

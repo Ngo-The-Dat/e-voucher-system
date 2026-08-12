@@ -16,6 +16,13 @@ import adminLogRouter from './admin/log.router.js';
 import adminPartnerRouter from './admin/partner.router.js';
 import adminVoucherRouter from './admin/voucher.router.js';
 import adminOrderRouter from './admin/order.router.js';
+import {
+  categoryRouter as adminCategoryRouter,
+  bannerRouter as adminBannerRouter,
+  popupRouter as adminPopupRouter,
+  articleRouter as adminArticleRouter,
+  contentHelperRouter as adminContentHelperRouter,
+} from './admin/content.router.js';
 
 const router = Router();
 
@@ -83,6 +90,36 @@ router.use('/admin/orders',
   authenticate,
   requireRole('ADMIN'),
   adminOrderRouter
+);
+
+router.use('/admin/categories',
+  authenticate,
+  requireRole('ADMIN'),
+  adminCategoryRouter
+);
+
+router.use('/admin/banners',
+  authenticate,
+  requireRole('ADMIN'),
+  adminBannerRouter
+);
+
+router.use('/admin/popups',
+  authenticate,
+  requireRole('ADMIN'),
+  adminPopupRouter
+);
+
+router.use('/admin/contents',
+  authenticate,
+  requireRole('ADMIN'),
+  adminArticleRouter
+);
+
+router.use('/admin/content',
+  authenticate,
+  requireRole('ADMIN'),
+  adminContentHelperRouter
 );
 
 export default router;

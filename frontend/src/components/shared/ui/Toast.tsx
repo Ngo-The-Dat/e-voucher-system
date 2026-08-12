@@ -1,30 +1,36 @@
-import Icon from "@/components/shared/ui/Icon";
+"use client";
+
+import { toast as sonnerToast } from "sonner";
+
+/**
+ * Helper gọi toast notification với sonner
+ */
+export const toast = sonnerToast;
+
+export const showToast = (message: string, type: "success" | "error" = "success") => {
+  if (type === "error") {
+    sonnerToast.error(message);
+  } else {
+    sonnerToast.success(message);
+  }
+};
 
 interface ToastProps {
-  message: string | null;
-  /** Loại toast: mặc định "success" */
+  message?: string | null;
   type?: "success" | "error";
 }
 
 /**
- * Toast notification cố định góc trên phải.
- * Dùng: {toastMessage && <Toast message={toastMessage} />}
+ * Toast component tương thích ngược
  */
 export default function Toast({ message, type = "success" }: ToastProps) {
   if (!message) return null;
 
-  const isError = type === "error";
+  if (type === "error") {
+    sonnerToast.error(message);
+  } else {
+    sonnerToast.success(message);
+  }
 
-  return (
-    <div
-      className={`fixed top-20 right-6 z-50 font-bold px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 animate-slideDown border border-white/20 ${
-        isError
-          ? "bg-error text-on-error"
-          : "bg-primary text-on-primary"
-      }`}
-    >
-      <Icon name={isError ? "error" : "check_circle"} className="text-2xl shrink-0" />
-      <span>{message}</span>
-    </div>
-  );
+  return null;
 }

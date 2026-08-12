@@ -626,5 +626,386 @@ export const adminApi = {
       body: JSON.stringify({ reason }),
     });
   },
+
+  // ─── Categories ─────────────────────────────────────────────────────────────
+  getCategories: async (params?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<CategoriesResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<CategoriesResponse>(`/admin/categories${qs}`);
+  },
+
+  getCategory: async (id: string | number): Promise<AdminCategoryDetail> => {
+    return adminRequest<AdminCategoryDetail>(`/admin/categories/${id}`);
+  },
+
+  createCategory: async (data: {
+    category_name: string;
+    description?: string;
+    status?: "ACTIVE" | "INACTIVE";
+  }): Promise<AdminCategoryListItem> => {
+    return adminRequest<AdminCategoryListItem>(`/admin/categories`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateCategory: async (
+    id: string | number,
+    data: {
+      category_name?: string;
+      description?: string;
+      status?: "ACTIVE" | "INACTIVE";
+    }
+  ): Promise<AdminCategoryListItem> => {
+    return adminRequest<AdminCategoryListItem>(`/admin/categories/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteCategory: async (id: string | number): Promise<{ message: string; category_id: number }> => {
+    return adminRequest(`/admin/categories/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  assignVouchersToCategory: async (
+    categoryId: string | number,
+    programIds: number[]
+  ): Promise<AdminCategoryDetail> => {
+    return adminRequest<AdminCategoryDetail>(`/admin/categories/${categoryId}/vouchers`, {
+      method: "POST",
+      body: JSON.stringify({ program_ids: programIds }),
+    });
+  },
+
+  removeVoucherFromCategory: async (
+    categoryId: string | number,
+    programId: string | number
+  ): Promise<AdminCategoryDetail> => {
+    return adminRequest<AdminCategoryDetail>(`/admin/categories/${categoryId}/vouchers/${programId}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─── Banners ────────────────────────────────────────────────────────────────
+  getBanners: async (params?: {
+    search?: string;
+    status?: string;
+    displayPosition?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<BannersResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.displayPosition && params.displayPosition !== "ALL") query.set("display_position", params.displayPosition);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<BannersResponse>(`/admin/banners${qs}`);
+  },
+
+  getBanner: async (id: string | number): Promise<AdminBannerDetail> => {
+    return adminRequest<AdminBannerDetail>(`/admin/banners/${id}`);
+  },
+
+  createBanner: async (data: {
+    program_id: number;
+    title: string;
+    image_url: string;
+    target_url?: string;
+    display_position?: string;
+    display_from?: string;
+    display_to?: string;
+    status?: "ACTIVE" | "INACTIVE";
+  }): Promise<AdminBannerDetail> => {
+    return adminRequest<AdminBannerDetail>(`/admin/banners`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateBanner: async (
+    id: string | number,
+    data: {
+      program_id?: number;
+      title?: string;
+      image_url?: string;
+      target_url?: string;
+      display_position?: string;
+      display_from?: string;
+      display_to?: string;
+      status?: "ACTIVE" | "INACTIVE";
+    }
+  ): Promise<AdminBannerDetail> => {
+    return adminRequest<AdminBannerDetail>(`/admin/banners/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteBanner: async (id: string | number): Promise<{ message: string; banner_id: number }> => {
+    return adminRequest(`/admin/banners/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─── Popups ─────────────────────────────────────────────────────────────────
+  getPopups: async (params?: {
+    search?: string;
+    status?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<PopupsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<PopupsResponse>(`/admin/popups${qs}`);
+  },
+
+  getPopup: async (id: string | number): Promise<AdminPopupDetail> => {
+    return adminRequest<AdminPopupDetail>(`/admin/popups/${id}`);
+  },
+
+  createPopup: async (data: {
+    program_id: number;
+    title: string;
+    content?: string;
+    target_url?: string;
+    image_url?: string;
+    start_at?: string;
+    end_at?: string;
+    status?: "ACTIVE" | "INACTIVE";
+  }): Promise<AdminPopupDetail> => {
+    return adminRequest<AdminPopupDetail>(`/admin/popups`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updatePopup: async (
+    id: string | number,
+    data: {
+      program_id?: number;
+      title?: string;
+      content?: string;
+      target_url?: string;
+      image_url?: string;
+      start_at?: string;
+      end_at?: string;
+      status?: "ACTIVE" | "INACTIVE";
+    }
+  ): Promise<AdminPopupDetail> => {
+    return adminRequest<AdminPopupDetail>(`/admin/popups/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deletePopup: async (id: string | number): Promise<{ message: string; popup_id: number }> => {
+    return adminRequest(`/admin/popups/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─── Contents / Articles ────────────────────────────────────────────────────
+  getContents: async (params?: {
+    search?: string;
+    status?: string;
+    contentType?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<ContentsResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.contentType && params.contentType !== "ALL") query.set("content_type", params.contentType);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<ContentsResponse>(`/admin/contents${qs}`);
+  },
+
+  getContent: async (id: string | number): Promise<AdminContentDetail> => {
+    return adminRequest<AdminContentDetail>(`/admin/contents/${id}`);
+  },
+
+  createContent: async (data: {
+    program_id: number;
+    title: string;
+    body: string;
+    content_type?: "POLICY" | "ARTICLE";
+    status?: "ACTIVE" | "INACTIVE";
+  }): Promise<AdminContentDetail> => {
+    return adminRequest<AdminContentDetail>(`/admin/contents`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateContent: async (
+    id: string | number,
+    data: {
+      program_id?: number;
+      title?: string;
+      body?: string;
+      content_type?: "POLICY" | "ARTICLE";
+      status?: "ACTIVE" | "INACTIVE";
+    }
+  ): Promise<AdminContentDetail> => {
+    return adminRequest<AdminContentDetail>(`/admin/contents/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+  },
+
+  deleteContent: async (id: string | number): Promise<{ message: string; content_id: number }> => {
+    return adminRequest(`/admin/contents/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  // ─── Voucher Options Helper ─────────────────────────────────────────────────
+  getVoucherOptions: async (): Promise<{ options: VoucherProgramOption[] }> => {
+    return adminRequest<{ options: VoucherProgramOption[] }>(`/admin/content/voucher-options`);
+  },
 };
+
+// ─── Interfaces for Content Module ──────────────────────────────────────────
+
+export interface AdminCategoryListItem {
+  category_id: number;
+  category_name: string;
+  description: string;
+  status: "ACTIVE" | "INACTIVE";
+  program_count: number;
+}
+
+export interface AdminCategoryVoucherItem {
+  program_id: number;
+  program_name: string;
+  original_price: number;
+  sale_price: number;
+  display_status: string;
+  sale_start_at: string;
+  sale_end_at: string;
+  partner_name: string;
+}
+
+export interface AdminCategoryDetail extends AdminCategoryListItem {
+  vouchers: AdminCategoryVoucherItem[];
+}
+
+export interface CategoriesResponse {
+  categories: AdminCategoryListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminBannerListItem {
+  banner_id: number;
+  program_id: number;
+  program_name: string;
+  title: string;
+  image_url: string;
+  target_url: string;
+  display_position: string;
+  display_from: string | null;
+  display_to: string | null;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+export interface AdminBannerDetail extends AdminBannerListItem {}
+
+export interface BannersResponse {
+  banners: AdminBannerListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminPopupListItem {
+  popup_id: number;
+  program_id: number;
+  program_name: string;
+  title: string;
+  content: string;
+  target_url: string;
+  image_url: string;
+  start_at: string | null;
+  end_at: string | null;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+export interface AdminPopupDetail extends AdminPopupListItem {}
+
+export interface PopupsResponse {
+  popups: AdminPopupListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface AdminContentListItem {
+  content_id: number;
+  program_id: number;
+  program_name: string;
+  title: string;
+  body: string;
+  content_type: "POLICY" | "ARTICLE";
+  created_at: string;
+  updated_at: string | null;
+  status: "ACTIVE" | "INACTIVE";
+}
+
+export interface AdminContentDetail extends AdminContentListItem {}
+
+export interface ContentsResponse {
+  contents: AdminContentListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+export interface VoucherProgramOption {
+  program_id: number;
+  program_name: string;
+  category_id: number | null;
+  category_name?: string | null;
+  original_price: number;
+  sale_price: number;
+  display_status: string;
+  partner_name: string;
+}
+
 
