@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/shared/ui/Icon";
+import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
@@ -19,7 +20,6 @@ export default function PendingVouchersPage() {
   const [vouchers, setVouchers] = useState<AdminPendingVoucherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Search & Pagination State
   const [searchQuery, setSearchQuery] = useState("");
@@ -71,14 +71,6 @@ export default function PendingVouchersPage() {
     loadPendingVouchers();
   }, [loadPendingVouchers]);
 
-  // Auto clear notification message
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
   const formatCurrency = (val: number | string) => {
     const num = Number(val) || 0;
     return num.toLocaleString("vi-VN") + " ₫";
@@ -89,11 +81,11 @@ export default function PendingVouchersPage() {
     try {
       setIsSubmitting(true);
       await adminApi.approveVoucher(voucher.approval_request_id);
-      setSuccessMessage(`Đã phê duyệt thành công voucher [${voucher.program_name}].`);
+      toast.success(`Đã phê duyệt thành công voucher [${voucher.program_name}].`);
       setSelectedVoucher(null);
       await loadPendingVouchers();
     } catch (err: any) {
-      alert(err.message || "Lỗi khi phê duyệt voucher.");
+      toast.error(err.message || "Lỗi khi phê duyệt voucher.");
     } finally {
       setIsSubmitting(false);
     }
@@ -103,20 +95,20 @@ export default function PendingVouchersPage() {
   const handleConfirmReject = async () => {
     if (!selectedVoucher) return;
     if (!rejectReason.trim()) {
-      alert("Vui lòng nhập lý do từ chối duyệt voucher!");
+      toast.error("Vui lòng nhập lý do từ chối duyệt voucher!");
       return;
     }
 
     try {
       setIsSubmitting(true);
       await adminApi.rejectVoucher(selectedVoucher.approval_request_id, rejectReason.trim());
-      setSuccessMessage(`Đã từ chối duyệt voucher [${selectedVoucher.program_name}] và gửi phản hồi.`);
+      toast.success(`Đã từ chối duyệt voucher [${selectedVoucher.program_name}] và gửi phản hồi.`);
       setIsRejectModalOpen(false);
       setSelectedVoucher(null);
       setRejectReason("");
       await loadPendingVouchers();
     } catch (err: any) {
-      alert(err.message || "Lỗi khi từ chối duyệt voucher.");
+      toast.error(err.message || "Lỗi khi từ chối duyệt voucher.");
     } finally {
       setIsSubmitting(false);
     }
@@ -126,38 +118,6 @@ export default function PendingVouchersPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Navigation Bar */}
       <VoucherNavTabs pendingCount={totalItems} />
-
-      {/* Thông báo thành công / lỗi */}
-      {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Icon name="check_circle" className="text-emerald-600 text-lg" />
-            <span className="font-semibold">{successMessage}</span>
-          </div>
-          <button
-            onClick={() => setSuccessMessage(null)}
-            className="text-emerald-600 hover:text-emerald-800 text-xs"
-          >
-            Đóng
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Icon name="error" className="text-rose-600 text-lg" />
-            <span>{error}</span>
-          </div>
-          <Button
-            variant="outline"
-            onClick={loadPendingVouchers}
-            className="text-xs h-auto py-1 px-3 bg-white"
-          >
-            Thử lại
-          </Button>
-        </div>
-      )}
 
       {/* Filter / Search Bar */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">

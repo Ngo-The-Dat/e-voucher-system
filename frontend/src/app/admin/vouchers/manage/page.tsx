@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Icon from "@/components/shared/ui/Icon";
+import { toast } from "sonner";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
@@ -26,7 +27,6 @@ export default function ManageVouchersPage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
 
   // Search & Filter State
@@ -99,14 +99,6 @@ export default function ManageVouchersPage() {
     loadPendingCount();
   }, [loadPendingCount]);
 
-  // Auto clear notification message
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
-
   const formatCurrency = (val: number | string) => {
     const num = Number(val) || 0;
     return num.toLocaleString("vi-VN") + " ₫";
@@ -155,13 +147,14 @@ export default function ManageVouchersPage() {
       setIsStatusSubmitting(true);
       setModalErrorMessage(null);
       await adminApi.updateVoucherStatus(voucher.program_id, targetStatus);
-      setSuccessMessage(
+      toast.success(
         `Đã cập nhật trạng thái voucher [${voucher.program_name}] thành: ${statusTextMap[targetStatus]}.`
       );
       setStatusDialog(null);
       await loadManagedVouchers();
     } catch (err: any) {
       setModalErrorMessage(err.message || "Lỗi khi cập nhật trạng thái voucher.");
+      toast.error(err.message || "Lỗi khi cập nhật trạng thái voucher.");
     } finally {
       setIsStatusSubmitting(false);
     }
@@ -171,38 +164,6 @@ export default function ManageVouchersPage() {
     <div className="space-y-6 max-w-7xl mx-auto">
       {/* Top Navigation Bar */}
       <VoucherNavTabs pendingCount={pendingCount} />
-
-      {/* Thông báo thành công / lỗi */}
-      {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Icon name="check_circle" className="text-emerald-600 text-lg" />
-            <span className="font-semibold">{successMessage}</span>
-          </div>
-          <button
-            onClick={() => setSuccessMessage(null)}
-            className="text-emerald-600 hover:text-emerald-800 text-xs"
-          >
-            Đóng
-          </button>
-        </div>
-      )}
-
-      {error && (
-        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-sm flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Icon name="error" className="text-rose-600 text-lg" />
-            <span>{error}</span>
-          </div>
-          <Button
-            variant="outline"
-            onClick={loadManagedVouchers}
-            className="text-xs h-auto py-1 px-3 bg-white"
-          >
-            Thử lại
-          </Button>
-        </div>
-      )}
 
       {/* Filter Header & Status Tabs */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-4">

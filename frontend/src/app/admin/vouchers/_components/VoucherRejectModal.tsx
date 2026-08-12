@@ -26,7 +26,7 @@ export default function VoucherRejectModal({
   if (!isOpen || !voucher) return null;
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-60 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[60] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 animate-in fade-in zoom-in-95 duration-150">
         <h4 className="font-bold text-slate-900 text-base">Từ chối duyệt Voucher</h4>
         <p className="text-xs text-slate-500">

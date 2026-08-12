@@ -4,6 +4,7 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
 import { adminApi, AdminUserDetail } from "@/lib/admin-api";
 
@@ -100,7 +101,6 @@ export default function UserDetailPage() {
   const [activeTab, setActiveTab] = useState<ActiveTab>("info");
   const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "PARTNER" | "PARTNER_EMPLOYEE">("CUSTOMER");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [savedNotification, setSavedNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
 
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReasonInput, setLockReasonInput] = useState("");
@@ -172,20 +172,13 @@ export default function UserDetailPage() {
       setActionLoading(true);
       await adminApi.changeUserRole(userId, selectedRole);
       const newRoleLabel = mapRole(selectedRole);
-      setSavedNotification({
-        type: "success",
-        message: `Đã cập nhật vai trò người dùng thành "${newRoleLabel}".`,
-      });
+      toast.success(`Đã cập nhật vai trò người dùng thành "${newRoleLabel}".`);
       setShowConfirmModal(false);
       await fetchUserDetail();
     } catch (error: any) {
-      setSavedNotification({
-        type: "error",
-        message: error.message || "Không thể thay đổi vai trò người dùng.",
-      });
+      toast.error(error.message || "Không thể thay đổi vai trò người dùng.");
     } finally {
       setActionLoading(false);
-      setTimeout(() => setSavedNotification(null), 5000);
     }
   };
 
@@ -194,7 +187,7 @@ export default function UserDetailPage() {
       setActionLoading(true);
       if (userData.status === "Đang hoạt động") {
         if (!lockReasonInput.trim()) {
-          alert("Vui lòng nhập lý do khóa tài khoản");
+          toast.error("Vui lòng nhập lý do khóa tài khoản");
           return;
         }
         await adminApi.lockUser(userId, lockReasonInput.trim());
@@ -204,10 +197,7 @@ export default function UserDetailPage() {
           lockReason: lockReasonInput.trim(),
           avatarBg: "bg-slate-200 text-slate-600",
         }));
-        setSavedNotification({
-          type: "success",
-          message: `Tài khoản đã bị khóa. Lý do: "${lockReasonInput.trim()}"`,
-        });
+        toast.success(`Tài khoản đã bị khóa. Lý do: "${lockReasonInput.trim()}"`);
       } else {
         await adminApi.unlockUser(userId);
         setUserData((prev) => ({
@@ -216,22 +206,15 @@ export default function UserDetailPage() {
           lockReason: null,
           avatarBg: "bg-blue-100 text-blue-700",
         }));
-        setSavedNotification({
-          type: "success",
-          message: "Tài khoản người dùng đã được mở khóa thành công.",
-        });
+        toast.success("Tài khoản người dùng đã được mở khóa thành công.");
       }
       setLockModalOpen(false);
       setLockReasonInput("");
       await fetchUserDetail();
     } catch (error: any) {
-      setSavedNotification({
-        type: "error",
-        message: error.message || "Thao tác không thành công. Vui lòng thử lại.",
-      });
+      toast.error(error.message || "Thao tác không thành công. Vui lòng thử lại.");
     } finally {
       setActionLoading(false);
-      setTimeout(() => setSavedNotification(null), 5000);
     }
   };
 
@@ -245,24 +228,6 @@ export default function UserDetailPage() {
         <Icon name="chevron_right" className="text-sm" />
         <span className="text-slate-900 font-semibold">Chi tiết người dùng</span>
       </div>
-
-      {savedNotification && (
-        <div
-          className={`p-4 rounded-2xl text-xs font-semibold flex items-center justify-between animate-in fade-in ${
-            savedNotification.type === "success"
-              ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
-              : "bg-rose-50 border border-rose-200 text-rose-800"
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Icon name={savedNotification.type === "success" ? "check_circle" : "error"} />
-            <span>{savedNotification.message}</span>
-          </div>
-          <button onClick={() => setSavedNotification(null)} className="font-bold text-sm">
-            ✕
-          </button>
-        </div>
-      )}
 
       {/* User Header Card */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 relative overflow-hidden">

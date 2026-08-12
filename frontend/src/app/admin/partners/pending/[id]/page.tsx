@@ -1,10 +1,10 @@
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
-
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
 import { adminApi, AdminPartnerDetail } from "@/lib/admin-api";
 
@@ -18,7 +18,6 @@ export default function PendingPartnerDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [revisionModalOpen, setRevisionModalOpen] = useState(false);
@@ -49,9 +48,9 @@ export default function PendingPartnerDetailPage() {
     try {
       await adminApi.approvePartner(partnerIdStr);
       setPartner((prev) => (prev ? { ...prev, approval_status: "APPROVED", activity_status: "ACTIVE" } : null));
-      setToastMessage("Phê duyệt hồ sơ thành công! Hồ sơ đối tác đã được duyệt và chuyển sang danh sách Quản lý đối tác.");
+      toast.success("Phê duyệt hồ sơ thành công! Hồ sơ đối tác đã được duyệt và chuyển sang danh sách Quản lý đối tác.");
     } catch (err: any) {
-      alert(`Lỗi phê duyệt: ${err?.message || "Không thể thực hiện."}`);
+      toast.error(`Lỗi phê duyệt: ${err?.message || "Không thể thực hiện."}`);
     } finally {
       setActionLoading(false);
     }
@@ -64,9 +63,9 @@ export default function PendingPartnerDetailPage() {
       const res = await adminApi.rejectPartner(partnerIdStr, rejectionReason.trim());
       setPartner((prev) => (prev ? { ...prev, approval_status: "REJECTED" } : null));
       setRejectModalOpen(false);
-      setToastMessage(res.message || `Đã từ chối hồ sơ đối tác với lý do: "${rejectionReason}"`);
+      toast.success(res.message || `Đã từ chối hồ sơ đối tác với lý do: "${rejectionReason}"`);
     } catch (err: any) {
-      alert(`Lỗi từ chối: ${err?.message || "Không thể thực hiện."}`);
+      toast.error(`Lỗi từ chối: ${err?.message || "Không thể thực hiện."}`);
     } finally {
       setActionLoading(false);
     }
@@ -79,9 +78,9 @@ export default function PendingPartnerDetailPage() {
       const res = await adminApi.requestRevisionPartner(partnerIdStr, revisionNote.trim());
       setPartner((prev) => (prev ? { ...prev, approval_status: "REVISION_REQUESTED" } : null));
       setRevisionModalOpen(false);
-      setToastMessage(res.message || `Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
+      toast.success(res.message || `Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
     } catch (err: any) {
-      alert(`Lỗi gửi yêu cầu bổ sung: ${err?.message || "Không thể thực hiện."}`);
+      toast.error(`Lỗi gửi yêu cầu bổ sung: ${err?.message || "Không thể thực hiện."}`);
     } finally {
       setActionLoading(false);
     }
@@ -142,23 +141,6 @@ export default function PendingPartnerDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-sm font-semibold flex items-center justify-between shadow-xs animate-in fade-in">
-          <div className="flex items-center gap-2.5">
-            <Icon name="check_circle" className="text-emerald-600 text-xl" />
-            <span>{toastMessage}</span>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={() => setToastMessage(null)}
-            className="text-emerald-500 hover:text-emerald-700 p-0 h-auto"
-          >
-            <Icon name="close" className="text-lg" />
-          </Button>
-        </div>
-      )}
-
       {/* Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
@@ -316,7 +298,7 @@ export default function PendingPartnerDetailPage() {
                   <Button
                     variant="outline"
                     type="button"
-                    onClick={() => alert(`Đang mở tập tin: ${doc.name}`)}
+                    onClick={() => toast.info(`Đang mở tập tin: ${doc.name}`)}
                     className="px-3 py-1 bg-white border border-slate-200 text-slate-700 font-semibold text-xs h-auto hover:bg-blue-50 hover:text-blue-600"
                   >
                     Xem tài liệu

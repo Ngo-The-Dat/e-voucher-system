@@ -4,6 +4,7 @@ import Icon from "@/components/shared/ui/Icon";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import FormField from "@/components/shared/ui/FormField";
@@ -19,7 +20,6 @@ export default function ManagePartnerDetailPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReason, setLockReason] = useState("");
 
@@ -67,21 +67,21 @@ export default function ManagePartnerDetailPage() {
     try {
       if (partner.activity_status === "ACTIVE") {
         if (!lockReason.trim()) {
-          alert("Vui lòng nhập lý do khóa.");
+          toast.error("Vui lòng nhập lý do khóa.");
           setActionLoading(false);
           return;
         }
         const res = await adminApi.lockPartner(partnerIdStr, lockReason.trim());
-        setToastMessage(res.message || `Đã khóa đối tác. Lý do: "${lockReason}"`);
+        toast.success(res.message || `Đã khóa đối tác. Lý do: "${lockReason}"`);
       } else {
         const res = await adminApi.unlockPartner(partnerIdStr);
-        setToastMessage(res.message || "Đã mở khóa tài khoản đối tác thành công.");
+        toast.success(res.message || "Đã mở khóa tài khoản đối tác thành công.");
       }
       setLockModalOpen(false);
       setLockReason("");
       fetchPartnerDetail();
     } catch (err: any) {
-      alert(`Lỗi thực hiện: ${err?.message || "Không thể xử lý."}`);
+      toast.error(`Lỗi thực hiện: ${err?.message || "Không thể xử lý."}`);
     } finally {
       setActionLoading(false);
     }
@@ -118,15 +118,15 @@ export default function ManagePartnerDetailPage() {
     try {
       if (editingBranch) {
         await adminApi.updatePartnerBranch(partnerIdStr, editingBranch.branch_id, branchForm);
-        setToastMessage(`Đã cập nhật chi nhánh "${branchForm.branch_name}" thành công!`);
+        toast.success(`Đã cập nhật chi nhánh "${branchForm.branch_name}" thành công!`);
       } else {
         await adminApi.createPartnerBranch(partnerIdStr, branchForm);
-        setToastMessage(`Đã thêm chi nhánh mới "${branchForm.branch_name}" thành công!`);
+        toast.success(`Đã thêm chi nhánh mới "${branchForm.branch_name}" thành công!`);
       }
       setBranchModalOpen(false);
       fetchPartnerDetail();
     } catch (err: any) {
-      alert(`Lỗi lưu chi nhánh: ${err?.message || "Không thể thực hiện."}`);
+      toast.error(`Lỗi lưu chi nhánh: ${err?.message || "Không thể thực hiện."}`);
     } finally {
       setActionLoading(false);
     }
@@ -137,11 +137,11 @@ export default function ManagePartnerDetailPage() {
     setActionLoading(true);
     try {
       await adminApi.deletePartnerBranch(partnerIdStr, deleteBranchId);
-      setToastMessage("Đã xóa chi nhánh thành công!");
+      toast.success("Đã xóa chi nhánh thành công!");
       setDeleteBranchId(null);
       fetchPartnerDetail();
     } catch (err: any) {
-      alert(`Lỗi xóa chi nhánh: ${err?.message || "Không thể thực hiện."}`);
+      toast.error(`Lỗi xóa chi nhánh: ${err?.message || "Không thể thực hiện."}`);
     } finally {
       setActionLoading(false);
     }
@@ -187,23 +187,6 @@ export default function ManagePartnerDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="p-4 bg-slate-900 border border-slate-800 rounded-2xl text-white text-sm font-semibold flex items-center justify-between shadow-lg animate-in fade-in">
-          <div className="flex items-center gap-2.5">
-            <Icon name="info" className="text-emerald-400 text-xl" />
-            <span>{toastMessage}</span>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={() => setToastMessage(null)}
-            className="text-slate-400 hover:text-white p-0 h-auto"
-          >
-            <Icon name="close" className="text-lg" />
-          </Button>
-        </div>
-      )}
-
       {/* Header & Breadcrumb */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>

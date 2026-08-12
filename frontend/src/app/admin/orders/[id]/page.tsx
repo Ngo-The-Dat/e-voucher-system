@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import Icon from "@/components/shared/ui/Icon";
 import { Button } from "@/components/shared/ui/Button";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
@@ -16,7 +17,6 @@ export default function OrderDetailPage() {
   const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Dialog State
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -50,14 +50,6 @@ export default function OrderDetailPage() {
   useEffect(() => {
     loadOrderDetail();
   }, [loadOrderDetail]);
-
-  // Auto clear notification message
-  useEffect(() => {
-    if (successMessage) {
-      const timer = setTimeout(() => setSuccessMessage(null), 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [successMessage]);
 
   const formatCurrency = (val: number | string) => {
     const num = Number(val) || 0;
@@ -138,6 +130,7 @@ export default function OrderDetailPage() {
   const handleConfirmCancelOrder = async () => {
     if (!cancelReason.trim()) {
       setModalError("Vui lòng nhập lý do hủy đơn hàng!");
+      toast.error("Vui lòng nhập lý do hủy đơn hàng!");
       return;
     }
 
@@ -145,12 +138,13 @@ export default function OrderDetailPage() {
       setIsCancelling(true);
       setModalError(null);
       await adminApi.cancelOrder(orderId, cancelReason.trim());
-      setSuccessMessage(`Đã hủy đơn hàng [ORD-${orderId}] thành công và hoàn tiền.`);
+      toast.success(`Đã hủy đơn hàng [ORD-${orderId}] thành công và hoàn tiền.`);
       setIsCancelModalOpen(false);
       setCancelReason("");
       await loadOrderDetail();
     } catch (err: any) {
       setModalError(err.message || "Lỗi khi hủy đơn hàng.");
+      toast.error(err.message || "Lỗi khi hủy đơn hàng.");
     } finally {
       setIsCancelling(false);
     }
@@ -224,14 +218,6 @@ export default function OrderDetailPage() {
           </Link>
         </div>
       </div>
-
-      {/* Success Banner */}
-      {successMessage && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2 text-xs font-semibold text-emerald-800 animate-in fade-in">
-          <Icon name="check_circle" className="text-lg text-emerald-600" />
-          <span>{successMessage}</span>
-        </div>
-      )}
 
       {/* Cảnh báo Không đủ điều kiện Hủy */}
       {hasUsedVoucher && order.order_status !== "CANCELLED" && (

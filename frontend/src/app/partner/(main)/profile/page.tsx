@@ -4,7 +4,7 @@ import { useState } from "react";
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
-import Toast from "@/components/shared/ui/Toast";
+import { toast } from "sonner";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import BranchModal from "@/components/partner/profile/BranchModal";
 import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
@@ -29,7 +29,6 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("all");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Branch Modal State
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -76,8 +75,7 @@ export default function ProfilePage() {
     save(profile);
     setHasUnsavedChanges(false);
     setErrors({});
-    setToastMessage("Cập nhật thành công!");
-    setTimeout(() => setToastMessage(null), 4000);
+    toast.success("Cập nhật thông tin hồ sơ thành công!");
   };
 
   const handleResetProfile = () => {
@@ -89,16 +87,30 @@ export default function ProfilePage() {
   // --- Branch actions ---
   const handleSaveBranch = async (branch: Branch) => {
     try {
-      if (editingBranch) await partnerApi.updateBranch(branch);
-      else await partnerApi.createBranch(branch);
+      if (editingBranch) {
+        await partnerApi.updateBranch(branch);
+        toast.success("Cập nhật chi nhánh thành công!");
+      } else {
+        await partnerApi.createBranch(branch);
+        toast.success("Thêm chi nhánh mới thành công!");
+      }
       await reload();
-    } catch (error) { console.error("Failed to save branch", error); }
+    } catch (error) { 
+      console.error("Failed to save branch", error); 
+      toast.error("Không thể lưu chi nhánh.");
+    }
   };
 
   const handleDeleteBranch = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa chi nhánh này?")) return;
-    try { await partnerApi.deleteBranch(id); await reload(); }
-    catch (error) { console.error("Failed to delete branch", error); }
+    try { 
+      await partnerApi.deleteBranch(id); 
+      toast.success("Xóa chi nhánh thành công!");
+      await reload(); 
+    } catch (error) { 
+      console.error("Failed to delete branch", error); 
+      toast.error("Không thể xóa chi nhánh.");
+    }
   };
 
   const handleToggleBranchStatus = async (id: string) => {
@@ -106,8 +118,12 @@ export default function ProfilePage() {
     if (!branch) return;
     try {
       await partnerApi.updateBranch({ ...branch, status: branch.status === "active" ? "inactive" : "active" });
+      toast.success(`Đã ${branch.status === "active" ? "tạm dừng" : "kích hoạt"} chi nhánh!`);
       await reload();
-    } catch (error) { console.error("Failed to toggle branch", error); }
+    } catch (error) { 
+      console.error("Failed to toggle branch", error); 
+      toast.error("Không thể thay đổi trạng thái chi nhánh.");
+    }
   };
 
   const errorCount = Object.keys(errors).length;
@@ -115,8 +131,6 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
       <TopAppBar title="Quản lý hồ sơ đối tác" />
-
-      <Toast message={toastMessage} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-8">
         {/* Header */}

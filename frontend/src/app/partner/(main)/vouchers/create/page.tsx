@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
-import Toast from "@/components/shared/ui/Toast";
+import { toast } from "sonner";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import { Button } from "@/components/shared/ui/Button";
 import Link from "next/link";
@@ -33,7 +33,6 @@ export default function CreateVoucherPage() {
   const [useStartDate, setUseStartDate] = useState("");
   const [useEndDate, setUseEndDate] = useState("");
   const [errors, setErrors] = useState<VoucherFormErrors>({});
-  const [isSuccessToast, setIsSuccessToast] = useState(false);
 
   useEffect(() => {
     Promise.all([partnerApi.getBranches(), partnerApi.getCategories()])
@@ -118,9 +117,12 @@ export default function CreateVoucherPage() {
     };
     try {
       await partnerApi.createVoucher(voucher);
-      setIsSuccessToast(true);
+      toast.success("Tạo mới chương trình voucher thành công! Đang chuyển về danh sách...");
       setTimeout(() => router.push("/partner/vouchers"), 1500);
-    } catch (error) { console.error("Failed to create voucher", error); }
+    } catch (error) {
+      console.error("Failed to create voucher", error);
+      toast.error("Không thể tạo chương trình voucher.");
+    }
   };
 
   const errorCount = Object.keys(errors).length;
@@ -128,8 +130,6 @@ export default function CreateVoucherPage() {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
       <TopAppBar title="Tạo voucher mới" />
-
-      <Toast message={isSuccessToast ? "Tạo mới chương trình voucher thành công! Đang chuyển về danh sách..." : null} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-5xl w-full mx-auto space-y-6">
         {/* Header */}

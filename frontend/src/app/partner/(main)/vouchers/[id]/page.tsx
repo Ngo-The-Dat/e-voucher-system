@@ -2,7 +2,7 @@
 
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
-import Toast from "@/components/shared/ui/Toast";
+import { toast } from "sonner";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { use, useState, useEffect } from "react";
@@ -36,7 +36,6 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [editDisplayStatus, setEditDisplayStatus] = useState<"active" | "hidden">("active");
 
   const [errors, setErrors] = useState<VoucherFormErrors>({});
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([partnerApi.getBranches(), partnerApi.getCategories(), partnerApi.getVoucher(id)])
@@ -84,9 +83,12 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     try {
       await partnerApi.submitVoucher(voucher.id);
       setVoucher((prev) => (prev ? { ...prev, status: "pending", submittedAt: new Date().toLocaleString("vi-VN") } : prev));
-      setToastMessage("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
+      toast.success("Đã gửi yêu cầu xét duyệt voucher đến Quản trị viên!");
       setTimeout(() => router.push("/partner/vouchers"), 2000);
-    } catch (error) { console.error("Failed to submit voucher", error); }
+    } catch (error) { 
+      console.error("Failed to submit voucher", error); 
+      toast.error("Không thể gửi yêu cầu xét duyệt voucher.");
+    }
   };
 
   // UC Chỉnh sửa voucher (UC Gửi duyệt Flow A1 Step 2 - Save Edit)
@@ -134,9 +136,11 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     try {
       await partnerApi.updateVoucher(updatedItem);
       setVoucher(updatedItem); setIsEditing(false); setErrors({});
-      setToastMessage("Cập nhật thông tin chương trình voucher thành công!");
-      setTimeout(() => setToastMessage(null), 3000);
-    } catch (error) { console.error("Failed to update voucher", error); }
+      toast.success("Cập nhật thông tin chương trình voucher thành công!");
+    } catch (error) { 
+      console.error("Failed to update voucher", error); 
+      toast.error("Không thể cập nhật voucher.");
+    }
   };
 
   // Sử dụng VoucherStatusBadge component thay vì inline function
@@ -144,8 +148,6 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-20 w-full">
       <TopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
-
-      <Toast message={toastMessage} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-6xl w-full mx-auto space-y-6">
         {/* Header Bar */}
