@@ -14,7 +14,7 @@ export default function DashboardChart({ hasData, setHasData, chartData }: Dashb
   const [chartTab, setChartTab] = useState<ChartTab>("voucher");
 
   return (
-    <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
+    <div className="w-full bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6 pb-3 border-b border-slate-100">
         <div>
           <h2 className="text-base font-bold text-slate-900">
