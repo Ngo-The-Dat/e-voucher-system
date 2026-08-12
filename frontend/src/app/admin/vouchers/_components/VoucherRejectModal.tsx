@@ -59,7 +59,7 @@ export default function VoucherRejectModal({
           <Button
             onClick={onConfirm}
             disabled={isSubmitting || !reason.trim()}
-            className="bg-rose-600 hover:bg-rose-700 text-white"
+            className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
           >
             {isSubmitting ? "Đang xử lý..." : "Xác nhận từ chối"}
           </Button>

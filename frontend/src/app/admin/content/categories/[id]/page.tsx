@@ -478,7 +478,7 @@ export default function EditCategoryPage() {
                 type="button"
                 onClick={handleConfirmRemoveVoucher}
                 disabled={isRemoving}
-                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-xs"
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 text-white font-bold text-xs rounded-xl transition-all shadow-xs"
               >
                 {isRemoving ? "Đang gỡ..." : "Xác nhận gỡ"}
               </button>

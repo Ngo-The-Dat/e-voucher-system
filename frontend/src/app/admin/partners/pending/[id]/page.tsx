@@ -187,11 +187,11 @@ export default function PendingPartnerDetailPage() {
                 Yêu cầu bổ sung
               </Button>
               <Button
-                variant="destructive"
+                variant="outline"
                 type="button"
                 onClick={() => setRejectModalOpen(true)}
                 disabled={actionLoading}
-                className="bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-100"
+                className="bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100"
               >
                 Từ chối hồ sơ
               </Button>
@@ -470,10 +470,10 @@ export default function PendingPartnerDetailPage() {
                 Hủy bỏ
               </Button>
               <Button
-                variant="destructive"
                 type="button"
                 onClick={handleConfirmReject}
                 disabled={!rejectionReason.trim() || actionLoading}
+                className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
               >
                 {actionLoading ? "Đang xử lý..." : "Xác nhận từ chối"}
               </Button>

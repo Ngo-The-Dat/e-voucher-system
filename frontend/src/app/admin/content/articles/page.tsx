@@ -441,7 +441,11 @@ export default function ArticlesPage() {
               <Button variant="ghost" onClick={() => setConfirmDeleteArticle(null)}>
                 Hủy thao tác
               </Button>
-              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isDeleting}>
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
                 {isDeleting ? "Đang gỡ bỏ..." : "Xác nhận gỡ bỏ"}
               </Button>
             </div>

@@ -279,7 +279,7 @@ export default function VoucherDetailModal({
                 variant="outline"
                 onClick={() => onOpenReject(voucher)}
                 disabled={isSubmitting}
-                className="bg-rose-50 border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white"
+                className="bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
               >
                 Từ chối duyệt
               </Button>

@@ -466,7 +466,7 @@ export default function OrderDetailPage() {
             }}
             className={`px-5 py-2.5 font-bold text-xs rounded-xl transition shadow-xs flex items-center gap-2 ${
               isEligibleForCancellation()
-                ? "bg-rose-600 hover:bg-rose-700 text-white"
+                ? "bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100"
                 : "bg-slate-100 border border-slate-200 text-slate-400 cursor-not-allowed"
             }`}
             title={
@@ -531,7 +531,7 @@ export default function OrderDetailPage() {
               <Button
                 onClick={handleConfirmCancelOrder}
                 disabled={isCancelling || !cancelReason.trim()}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs"
+                className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
               >
                 {isCancelling ? "Đang xử lý..." : "Xác nhận Hủy & Hoàn tiền"}
               </Button>
