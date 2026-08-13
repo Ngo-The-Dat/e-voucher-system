@@ -83,7 +83,7 @@ export interface SystemLogItem {
   result: "SUCCESS" | "FAILED";
 }
 
-export interface SystemLogDetail extends SystemLogItem {}
+export interface SystemLogDetail extends SystemLogItem { }
 
 export interface LogsResponse {
   logs: SystemLogItem[];
@@ -882,11 +882,64 @@ export const adminApi = {
     });
   },
 
+  // ─── Dashboard ──────────────────────────────────────────────────────────────
+  getDashboardOverview: async (params: DashboardQueryParams = {}): Promise<DashboardOverviewResponse> => {
+    const query = new URLSearchParams();
+    if (params.timeframe) query.set("timeframe", params.timeframe);
+    if (params.startDate) query.set("start_date", params.startDate);
+    if (params.endDate) query.set("end_date", params.endDate);
+    const qs = query.toString();
+    return adminRequest<DashboardOverviewResponse>(`/admin/dashboard/overview${qs ? `?${qs}` : ""}`);
+  },
+
   // ─── Voucher Options Helper ─────────────────────────────────────────────────
   getVoucherOptions: async (): Promise<{ options: VoucherProgramOption[] }> => {
     return adminRequest<{ options: VoucherProgramOption[] }>(`/admin/content/voucher-options`);
   },
 };
+
+// ─── Interfaces for Dashboard Module ────────────────────────────────────────
+export interface DashboardQueryParams {
+  timeframe?: "today" | "week" | "month" | "custom";
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface DashboardKpiStat {
+  title: string;
+  value: string;
+  change: string;
+  trend: "up" | "down" | "neutral";
+  icon: string;
+  color: string;
+  description: string;
+}
+
+export interface DashboardEfficiencyMetric {
+  title: string;
+  value: string;
+  rate?: number;
+  description: string;
+  badge?: string;
+  badgeType?: "success" | "info" | "warning";
+  icon: string;
+  color: string;
+}
+
+export interface DashboardCategoryPerformance {
+  id: string;
+  name: string;
+  soldCount: number;
+  redeemedCount: number;
+  rate: number;
+  revenue: number;
+}
+
+export interface DashboardOverviewResponse {
+  stats: DashboardKpiStat[];
+  efficiencyMetrics: DashboardEfficiencyMetric[];
+  categoryPerformance: DashboardCategoryPerformance[];
+}
 
 // ─── Interfaces for Content Module ──────────────────────────────────────────
 
@@ -936,7 +989,7 @@ export interface AdminBannerListItem {
   status: "ACTIVE" | "INACTIVE";
 }
 
-export interface AdminBannerDetail extends AdminBannerListItem {}
+export interface AdminBannerDetail extends AdminBannerListItem { }
 
 export interface BannersResponse {
   banners: AdminBannerListItem[];
@@ -961,7 +1014,7 @@ export interface AdminPopupListItem {
   status: "ACTIVE" | "INACTIVE";
 }
 
-export interface AdminPopupDetail extends AdminPopupListItem {}
+export interface AdminPopupDetail extends AdminPopupListItem { }
 
 export interface PopupsResponse {
   popups: AdminPopupListItem[];
@@ -985,7 +1038,7 @@ export interface AdminContentListItem {
   status: "ACTIVE" | "INACTIVE";
 }
 
-export interface AdminContentDetail extends AdminContentListItem {}
+export interface AdminContentDetail extends AdminContentListItem { }
 
 export interface ContentsResponse {
   contents: AdminContentListItem[];

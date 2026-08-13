@@ -16,11 +16,13 @@ export default function DashboardOverview() {
 
   const {
     isLoading,
+    error,
     hasData,
     setHasData,
     stats,
     efficiencyMetrics,
     categoryPerformance,
+    refetch,
   } = useAdminDashboard({
     timeframe,
     startDate,
@@ -69,19 +71,18 @@ export default function DashboardOverview() {
               <button
                 key={tf}
                 onClick={() => setTimeframe(tf)}
-                className={`px-3.5 py-1.5 rounded-lg transition-all font-medium ${
-                  timeframe === tf
+                className={`px-3.5 py-1.5 rounded-lg transition-all font-medium ${timeframe === tf
                     ? "bg-white text-primary font-bold shadow-sm"
                     : "text-slate-600 hover:text-slate-900"
-                }`}
+                  }`}
               >
                 {tf === "today"
                   ? "Hôm nay"
                   : tf === "week"
-                  ? "Tuần này"
-                  : tf === "month"
-                  ? "Tháng này"
-                  : "Tùy chọn"}
+                    ? "Tuần này"
+                    : tf === "month"
+                      ? "Tháng này"
+                      : "Tùy chọn"}
               </button>
             ))}
           </div>
@@ -133,21 +134,22 @@ export default function DashboardOverview() {
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900">
-              Không có dữ liệu trong khoảng thời gian này
+              {error ? "Không thể tải dữ liệu dashboard" : "Không có dữ liệu trong khoảng thời gian này"}
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-              Hệ thống chưa ghi nhận phát sinh doanh thu, voucher hoặc đơn hàng
-              nào trong khoảng thời gian bạn vừa chọn.
+              {error
+                ? error
+                : "Hệ thống chưa ghi nhận phát sinh doanh thu, voucher hoặc đơn hàng nào trong khoảng thời gian bạn vừa chọn."}
             </p>
           </div>
           <Button
             variant="outline"
             size="sm"
-            onClick={() => setHasData(true)}
+            onClick={() => refetch()}
             className="mt-2 text-primary border-primary/30 hover:bg-primary/5"
           >
             <Icon name="refresh" className="w-4 h-4 mr-1.5" />
-            <span>Khôi phục dữ liệu mẫu</span>
+            <span>Tải lại dữ liệu</span>
           </Button>
         </div>
       )}
@@ -194,10 +196,10 @@ export default function DashboardOverview() {
                 {timeframe === "today"
                   ? "Hôm nay"
                   : timeframe === "week"
-                  ? "Tuần này"
-                  : timeframe === "month"
-                  ? "Tháng này"
-                  : `Từ ${startDate} đến ${endDate}`}
+                    ? "Tuần này"
+                    : timeframe === "month"
+                      ? "Tháng này"
+                      : `Từ ${startDate} đến ${endDate}`}
               </span>
             </div>
 
@@ -224,11 +226,10 @@ export default function DashboardOverview() {
                       </span>
                       {item.badge && (
                         <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
-                            item.badgeType === "success"
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${item.badgeType === "success"
                               ? "bg-emerald-100 text-emerald-700"
                               : "bg-blue-100 text-blue-700"
-                          }`}
+                            }`}
                         >
                           {item.badge}
                         </span>
@@ -301,14 +302,7 @@ export default function DashboardOverview() {
                       className="hover:bg-slate-50/60 transition-colors"
                     >
                       <td className="py-3.5 px-4 font-semibold text-slate-900">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${cat.color}`}
-                          >
-                            <Icon name={cat.icon} className="text-base" />
-                          </div>
-                          <span>{cat.name}</span>
-                        </div>
+                        {cat.name}
                       </td>
                       <td className="py-3.5 px-4 text-right font-medium text-slate-700">
                         {cat.soldCount.toLocaleString("vi-VN")}

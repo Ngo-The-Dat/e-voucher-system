@@ -338,8 +338,6 @@ export const mockMyVouchers: MyVoucher[] = [
 export interface CategoryPerformanceItem {
   id: string;
   name: string;
-  icon: string;
-  color: string;
   soldCount: number;
   redeemedCount: number;
   rate: number; // percentage
@@ -464,8 +462,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-fb",
         name: "Ẩm thực & Đồ uống",
-        icon: "restaurant",
-        color: "text-amber-600 bg-amber-50",
         soldCount: 380,
         redeemedCount: 345,
         rate: 90.8,
@@ -474,8 +470,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-ent",
         name: "Giải trí & Rạp chiếu",
-        icon: "movie",
-        color: "text-purple-600 bg-purple-50",
         soldCount: 110,
         redeemedCount: 98,
         rate: 89.1,
@@ -484,8 +478,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-spa",
         name: "Làm đẹp & Chăm sóc Spa",
-        icon: "spa",
-        color: "text-rose-600 bg-rose-50",
         soldCount: 52,
         redeemedCount: 46,
         rate: 88.5,
@@ -494,8 +486,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-travel",
         name: "Du lịch & Khách sạn",
-        icon: "flight",
-        color: "text-sky-600 bg-sky-50",
         soldCount: 22,
         redeemedCount: 19,
         rate: 86.4,
@@ -504,8 +494,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-shop",
         name: "Mua sắm & Tiêu dùng",
-        icon: "shopping_cart",
-        color: "text-emerald-600 bg-emerald-50",
         soldCount: 16,
         redeemedCount: 12,
         rate: 75.0,
@@ -605,8 +593,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-fb",
         name: "Ẩm thực & Đồ uống",
-        icon: "restaurant",
-        color: "text-amber-600 bg-amber-50",
         soldCount: 9800,
         redeemedCount: 8850,
         rate: 90.3,
@@ -615,8 +601,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-ent",
         name: "Giải trí & Rạp chiếu",
-        icon: "movie",
-        color: "text-purple-600 bg-purple-50",
         soldCount: 3600,
         redeemedCount: 3120,
         rate: 86.7,
@@ -625,8 +609,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-spa",
         name: "Làm đẹp & Chăm sóc Spa",
-        icon: "spa",
-        color: "text-rose-600 bg-rose-50",
         soldCount: 1450,
         redeemedCount: 1250,
         rate: 86.2,
@@ -635,8 +617,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-travel",
         name: "Du lịch & Khách sạn",
-        icon: "flight",
-        color: "text-sky-600 bg-sky-50",
         soldCount: 650,
         redeemedCount: 540,
         rate: 83.1,
@@ -645,8 +625,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-shop",
         name: "Mua sắm & Tiêu dùng",
-        icon: "shopping_cart",
-        color: "text-emerald-600 bg-emerald-50",
         soldCount: 500,
         redeemedCount: 390,
         rate: 78.0,
@@ -746,8 +724,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-fb",
         name: "Ẩm thực & Đồ uống",
-        icon: "restaurant",
-        color: "text-amber-600 bg-amber-50",
         soldCount: 41200,
         redeemedCount: 37400,
         rate: 90.8,
@@ -756,8 +732,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-ent",
         name: "Giải trí & Rạp chiếu",
-        icon: "movie",
-        color: "text-purple-600 bg-purple-50",
         soldCount: 15100,
         redeemedCount: 13200,
         rate: 87.4,
@@ -766,8 +740,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-spa",
         name: "Làm đẹp & Chăm sóc Spa",
-        icon: "spa",
-        color: "text-rose-600 bg-rose-50",
         soldCount: 6200,
         redeemedCount: 5450,
         rate: 87.9,
@@ -776,8 +748,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-travel",
         name: "Du lịch & Khách sạn",
-        icon: "flight",
-        color: "text-sky-600 bg-sky-50",
         soldCount: 2800,
         redeemedCount: 2420,
         rate: 86.4,
@@ -786,8 +756,6 @@ export const mockAdminDashboardData: Record<"today" | "week" | "month", AdminDas
       {
         id: "cat-shop",
         name: "Mua sắm & Tiêu dùng",
-        icon: "shopping_cart",
-        color: "text-emerald-600 bg-emerald-50",
         soldCount: 2100,
         redeemedCount: 1730,
         rate: 82.4,
@@ -901,8 +869,6 @@ export function getCustomAdminDashboardData(startDate: string, endDate: string):
       {
         id: "cat-fb",
         name: "Ẩm thực & Đồ uống",
-        icon: "restaurant",
-        color: "text-amber-600 bg-amber-50",
         soldCount: Math.round(totalIssued * 0.6),
         redeemedCount: Math.round(totalRedeemed * 0.62),
         rate: 91.2,
@@ -911,8 +877,6 @@ export function getCustomAdminDashboardData(startDate: string, endDate: string):
       {
         id: "cat-ent",
         name: "Giải trí & Rạp chiếu",
-        icon: "movie",
-        color: "text-purple-600 bg-purple-50",
         soldCount: Math.round(totalIssued * 0.22),
         redeemedCount: Math.round(totalRedeemed * 0.21),
         rate: 86.8,
@@ -921,8 +885,6 @@ export function getCustomAdminDashboardData(startDate: string, endDate: string):
       {
         id: "cat-spa",
         name: "Làm đẹp & Chăm sóc Spa",
-        icon: "spa",
-        color: "text-rose-600 bg-rose-50",
         soldCount: Math.round(totalIssued * 0.1),
         redeemedCount: Math.round(totalRedeemed * 0.09),
         rate: 85.5,
@@ -931,8 +893,6 @@ export function getCustomAdminDashboardData(startDate: string, endDate: string):
       {
         id: "cat-travel",
         name: "Du lịch & Khách sạn",
-        icon: "flight",
-        color: "text-sky-600 bg-sky-50",
         soldCount: Math.round(totalIssued * 0.05),
         redeemedCount: Math.round(totalRedeemed * 0.05),
         rate: 84.0,
@@ -941,8 +901,6 @@ export function getCustomAdminDashboardData(startDate: string, endDate: string):
       {
         id: "cat-shop",
         name: "Mua sắm & Tiêu dùng",
-        icon: "shopping_cart",
-        color: "text-emerald-600 bg-emerald-50",
         soldCount: Math.round(totalIssued * 0.03),
         redeemedCount: Math.round(totalRedeemed * 0.03),
         rate: 80.0,

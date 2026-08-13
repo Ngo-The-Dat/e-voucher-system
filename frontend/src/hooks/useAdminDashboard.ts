@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
-  mockAdminDashboardData,
-  getCustomAdminDashboardData,
-  CategoryPerformanceItem,
-  EfficiencyMetricItem,
-} from "@/data/mockData";
+  adminApi,
+  DashboardKpiStat,
+  DashboardEfficiencyMetric,
+  DashboardCategoryPerformance,
+} from "@/lib/admin-api";
 
 export interface UseAdminDashboardOptions {
   timeframe?: "today" | "week" | "month" | "custom";
@@ -13,67 +13,77 @@ export interface UseAdminDashboardOptions {
 }
 
 export function useAdminDashboard(options: UseAdminDashboardOptions = {}) {
-  const { timeframe = "week", startDate = "2026-08-01", endDate = "2026-08-05" } = options;
+  const { timeframe = "week", startDate, endDate } = options;
 
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hasData, setHasData] = useState(true);
 
   // Data states
-  const [stats, setStats] = useState<any[]>([]);
-  const [efficiencyMetrics, setEfficiencyMetrics] = useState<EfficiencyMetricItem[]>([]);
-  const [categoryPerformance, setCategoryPerformance] = useState<CategoryPerformanceItem[]>([]);
+  const [stats, setStats] = useState<DashboardKpiStat[]>([]);
+  const [efficiencyMetrics, setEfficiencyMetrics] = useState<DashboardEfficiencyMetric[]>([]);
+  const [categoryPerformance, setCategoryPerformance] = useState<DashboardCategoryPerformance[]>([]);
 
-  useEffect(() => {
+  const fetchDashboardData = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
 
-    const timer = setTimeout(() => {
-      // Check invalid custom date range
-      if (timeframe === "custom" && startDate && endDate && startDate > endDate) {
+    // Kiểm tra khoảng thời gian tùy chọn
+    if (timeframe === "custom") {
+      if (!startDate || !endDate) {
+        setIsLoading(false);
+        return;
+      }
+      if (startDate > endDate) {
         setStats([]);
         setEfficiencyMetrics([]);
         setCategoryPerformance([]);
         setHasData(false);
         setIsLoading(false);
+        setError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
         return;
       }
+    }
 
-      let data;
-      if (timeframe === "custom" && startDate && endDate) {
-        data = getCustomAdminDashboardData(startDate, endDate);
-      } else {
-        data = mockAdminDashboardData[timeframe as "today" | "week" | "month"] || mockAdminDashboardData.week;
-      }
+    try {
+      const data = await adminApi.getDashboardOverview({
+        timeframe,
+        startDate: timeframe === "custom" ? startDate : undefined,
+        endDate: timeframe === "custom" ? endDate : undefined,
+      });
 
-      if (hasData) {
-        setStats(data.stats);
-        setEfficiencyMetrics(data.efficiencyMetrics);
-        setCategoryPerformance(data.categoryPerformance);
-      } else {
-        setStats(
-          data.stats.map((stat) => ({
-            ...stat,
-            value: "0",
-            change: "0%",
-            trend: "neutral",
-            description: "Chưa có dữ liệu trong kỳ",
-          }))
-        );
-        setEfficiencyMetrics([]);
-        setCategoryPerformance([]);
-      }
+      const hasStats = Boolean(data.stats && data.stats.length > 0);
+      const hasMetrics = Boolean(data.efficiencyMetrics && data.efficiencyMetrics.length > 0);
+      const hasCategories = Boolean(data.categoryPerformance && data.categoryPerformance.length > 0);
 
+      setStats(data.stats || []);
+      setEfficiencyMetrics(data.efficiencyMetrics || []);
+      setCategoryPerformance(data.categoryPerformance || []);
+      setHasData(hasStats || hasMetrics || hasCategories);
+    } catch (err: any) {
+      console.error("Lỗi khi tải dữ liệu dashboard admin:", err);
+      setError(err?.message || "Không thể tải dữ liệu dashboard.");
+      setStats([]);
+      setEfficiencyMetrics([]);
+      setCategoryPerformance([]);
+      setHasData(false);
+    } finally {
       setIsLoading(false);
-    }, 250);
+    }
+  }, [timeframe, startDate, endDate]);
 
-    return () => clearTimeout(timer);
-  }, [timeframe, startDate, endDate, hasData]);
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   return {
     isLoading,
+    error,
     hasData,
     setHasData,
     stats,
     efficiencyMetrics,
     categoryPerformance,
+    refetch: fetchDashboardData,
   };
 }

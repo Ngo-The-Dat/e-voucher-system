@@ -16,6 +16,7 @@ import adminLogRouter from './admin/log.router.js';
 import adminPartnerRouter from './admin/partner.router.js';
 import adminVoucherRouter from './admin/voucher.router.js';
 import adminOrderRouter from './admin/order.router.js';
+import adminDashboardRouter from './admin/dashboard.router.js';
 import {
   categoryRouter as adminCategoryRouter,
   bannerRouter as adminBannerRouter,
@@ -62,6 +63,12 @@ router.use('/partner/dashboard',
 );
 
 // ─── Admin Protected Routes ───────────────────────────────────────────────────
+router.use('/admin/dashboard',
+  authenticate,
+  requireRole('ADMIN'),
+  adminDashboardRouter
+);
+
 router.use('/admin/users',
   authenticate,
   requireRole('ADMIN'),
