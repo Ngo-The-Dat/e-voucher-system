@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 interface UpdateProfileInput {
   full_name?: string;
   phone?: string;
+  identity_no?: string;
   gender?: string;
   nationality?: string;
   business_name?: string;
@@ -13,12 +14,8 @@ interface UpdateProfileInput {
   business_license_no?: string;
   license_issue_date?: string;
   license_issue_place?: string;
-  // Thông tin người đại diện
-  representative_full_name?: string;
+  // Chức danh người đại diện; thông tin định danh dùng từ users
   representative_title?: string;
-  representative_identity_no?: string;
-  representative_phone?: string;
-  representative_email?: string;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -30,8 +27,7 @@ export const getProfile = async (partnerId: number) => {
        u.nationality, u.status, u.created_at, u.last_login_at,
        p.business_name, p.tax_code, p.approval_status, p.activity_status, p.registered_at,
        p.business_license_no, p.license_issue_date, p.license_issue_place,
-       p.representative_full_name, p.representative_title,
-       p.representative_identity_no, p.representative_phone, p.representative_email
+       p.representative_title
      FROM users u
      JOIN partners p ON u.user_id = p.user_id
      WHERE u.user_id = $1`,
@@ -51,15 +47,18 @@ export const updateProfile = async (partnerId: number, input: UpdateProfileInput
     await client.query('BEGIN');
 
     // Cập nhật bảng users
-    if (input.full_name || input.phone || input.gender || input.nationality) {
+    if (input.full_name !== undefined || input.phone !== undefined ||
+        input.identity_no !== undefined || input.gender !== undefined ||
+        input.nationality !== undefined) {
       await client.query(
         `UPDATE users SET
            full_name = COALESCE($1, full_name),
            phone = COALESCE($2, phone),
-           gender = COALESCE($3, gender),
-           nationality = COALESCE($4, nationality)
-         WHERE user_id = $5`,
-        [input.full_name, input.phone, input.gender, input.nationality, partnerId]
+           identity_no = COALESCE($3, identity_no),
+           gender = COALESCE($4, gender),
+           nationality = COALESCE($5, nationality)
+         WHERE user_id = $6`,
+        [input.full_name, input.phone, input.identity_no, input.gender, input.nationality, partnerId]
       );
     }
 
@@ -70,22 +69,14 @@ export const updateProfile = async (partnerId: number, input: UpdateProfileInput
          business_license_no = COALESCE($2, business_license_no),
          license_issue_date = COALESCE($3, license_issue_date),
          license_issue_place = COALESCE($4, license_issue_place),
-         representative_full_name = COALESCE($5, representative_full_name),
-         representative_title = COALESCE($6, representative_title),
-         representative_identity_no = COALESCE($7, representative_identity_no),
-         representative_phone = COALESCE($8, representative_phone),
-         representative_email = COALESCE($9, representative_email)
-       WHERE user_id = $10`,
+         representative_title = COALESCE($5, representative_title)
+       WHERE user_id = $6`,
       [
         input.business_name,
         input.business_license_no,
         input.license_issue_date,
         input.license_issue_place,
-        input.representative_full_name,
         input.representative_title,
-        input.representative_identity_no,
-        input.representative_phone,
-        input.representative_email,
         partnerId,
       ]
     );
@@ -94,6 +85,9 @@ export const updateProfile = async (partnerId: number, input: UpdateProfileInput
     return getProfile(partnerId);
   } catch (err) {
     await client.query('ROLLBACK');
+    if ((err as { code?: string }).code === '23505') {
+      throw { status: 409, message: 'Số điện thoại hoặc CCCD/CMND đã được sử dụng.' };
+    }
     throw err;
   } finally {
     client.release();

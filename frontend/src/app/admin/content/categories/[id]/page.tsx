@@ -73,7 +73,7 @@ export default function EditCategoryPage() {
       setVoucherOptions(res.options);
       setSelectedPoolVoucherIds([]);
       setIsAddVoucherModalOpen(true);
-    } catch (err: any) {
+    } catch {
       toast.error("Không thể tải danh sách chương trình voucher khả dụng.");
     }
   };

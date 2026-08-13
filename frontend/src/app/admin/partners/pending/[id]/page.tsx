@@ -3,14 +3,13 @@
 import Icon from "@/components/shared/ui/Icon";
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
 import { adminApi, AdminPartnerDetail } from "@/lib/admin-api";
 
 export default function PendingPartnerDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const partnerIdStr = (params?.id as string) || "";
 
   const [partner, setPartner] = useState<AdminPartnerDetail | null>(null);

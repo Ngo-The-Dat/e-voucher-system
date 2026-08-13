@@ -4,7 +4,7 @@ import { useState } from "react";
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
-import { toast } from "sonner";
+import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import BranchModal from "@/components/partner/profile/BranchModal";
 import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
@@ -29,6 +29,8 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState("all");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastType, setToastType] = useState<"success" | "error">("success");
 
   // Branch Modal State
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
@@ -65,17 +67,24 @@ export default function ProfilePage() {
   // --- Validation moved to useProfileValidation hook ---
 
   // --- Submit / Reset ---
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     const newErrors = validate(profile);
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
-    save(profile);
-    setHasUnsavedChanges(false);
-    setErrors({});
-    toast.success("Cập nhật thông tin hồ sơ thành công!");
+    try {
+      await save(profile);
+      setHasUnsavedChanges(false);
+      setErrors({});
+      setToastType("success");
+      setToastMessage("Cập nhật thành công!");
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật hồ sơ.");
+    }
+    setTimeout(() => setToastMessage(null), 4000);
   };
 
   const handleResetProfile = () => {
@@ -86,30 +95,21 @@ export default function ProfilePage() {
 
   // --- Branch actions ---
   const handleSaveBranch = async (branch: Branch) => {
-    try {
-      if (editingBranch) {
-        await partnerApi.updateBranch(branch);
-        toast.success("Cập nhật chi nhánh thành công!");
-      } else {
-        await partnerApi.createBranch(branch);
-        toast.success("Thêm chi nhánh mới thành công!");
-      }
-      await reload();
-    } catch (error) { 
-      console.error("Failed to save branch", error); 
-      toast.error("Không thể lưu chi nhánh.");
-    }
+    if (editingBranch) await partnerApi.updateBranch(branch);
+    else await partnerApi.createBranch(branch);
+    await reload();
+    setToastType("success");
+    setToastMessage(editingBranch ? "Cập nhật chi nhánh thành công!" : "Thêm chi nhánh thành công!");
+    setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleDeleteBranch = async (id: string) => {
     if (!confirm("Bạn có chắc chắn muốn xóa chi nhánh này?")) return;
-    try { 
-      await partnerApi.deleteBranch(id); 
-      toast.success("Xóa chi nhánh thành công!");
-      await reload(); 
-    } catch (error) { 
-      console.error("Failed to delete branch", error); 
-      toast.error("Không thể xóa chi nhánh.");
+    try { await partnerApi.deleteBranch(id); await reload(); }
+    catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể xóa chi nhánh.");
+      setTimeout(() => setToastMessage(null), 4000);
     }
   };
 
@@ -118,11 +118,11 @@ export default function ProfilePage() {
     if (!branch) return;
     try {
       await partnerApi.updateBranch({ ...branch, status: branch.status === "active" ? "inactive" : "active" });
-      toast.success(`Đã ${branch.status === "active" ? "tạm dừng" : "kích hoạt"} chi nhánh!`);
       await reload();
-    } catch (error) { 
-      console.error("Failed to toggle branch", error); 
-      toast.error("Không thể thay đổi trạng thái chi nhánh.");
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật trạng thái chi nhánh.");
+      setTimeout(() => setToastMessage(null), 4000);
     }
   };
 
@@ -131,6 +131,8 @@ export default function ProfilePage() {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
       <TopAppBar title="Quản lý hồ sơ đối tác" />
+
+      <Toast message={toastMessage} type={toastType} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-8">
         {/* Header */}
@@ -210,7 +212,7 @@ export default function ProfilePage() {
 
       {/* Sticky Save Bar */}
       {hasUnsavedChanges && (
-        <div className="fixed bottom-0 right-0 left-0 md:left-64 bg-surface-bright/95 backdrop-blur-md border-t border-outline-variant px-8 py-4 z-40 flex justify-between items-center shadow-2xl">
+        <div className="fixed bottom-0 right-0 left-0 md:left-[var(--partner-sidebar-width)] bg-surface-bright/95 backdrop-blur-md border-t border-outline-variant px-4 sm:px-8 py-4 z-40 flex flex-col sm:flex-row gap-3 sm:justify-between sm:items-center shadow-2xl transition-[left] duration-300">
           <div className="flex items-center gap-3 text-base">
             <span className="w-3 h-3 rounded-full bg-tertiary-amber animate-pulse" />
             <span className="font-semibold text-on-surface">Bạn có thông tin thay đổi chưa lưu.</span>

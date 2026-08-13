@@ -2,8 +2,8 @@
 
 import { use, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import Image from "next/image";
 import {
   AlertTriangle,
   ArrowLeft,
@@ -23,7 +23,6 @@ import {
 export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const router = useRouter();
   const { myVouchers, vouchers, markAsUsed } = useApp();
 
   const [copied, setCopied] = useState(false);
@@ -122,7 +121,9 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
             {/* Brand Logo */}
             <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-lowest border border-outline-variant flex items-center justify-center p-4 shadow-sm">
-              <img
+              <Image
+                width={128}
+                height={128}
                 className="w-full h-full object-contain"
                 src={voucher.brandLogo}
                 alt={voucher.brand}
@@ -292,7 +293,9 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 Đưa mã này cho nhân viên
               </h2>
               <div className="bg-white p-4 rounded-lg shadow-sm border border-outline-variant mb-6 inline-block relative">
-                <img
+                <Image
+                  width={192}
+                  height={192}
                   className={`w-48 h-48 object-cover ${
                     myVoucher.status === "used" || myVoucher.status === "expired"
                       ? "opacity-20 blur-[1px]"

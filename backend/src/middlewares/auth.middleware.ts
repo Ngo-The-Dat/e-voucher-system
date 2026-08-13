@@ -46,9 +46,16 @@ export const authenticate = async (
   try {
     const result = await pool.query(
       `SELECT u.user_id, u.email, u.role, u.status,
-              p.approval_status, p.activity_status
+              CASE WHEN u.role = 'PARTNER_EMPLOYEE'
+                   THEN employee_partner.approval_status ELSE p.approval_status END AS approval_status,
+              CASE WHEN u.role = 'PARTNER_EMPLOYEE'
+                   THEN employee_partner.activity_status ELSE p.activity_status END AS activity_status,
+              employee_branch.status AS branch_status
        FROM users u
        LEFT JOIN partners p ON p.user_id = u.user_id
+       LEFT JOIN partner_employees pe ON pe.user_id = u.user_id
+       LEFT JOIN branches employee_branch ON employee_branch.branch_id = pe.branch_id
+       LEFT JOIN partners employee_partner ON employee_partner.user_id = employee_branch.partner_id
        WHERE u.user_id = $1`,
       [decoded.id]
     );
@@ -57,9 +64,13 @@ export const authenticate = async (
       res.status(401).json({ message: 'Tài khoản không còn hợp lệ hoặc đã bị khóa.' });
       return;
     }
-    if (user.role === 'PARTNER' &&
+    if (['PARTNER', 'PARTNER_EMPLOYEE'].includes(user.role) &&
         (user.approval_status !== 'APPROVED' || user.activity_status !== 'ACTIVE')) {
       res.status(403).json({ message: 'Tài khoản đối tác chưa được duyệt hoặc đã bị vô hiệu hóa.' });
+      return;
+    }
+    if (user.role === 'PARTNER_EMPLOYEE' && user.branch_status !== 'ACTIVE') {
+      res.status(403).json({ message: 'Chi nhánh được phân công đã bị vô hiệu hóa.' });
       return;
     }
 

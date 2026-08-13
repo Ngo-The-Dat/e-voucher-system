@@ -117,7 +117,16 @@ export default function ReportsPage() {
                         <tr
                           key={item.id}
                           onClick={() => setSelectedVoucherId(item.id)}
-                          className={`cursor-pointer transition-colors ${
+                          onKeyDown={(event) => {
+                            if (event.key === "Enter" || event.key === " ") {
+                              event.preventDefault();
+                              setSelectedVoucherId(item.id);
+                            }
+                          }}
+                          tabIndex={0}
+                          aria-label={`Xem thống kê ${item.title}`}
+                          aria-selected={isSelected}
+                          className={`cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary ${
                             isSelected
                               ? "bg-primary-container/20 border-l-4 border-l-primary font-semibold"
                               : "hover:bg-surface-container-low/60"

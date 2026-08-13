@@ -1,6 +1,26 @@
 
 import { type ClassValue, clsx } from "clsx";
-import { twMerge } from "tailwind-merge";
+import { extendTailwindMerge } from "tailwind-merge";
+
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      "font-size": [{
+        text: [
+          "title-md",
+          "headline-xl-mobile",
+          "body-lg",
+          "label-lg",
+          "label-md",
+          "label-sm",
+          "headline-xl",
+          "headline-lg",
+          "body-md",
+        ],
+      }],
+    },
+  },
+});
 
 /**
  * Merge Tailwind classes with clsx

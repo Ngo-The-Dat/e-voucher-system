@@ -1,11 +1,25 @@
 import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
-class ApiError extends Error {
+export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }
 }
+
+let isRedirectingToLogin = false;
+
+const redirectToPartnerLogin = () => {
+  if (typeof window === "undefined" || isRedirectingToLogin) return;
+
+  const isProtectedPartnerRoute = window.location.pathname.startsWith("/partner")
+    && !window.location.pathname.startsWith("/partner/login")
+    && !window.location.pathname.startsWith("/partner/register");
+  if (!isProtectedPartnerRoute) return;
+
+  isRedirectingToLogin = true;
+  window.location.replace("/partner/login");
+};
 
 const getStoredPartnerToken = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -34,6 +48,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("partner_access_token");
+      redirectToPartnerLogin();
     }
     throw new ApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
   }
@@ -83,9 +98,9 @@ export const partnerApi = {
         verificationStatus: row.approval_status === "APPROVED" ? "verified" : row.approval_status === "REJECTED" ? "rejected" : "pending",
       },
       representativeInfo: {
-        fullName: row.representative_full_name ?? "", title: row.representative_title ?? "",
-        identityNo: row.representative_identity_no ?? "", phone: row.representative_phone ?? "",
-        email: row.representative_email ?? "",
+        fullName: row.full_name ?? "", title: row.representative_title ?? "",
+        identityNo: row.identity_no ?? "", phone: row.phone ?? "",
+        email: row.email ?? "",
       },
       branches: branches.map(mapBranch),
     };
@@ -96,11 +111,10 @@ export const partnerApi = {
       business_license_no: profile.legalInfo.businessLicenseNo,
       license_issue_date: profile.legalInfo.issueDate || null,
       license_issue_place: profile.legalInfo.issuePlace,
-      representative_full_name: profile.representativeInfo.fullName,
+      full_name: profile.representativeInfo.fullName,
       representative_title: profile.representativeInfo.title,
-      representative_identity_no: profile.representativeInfo.identityNo,
-      representative_phone: profile.representativeInfo.phone,
-      representative_email: profile.representativeInfo.email,
+      identity_no: profile.representativeInfo.identityNo,
+      phone: profile.representativeInfo.phone,
     }),
   }),
   getBranches: async () => (await request<any[]>("/partner/branches")).map(mapBranch),

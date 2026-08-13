@@ -40,9 +40,9 @@ export default function KpiCard({
       {change && (
         <div className="mt-3">
           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-            change.includes("%") && !change.startsWith("+")
-              ? "bg-slate-100 text-slate-600"
-              : "bg-emerald-50 text-emerald-700 border border-emerald-100"
+            isPositive
+              ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+              : "bg-rose-50 text-rose-700 border border-rose-100"
           }`}>
             {change}
           </span>

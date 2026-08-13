@@ -10,6 +10,10 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        "border": "#e2e8f0",
+        "ring": "#004ac6",
+        "text-main": "#191b23",
+        "text-muted": "#64748b",
         "primary": "#004ac6",
         "inverse-on-surface": "#f0f0fb",
         "on-secondary-fixed": "#002113",
@@ -59,7 +63,19 @@ const config: Config = {
         "on-secondary-container": "#00714d",
         "on-error-container": "#93000a",
         "surface-container-lowest": "#ffffff",
+        "surface-lowest": "#ffffff",
         "background": "#faf8ff"
+      },
+      fontSize: {
+        "title-md": ["20px", { lineHeight: "28px", fontWeight: "600" }],
+        "headline-xl-mobile": ["36px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "body-lg": ["18px", { lineHeight: "28px", fontWeight: "400" }],
+        "label-lg": ["16px", { lineHeight: "24px", fontWeight: "600" }],
+        "label-md": ["14px", { lineHeight: "20px", fontWeight: "500" }],
+        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.05em", fontWeight: "600" }],
+        "headline-xl": ["48px", { lineHeight: "56px", letterSpacing: "-0.02em", fontWeight: "700" }],
+        "headline-lg": ["32px", { lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "600" }],
+        "body-md": ["16px", { lineHeight: "24px", fontWeight: "400" }],
       },
       borderRadius: {
         "DEFAULT": "0.25rem",
@@ -77,14 +93,51 @@ const config: Config = {
       },
       fontFamily: {
         sans: ["Inter", "sans-serif"],
+        "headline-xl": ["Inter", "sans-serif"],
+        "headline-xl-mobile": ["Inter", "sans-serif"],
         "headline-lg": ["Inter", "sans-serif"],
+        "title-md": ["Inter", "sans-serif"],
+        "label-lg": ["Inter", "sans-serif"],
         "label-md": ["Inter", "sans-serif"],
         "headline-md": ["Inter", "sans-serif"],
         "body-lg": ["Inter", "sans-serif"],
         "label-sm": ["Inter", "sans-serif"],
         "title-lg": ["Inter", "sans-serif"],
         "body-md": ["Inter", "sans-serif"]
-      }
+      },
+      boxShadow: {
+        "2xs": "0 1px rgb(0 0 0 / 0.05)",
+        "xs": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+      },
+      backdropBlur: {
+        "xs": "2px",
+      },
+      keyframes: {
+        fadeIn: {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        scaleUp: {
+          from: { opacity: "0", transform: "scale(0.95)" },
+          to: { opacity: "1", transform: "scale(1)" },
+        },
+        slideDown: {
+          from: { opacity: "0", transform: "translateY(-0.5rem)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        enter: {
+          from: {
+            opacity: "var(--tw-enter-opacity, 1)",
+            transform: "scale(var(--tw-enter-scale, 1))",
+          },
+        },
+      },
+      animation: {
+        fadeIn: "fadeIn 150ms ease-out",
+        scaleUp: "scaleUp 150ms ease-out",
+        slideDown: "slideDown 200ms ease-out",
+        in: "enter 150ms ease-out",
+      },
     },
   },
   plugins: [],

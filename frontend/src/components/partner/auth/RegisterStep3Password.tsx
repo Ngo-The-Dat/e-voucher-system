@@ -51,9 +51,11 @@ export default function RegisterStep3Password({
           type="password"
           value={password}
           onChange={(e) => onPasswordChange(e.target.value)}
-          placeholder="Nhập ít nhất 6 ký tự"
+          minLength={8}
+          maxLength={128}
+          placeholder="Nhập từ 8 đến 128 ký tự"
           className={
-            passwordError && (password.length < 6 || !password)
+            passwordError && (password.length < 8 || password.length > 128)
               ? "border-error ring-1 ring-error bg-error-container/10"
               : ""
           }
@@ -68,6 +70,8 @@ export default function RegisterStep3Password({
           ref={confirmRef}
           id="confirm-password-input"
           type="password"
+          minLength={8}
+          maxLength={128}
           value={confirmPassword}
           onChange={(e) => onConfirmPasswordChange(e.target.value)}
           placeholder="Nhập lại mật khẩu"
@@ -83,7 +87,7 @@ export default function RegisterStep3Password({
         <Button variant="ghost" type="button" onClick={onBack}>
           Quay lại
         </Button>
-        <Button type="submit" className="!text-white">
+        <Button type="submit">
           Xác nhận
         </Button>
       </div>

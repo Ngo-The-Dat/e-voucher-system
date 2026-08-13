@@ -106,6 +106,58 @@ export const updateVoucherProgram = async (req: AuthRequest, res: Response): Pro
       return;
     }
 
+    if (!req.body || typeof req.body !== 'object' || Array.isArray(req.body)) {
+      res.status(400).json({ message: 'Nội dung cập nhật voucher không hợp lệ.' });
+      return;
+    }
+    const allowedFields = new Set([
+      'program_name', 'category_id', 'original_price', 'sale_price', 'issue_quantity',
+      'sale_start_at', 'sale_end_at', 'use_start_at', 'use_end_at', 'branch_ids',
+    ]);
+    const fields = Object.keys(req.body);
+    if (fields.length === 0 || fields.some((field) => !allowedFields.has(field))) {
+      res.status(400).json({ message: 'Trường cập nhật voucher không hợp lệ.' });
+      return;
+    }
+    if (req.body.program_name !== undefined &&
+        (typeof req.body.program_name !== 'string' || !req.body.program_name.trim() ||
+         req.body.program_name.length > 255)) {
+      res.status(400).json({ message: 'Tên chương trình voucher không hợp lệ.' });
+      return;
+    }
+    if (req.body.category_id !== undefined &&
+        (!Number.isSafeInteger(req.body.category_id) || req.body.category_id <= 0)) {
+      res.status(400).json({ message: 'Danh mục không hợp lệ.' });
+      return;
+    }
+    for (const field of ['original_price', 'sale_price'] as const) {
+      const value = req.body[field];
+      if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) {
+        res.status(400).json({ message: `${field} phải là số không âm.` });
+        return;
+      }
+    }
+    if (req.body.issue_quantity !== undefined &&
+        (!Number.isSafeInteger(req.body.issue_quantity) || req.body.issue_quantity <= 0)) {
+      res.status(400).json({ message: 'Số lượng phát hành phải là số nguyên dương.' });
+      return;
+    }
+    for (const field of ['sale_start_at', 'sale_end_at', 'use_start_at', 'use_end_at'] as const) {
+      const value = req.body[field];
+      if (value !== undefined &&
+          (typeof value !== 'string' || !value.trim() || Number.isNaN(new Date(value).getTime()))) {
+        res.status(400).json({ message: `${field} không hợp lệ.` });
+        return;
+      }
+    }
+    if (req.body.branch_ids !== undefined &&
+        (!Array.isArray(req.body.branch_ids) || req.body.branch_ids.length === 0 ||
+         req.body.branch_ids.some((id: unknown) => !Number.isSafeInteger(id) || Number(id) <= 0) ||
+         new Set(req.body.branch_ids).size !== req.body.branch_ids.length)) {
+      res.status(400).json({ message: 'Danh sách chi nhánh không hợp lệ hoặc bị trùng.' });
+      return;
+    }
+
     const program = await voucherService.updateVoucherProgram(programId, partnerId, req.body);
     res.status(200).json({ message: 'Cập nhật chương trình voucher thành công.', program });
   } catch (err: unknown) {

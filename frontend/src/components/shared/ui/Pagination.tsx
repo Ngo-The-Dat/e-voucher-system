@@ -44,7 +44,7 @@ export default function Pagination({
   };
 
   return (
-    <div className="p-4 border-t border-outline-variant flex items-center justify-between text-base text-on-surface-variant bg-surface">
+    <nav aria-label="Phân trang" className="p-4 border-t border-outline-variant flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between text-base text-on-surface-variant bg-surface">
       <p>
         Hiển thị {totalItems > 0 ? startItem : 0} - {endItem} trong số {totalItems} {itemName}
       </p>
@@ -52,6 +52,8 @@ export default function Pagination({
       <div className="flex items-center gap-2">
         {/* Nút Prev */}
         <button
+          type="button"
+          aria-label="Trang trước"
           disabled={currentPage === 1}
           onClick={() => onPageChange(currentPage - 1)}
           className="p-1.5 rounded hover:bg-surface-container-high disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
@@ -74,7 +76,10 @@ export default function Pagination({
 
           return (
             <button
+              type="button"
               key={pageNum}
+              aria-label={`Trang ${pageNum}`}
+              aria-current={isCurrent ? "page" : undefined}
               onClick={() => onPageChange(pageNum)}
               className={`w-9 h-9 rounded text-base font-semibold flex items-center justify-center transition-all ${
                 isCurrent
@@ -89,6 +94,8 @@ export default function Pagination({
 
         {/* Nút Next */}
         <button
+          type="button"
+          aria-label="Trang tiếp theo"
           disabled={currentPage === totalPages}
           onClick={() => onPageChange(currentPage + 1)}
           className="p-1.5 rounded hover:bg-surface-container-high disabled:opacity-40 disabled:hover:bg-transparent transition-colors"
@@ -96,6 +103,6 @@ export default function Pagination({
           <Icon name="chevron_right" className="w-4 h-4 fill-current" />
         </button>
       </div>
-    </div>
+    </nav>
   );
 }

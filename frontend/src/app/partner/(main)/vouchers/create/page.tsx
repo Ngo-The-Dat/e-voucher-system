@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import TopAppBar from "@/components/partner/layout/TopAppBar";
 import Icon from "@/components/shared/ui/Icon";
-import { toast } from "sonner";
+import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import { Button } from "@/components/shared/ui/Button";
 import Link from "next/link";
@@ -33,6 +33,10 @@ export default function CreateVoucherPage() {
   const [useStartDate, setUseStartDate] = useState("");
   const [useEndDate, setUseEndDate] = useState("");
   const [errors, setErrors] = useState<VoucherFormErrors>({});
+  const [isSuccessToast, setIsSuccessToast] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   useEffect(() => {
     Promise.all([partnerApi.getBranches(), partnerApi.getCategories()])
@@ -46,6 +50,7 @@ export default function CreateVoucherPage() {
 
   const originalPrice = parseFloat(originalPriceStr) || 0;
   const sellingPrice = parseFloat(sellingPriceStr) || 0;
+  const issuedQuantity = Number(issuedQuantityStr);
   const discountAmount = originalPrice > sellingPrice ? originalPrice - sellingPrice : 0;
 
   const handleBranchToggle = (branchId: string) => {
@@ -67,17 +72,17 @@ export default function CreateVoucherPage() {
     } else if (sellingPrice > originalPrice) {
       newErrors.sellingPrice = "Giá bán không thể lớn hơn Giá gốc.";
     }
-    if ((parseInt(issuedQuantityStr) || 0) <= 0) newErrors.issuedQuantity = "Vui lòng nhập Số lượng phát hành hợp lệ (lớn hơn 0).";
+    if (!Number.isSafeInteger(issuedQuantity) || issuedQuantity <= 0) newErrors.issuedQuantity = "Số lượng phát hành phải là số nguyên dương.";
     if (!sellStartDate.trim()) newErrors.sellStartDate = "Vui lòng chọn Thời gian bắt đầu bán.";
     if (!sellEndDate.trim()) {
       newErrors.sellEndDate = "Vui lòng chọn Thời gian kết thúc bán.";
-    } else if (sellStartDate && new Date(sellEndDate) < new Date(sellStartDate)) {
+    } else if (sellStartDate && new Date(sellEndDate) <= new Date(sellStartDate)) {
       newErrors.sellEndDate = "Thời gian kết thúc bán phải sau Thời gian bắt đầu bán.";
     }
     if (!useStartDate.trim()) newErrors.useStartDate = "Vui lòng chọn Thời gian bắt đầu sử dụng.";
     if (!useEndDate.trim()) {
       newErrors.useEndDate = "Vui lòng chọn Thời gian kết thúc sử dụng.";
-    } else if (useStartDate && new Date(useEndDate) < new Date(useStartDate)) {
+    } else if (useStartDate && new Date(useEndDate) <= new Date(useStartDate)) {
       newErrors.useEndDate = "Thời gian kết thúc sử dụng phải sau Thời gian bắt đầu sử dụng.";
     }
     setErrors(newErrors);
@@ -86,10 +91,16 @@ export default function CreateVoucherPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitLockRef.current) return;
+
     if (!validateForm()) {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+
+    submitLockRef.current = true;
+    setIsSubmitting(true);
+    setSubmitError(null);
 
     const selectedCategory = categories.find((c) => c.id === categoryId);
     const selectedBranches = partnerBranches.filter((b) => selectedBranchIds.includes(b.id));
@@ -105,7 +116,7 @@ export default function CreateVoucherPage() {
       originalPrice,
       sellingPrice,
       discountAmount,
-      issuedQuantity: parseInt(issuedQuantityStr) || 1000,
+      issuedQuantity,
       sellStartDate,
       sellEndDate,
       useStartDate,
@@ -117,11 +128,12 @@ export default function CreateVoucherPage() {
     };
     try {
       await partnerApi.createVoucher(voucher);
-      toast.success("Tạo mới chương trình voucher thành công! Đang chuyển về danh sách...");
+      setIsSuccessToast(true);
       setTimeout(() => router.push("/partner/vouchers"), 1500);
     } catch (error) {
-      console.error("Failed to create voucher", error);
-      toast.error("Không thể tạo chương trình voucher.");
+      submitLockRef.current = false;
+      setIsSubmitting(false);
+      setSubmitError(error instanceof Error ? error.message : "Không thể tạo voucher. Vui lòng thử lại.");
     }
   };
 
@@ -130,6 +142,9 @@ export default function CreateVoucherPage() {
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
       <TopAppBar title="Tạo voucher mới" />
+
+      <Toast message={isSuccessToast ? "Tạo mới chương trình voucher thành công! Đang chuyển về danh sách..." : null} />
+      <Toast message={submitError} type="error" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-5xl w-full mx-auto space-y-6">
         {/* Header */}
@@ -195,9 +210,9 @@ export default function CreateVoucherPage() {
                 Hủy bỏ
               </Link>
             </Button>
-            <Button type="submit" size="lg" className="shadow-md gap-2 !text-white">
+            <Button type="submit" size="lg" className="shadow-md gap-2" isLoading={isSubmitting}>
               <Icon name="add" className="text-xl" />
-              <span>Tạo voucher</span>
+              <span>{isSubmitting ? "Đang tạo..." : "Tạo voucher"}</span>
             </Button>
           </div>
         </form>

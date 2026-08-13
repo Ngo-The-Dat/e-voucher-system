@@ -94,7 +94,8 @@ export const redeemVoucher = async (
     // 1. Lấy và khóa voucher để hai request không thể redeem đồng thời
     const voucherResult = await client.query(
       `SELECT
-         iv.issued_voucher_id, iv.usage_status, iv.expires_at, iv.program_id
+         iv.issued_voucher_id, iv.usage_status, iv.expires_at, iv.program_id,
+         vp.use_start_at
        FROM issued_vouchers iv
        JOIN voucher_programs vp ON iv.program_id = vp.program_id
        WHERE iv.voucher_code = $1 AND vp.partner_id = $2
@@ -117,6 +118,10 @@ export const redeemVoucher = async (
         status: 400,
         message: statusMessages[voucher.usage_status] || `Voucher ở trạng thái không hợp lệ: ${voucher.usage_status}`,
       };
+    }
+
+    if (new Date(voucher.use_start_at) > new Date()) {
+      throw { status: 400, message: 'Voucher chưa đến thời gian sử dụng.' };
     }
 
     if (new Date(voucher.expires_at) < new Date()) {
