@@ -17,7 +17,6 @@ export function useAdminDashboard(options: UseAdminDashboardOptions = {}) {
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [hasData, setHasData] = useState(true);
 
   // Data states
   const [stats, setStats] = useState<DashboardKpiStat[]>([]);
@@ -38,7 +37,6 @@ export function useAdminDashboard(options: UseAdminDashboardOptions = {}) {
         setStats([]);
         setEfficiencyMetrics([]);
         setCategoryPerformance([]);
-        setHasData(false);
         setIsLoading(false);
         setError("Ngày bắt đầu không được lớn hơn ngày kết thúc.");
         return;
@@ -52,21 +50,15 @@ export function useAdminDashboard(options: UseAdminDashboardOptions = {}) {
         endDate: timeframe === "custom" ? endDate : undefined,
       });
 
-      const hasStats = Boolean(data.stats && data.stats.length > 0);
-      const hasMetrics = Boolean(data.efficiencyMetrics && data.efficiencyMetrics.length > 0);
-      const hasCategories = Boolean(data.categoryPerformance && data.categoryPerformance.length > 0);
-
       setStats(data.stats || []);
       setEfficiencyMetrics(data.efficiencyMetrics || []);
       setCategoryPerformance(data.categoryPerformance || []);
-      setHasData(hasStats || hasMetrics || hasCategories);
     } catch (err: any) {
       console.error("Lỗi khi tải dữ liệu dashboard admin:", err);
-      setError(err?.message || "Không thể tải dữ liệu dashboard.");
+      setError(err?.message || "Không thể kết nối đến máy chủ.");
       setStats([]);
       setEfficiencyMetrics([]);
       setCategoryPerformance([]);
-      setHasData(false);
     } finally {
       setIsLoading(false);
     }
@@ -79,8 +71,6 @@ export function useAdminDashboard(options: UseAdminDashboardOptions = {}) {
   return {
     isLoading,
     error,
-    hasData,
-    setHasData,
     stats,
     efficiencyMetrics,
     categoryPerformance,

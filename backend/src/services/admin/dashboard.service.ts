@@ -241,10 +241,21 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
   // 4 Chỉ số hiệu quả vận hành (Operational Efficiency Metrics)
   const orderCompletionRate = currentTotalOrders > 0
     ? Math.round((currentCompletedOrders / currentTotalOrders) * 1000) / 10
-    : 100;
+    : 0;
 
   const aov = currentCompletedOrders > 0 ? Math.round(currentRev / currentCompletedOrders) : 0;
+  const prevAov = prevCompletedOrders > 0 ? Math.round(prevRev / prevCompletedOrders) : 0;
+  const aovChange = calculateChange(aov, prevAov);
+
   const revPerPartner = activePartners > 0 ? Math.round(currentRev / activePartners) : 0;
+  const prevRevPerPartner = activePartners > 0 ? Math.round(prevRev / activePartners) : 0;
+  const revPerPartnerChange = calculateChange(revPerPartner, prevRevPerPartner);
+
+  const redeemBadge = currentIssued === 0 ? 'Chưa phát hành' : redeemRateNum >= 85 ? 'Xuất sắc' : redeemRateNum >= 70 ? 'Tốt' : 'Trung bình';
+  const redeemBadgeType: 'success' | 'info' | 'warning' = currentIssued === 0 ? 'info' : redeemRateNum >= 70 ? 'success' : 'info';
+
+  const orderCompletionBadge = currentTotalOrders === 0 ? 'Chưa có đơn' : orderCompletionRate >= 95 ? 'Rất cao' : orderCompletionRate >= 80 ? 'Ổn định' : 'Cần cải thiện';
+  const orderCompletionBadgeType: 'success' | 'info' | 'warning' = currentTotalOrders === 0 ? 'info' : orderCompletionRate >= 80 ? 'success' : 'warning';
 
   const efficiencyMetrics: EfficiencyMetricItem[] = [
     {
@@ -252,8 +263,8 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
       value: `${redeemRateNum.toFixed(1)}%`,
       rate: redeemRateNum,
       description: `${formatNumber(currentRedeemed)} voucher đã đổi trên tổng ${formatNumber(currentIssued)} voucher phát hành`,
-      badge: redeemRateNum >= 85 ? 'Xuất sắc' : redeemRateNum >= 70 ? 'Tốt' : 'Trung bình',
-      badgeType: redeemRateNum >= 85 ? 'success' : 'info',
+      badge: redeemBadge,
+      badgeType: redeemBadgeType,
       icon: 'verified',
       color: 'text-emerald-600 bg-emerald-50',
     },
@@ -262,8 +273,8 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
       value: `${orderCompletionRate.toFixed(1)}%`,
       rate: orderCompletionRate,
       description: `${formatNumber(currentCompletedOrders)} đơn hoàn tất trên tổng ${formatNumber(currentTotalOrders)} đơn khởi tạo`,
-      badge: orderCompletionRate >= 95 ? 'Rất cao' : 'Ổn định',
-      badgeType: 'success',
+      badge: orderCompletionBadge,
+      badgeType: orderCompletionBadgeType,
       icon: 'task_alt',
       color: 'text-blue-600 bg-blue-50',
     },
@@ -271,8 +282,8 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
       title: 'Giá trị đơn TB (AOV)',
       value: formatCurrencyVND(aov),
       description: 'Doanh thu trung bình trên mỗi đơn hàng thành công',
-      badge: '+5.2%',
-      badgeType: 'info',
+      badge: aovChange.change,
+      badgeType: aovChange.trend === 'up' ? 'success' : aovChange.trend === 'down' ? 'warning' : 'info',
       icon: 'receipt_long',
       color: 'text-purple-600 bg-purple-50',
     },
@@ -280,8 +291,8 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
       title: 'Doanh thu TB / Đối tác',
       value: formatCurrencyVND(revPerPartner),
       description: `Doanh số trung bình mỗi đối tác đóng góp trong ${timeframe === 'today' ? 'ngày' : 'kỳ'}`,
-      badge: 'Đang tăng',
-      badgeType: 'info',
+      badge: revPerPartnerChange.change,
+      badgeType: revPerPartnerChange.trend === 'up' ? 'success' : revPerPartnerChange.trend === 'down' ? 'warning' : 'info',
       icon: 'storefront',
       color: 'text-indigo-600 bg-indigo-50',
     },
@@ -292,16 +303,33 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
     `SELECT
        c.category_id,
        c.category_name,
-       COUNT(iv.issued_voucher_id) AS sold_count,
-       COUNT(iv.issued_voucher_id) FILTER (WHERE iv.usage_status = 'USED' AND iv.used_at >= $1 AND iv.used_at <= $2) AS redeemed_count,
-       COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS revenue
+       COALESCE(v_stats.sold_count, 0) AS sold_count,
+       COALESCE(v_stats.redeemed_count, 0) AS redeemed_count,
+       COALESCE(rev_stats.revenue, 0) AS revenue
      FROM categories c
-     LEFT JOIN voucher_programs vp ON c.category_id = vp.category_id
-     LEFT JOIN order_items oi ON vp.program_id = oi.program_id
-     LEFT JOIN orders o ON oi.order_id = o.order_id AND (o.order_status = 'COMPLETED' OR o.payment_status = 'PAID') AND o.created_at >= $1 AND o.created_at <= $2
-     LEFT JOIN issued_vouchers iv ON oi.order_item_id = iv.order_item_id AND iv.issued_at >= $1 AND iv.issued_at <= $2
+     LEFT JOIN (
+       SELECT
+         vp.category_id,
+         COUNT(iv.issued_voucher_id) FILTER (WHERE iv.issued_at >= $1 AND iv.issued_at <= $2) AS sold_count,
+         COUNT(iv.issued_voucher_id) FILTER (WHERE iv.usage_status = 'USED' AND iv.used_at >= $1 AND iv.used_at <= $2) AS redeemed_count
+       FROM issued_vouchers iv
+       JOIN voucher_programs vp ON iv.program_id = vp.program_id
+       WHERE (iv.issued_at >= $1 AND iv.issued_at <= $2)
+          OR (iv.usage_status = 'USED' AND iv.used_at >= $1 AND iv.used_at <= $2)
+       GROUP BY vp.category_id
+     ) v_stats ON c.category_id = v_stats.category_id
+     LEFT JOIN (
+       SELECT
+         vp.category_id,
+         SUM(oi.unit_price * oi.quantity) AS revenue
+       FROM order_items oi
+       JOIN orders o ON oi.order_id = o.order_id
+       JOIN voucher_programs vp ON oi.program_id = vp.program_id
+       WHERE (o.order_status = 'COMPLETED' OR o.payment_status = 'PAID')
+         AND o.created_at >= $1 AND o.created_at <= $2
+       GROUP BY vp.category_id
+     ) rev_stats ON c.category_id = rev_stats.category_id
      WHERE c.status = 'ACTIVE'
-     GROUP BY c.category_id, c.category_name
      ORDER BY revenue DESC, sold_count DESC`,
     [currentStart, currentEnd]
   );

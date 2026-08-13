@@ -5,20 +5,35 @@ import Icon from "@/components/shared/ui/Icon";
 import KpiCard from "@/components/shared/ui/KpiCard";
 import { useAdminDashboard } from "@/hooks/useAdminDashboard";
 import { Button } from "@/components/shared/ui/Button";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function DashboardOverview() {
   // Global Timeframe State
   type Timeframe = "today" | "week" | "month" | "custom";
   const [timeframe, setTimeframe] = useState<Timeframe>("week");
-  const [startDate, setStartDate] = useState<string>("2026-08-01");
-  const [endDate, setEndDate] = useState<string>("2026-08-05");
+
+  // Khởi tạo ngày mặc định cho bộ lọc tùy chọn (7 ngày gần nhất)
+  const [startDate, setStartDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    return d.toISOString().split("T")[0];
+  });
+  const [endDate, setEndDate] = useState<string>(() => {
+    return new Date().toISOString().split("T")[0];
+  });
+
+  const handleResetDates = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 7);
+    setStartDate(d.toISOString().split("T")[0]);
+    setEndDate(new Date().toISOString().split("T")[0]);
+  };
+
+  const isInvalidDateRange = Boolean(timeframe === "custom" && startDate && endDate && startDate > endDate);
 
   const {
     isLoading,
     error,
-    hasData,
-    setHasData,
     stats,
     efficiencyMetrics,
     categoryPerformance,
@@ -34,37 +49,16 @@ export default function DashboardOverview() {
       {/* Page Header with Global Timeframe Filter */}
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-4 border-b border-border">
         <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-900">
-              Dashboard Quản trị
-            </h1>
-            <Button
-              variant={hasData ? "secondary" : "outline"}
-              size="sm"
-              onClick={() => setHasData(!hasData)}
-              className={
-                hasData
-                  ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
-                  : "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
-              }
-              title="Bấm để thử nghiệm luồng A1: Trạng thái Chưa có dữ liệu"
-            >
-              <Icon
-                name={hasData ? "database" : "warning"}
-                className="w-4 h-4 mr-1.5"
-              />
-              <span>
-                {hasData ? "Dữ liệu: Có" : "Mô phỏng Luồng A1 (Rỗng)"}
-              </span>
-            </Button>
-          </div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Dashboard Quản trị
+          </h1>
           <p className="text-sm text-text-muted mt-1">
             Báo cáo tổng quan người dùng, đối tác, voucher, đơn hàng & doanh thu
           </p>
         </div>
 
-        {/* Global Timeframe Selector */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Global Timeframe Selector & Custom Date Range */}
+        <div className="flex flex-col items-start xl:items-end gap-2 self-start xl:self-auto">
           {/* Timeframe Buttons */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 text-xs font-medium border border-slate-200">
             {(["today", "week", "month", "custom"] as const).map((tf) => (
@@ -87,22 +81,30 @@ export default function DashboardOverview() {
             ))}
           </div>
 
-          {/* Custom Date Picker */}
+          {/* Custom Date Range Picker (hiển thị ở dưới bên phải khi chọn Tùy chọn) */}
           {timeframe === "custom" && (
-            <div className="flex items-center gap-2 text-xs bg-white p-1 border border-slate-200 rounded-xl shadow-sm animate-in fade-in duration-150">
-              <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                className="px-2 py-1 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-primary"
-              />
-              <span className="text-slate-400">&rarr;</span>
-              <input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-                className="px-2 py-1 border border-slate-200 rounded-lg font-medium text-slate-700 outline-none focus:border-primary"
-              />
+            <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 hover:border-slate-300 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 rounded-xl shadow-sm transition-all animate-in fade-in slide-in-from-top-1 duration-200">
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Từ</span>
+                <input
+                  type="date"
+                  value={startDate}
+                  max={endDate || undefined}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:text-primary transition-colors"
+                />
+              </div>
+              <span className="text-slate-300 font-light">&rarr;</span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Đến</span>
+                <input
+                  type="date"
+                  value={endDate}
+                  min={startDate || undefined}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="bg-transparent text-xs font-semibold text-slate-700 outline-none cursor-pointer hover:text-primary transition-colors"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -126,36 +128,46 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      {/* Empty State when no data */}
-      {!isLoading && !hasData && (
-        <div className="bg-white border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center space-y-4 shadow-sm">
+      {/* Error / Invalid State */}
+      {!isLoading && error && (
+        <div className="bg-white border-2 border-dashed border-amber-200 rounded-2xl p-12 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
             <Icon name="warning" className="text-3xl" />
           </div>
           <div>
             <h3 className="text-lg font-bold text-slate-900">
-              {error ? "Không thể tải dữ liệu dashboard" : "Không có dữ liệu trong khoảng thời gian này"}
+              {isInvalidDateRange ? "Khoảng thời gian không hợp lệ" : "Không thể tải dữ liệu"}
             </h3>
             <p className="text-sm text-slate-500 max-w-md mx-auto mt-1">
-              {error
-                ? error
-                : "Hệ thống chưa ghi nhận phát sinh doanh thu, voucher hoặc đơn hàng nào trong khoảng thời gian bạn vừa chọn."}
+              {error}
             </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => refetch()}
-            className="mt-2 text-primary border-primary/30 hover:bg-primary/5"
-          >
-            <Icon name="refresh" className="w-4 h-4 mr-1.5" />
-            <span>Tải lại dữ liệu</span>
-          </Button>
+          {isInvalidDateRange ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleResetDates}
+              className="mt-2 text-primary border-primary/30 hover:bg-primary/5"
+            >
+              <Icon name="refresh" className="w-4 h-4 mr-1.5" />
+              <span>Đặt lại 7 ngày gần nhất</span>
+            </Button>
+          ) : (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              className="mt-2 text-primary border-primary/30 hover:bg-primary/5"
+            >
+              <Icon name="refresh" className="w-4 h-4 mr-1.5" />
+              <span>Thử lại</span>
+            </Button>
+          )}
         </div>
       )}
 
       {/* Main Dashboard Content */}
-      {!isLoading && hasData && (
+      {!isLoading && !error && (
         <div className="space-y-8 animate-in fade-in duration-200">
           {/* 1. Lưới 5 Thẻ KPI Tổng quan */}
           <div>
@@ -199,7 +211,7 @@ export default function DashboardOverview() {
                     ? "Tuần này"
                     : timeframe === "month"
                       ? "Tháng này"
-                      : `Từ ${startDate} đến ${endDate}`}
+                      : `Từ ${formatDate(startDate)} đến ${formatDate(endDate)}`}
               </span>
             </div>
 
