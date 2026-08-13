@@ -1,76 +1,163 @@
 "use client";
 
-import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Icon from "@/components/shared/ui/Icon";
+import { toast } from "sonner";
 import ContentSubNavbar from "../SubNavbar";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
 import FormField from "@/components/shared/ui/FormField";
-import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
-import { INITIAL_POPUPS, PopupData } from "./data";
-import Image from "next/image";
+import Pagination from "@/components/shared/ui/Pagination";
+import {
+  adminApi,
+  AdminPopupListItem,
+  VoucherProgramOption,
+  AdminApiError,
+} from "@/lib/admin-api";
 
 export default function PopupsPage() {
-  const [popups, setPopups] = useState<PopupData[]>(INITIAL_POPUPS);
+  const [popups, setPopups] = useState<AdminPopupListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [previewPopup, setPreviewPopup] = useState<PopupData | null>(null);
-  const [confirmDeletePopup, setConfirmDeletePopup] = useState<PopupData | null>(null);
+  const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [previewPopup, setPreviewPopup] = useState<AdminPopupListItem | null>(null);
+  const [confirmDeletePopup, setConfirmDeletePopup] = useState<AdminPopupListItem | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form states
   const [newTitle, setNewTitle] = useState("");
-  const [newProgramId, setNewProgramId] = useState("PRG-HG-50K");
+  const [newProgramId, setNewProgramId] = useState<number | "">("");
   const [newContent, setNewContent] = useState("");
   const [newTargetUrl, setNewTargetUrl] = useState("");
   const [newImageUrl, setNewImageUrl] = useState("https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=500&auto=format&fit=crop&q=80");
-  const [newStartAt, setNewStartAt] = useState("01/08/2026 00:00");
-  const [newEndAt, setNewEndAt] = useState("31/08/2026 23:59");
-  type PopupStatus = "ACTIVE" | "INACTIVE";
-  const [newStatus, setNewStatus] = useState<PopupStatus>("ACTIVE");
+  const [newStartAt, setNewStartAt] = useState("");
+  const [newEndAt, setNewEndAt] = useState("");
+  const [newStatus, setNewStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
-  const filteredPopups = popups.filter(
-    (p) =>
-      p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.programTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.popupId.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Search debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setCurrentPage(1);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const handleCreatePopup = () => {
+  // Load popups from API
+  const loadPopups = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      const res = await adminApi.getPopups({
+        search: debouncedSearch.trim() || undefined,
+        status: statusFilter !== "ALL" ? statusFilter : undefined,
+        page: currentPage,
+        limit: 10,
+      });
+      setPopups(res.popups);
+      setTotalPages(res.pagination.totalPages);
+      setTotalItems(res.pagination.total);
+    } catch (err: any) {
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải danh sách popup truyền thông.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [debouncedSearch, statusFilter, currentPage]);
+
+  useEffect(() => {
+    loadPopups();
+  }, [loadPopups]);
+
+  // Open add modal & load voucher options
+  const handleOpenAddModal = async () => {
+    try {
+      const res = await adminApi.getVoucherOptions();
+      setVoucherOptions(res.options);
+      if (res.options.length > 0) {
+        setNewProgramId(res.options[0].program_id);
+      }
+      setIsAddModalOpen(true);
+    } catch {
+      toast.error("Không thể tải danh sách chương trình voucher.");
+    }
+  };
+
+  const handleCreatePopup = async () => {
     if (!newTitle.trim()) {
-      alert("Vui lòng nhập tiêu đề popup!");
+      toast.error("Vui lòng nhập tiêu đề popup!");
+      return;
+    }
+    if (!newProgramId) {
+      toast.error("Vui lòng chọn chương trình voucher liên kết!");
       return;
     }
 
-    const progTitle = newProgramId === "PRG-HG-50K" ? "Voucher Highlands Coffee 50.000đ" : "Vé xem phim CGV 2D Cuối Tuần";
+    try {
+      setIsSubmitting(true);
+      await adminApi.createPopup({
+        program_id: Number(newProgramId),
+        title: newTitle.trim(),
+        content: newContent.trim(),
+        target_url: newTargetUrl.trim(),
+        image_url: newImageUrl.trim(),
+        start_at: newStartAt || undefined,
+        end_at: newEndAt || undefined,
+        status: newStatus,
+      });
 
-    const newId = `POP-50${popups.length + 1}`;
-    const newPopup: PopupData = {
-      popupId: newId,
-      programId: newProgramId,
-      programTitle: progTitle,
-      title: newTitle,
-      content: newContent,
-      targetUrl: newTargetUrl,
-      imageUrl: newImageUrl,
-      startAt: newStartAt,
-      endAt: newEndAt,
-      status: newStatus,
-    };
-
-    setPopups((prev) => [...prev, newPopup]);
-    setIsAddModalOpen(false);
-    setNewTitle("");
-    setNewContent("");
+      setIsAddModalOpen(false);
+      setNewTitle("");
+      setNewContent("");
+      setNewTargetUrl("");
+      toast.success("Đã thêm popup truyền thông mới thành công!");
+      loadPopups();
+    } catch (err: any) {
+      toast.error(err.message || "Không thể tạo popup mới.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (!confirmDeletePopup) return;
-    setPopups((prev) => prev.filter((p) => p.popupId !== confirmDeletePopup.popupId));
-    setConfirmDeletePopup(null);
+    try {
+      setIsDeleting(true);
+      await adminApi.deletePopup(confirmDeletePopup.popup_id);
+      toast.success(`Đã xóa popup "${confirmDeletePopup.title}" thành công!`);
+      setConfirmDeletePopup(null);
+      loadPopups();
+    } catch (err: any) {
+      toast.error(err.message || "Không thể xóa popup.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const formatDateDisplay = (dateStr: string | null) => {
+    if (!dateStr) return "—";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return d.toLocaleDateString("vi-VN");
+    } catch {
+      return dateStr;
+    }
   };
 
   return (
@@ -87,7 +174,7 @@ export default function PopupsPage() {
           </p>
         </div>
         <Button
-          onClick={() => setIsAddModalOpen(true)}
+          onClick={handleOpenAddModal}
           className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
         >
           <Icon name="add" className="text-base mr-2" />
@@ -107,48 +194,101 @@ export default function PopupsPage() {
             className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
           />
         </div>
-        <div className="text-xs text-slate-500 font-semibold">
-          Tổng số: <strong className="text-slate-800">{popups.length}</strong> popup
+
+        <div className="flex items-center gap-3">
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="h-[38px] px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
+          >
+            <option value="ALL">Tất cả trạng thái</option>
+            <option value="ACTIVE">Đang bật</option>
+            <option value="INACTIVE">Tạm ẩn</option>
+          </select>
+
+          <div className="text-xs text-slate-500 font-semibold whitespace-nowrap">
+            Tổng số: <strong className="text-slate-800">{totalItems}</strong> popup
+          </div>
         </div>
       </div>
 
+      {/* Error Banner */}
+      {error && (
+        <div className="p-4 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Icon name="error" className="text-base" />
+            <span>{error}</span>
+          </div>
+          <Button variant="ghost" onClick={loadPopups} className="text-xs text-rose-700 hover:bg-rose-100">
+            Thử lại
+          </Button>
+        </div>
+      )}
+
       {/* Popups Card Rows List */}
       <div className="space-y-3">
-        {filteredPopups.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-2xl border border-slate-200 p-5 animate-pulse flex items-center gap-4"
+              >
+                <div className="w-16 h-16 bg-slate-200 rounded-xl" />
+                <div className="space-y-2 flex-1">
+                  <div className="h-5 bg-slate-200 rounded w-1/4" />
+                  <div className="h-3 bg-slate-100 rounded w-1/2" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : popups.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-400 font-medium">
             <Icon name="search_off" className="text-4xl block mb-2 text-slate-300" />
             Không tìm thấy popup nào phù hợp với từ khóa.
           </div>
         ) : (
-          filteredPopups.map((popup) => (
+          popups.map((popup) => (
             <div
-              key={popup.popupId}
+              key={popup.popup_id}
               className="bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-2xs hover:border-blue-300 transition flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               {/* Hình ảnh preview & Nội dung Popup */}
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 <div className="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden shrink-0">
-                  <Image width={320} height={160} src={popup.imageUrl} alt={popup.title} className="w-full h-full object-cover" />
+                  <img
+                    src={popup.image_url}
+                    alt={popup.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLElement).style.display = "none";
+                    }}
+                  />
                 </div>
 
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono font-bold text-slate-400">#{popup.popup_id}</span>
                     <h3 className="font-bold text-slate-900 text-sm truncate">{popup.title}</h3>
                     <span
-                      className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border shrink-0 ${popup.status === "ACTIVE"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                        : "bg-slate-100 text-slate-500 border-slate-200"
-                        }`}
+                      className={`px-2.5 py-0.5 text-[11px] font-semibold rounded-full border shrink-0 ${
+                        popup.status === "ACTIVE"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : "bg-slate-100 text-slate-500 border-slate-200"
+                      }`}
                     >
                       {popup.status === "ACTIVE" ? "Đang bật" : "Tạm ẩn"}
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-500 line-clamp-1">{popup.content}</p>
+                  <p className="text-xs text-slate-500 line-clamp-1">{popup.content || "Không có nội dung mô tả"}</p>
 
                   <div className="text-[11px] text-slate-400 font-medium flex items-center gap-3">
-                    <span>Voucher: <strong className="text-blue-600">{popup.programTitle}</strong></span>
-                    <span>Hiệu lực: <strong className="text-slate-700">{popup.startAt} - {popup.endAt}</strong></span>
+                    <span>Voucher: <strong className="text-blue-600">#{popup.program_id} - {popup.program_name}</strong></span>
+                    <span>Hiệu lực: <strong className="text-slate-700">{formatDateDisplay(popup.start_at)} - {formatDateDisplay(popup.end_at)}</strong></span>
                   </div>
                 </div>
               </div>
@@ -163,16 +303,14 @@ export default function PopupsPage() {
                   Xem trước
                 </Button>
 
-                {/* Nút Chỉnh sửa -> Dẫn sang trang riêng /content/popups/[id] */}
                 <Link
-                  href={`/admin/content/popups/${popup.popupId}`}
+                  href={`/admin/content/popups/${popup.popup_id}`}
                   className="px-3.5 py-1.5 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 font-semibold text-xs rounded-xl transition shadow-2xs inline-flex items-center gap-1.5"
                 >
                   <Icon name="edit" className="text-base text-slate-500" />
                   Chỉnh sửa
                 </Link>
 
-                {/* Nút Xóa -> Mở Dialog */}
                 <button
                   onClick={() => setConfirmDeletePopup(popup)}
                   className="p-1.5 bg-rose-50 border border-rose-200 text-rose-600 hover:bg-rose-600 hover:text-white rounded-xl transition shadow-2xs flex items-center justify-center"
@@ -186,9 +324,20 @@ export default function PopupsPage() {
         )}
       </div>
 
+      {/* Pagination */}
+      {!isLoading && popups.length > 0 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          itemsPerPage={10}
+          onPageChange={setCurrentPage}
+          itemName="popup"
+        />
+      )}
+
       {/* Modal Thêm Popup Mới */}
       {isAddModalOpen && (
-        <AccessibleDialog onClose={() => setIsAddModalOpen(false)} ariaLabel="Thêm popup mới">
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -221,11 +370,14 @@ export default function PopupsPage() {
               <FormField label="Chương trình Voucher liên kết" required>
                 <select
                   value={newProgramId}
-                  onChange={(e) => setNewProgramId(e.target.value)}
+                  onChange={(e) => setNewProgramId(Number(e.target.value))}
                   className="w-full p-2.5 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500"
                 >
-                  <option value="PRG-HG-50K">PRG-HG-50K - Voucher Highlands Coffee 50.000đ</option>
-                  <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
+                  {voucherOptions.map((opt) => (
+                    <option key={opt.program_id} value={opt.program_id}>
+                      #{opt.program_id} - {opt.program_name} ({opt.partner_name})
+                    </option>
+                  ))}
                 </select>
               </FormField>
 
@@ -237,7 +389,7 @@ export default function PopupsPage() {
                     onChange={(e) => setNewImageUrl(e.target.value)}
                   />
                 </FormField>
-                <FormField label="Liên kết đính kèm">
+                <FormField label="Liên kết đính kèm (Target URL)">
                   <Input
                     type="text"
                     value={newTargetUrl}
@@ -250,14 +402,14 @@ export default function PopupsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <FormField label="Bắt đầu">
                   <Input
-                    type="text"
+                    type="date"
                     value={newStartAt}
                     onChange={(e) => setNewStartAt(e.target.value)}
                   />
                 </FormField>
                 <FormField label="Kết thúc">
                   <Input
-                    type="text"
+                    type="date"
                     value={newEndAt}
                     onChange={(e) => setNewEndAt(e.target.value)}
                   />
@@ -280,18 +432,20 @@ export default function PopupsPage() {
               <Button variant="ghost" onClick={() => setIsAddModalOpen(false)}>
                 Hủy
               </Button>
-              <Button onClick={handleCreatePopup} className="bg-blue-600 hover:bg-blue-700 text-white">
-                Thêm Popup
+              <Button
+                onClick={handleCreatePopup}
+                disabled={isSubmitting}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                {isSubmitting ? "Đang thêm..." : "Thêm Popup"}
               </Button>
             </div>
           </div>
         </div>
-        </AccessibleDialog>
       )}
 
       {/* Modal Live Preview Popup */}
       {previewPopup && (
-        <AccessibleDialog onClose={() => setPreviewPopup(null)} ariaLabel="Xem trước popup">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl border border-slate-200 shadow-2xl w-full max-w-sm overflow-hidden relative">
             <button
@@ -301,7 +455,14 @@ export default function PopupsPage() {
               <Icon name="close" className="text-base" />
             </button>
             <div className="h-44 bg-slate-100 overflow-hidden relative">
-              <Image width={384} height={176} src={previewPopup.imageUrl} alt={previewPopup.title} className="w-full h-full object-cover" />
+              <img
+                src={previewPopup.image_url}
+                alt={previewPopup.title}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+              />
             </div>
             <div className="p-5 text-center space-y-3">
               <h4 className="font-bold text-slate-900 text-base leading-snug">{previewPopup.title}</h4>
@@ -317,12 +478,10 @@ export default function PopupsPage() {
             </div>
           </div>
         </div>
-        </AccessibleDialog>
       )}
 
       {/* Dialog Xác nhận xóa Popup */}
       {confirmDeletePopup && (
-        <AccessibleDialog onClose={() => setConfirmDeletePopup(null)} ariaLabel="Xác nhận xóa popup">
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 text-center">
             <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
@@ -336,13 +495,16 @@ export default function PopupsPage() {
               <Button variant="ghost" onClick={() => setConfirmDeletePopup(null)}>
                 Hủy thao tác
               </Button>
-              <Button variant="destructive" onClick={handleConfirmDelete}>
-                Xác nhận xóa
+              <Button
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              >
+                {isDeleting ? "Đang xóa..." : "Xác nhận xóa"}
               </Button>
             </div>
           </div>
         </div>
-        </AccessibleDialog>
       )}
     </div>
   );

@@ -1,40 +1,132 @@
 "use client";
 
-import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { INITIAL_ARTICLES } from "../data";
+import Icon from "@/components/shared/ui/Icon";
+import { toast } from "sonner";
+import {
+  adminApi,
+  AdminContentDetail,
+  VoucherProgramOption,
+  AdminApiError,
+} from "@/lib/admin-api";
 
 export default function EditArticlePage() {
   const params = useParams();
   const router = useRouter();
-  const contentId = (params?.id as string) || "CNT-901";
+  const contentId = params?.id ? Number(params.id) : null;
 
-  const initialArticle = INITIAL_ARTICLES.find((a) => a.contentId === contentId) || INITIAL_ARTICLES[0];
+  const [article, setArticle] = useState<AdminContentDetail | null>(null);
+  const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
 
-  const [title, setTitle] = useState(initialArticle.title);
-  type ContentType = "POLICY" | "ARTICLE";
-  const [contentType, setContentType] = useState<ContentType>(initialArticle.contentType);
-  const [programId, setProgramId] = useState(initialArticle.programId);
-  const [body, setBody] = useState(initialArticle.body);
-  type ArticleStatus = "ACTIVE" | "INACTIVE";
-  const [status, setStatus] = useState<ArticleStatus>(initialArticle.status);
+  const [title, setTitle] = useState("");
+  const [contentType, setContentType] = useState<"POLICY" | "ARTICLE">("ARTICLE");
+  const [programId, setProgramId] = useState<number | "">("");
+  const [body, setBody] = useState("");
+  const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
-  const handleSaveArticleChanges = () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    if (!contentId) return;
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const [articleData, optionsRes] = await Promise.all([
+        adminApi.getContent(contentId),
+        adminApi.getVoucherOptions(),
+      ]);
+
+      setArticle(articleData);
+      setVoucherOptions(optionsRes.options);
+
+      setTitle(articleData.title);
+      setContentType(articleData.content_type);
+      setProgramId(articleData.program_id);
+      setBody(articleData.body);
+      setStatus(articleData.status);
+    } catch (err: any) {
+      if (err instanceof AdminApiError) {
+        setError(err.message);
+      } else {
+        setError("Không thể tải thông tin bài viết & chính sách.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contentId]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSaveArticleChanges = async () => {
     if (!title.trim() || !body.trim()) {
-      alert("Vui lòng nhập đầy đủ tiêu đề và nội dung!");
+      toast.error("Vui lòng nhập đầy đủ tiêu đề và nội dung!");
       return;
     }
+    if (!programId) {
+      toast.error("Vui lòng chọn chương trình voucher liên kết!");
+      return;
+    }
+    if (!contentId) return;
 
-    alert(`Bản xem trước: thay đổi cho nội dung "${title}" chỉ được lưu trong phiên hiện tại.`);
-    router.push("/admin/content/articles");
+    try {
+      setIsSaving(true);
+      await adminApi.updateContent(contentId, {
+        program_id: Number(programId),
+        title: title.trim(),
+        body: body.trim(),
+        content_type: contentType,
+        status,
+      });
+
+      toast.success(`Đã lưu thay đổi cho nội dung "${title}" thành công!`);
+      setTimeout(() => {
+        router.push("/admin/content/articles");
+      }, 1000);
+    } catch (err: any) {
+      toast.error(err.message || "Không thể lưu thay đổi.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-16">
+        <div className="h-10 bg-slate-200 rounded-xl animate-pulse w-1/3" />
+        <div className="h-96 bg-white border border-slate-200 rounded-2xl p-6 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error || !article) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto pb-16 text-center">
+        <div className="p-8 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700">
+          <Icon name="error" className="text-3xl mb-2" />
+          <p className="font-bold">{error || "Không tìm thấy nội dung yêu cầu."}</p>
+          <div className="mt-4">
+            <Link
+              href="/admin/content/articles"
+              className="px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold"
+            >
+              Quay lại danh sách
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto pb-16">
-      {/* Top Header Navigation (Breadcrumb ‹ Tên Nội dung) */}
+      {/* Top Header Navigation */}
       <div className="flex items-center justify-between pb-4 border-b border-slate-200">
         <div className="flex items-center gap-3 min-w-0">
           <Link
@@ -44,7 +136,10 @@ export default function EditArticlePage() {
           >
             <Icon name="chevron_left" className="text-lg" />
           </Link>
-          <h1 className="text-xl font-bold text-slate-900 truncate">{title}</h1>
+          <div>
+            <div className="text-xs text-slate-400 font-mono font-bold">Mã: #{contentId}</div>
+            <h1 className="text-xl font-bold text-slate-900 truncate">{title || "Chỉnh sửa bài viết"}</h1>
+          </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -56,9 +151,10 @@ export default function EditArticlePage() {
           </Link>
           <button
             onClick={handleSaveArticleChanges}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
+            disabled={isSaving}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition shadow-xs"
           >
-            Lưu thay đổi
+            {isSaving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>
       </div>
@@ -89,12 +185,14 @@ export default function EditArticlePage() {
             </label>
             <select
               value={programId}
-              onChange={(e) => setProgramId(e.target.value)}
+              onChange={(e) => setProgramId(Number(e.target.value))}
               className="w-full h-11 px-3 bg-white border border-slate-200 rounded-xl text-xs sm:text-sm font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
             >
-              <option value="PRG-HG-50K">PRG-HG-50K - Voucher Highlands Coffee 50.000đ</option>
-              <option value="PRG-CGV-2D">PRG-CGV-2D - Vé xem phim CGV 2D Cuối Tuần</option>
-              <option value="PRG-KC-200K">PRG-KC-200K - Buffet Lẩu Kichi Kichi Giảm 20%</option>
+              {voucherOptions.map((opt) => (
+                <option key={opt.program_id} value={opt.program_id}>
+                  #{opt.program_id} - {opt.program_name} ({opt.partner_name})
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -112,11 +210,10 @@ export default function EditArticlePage() {
           />
         </div>
 
-        {/* Trình soạn thảo Nội dung chi tiết (Kèm thanh công cụ Rich Text Formatting) */}
+        {/* Trình soạn thảo Nội dung chi tiết (Kèm Rich Text Toolbar) */}
         <div>
           <label className="block text-xs font-bold text-slate-800 mb-1.5">Nội dung chi tiết</label>
           <div className="border border-slate-200 rounded-xl overflow-hidden focus-within:border-blue-500 transition">
-            {/* Rich Text Toolbar */}
             <div className="bg-slate-50/80 px-3 py-2 border-b border-slate-200 flex items-center justify-between gap-2 overflow-x-auto text-slate-600">
               <div className="flex items-center gap-1">
                 <button type="button" className="p-1 hover:bg-slate-200/60 rounded font-bold text-xs w-7 h-7">B</button>
@@ -166,22 +263,6 @@ export default function EditArticlePage() {
             <option value="INACTIVE">Tạm ẩn</option>
           </select>
         </div>
-      </div>
-
-      {/* Action Footer */}
-      <div className="flex items-center justify-end gap-2 pt-2">
-        <Link
-          href="/admin/content/articles"
-          className="px-5 py-2.5 bg-white border border-slate-200 text-slate-600 font-semibold text-xs rounded-xl hover:bg-slate-50 transition"
-        >
-          Hủy / Quay lại
-        </Link>
-        <button
-          onClick={handleSaveArticleChanges}
-          className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition shadow-xs"
-        >
-          Lưu thay đổi Bài viết / Chính sách
-        </button>
       </div>
     </div>
   );

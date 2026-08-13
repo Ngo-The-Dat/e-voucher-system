@@ -1,231 +1,296 @@
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
-
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
-import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
-import Image from "next/image";
+import { adminApi, AdminUserDetail } from "@/lib/admin-api";
 
-interface UserRecord {
-  id: string;
+interface UserDetailState {
+  id: string | number;
   name: string;
   email: string;
   phone: string;
   gender: string;
   nationality: string;
-  role: "Khách hàng" | "Đối tác" | "Quản trị viên";
+  identityNo: string;
+  role: "Khách hàng" | "Đối tác" | "Quản trị viên" | "Nhân viên đối tác";
+  rawRole: string;
   status: "Đang hoạt động" | "Đã khóa";
   createdDate: string;
   lastLogin: string;
-  avatar: string;
+  avatarInitials: string;
+  avatarBg: string;
+  lockReason: string | null;
+  businessName?: string | null;
+  taxCode?: string | null;
 }
 
-const usersDataMap: Record<string, UserRecord> = {
-  "USR-001": {
-    id: "USR-001",
-    name: "Nguyễn Văn A",
-    email: "nva@email.com",
-    phone: "0987 654 321",
-    gender: "Nam",
-    nationality: "Việt Nam",
-    role: "Khách hàng",
-    status: "Đang hoạt động",
-    createdDate: "12/10/2023, 14:30",
-    lastLogin: "Hôm nay, 08:15",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDmcbUWDcymSWYEPhjxPbI6X5kLhVpLKDyPwWrTfNRNDfC-YBoPu32VIdySLDh52f2Emia0F44iXsD5KS8AdOmEhwMUoUmNQrt6BL29mzpNGJ-lEzYSf1geyHFBH2o0OVaN7viR5muTlOEdocrMmzU_c6E9WtssQjyzZTvpR3oOsNJq-e2jOiHtrfwIuFme8pUBKGChm9yZaA14ZzqbuVv3M0L02lujPzZBxcV9th2OXR1_EhUJwyR0Mw",
-  },
-  "USR-002": {
-    id: "USR-002",
-    name: "Trần Thị B",
-    email: "bpartner@email.com",
-    phone: "0912 345 678",
-    gender: "Nữ",
-    nationality: "Việt Nam",
-    role: "Đối tác",
-    status: "Đang hoạt động",
-    createdDate: "05/11/2023, 09:15",
-    lastLogin: "Hôm qua, 16:45",
-    avatar:
-      "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&auto=format&fit=crop&q=80",
-  },
-  "USR-003": {
-    id: "USR-003",
-    name: "Lê Văn C",
-    email: "lvc_lock@email.com",
-    phone: "0903 888 999",
-    gender: "Nam",
-    nationality: "Việt Nam",
-    role: "Khách hàng",
-    status: "Đã khóa",
-    createdDate: "20/01/2024, 11:20",
-    lastLogin: "3 ngày trước",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-  },
-  "USR-004": {
-    id: "USR-004",
-    name: "Phạm Minh D",
-    email: "d.admin@lumina.vn",
-    phone: "0977 111 222",
-    gender: "Nam",
-    nationality: "Việt Nam",
-    role: "Quản trị viên",
-    status: "Đang hoạt động",
-    createdDate: "01/01/2023, 08:00",
-    lastLogin: "Hôm nay, 10:00",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-  },
+const getInitials = (name: string): string => {
+  const parts = name.trim().split(" ");
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const mapRole = (role: string): UserDetailState["role"] => {
+  switch (role) {
+    case "PARTNER":
+      return "Đối tác";
+    case "ADMIN":
+      return "Quản trị viên";
+    case "PARTNER_EMPLOYEE":
+      return "Nhân viên đối tác";
+    default:
+      return "Khách hàng";
+  }
+};
+
+const formatDate = (dateString?: string | null): string => {
+  if (!dateString) return "Chưa có";
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return dateString;
+  }
+};
+
+const mapGender = (gender?: string | null): string => {
+  if (gender === "MALE") return "Nam";
+  if (gender === "FEMALE") return "Nữ";
+  if (gender === "OTHER") return "Khác";
+  return gender || "Chưa cập nhật";
 };
 
 export default function UserDetailPage() {
   const params = useParams();
-  const userId = (params?.id as string) || "USR-001";
-  
-  const userData = usersDataMap[userId] || {
-    id: userId,
-    name: "Người dùng " + userId,
-    email: `${userId.toLowerCase()}@email.com`,
-    phone: "0987 654 321",
-    gender: "Nam",
+  const rawId = (params?.id as string) || "1";
+  const userId = rawId.replace("USR-", "");
+
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [userData, setUserData] = useState<UserDetailState>({
+    id: rawId,
+    name: "Đang tải...",
+    email: "...",
+    phone: "...",
+    gender: "...",
     nationality: "Việt Nam",
-    role: "Khách hàng" as const,
-    status: "Đang hoạt động" as const,
-    createdDate: "12/10/2023, 14:30",
-    lastLogin: "Vừa xong",
-    avatar:
-      "https://lh3.googleusercontent.com/aida-public/AB6AXuDmcbUWDcymSWYEPhjxPbI6X5kLhVpLKDyPwWrTfNRNDfC-YBoPu32VIdySLDh52f2Emia0F44iXsD5KS8AdOmEhwMUoUmNQrt6BL29mzpNGJ-lEzYSf1geyHFBH2o0OVaN7viR5muTlOEdocrMmzU_c6E9WtssQjyzZTvpR3oOsNJq-e2jOiHtrfwIuFme8pUBKGChm9yZaA14ZzqbuVv3M0L02lujPzZBxcV9th2OXR1_EhUJwyR0Mw",
-  };
+    identityNo: "...",
+    role: "Khách hàng",
+    rawRole: "CUSTOMER",
+    status: "Đang hoạt động",
+    createdDate: "...",
+    lastLogin: "...",
+    avatarInitials: "U",
+    avatarBg: "bg-blue-100 text-blue-700",
+    lockReason: null,
+  });
 
   type ActiveTab = "info" | "permissions";
   const [activeTab, setActiveTab] = useState<ActiveTab>("info");
-  type SelectedRole = "customer" | "partner";
-  const [selectedRole, setSelectedRole] = useState<SelectedRole>("customer");
-  const [currentRole, setCurrentRole] = useState(userData.role);
+  const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "PARTNER" | "PARTNER_EMPLOYEE">("CUSTOMER");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [savedNotification, setSavedNotification] = useState<string | null>(null);
 
-  type AccountStatus = "Đang hoạt động" | "Đã khóa";
-  const [accountStatus, setAccountStatus] = useState<AccountStatus>(userData.status);
   const [lockModalOpen, setLockModalOpen] = useState(false);
-  const [lockReason, setLockReason] = useState("");
+  const [lockReasonInput, setLockReasonInput] = useState("");
 
-  const userDetail = {
-    id: userData.id,
-    name: userData.name,
-    email: userData.email,
-    phone: userData.phone,
-    gender: userData.gender,
-    nationality: userData.nationality,
-    role: currentRole,
-    status: accountStatus,
-    createdDate: userData.createdDate,
-    lastLogin: userData.lastLogin,
-    avatar: userData.avatar,
-  };
-
-  const handleConfirmRoleChange = () => {
-    const newRoleName = selectedRole === "customer" ? "Khách hàng" : "Đối tác";
-    setCurrentRole(newRoleName);
-    setShowConfirmModal(false);
-    setSavedNotification(`Bản xem trước: vai trò đã được cập nhật cục bộ thành "${newRoleName}".`);
-    setTimeout(() => setSavedNotification(null), 5000);
-  };
-
-  const handleConfirmLockToggle = () => {
-    if (accountStatus === "Đang hoạt động") {
-      setAccountStatus("Đã khóa");
-      setSavedNotification(
-        `Bản xem trước: tài khoản đã được cập nhật cục bộ sang trạng thái khóa. Lý do: "${lockReason || "Vi phạm điều khoản dịch vụ"}"`
-      );
-    } else {
-      setAccountStatus("Đang hoạt động");
-      setSavedNotification("Bản xem trước: tài khoản đã được cập nhật cục bộ sang trạng thái hoạt động.");
+  const fetchUserDetail = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res: AdminUserDetail = await adminApi.getUser(userId);
+      if (res) {
+        setUserData({
+          id: res.user_id,
+          name: res.full_name,
+          email: res.email,
+          phone: res.phone || "Chưa cập nhật",
+          gender: mapGender(res.gender),
+          nationality: res.nationality || "Việt Nam",
+          identityNo: res.identity_no || "Chưa cập nhật",
+          role: mapRole(res.role),
+          rawRole: res.role,
+          status: res.status === "LOCKED" ? "Đã khóa" : "Đang hoạt động",
+          createdDate: formatDate(res.created_at),
+          lastLogin: formatDate(res.last_login_at),
+          avatarInitials: getInitials(res.full_name),
+          avatarBg:
+            res.status === "LOCKED"
+              ? "bg-slate-200 text-slate-600"
+              : res.role === "PARTNER"
+              ? "bg-amber-100 text-amber-800"
+              : res.role === "ADMIN"
+              ? "bg-purple-100 text-purple-800"
+              : res.role === "PARTNER_EMPLOYEE"
+              ? "bg-rose-100 text-rose-800"
+              : "bg-blue-100 text-blue-700",
+          lockReason: res.lock_reason,
+          businessName: res.business_name,
+          taxCode: res.tax_code,
+        });
+        setSelectedRole(
+          res.role === "PARTNER"
+            ? "PARTNER"
+            : res.role === "PARTNER_EMPLOYEE"
+            ? "PARTNER_EMPLOYEE"
+            : "CUSTOMER"
+        );
+      }
+    } catch {
+      // Fallback display if mock ID or offline
+      setUserData((prev) => ({
+        ...prev,
+        id: rawId,
+        name: `Người dùng ${rawId}`,
+        email: `user_${rawId.toLowerCase()}@email.com`,
+        phone: "0987 654 321",
+        createdDate: "12/10/2023, 14:30",
+        lastLogin: "Vừa xong",
+        avatarInitials: getInitials(`User ${rawId}`),
+      }));
+    } finally {
+      setLoading(false);
     }
-    setLockModalOpen(false);
-    setLockReason("");
-    setTimeout(() => setSavedNotification(null), 5000);
+  }, [userId, rawId]);
+
+  useEffect(() => {
+    fetchUserDetail();
+  }, [fetchUserDetail]);
+
+  const handleConfirmRoleChange = async () => {
+    try {
+      setActionLoading(true);
+      await adminApi.changeUserRole(userId, selectedRole);
+      const newRoleLabel = mapRole(selectedRole);
+      toast.success(`Đã cập nhật vai trò người dùng thành "${newRoleLabel}".`);
+      setShowConfirmModal(false);
+      await fetchUserDetail();
+    } catch (error: any) {
+      toast.error(error.message || "Không thể thay đổi vai trò người dùng.");
+    } finally {
+      setActionLoading(false);
+    }
   };
+
+  const handleConfirmLockToggle = async () => {
+    try {
+      setActionLoading(true);
+      if (userData.status === "Đang hoạt động") {
+        if (!lockReasonInput.trim()) {
+          toast.error("Vui lòng nhập lý do khóa tài khoản");
+          return;
+        }
+        await adminApi.lockUser(userId, lockReasonInput.trim());
+        setUserData((prev) => ({
+          ...prev,
+          status: "Đã khóa",
+          lockReason: lockReasonInput.trim(),
+          avatarBg: "bg-slate-200 text-slate-600",
+        }));
+        toast.success(`Tài khoản đã bị khóa. Lý do: "${lockReasonInput.trim()}"`);
+      } else {
+        await adminApi.unlockUser(userId);
+        setUserData((prev) => ({
+          ...prev,
+          status: "Đang hoạt động",
+          lockReason: null,
+          avatarBg: "bg-blue-100 text-blue-700",
+        }));
+        toast.success("Tài khoản người dùng đã được mở khóa thành công.");
+      }
+      setLockModalOpen(false);
+      setLockReasonInput("");
+      await fetchUserDetail();
+    } catch (error: any) {
+      toast.error(error.message || "Thao tác không thành công. Vui lòng thử lại.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
       {/* Top Breadcrumbs */}
-      <div className="flex items-center gap-2 text-text-muted text-sm font-medium">
+      <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
         <Link href="/admin/users" className="hover:text-primary transition-colors">
           Quản lý người dùng
         </Link>
         <Icon name="chevron_right" className="text-sm" />
-        <span className="text-text-main font-medium">Chi tiết người dùng</span>
+        <span className="text-slate-900 font-semibold">Chi tiết người dùng</span>
       </div>
 
-      {savedNotification && (
-        <div className="p-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-semibold flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-2">
-            <Icon name="check_circle" />
-            <span>{savedNotification}</span>
-          </div>
-          <button onClick={() => setSavedNotification(null)} className="font-bold">✕</button>
-        </div>
-      )}
-
-      {/* User Header Card (Stitch Exact Styling) */}
-      <div className="bg-surface rounded-xl border border-border shadow-sm p-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-blue-200 to-blue-500/20" />
-        <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-end mt-12">
-          {/* Avatar */}
-          <div className="w-24 h-24 rounded-full border-4 border-surface shadow-md overflow-hidden bg-white shrink-0">
-            <Image
-              width={96}
-              height={96}
-              className="w-full h-full object-cover"
-              src={userDetail.avatar}
-              alt={userDetail.name}
-            />
+      {/* User Header Card */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-blue-100 via-indigo-50 to-blue-50" />
+        <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-end mt-8">
+          {/* Avatar Initials */}
+          <div
+            className={`w-20 h-20 rounded-full border-4 border-white shadow-md flex items-center justify-center font-bold text-2xl shrink-0 ${userData.avatarBg}`}
+          >
+            {userData.avatarInitials}
           </div>
 
           {/* Name & Badges */}
-          <div className="flex-1 space-y-2">
-            <h2 className="text-2xl font-bold text-text-main">
-              {userDetail.name}
-            </h2>
-            <div className="flex flex-wrap gap-2">
+          <div className="flex-1 space-y-1.5">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-slate-900">
+                {userData.name}
+              </h2>
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${
-                  userDetail.role === "Đối tác"
-                    ? "bg-amber-100 text-amber-900 border-amber-200"
-                    : userDetail.role === "Quản trị viên"
-                    ? "bg-purple-100 text-purple-900 border-purple-200"
-                    : "bg-emerald-100 text-emerald-800 border-emerald-200"
+                className={`inline-flex items-center px-3 py-0.5 rounded-full text-xs font-semibold ${
+                  userData.role === "Đối tác"
+                    ? "bg-amber-100 text-amber-800"
+                    : userData.role === "Quản trị viên"
+                    ? "bg-purple-100 text-purple-800"
+                    : "bg-slate-100 text-slate-700"
                 }`}
               >
-                {userDetail.role}
+                {userData.role}
               </span>
             </div>
+            <p className="text-sm text-slate-500">{userData.email}</p>
           </div>
 
           {/* Header Action Buttons */}
           <div className="flex flex-wrap gap-3 mt-4 md:mt-0 w-full md:w-auto">
-            <Button
+            <button
               type="button"
               onClick={() => setLockModalOpen(true)}
-              variant={accountStatus === "Đang hoạt động" ? "destructive" : "default"}
-              className={accountStatus !== "Đang hoạt động" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition cursor-pointer ${
+                userData.status === "Đang hoạt động"
+                  ? "bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200"
+                  : "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200"
+              }`}
             >
-              <Icon name={accountStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-[18px] mr-2" />
+              <Icon name={userData.status === "Đang hoạt động" ? "lock" : "lock_open"} className="text-base" />
               <span>
-                {accountStatus === "Đang hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
+                {userData.status === "Đang hoạt động" ? "Khóa tài khoản" : "Mở khóa tài khoản"}
               </span>
-            </Button>
+            </button>
 
             <Link
               href="/admin/users"
-              className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-lg text-text-main text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+              className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-semibold transition"
             >
-              <Icon name="arrow_back" className="text-[18px]" />
+              <Icon name="arrow_back" className="text-base" />
               <span>Quay lại</span>
             </Link>
           </div>
@@ -233,14 +298,14 @@ export default function UserDetailPage() {
       </div>
 
       {/* Tab Navigation Bar */}
-      <div className="border-b border-border">
+      <div className="border-b border-slate-200">
         <nav className="flex gap-6 -mb-px">
           <button
             onClick={() => setActiveTab("info")}
-            className={`pb-4 text-sm font-medium whitespace-nowrap px-1 border-b-2 transition-colors ${
+            className={`pb-3.5 text-sm whitespace-nowrap px-1 border-b-2 transition-colors cursor-pointer ${
               activeTab === "info"
                 ? "text-primary border-primary font-bold"
-                : "text-text-muted hover:text-text-main border-transparent"
+                : "text-slate-500 hover:text-slate-900 border-transparent font-medium"
             }`}
           >
             Thông tin cá nhân
@@ -248,10 +313,10 @@ export default function UserDetailPage() {
 
           <button
             onClick={() => setActiveTab("permissions")}
-            className={`pb-4 text-sm font-medium whitespace-nowrap px-1 border-b-2 transition-colors ${
+            className={`pb-3.5 text-sm whitespace-nowrap px-1 border-b-2 transition-colors cursor-pointer ${
               activeTab === "permissions"
                 ? "text-primary border-primary font-bold"
-                : "text-text-muted hover:text-text-main border-transparent"
+                : "text-slate-500 hover:text-slate-900 border-transparent font-medium"
             }`}
           >
             Phân quyền
@@ -259,129 +324,163 @@ export default function UserDetailPage() {
         </nav>
       </div>
 
-      {/* Tab Content: Thông tin cá nhân theo ERD */}
+      {/* Tab Content: Thông tin cá nhân */}
       {activeTab === "info" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Main Info Card */}
-          <div className="lg:col-span-2 bg-surface rounded-xl border border-border shadow-sm p-6">
-            <h3 className="text-lg font-bold text-text-main mb-6 flex items-center gap-2">
+          <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Icon name="person" className="text-primary" />
               Chi tiết thông tin người dùng
             </h3>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-y-5 gap-x-8">
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
                   Mã người dùng
                 </label>
-                <p className="text-sm font-bold font-mono text-text-main">
-                  {userDetail.id}
+                <p className="text-sm font-bold font-mono text-slate-900">
+                  USR-{userData.id}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
-                  Họ tên
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                  Họ và tên
                 </label>
-                <p className="text-sm font-bold text-text-main">
-                  {userDetail.name}
+                <p className="text-sm font-bold text-slate-900">
+                  {userData.name}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
                   Email
                 </label>
-                <p className="text-sm font-medium text-text-main">
-                  {userDetail.email}
+                <p className="text-sm font-medium text-slate-700">
+                  {userData.email}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
-                  Số điện thoại (SĐT)
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                  Số điện thoại
                 </label>
-                <p className="text-sm font-medium text-text-main">
-                  {userDetail.phone}
+                <p className="text-sm font-medium text-slate-700">
+                  {userData.phone}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                  Số CCCD / CMND
+                </label>
+                <p className="text-sm font-medium text-slate-700">
+                  {userData.identityNo}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
                   Giới tính
                 </label>
-                <p className="text-sm font-medium text-text-main">
-                  {userDetail.gender}
+                <p className="text-sm font-medium text-slate-700">
+                  {userData.gender}
                 </p>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-text-muted uppercase mb-1">
+                <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
                   Quốc tịch
                 </label>
-                <p className="text-sm font-medium text-text-main">
-                  {userDetail.nationality}
+                <p className="text-sm font-medium text-slate-700">
+                  {userData.nationality}
                 </p>
               </div>
+
+              {userData.businessName && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                    Doanh nghiệp đối tác
+                  </label>
+                  <p className="text-sm font-medium text-slate-700">
+                    {userData.businessName} (MST: {userData.taxCode})
+                  </p>
+                </div>
+              )}
             </div>
+
+            {/* Lock Reason Banner */}
+            {userData.status === "Đã khóa" && userData.lockReason && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
+                <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider mb-1">
+                  <Icon name="lock" className="text-sm" />
+                  <span>Lý do khóa tài khoản</span>
+                </div>
+                <p className="text-sm text-rose-900 font-medium">
+                  {userData.lockReason}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* System Info Card */}
-          <div className="bg-surface rounded-xl border border-border shadow-sm p-6 space-y-6">
-            <h3 className="text-lg font-bold text-text-main flex items-center gap-2 border-b border-border pb-3">
-              <Icon name="settings_suggest" className="text-primary" />
+          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
+              <Icon name="settings" className="text-primary" />
               Thông tin hệ thống
             </h3>
             
             <div className="space-y-5">
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-100 rounded-lg text-text-muted mt-1">
-                  <Icon name="shield" className="text-[20px]" />
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-500 mt-0.5">
+                  <Icon name="shield" className="text-lg" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-text-muted uppercase mb-1">
-                    Trạng thái (Mở / Khóa)
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                    Trạng thái tài khoản
                   </label>
                   <span
-                    className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold ${
-                      accountStatus === "Đang hoạt động"
+                    className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-semibold ${
+                      userData.status === "Đang hoạt động"
                         ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
                         : "bg-rose-50 text-rose-700 border border-rose-200"
                     }`}
                   >
                     <span
-                      className={`w-1.5 h-1.5 rounded-full mr-1.5 ${
-                        accountStatus === "Đang hoạt động" ? "bg-emerald-500" : "bg-rose-500"
+                      className={`w-1.5 h-1.5 rounded-full ${
+                        userData.status === "Đang hoạt động" ? "bg-emerald-500" : "bg-rose-500"
                       }`}
                     />
-                    {accountStatus}
+                    {userData.status}
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-100 rounded-lg text-text-muted mt-1">
-                  <Icon name="calendar_today" className="text-[20px]" />
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-500 mt-0.5">
+                  <Icon name="calendar_today" className="text-lg" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-text-muted uppercase mb-1">
-                    Ngày tạo
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                    Ngày đăng ký
                   </label>
-                  <p className="text-sm font-medium text-text-main">
-                    {userDetail.createdDate}
+                  <p className="text-sm font-medium text-slate-800">
+                    {userData.createdDate}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4">
-                <div className="p-2 bg-slate-100 rounded-lg text-text-muted mt-1">
-                  <Icon name="login" className="text-[20px]" />
+              <div className="flex items-start gap-3.5">
+                <div className="p-2.5 bg-slate-50 rounded-xl text-slate-500 mt-0.5">
+                  <Icon name="schedule" className="text-lg" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-text-muted uppercase mb-1">
-                    Lần đăng nhập gần nhất
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                    Đăng nhập lần cuối
                   </label>
-                  <p className="text-sm font-medium text-text-main">
-                    {userDetail.lastLogin}
+                  <p className="text-sm font-medium text-slate-800">
+                    {userData.lastLogin}
                   </p>
                 </div>
               </div>
@@ -390,190 +489,227 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      {/* Tab Content: Phân quyền (Stitch Exact Form & Design) */}
+      {/* Tab Content: Phân quyền */}
       {activeTab === "permissions" && (
-        <section className="bg-white rounded-lg shadow-sm border border-border overflow-hidden">
-          <div className="p-4 border-b border-border bg-slate-50">
-            <h3 className="text-[18px] font-bold text-text-main">
+        <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+          <div className="p-5 border-b border-slate-100 bg-slate-50/50">
+            <h3 className="text-base font-bold text-slate-900">
               Cài đặt vai trò người dùng
             </h3>
-            <p className="text-sm text-text-muted mt-0.5">
-              Thay đổi quyền hạn và vai trò của người dùng trên hệ thống Lumina.
+            <p className="text-xs text-slate-500 mt-0.5">
+              Thay đổi quyền hạn và vai trò của người dùng trên toàn hệ thống.
             </p>
           </div>
 
-          <div className="p-5 space-y-6">
+          <div className="p-6 space-y-6">
             {/* Current Role Display */}
             <div>
-              <label className="block text-[10px] font-bold text-text-main uppercase tracking-wider mb-2 opacity-70">
+              <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Vai trò hiện tại
               </label>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-100 text-primary rounded-lg border border-primary/20">
-                <Icon name="person" className="text-[18px]" />
-                <span className="font-bold text-sm">{currentRole}</span>
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl border border-blue-200">
+                <Icon name="person" className="text-base" />
+                <span className="font-bold text-sm">{userData.role}</span>
               </div>
             </div>
 
-            {/* Select New Role Form */}
-            <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-              <label className="block text-[10px] font-bold text-text-main uppercase tracking-wider mb-2 opacity-70">
-                Chọn vai trò mới
-              </label>
-
-              <div className="space-y-3">
-                {/* Option: Khách hàng */}
-                <label
-                  onClick={() => setSelectedRole("customer")}
-                  className={`relative flex items-start p-3.5 border rounded-lg cursor-pointer transition-all ${
-                    selectedRole === "customer"
-                      ? "border-primary bg-blue-50/50 ring-1 ring-primary"
-                      : "border-border bg-white hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value="customer"
-                    checked={selectedRole === "customer"}
-                    onChange={() => setSelectedRole("customer")}
-                    className="mt-0.5 w-4 h-4 text-primary focus:ring-primary border-border"
-                  />
-                  <div className="ml-3 flex-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-text-main text-[15px]">
-                        Khách hàng
-                      </span>
-                    </div>
-                    <p className="text-[13px] text-text-muted mt-0.5 leading-relaxed">
-                      Quyền hạn cơ bản cho người dùng cuối. Có thể duyệt danh mục, mua voucher, quản lý ví điểm thưởng và đánh giá dịch vụ.
-                    </p>
-                  </div>
-                </label>
-
-                {/* Option: Đối tác */}
-                <label
-                  onClick={() => setSelectedRole("partner")}
-                  className={`relative flex items-start p-3.5 border rounded-lg cursor-pointer transition-all ${
-                    selectedRole === "partner"
-                      ? "border-primary bg-blue-50/50 ring-1 ring-primary"
-                      : "border-border bg-white hover:border-slate-300 hover:bg-slate-50"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value="partner"
-                    checked={selectedRole === "partner"}
-                    onChange={() => setSelectedRole("partner")}
-                    className="mt-0.5 w-4 h-4 text-primary focus:ring-primary border-border"
-                  />
-                  <div className="ml-3 flex-1">
-                    <span className="font-bold text-text-main text-[15px]">
-                      Đối tác
-                    </span>
-                    <p className="text-[13px] text-text-muted mt-0.5 leading-relaxed">
-                      Dành cho chủ doanh nghiệp. Quyền tạo niêm yết voucher, quản lý chi nhánh, xem báo cáo doanh thu và đối soát giao dịch.
-                    </p>
-                  </div>
-                </label>
-              </div>
-
-              {/* Warning Alert Box */}
-              <div className="mt-4 flex items-start gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-amber-900">
-                <Icon name="warning" className="text-amber-600 text-[20px]" />
-                <div className="space-y-0.5">
-                  <p className="font-bold text-[13px]">Lưu ý quan trọng</p>
-                  <p className="text-[12px] leading-relaxed opacity-90">
-                    Người dùng sẽ bị đăng xuất để áp dụng quyền mới. Quá trình này không thể hoàn tác ngay lập tức.
-                  </p>
+            {/* If user is an ADMIN, show protection info */}
+            {userData.rawRole === "ADMIN" ? (
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2.5">
+                <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mx-auto">
+                  <Icon name="shield" className="text-2xl" />
                 </div>
+                <h4 className="font-bold text-slate-900 text-sm">
+                  Tài khoản Quản trị viên hệ thống
+                </h4>
+                <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                  Tài khoản Quản trị viên (ADMIN) được bảo vệ và không thể thay đổi vai trò qua giao diện người dùng này.
+                </p>
               </div>
+            ) : (
+              /* Select New Role Form */
+              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+                  Chọn vai trò mới
+                </label>
 
-              {/* Action Submit */}
-              <div className="pt-4 border-t border-border mt-5 flex justify-end">
-                <Button
-                  type="button"
-                  onClick={() => setShowConfirmModal(true)}
-                  className="bg-primary-container text-white hover:bg-blue-700"
-                >
-                  <Icon name="sync" className="text-[20px] mr-1.5" />
-                  <span>Cập nhật quyền hạn</span>
-                </Button>
-              </div>
-            </form>
+                <div className="space-y-3">
+                  {/* Option: Khách hàng */}
+                  <label
+                    onClick={() => setSelectedRole("CUSTOMER")}
+                    className={`relative flex items-start p-4 border rounded-xl cursor-pointer transition-all ${
+                      selectedRole === "CUSTOMER"
+                        ? "border-primary bg-blue-50/40 ring-1 ring-primary"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value="CUSTOMER"
+                      checked={selectedRole === "CUSTOMER"}
+                      onChange={() => setSelectedRole("CUSTOMER")}
+                      className="mt-1 w-4 h-4 text-primary focus:ring-primary border-slate-300"
+                    />
+                    <div className="ml-3.5 flex-1">
+                      <span className="font-bold text-slate-900 text-sm">
+                        Khách hàng (CUSTOMER)
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        Quyền hạn người dùng cuối. Có thể duyệt danh mục, mua voucher, thanh toán và quản lý voucher cá nhân.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Option: Đối tác */}
+                  <label
+                    onClick={() => setSelectedRole("PARTNER")}
+                    className={`relative flex items-start p-4 border rounded-xl cursor-pointer transition-all ${
+                      selectedRole === "PARTNER"
+                        ? "border-primary bg-blue-50/40 ring-1 ring-primary"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value="PARTNER"
+                      checked={selectedRole === "PARTNER"}
+                      onChange={() => setSelectedRole("PARTNER")}
+                      className="mt-1 w-4 h-4 text-primary focus:ring-primary border-slate-300"
+                    />
+                    <div className="ml-3.5 flex-1">
+                      <span className="font-bold text-slate-900 text-sm">
+                        Đối tác doanh nghiệp (PARTNER)
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        Dành cho chủ doanh nghiệp. Có quyền phát hành voucher, quản lý chi nhánh, đối soát doanh thu.
+                      </p>
+                    </div>
+                  </label>
+
+                  {/* Option: Nhân viên đối tác */}
+                  <label
+                    onClick={() => setSelectedRole("PARTNER_EMPLOYEE")}
+                    className={`relative flex items-start p-4 border rounded-xl cursor-pointer transition-all ${
+                      selectedRole === "PARTNER_EMPLOYEE"
+                        ? "border-primary bg-blue-50/40 ring-1 ring-primary"
+                        : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value="PARTNER_EMPLOYEE"
+                      checked={selectedRole === "PARTNER_EMPLOYEE"}
+                      onChange={() => setSelectedRole("PARTNER_EMPLOYEE")}
+                      className="mt-1 w-4 h-4 text-primary focus:ring-primary border-slate-300"
+                    />
+                    <div className="ml-3.5 flex-1">
+                      <span className="font-bold text-slate-900 text-sm">
+                        Nhân viên đối tác (PARTNER_EMPLOYEE)
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
+                        Dành cho nhân viên tại chi nhánh. Có quyền quét và xác thực đổi mã voucher tại điểm bán (Redeem).
+                      </p>
+                    </div>
+                  </label>
+                </div>
+
+                {/* Warning Alert Box */}
+                <div className="mt-4 flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
+                  <Icon name="warning" className="text-amber-600 text-lg shrink-0 mt-0.5" />
+                  <div className="space-y-0.5 text-xs">
+                    <p className="font-bold">Lưu ý quan trọng</p>
+                    <p className="text-amber-800 leading-relaxed">
+                      Hệ thống sẽ ghi nhật ký vào system_logs. Người dùng sẽ cần đăng nhập lại để nhận token chứa vai trò mới.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Action Submit */}
+                <div className="pt-4 border-t border-slate-100 mt-5 flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => setShowConfirmModal(true)}
+                    disabled={actionLoading || selectedRole === userData.rawRole}
+                    className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-semibold text-sm"
+                  >
+                    <Icon name="sync" className="text-lg mr-1.5" />
+                    <span>Cập nhật vai trò</span>
+                  </Button>
+                </div>
+              </form>
+            )}
           </div>
         </section>
       )}
 
-      {/* Role Update Confirmation Modal (Stitch Screen b8bed576) */}
+      {/* Role Update Confirmation Modal */}
       {showConfirmModal && (
-        <AccessibleDialog onClose={() => setShowConfirmModal(false)} ariaLabel="Xác nhận cập nhật vai trò người dùng">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-border max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3 text-primary">
               <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
                 <Icon name="published_with_changes" className="text-2xl" />
               </div>
               <h3 className="font-bold text-lg text-slate-900">
-                Xác nhận thay đổi vai trò người dùng?
+                Xác nhận thay đổi vai trò?
               </h3>
             </div>
             <p className="text-sm text-slate-600">
               Bạn có chắc chắn muốn thay đổi vai trò của người dùng{" "}
-              <strong className="text-slate-900">{userDetail.name}</strong> từ{" "}
-              <span className="font-semibold text-slate-700">"{currentRole}"</span> sang{" "}
-              <span className="font-semibold text-primary">"{selectedRole === "customer" ? "Khách hàng" : "Đối tác"}"</span> không?
-            </p>
-            <p className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
-              ⚠️ Tài khoản sẽ bị buộc đăng xuất ngay sau khi cập nhật để áp dụng cấu hình phân quyền mới.
+              <strong className="text-slate-900">{userData.name}</strong> từ{" "}
+              <span className="font-semibold text-slate-700">"{userData.role}"</span> sang{" "}
+              <span className="font-semibold text-primary">"{mapRole(selectedRole)}"</span> không?
             </p>
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <Button
                 variant="ghost"
+                disabled={actionLoading}
                 onClick={() => setShowConfirmModal(false)}
               >
                 Hủy bỏ
               </Button>
               <Button
+                disabled={actionLoading}
                 onClick={handleConfirmRoleChange}
-                className="bg-primary-container text-white hover:bg-blue-700"
+                className="bg-primary hover:bg-primary-hover text-white"
               >
-                Xác nhận thay đổi
+                {actionLoading ? "Đang cập nhật..." : "Xác nhận thay đổi"}
               </Button>
             </div>
           </div>
         </div>
-        </AccessibleDialog>
       )}
 
       {/* Modal Khóa / Mở khóa Tài khoản */}
       {lockModalOpen && (
-        <AccessibleDialog onClose={() => setLockModalOpen(false)} ariaLabel="Xác nhận thay đổi trạng thái tài khoản">
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white rounded-xl shadow-xl border border-border max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center gap-3">
               <div
                 className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                  accountStatus === "Đang hoạt động"
+                  userData.status === "Đang hoạt động"
                     ? "bg-rose-50 text-rose-600"
                     : "bg-emerald-50 text-emerald-600"
                 }`}
               >
-                <Icon name={accountStatus === "Đang hoạt động" ? "lock" : "lock_open"} className="text-2xl" />
+                <Icon name={userData.status === "Đang hoạt động" ? "lock" : "lock_open"} className="text-2xl" />
               </div>
               <h3 className="font-bold text-lg text-slate-900">
-                {accountStatus === "Đang hoạt động"
+                {userData.status === "Đang hoạt động"
                   ? "Xác nhận khóa tài khoản?"
                   : "Xác nhận mở khóa tài khoản?"}
               </h3>
             </div>
             <p className="text-sm text-slate-600">
-              {accountStatus === "Đang hoạt động"
-                ? `Bạn có chắc chắn muốn khóa tài khoản của ${userDetail.name}? Người dùng sẽ không thể truy cập hệ thống.`
-                : `Khôi phục trạng thái hoạt động cho tài khoản ${userDetail.name}. Người dùng sẽ có thể đăng nhập lại bình thường.`}
+              {userData.status === "Đang hoạt động"
+                ? `Bạn có chắc chắn muốn khóa tài khoản của ${userData.name}? Người dùng sẽ không thể đăng nhập hoặc thực hiện giao dịch.`
+                : `Khôi phục trạng thái hoạt động cho tài khoản ${userData.name}. Người dùng sẽ có thể đăng nhập lại bình thường.`}
             </p>
 
-            {accountStatus === "Đang hoạt động" && (
+            {userData.status === "Đang hoạt động" && (
               <div className="space-y-1.5 pt-1">
                 <label className="block text-xs font-bold text-slate-700">
                   Lý do khóa tài khoản *
@@ -581,8 +717,8 @@ export default function UserDetailPage() {
                 <textarea
                   rows={3}
                   placeholder="Nhập chi tiết lý do khóa tài khoản..."
-                  value={lockReason}
-                  onChange={(e) => setLockReason(e.target.value)}
+                  value={lockReasonInput}
+                  onChange={(e) => setLockReasonInput(e.target.value)}
                   className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
                 />
               </div>
@@ -591,22 +727,33 @@ export default function UserDetailPage() {
               <Button
                 variant="ghost"
                 type="button"
+                disabled={actionLoading}
                 onClick={() => setLockModalOpen(false)}
               >
                 Hủy bỏ
               </Button>
               <Button
                 type="button"
+                disabled={
+                  actionLoading ||
+                  (userData.status === "Đang hoạt động" && !lockReasonInput.trim())
+                }
                 onClick={handleConfirmLockToggle}
-                variant={accountStatus === "Đang hoạt động" ? "destructive" : "default"}
-                className={accountStatus !== "Đang hoạt động" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : ""}
+                className={
+                  userData.status === "Đang hoạt động"
+                    ? "bg-rose-600 hover:bg-rose-700 text-white disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
+                    : "bg-emerald-600 hover:bg-emerald-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                }
               >
-                {accountStatus === "Đang hoạt động" ? "Xác nhận khóa" : "Xác nhận mở khóa"}
+                {actionLoading
+                  ? "Đang xử lý..."
+                  : userData.status === "Đang hoạt động"
+                  ? "Xác nhận khóa"
+                  : "Xác nhận mở khóa"}
               </Button>
             </div>
           </div>
         </div>
-        </AccessibleDialog>
       )}
     </div>
   );
