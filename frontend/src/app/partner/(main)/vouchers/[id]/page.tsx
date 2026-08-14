@@ -9,8 +9,21 @@ import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { partnerApi } from "@/lib/partner-api";
 import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
+import { VoucherImage } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
+
+const VOUCHER_STATUS_SYNC_INTERVAL_MS = 10_000;
+
+const toGalleryItems = (images: VoucherImage[]): GalleryImageItem[] => images.map((image) => ({
+  id: image.id,
+  url: image.url,
+  name: decodeURIComponent(image.url.split("/").pop() || `Ảnh ${image.id}`),
+  isPrimary: image.isPrimary,
+  sortOrder: image.sortOrder,
+  status: "uploaded",
+}));
 
 export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -34,6 +47,8 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [editUseStartDate, setEditUseStartDate] = useState("");
   const [editUseEndDate, setEditUseEndDate] = useState("");
   const [editDisplayStatus, setEditDisplayStatus] = useState<"active" | "hidden">("active");
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
+  const [isImageBusy, setIsImageBusy] = useState(false);
 
   const [errors, setErrors] = useState<VoucherFormErrors>({});
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -55,8 +70,38 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setEditUseStartDate(loaded.useStartDate);
       setEditUseEndDate(loaded.useEndDate);
       setEditDisplayStatus(loaded.displayStatus || "active");
+      setGalleryImages(toGalleryItems(loaded.images));
     }).catch((error) => console.error("Failed to load voucher detail", error));
   }, [id]);
+
+  useEffect(() => {
+    if (voucher?.status !== "pending") return;
+
+    let disposed = false;
+    const syncStatus = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const loaded = await partnerApi.getVoucher(id);
+        if (!disposed) {
+          setVoucher(loaded);
+          setGalleryImages(toGalleryItems(loaded.images));
+        }
+      } catch (error) {
+        console.error("Failed to sync voucher status", error);
+      }
+    };
+    const intervalId = window.setInterval(() => void syncStatus(), VOUCHER_STATUS_SYNC_INTERVAL_MS);
+    const syncWhenVisible = () => void syncStatus();
+
+    window.addEventListener("focus", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    return () => {
+      disposed = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
+  }, [id, voucher?.status]);
 
   if (!voucher) {
     return (
@@ -80,6 +125,91 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const editSellingPrice = parseFloat(editSellingPriceStr) || 0;
   const editIssuedQuantity = Number(editIssuedQuantityStr);
   const editDiscountAmount = editOriginalPrice > editSellingPrice ? editOriginalPrice - editSellingPrice : 0;
+
+  const applyImages = (images: VoucherImage[]) => {
+    const mapped = toGalleryItems(images);
+    setGalleryImages(mapped);
+    setVoucher((current) => current ? {
+      ...current,
+      images,
+      thumbnail: images.find((image) => image.isPrimary)?.url ?? images[0]?.url ?? null,
+    } : current);
+  };
+
+  const handleImageFilesAdded = async (files: File[]) => {
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const invalid = files.find((file) => !allowedTypes.has(file.type) || file.size > 5 * 1024 * 1024);
+    if (invalid) {
+      setToastType("error");
+      setToastMessage(`${invalid.name}: ảnh phải là JPEG, PNG hoặc WebP và không vượt quá 5 MB.`);
+      return;
+    }
+
+    setIsImageBusy(true);
+    try {
+      let working = voucher.images;
+      for (const file of files) {
+        const uploaded = await partnerApi.uploadVoucherImage(
+          voucher.id,
+          file,
+          working.length === 0,
+          working.length,
+        );
+        working = [...working, uploaded];
+        applyImages(working);
+      }
+      setToastType("success");
+      setToastMessage(`Đã upload ${files.length} ảnh.`);
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể upload ảnh voucher.");
+    } finally {
+      setIsImageBusy(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    setIsImageBusy(true);
+    try {
+      applyImages(await partnerApi.deleteVoucherImage(voucher.id, imageId));
+      setToastType("success");
+      setToastMessage("Đã xóa ảnh voucher.");
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể xóa ảnh voucher.");
+    } finally {
+      setIsImageBusy(false);
+    }
+  };
+
+  const handleSetPrimaryImage = async (imageId: string) => {
+    setIsImageBusy(true);
+    try {
+      applyImages(await partnerApi.setPrimaryVoucherImage(voucher.id, imageId));
+      setToastType("success");
+      setToastMessage("Đã cập nhật ảnh chính.");
+    } catch (error) {
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật ảnh chính.");
+    } finally {
+      setIsImageBusy(false);
+    }
+  };
+
+  const handleReorderImages = async (reordered: GalleryImageItem[]) => {
+    const previous = galleryImages;
+    setGalleryImages(reordered);
+    setIsImageBusy(true);
+    try {
+      applyImages(await partnerApi.reorderVoucherImages(voucher.id, reordered.map((image) => image.id)));
+    } catch (error) {
+      setGalleryImages(previous);
+      setToastType("error");
+      setToastMessage(error instanceof Error ? error.message : "Không thể cập nhật thứ tự ảnh.");
+    } finally {
+      setIsImageBusy(false);
+    }
+  };
 
   // UC Gửi duyệt voucher - Step 3: Gửi yêu cầu xét duyệt đến quản trị viên
   const handleSendForApproval = async () => {
@@ -185,7 +315,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
             </Link>
 
             {/* UC Gửi duyệt voucher: Nút mặc định là 'Gửi duyệt' trừ khi bấm 'Chỉnh sửa' */}
-            {voucher.status === "draft" && !isEditing && (
+            {["draft", "rejected"].includes(voucher.status) && !isEditing && (
               <>
                 <button
                   onClick={() => setIsEditing(true)}
@@ -232,6 +362,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
         {/* MODE A: Read-Only Detail View (UC Quản lý voucher) */}
         {!isEditing ? (
           <div className="space-y-6">
+            <VoucherImageGallery items={galleryImages} editable={false} />
             {/* Thống tin Thực thể Chương trình Voucher */}
             <div className="bg-surface-bright rounded-xl border border-outline-variant p-6 shadow-sm space-y-6">
               <h2 className="text-lg font-bold text-on-surface border-b border-outline-variant/40 pb-3 flex items-center gap-2">
@@ -476,6 +607,16 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   {errors.useEndDate && <p className="text-sm text-error mt-1">{errors.useEndDate}</p>}
                 </div>
               </div>
+
+              <VoucherImageGallery
+                items={galleryImages}
+                editable
+                busy={isImageBusy}
+                onFilesAdded={handleImageFilesAdded}
+                onRemove={handleDeleteImage}
+                onSetPrimary={handleSetPrimaryImage}
+                onReorder={handleReorderImages}
+              />
 
               <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/40">
                 <button

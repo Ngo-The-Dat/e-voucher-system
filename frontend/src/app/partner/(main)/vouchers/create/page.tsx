@@ -14,6 +14,7 @@ import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection"
 import { partnerApi } from "@/lib/partner-api";
 import { CategoryOption, CreateVoucherInput, VoucherFormErrors } from "@/lib/types/voucher";
 import { Branch } from "@/lib/types/profile";
+import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
 export default function CreateVoucherPage() {
   const router = useRouter();
@@ -36,7 +37,10 @@ export default function CreateVoucherPage() {
   const [isSuccessToast, setIsSuccessToast] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [galleryImages, setGalleryImages] = useState<GalleryImageItem[]>([]);
+  const [createdProgramId, setCreatedProgramId] = useState<string | null>(null);
   const submitLockRef = useRef(false);
+  const previewUrlsRef = useRef(new Set<string>());
 
   useEffect(() => {
     Promise.all([partnerApi.getBranches(), partnerApi.getCategories()])
@@ -47,6 +51,83 @@ export default function CreateVoucherPage() {
       })
       .catch((error) => console.error("Failed to load voucher form data", error));
   }, []);
+
+  useEffect(() => () => {
+    previewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    previewUrlsRef.current.clear();
+  }, []);
+
+  const handleFilesAdded = (files: File[]) => {
+    const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+    const accepted: GalleryImageItem[] = [];
+    const rejected: string[] = [];
+
+    for (const file of files) {
+      if (!allowedTypes.has(file.type)) {
+        rejected.push(`${file.name}: sai định dạng`);
+        continue;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        rejected.push(`${file.name}: vượt quá 5 MB`);
+        continue;
+      }
+      const url = URL.createObjectURL(file);
+      previewUrlsRef.current.add(url);
+      accepted.push({
+        id: globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random()}`,
+        url,
+        name: file.name,
+        size: file.size,
+        file,
+        isPrimary: false,
+        sortOrder: 0,
+        status: "pending",
+      });
+    }
+
+    setGalleryImages((current) => {
+      const hasPrimary = current.some((item) => item.isPrimary);
+      return [...current, ...accepted].map((item, index) => ({
+        ...item,
+        isPrimary: item.isPrimary || (!hasPrimary && index === current.length),
+        sortOrder: index,
+      }));
+    });
+    setSubmitError(rejected.length > 0 ? rejected.join("; ") : null);
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setGalleryImages((current) => {
+      const removed = current.find((item) => item.id === id);
+      if (removed?.status === "uploaded") {
+        setSubmitError("Ảnh đã upload chỉ có thể xóa tại trang chỉnh sửa voucher.");
+        return current;
+      }
+      if (removed?.url.startsWith("blob:")) {
+        URL.revokeObjectURL(removed.url);
+        previewUrlsRef.current.delete(removed.url);
+      }
+      const remaining = current.filter((item) => item.id !== id);
+      const needsPrimary = removed?.isPrimary && remaining.length > 0;
+      return remaining.map((item, index) => ({
+        ...item,
+        isPrimary: needsPrimary ? index === 0 : item.isPrimary,
+        sortOrder: index,
+      }));
+    });
+  };
+
+  const handleSetPrimaryImage = (id: string) => {
+    const target = galleryImages.find((item) => item.id === id);
+    if (target?.status === "uploaded") {
+      setSubmitError("Ảnh đã upload chỉ có thể đổi ảnh chính tại trang chỉnh sửa voucher.");
+      return;
+    }
+    setGalleryImages((current) => current.map((item) => ({
+      ...item,
+      isPrimary: item.id === id,
+    })));
+  };
 
   const originalPrice = parseFloat(originalPriceStr) || 0;
   const sellingPrice = parseFloat(sellingPriceStr) || 0;
@@ -127,7 +208,57 @@ export default function CreateVoucherPage() {
       expiredCount: 0,
     };
     try {
-      await partnerApi.createVoucher(voucher);
+      let programId = createdProgramId;
+      if (!programId) {
+        const created = await partnerApi.createVoucher(voucher);
+        programId = String(created.program.program_id);
+        setCreatedProgramId(programId);
+      }
+
+      let failedUploads = 0;
+      const uploadedIds = new Map<string, string>();
+      for (const item of galleryImages.filter((image) => image.file && image.status !== "uploaded")) {
+        setGalleryImages((current) => current.map((image) =>
+          image.id === item.id ? { ...image, status: "uploading", error: undefined } : image
+        ));
+        try {
+          const uploaded = await partnerApi.uploadVoucherImage(
+            programId,
+            item.file!,
+            item.isPrimary,
+            item.sortOrder,
+          );
+          uploadedIds.set(item.id, uploaded.id);
+          setGalleryImages((current) => current.map((image) =>
+            image.id === item.id
+              ? { ...image, id: uploaded.id, url: uploaded.url, status: "uploaded", error: undefined }
+              : image
+          ));
+          if (item.url.startsWith("blob:")) {
+            URL.revokeObjectURL(item.url);
+            previewUrlsRef.current.delete(item.url);
+          }
+        } catch (error) {
+          failedUploads += 1;
+          const message = error instanceof Error ? error.message : "Upload thất bại";
+          setGalleryImages((current) => current.map((image) =>
+            image.id === item.id ? { ...image, status: "error", error: message } : image
+          ));
+        }
+      }
+
+      if (failedUploads > 0) {
+        submitLockRef.current = false;
+        setIsSubmitting(false);
+        setSubmitError(
+          `Voucher Draft #${programId} đã được tạo, nhưng ${failedUploads} ảnh upload thất bại. Hãy thử lại các ảnh lỗi.`
+        );
+        return;
+      }
+      const finalImageIds = galleryImages.map((item) => uploadedIds.get(item.id) ?? item.id);
+      if (finalImageIds.length > 0 && finalImageIds.every((id) => /^\d+$/.test(id))) {
+        await partnerApi.reorderVoucherImages(programId, finalImageIds);
+      }
       setIsSuccessToast(true);
       setTimeout(() => router.push("/partner/vouchers"), 1500);
     } catch (error) {
@@ -166,41 +297,53 @@ export default function CreateVoucherPage() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          <VoucherGeneralSection
-            code={code}
-            title={title}
-            categoryId={categoryId}
-            categories={categories}
-            partnerBranches={partnerBranches}
-            selectedBranchIds={selectedBranchIds}
-            errors={errors}
-            onCodeChange={(v) => { setCode(v); if (errors.code) setErrors((p) => ({ ...p, code: "" })); }}
-            onTitleChange={(v) => { setTitle(v); if (errors.title) setErrors((p) => ({ ...p, title: "" })); }}
-            onCategoryChange={setCategoryId}
-            onBranchToggle={handleBranchToggle}
-          />
+          <fieldset disabled={createdProgramId !== null} className="space-y-6 disabled:opacity-70">
+            <VoucherGeneralSection
+              code={code}
+              title={title}
+              categoryId={categoryId}
+              categories={categories}
+              partnerBranches={partnerBranches}
+              selectedBranchIds={selectedBranchIds}
+              errors={errors}
+              onCodeChange={(v) => { setCode(v); if (errors.code) setErrors((p) => ({ ...p, code: "" })); }}
+              onTitleChange={(v) => { setTitle(v); if (errors.title) setErrors((p) => ({ ...p, title: "" })); }}
+              onCategoryChange={setCategoryId}
+              onBranchToggle={handleBranchToggle}
+            />
 
-          <VoucherPricingSection
-            originalPriceStr={originalPriceStr}
-            sellingPriceStr={sellingPriceStr}
-            issuedQuantityStr={issuedQuantityStr}
-            discountAmount={discountAmount}
-            errors={errors}
-            onOriginalPriceChange={(v) => { setOriginalPriceStr(v); if (errors.originalPrice) setErrors((p) => ({ ...p, originalPrice: "" })); }}
-            onSellingPriceChange={(v) => { setSellingPriceStr(v); if (errors.sellingPrice) setErrors((p) => ({ ...p, sellingPrice: "" })); }}
-            onIssuedQuantityChange={(v) => { setIssuedQuantityStr(v); if (errors.issuedQuantity) setErrors((p) => ({ ...p, issuedQuantity: "" })); }}
-          />
+            <VoucherPricingSection
+              originalPriceStr={originalPriceStr}
+              sellingPriceStr={sellingPriceStr}
+              issuedQuantityStr={issuedQuantityStr}
+              discountAmount={discountAmount}
+              errors={errors}
+              onOriginalPriceChange={(v) => { setOriginalPriceStr(v); if (errors.originalPrice) setErrors((p) => ({ ...p, originalPrice: "" })); }}
+              onSellingPriceChange={(v) => { setSellingPriceStr(v); if (errors.sellingPrice) setErrors((p) => ({ ...p, sellingPrice: "" })); }}
+              onIssuedQuantityChange={(v) => { setIssuedQuantityStr(v); if (errors.issuedQuantity) setErrors((p) => ({ ...p, issuedQuantity: "" })); }}
+            />
 
-          <VoucherDateSection
-            sellStartDate={sellStartDate}
-            sellEndDate={sellEndDate}
-            useStartDate={useStartDate}
-            useEndDate={useEndDate}
-            errors={errors}
-            onSellStartChange={(v) => { setSellStartDate(v); if (errors.sellStartDate) setErrors((p) => ({ ...p, sellStartDate: "" })); }}
-            onSellEndChange={(v) => { setSellEndDate(v); if (errors.sellEndDate) setErrors((p) => ({ ...p, sellEndDate: "" })); }}
-            onUseStartChange={(v) => { setUseStartDate(v); if (errors.useStartDate) setErrors((p) => ({ ...p, useStartDate: "" })); }}
-            onUseEndChange={(v) => { setUseEndDate(v); if (errors.useEndDate) setErrors((p) => ({ ...p, useEndDate: "" })); }}
+            <VoucherDateSection
+              sellStartDate={sellStartDate}
+              sellEndDate={sellEndDate}
+              useStartDate={useStartDate}
+              useEndDate={useEndDate}
+              errors={errors}
+              onSellStartChange={(v) => { setSellStartDate(v); if (errors.sellStartDate) setErrors((p) => ({ ...p, sellStartDate: "" })); }}
+              onSellEndChange={(v) => { setSellEndDate(v); if (errors.sellEndDate) setErrors((p) => ({ ...p, sellEndDate: "" })); }}
+              onUseStartChange={(v) => { setUseStartDate(v); if (errors.useStartDate) setErrors((p) => ({ ...p, useStartDate: "" })); }}
+              onUseEndChange={(v) => { setUseEndDate(v); if (errors.useEndDate) setErrors((p) => ({ ...p, useEndDate: "" })); }}
+            />
+          </fieldset>
+
+          <VoucherImageGallery
+            items={galleryImages}
+            editable
+            busy={isSubmitting}
+            onFilesAdded={handleFilesAdded}
+            onRemove={handleRemoveImage}
+            onSetPrimary={handleSetPrimaryImage}
+            onReorder={setGalleryImages}
           />
 
           {/* Actions */}
@@ -212,7 +355,7 @@ export default function CreateVoucherPage() {
             </Button>
             <Button type="submit" size="lg" className="shadow-md gap-2" isLoading={isSubmitting}>
               <Icon name="add" className="text-xl" />
-              <span>{isSubmitting ? "Đang tạo..." : "Tạo voucher"}</span>
+              <span>{isSubmitting ? "Đang lưu..." : createdProgramId ? "Thử lại upload ảnh" : "Tạo voucher"}</span>
             </Button>
           </div>
         </form>

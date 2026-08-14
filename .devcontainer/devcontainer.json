@@ -2,6 +2,8 @@
 {
 	"name": "E-Voucher Development",
 	"image": "mcr.microsoft.com/devcontainers/typescript-node:4-24-trixie",
+	"containerUser": "node",
+	"remoteUser": "node",
 
 	"features": {
 		"ghcr.io/devcontainer-config/features/dot-config:4": {}

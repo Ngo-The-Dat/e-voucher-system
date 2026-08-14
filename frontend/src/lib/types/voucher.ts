@@ -6,6 +6,13 @@ export interface CategoryOption {
   description?: string;
 }
 
+export interface VoucherImage {
+  id: string;
+  url: string;
+  isPrimary: boolean;
+  sortOrder: number;
+}
+
 export interface VoucherItem {
   id: string; // Mã chương trình (PK)
   code: string; // Mã chương trình
@@ -23,6 +30,8 @@ export interface VoucherItem {
   useStartDate: string; // Thời gian bắt đầu sử dụng
   useEndDate: string; // Thời gian kết thúc sử dụng
   displayStatus: "active" | "hidden"; // Trạng thái hiển thị
+  thumbnail: string | null;
+  images: VoucherImage[];
   
   // Thông tin xét duyệt (Bảng Xét duyệt)
   status: VoucherApprovalStatus; // Trạng thái duyệt
