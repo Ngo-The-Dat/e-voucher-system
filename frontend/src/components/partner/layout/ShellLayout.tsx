@@ -9,10 +9,10 @@ import Icon from "@/components/shared/ui/Icon";
 export default function ShellLayout({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-  const { profile } = useProfile();
+  const { profile, reload } = useProfile();
 
   return (
-    <PartnerProvider value={profile}>
+    <PartnerProvider value={{ partner: profile, refreshPartner: reload }}>
       <div
         className="antialiased min-h-screen bg-background text-on-background flex w-full"
         style={{ "--partner-sidebar-width": isCollapsed ? "5rem" : "16rem" } as React.CSSProperties}

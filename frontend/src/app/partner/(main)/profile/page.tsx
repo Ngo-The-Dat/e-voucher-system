@@ -14,6 +14,7 @@ import BranchesSection from "@/components/partner/profile/BranchesSection";
 import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { usePartnerContext } from "@/context/PartnerContext";
 import { partnerApi } from "@/lib/partner-api";
 
 const TABS = [
@@ -26,6 +27,7 @@ const TABS = [
 
 export default function ProfilePage() {
   const { profile, isLoading, setProfile, reload, save } = useProfile();
+  const { refreshPartner } = usePartnerContext();
   const { validate } = useProfileValidation();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -55,9 +57,12 @@ export default function ProfilePage() {
     setHasUnsavedChanges(true);
   };
 
-  const handleLogoUploadSuccess = (uploadedUrl: string) => {
+  const handleLogoUploadSuccess = async (uploadedUrl: string) => {
     setProfile((prev) => (prev ? { ...prev, brandLogo: uploadedUrl } : prev));
     setHasUnsavedChanges(false);
+    if (refreshPartner) {
+      await refreshPartner();
+    }
     setToastType("success");
     setToastMessage("Tải lên và lưu logo thương hiệu thành công!");
     setTimeout(() => setToastMessage(null), 3000);
@@ -91,6 +96,9 @@ export default function ProfilePage() {
     }
     try {
       await save(profile);
+      if (refreshPartner) {
+        await refreshPartner();
+      }
       setHasUnsavedChanges(false);
       setErrors({});
       setToastType("success");
@@ -102,8 +110,11 @@ export default function ProfilePage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleResetProfile = () => {
-    reload();
+  const handleResetProfile = async () => {
+    await reload();
+    if (refreshPartner) {
+      await refreshPartner();
+    }
     setHasUnsavedChanges(false);
     setErrors({});
   };
