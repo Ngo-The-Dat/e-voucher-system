@@ -1,5 +1,7 @@
 import { Router } from 'express';
 import * as voucherController from '../../controllers/partner/voucher.controller.js';
+import * as voucherImageController from '../../controllers/partner/voucher-image.controller.js';
+import { voucherImageUpload } from '../../middlewares/voucher-image-upload.middleware.js';
 
 const router = Router();
 
@@ -10,6 +12,11 @@ router.post('/', voucherController.createVoucherProgram);
 router.get('/', voucherController.getVoucherPrograms);
 
 router.get('/categories', voucherController.getCategories);
+
+router.post('/:id/images', voucherImageUpload.single('image'), voucherImageController.uploadImage);
+router.put('/:id/images/order', voucherImageController.reorder);
+router.patch('/:id/images/:imageId/primary', voucherImageController.setPrimary);
+router.delete('/:id/images/:imageId', voucherImageController.remove);
 
 // GET    /api/partner/vouchers/:id
 router.get('/:id', voucherController.getVoucherProgramById);

@@ -1,4 +1,5 @@
 import pool from '../../config/db.js';
+import { getVoucherImages } from './voucher-image.service.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -324,6 +325,7 @@ export const getVoucherProgramById = async (programId: number, partnerId: number
 
   const approval = await getLatestApproval(programId);
   const row = result.rows[0];
+  const images = await getVoucherImages(programId);
 
   return {
     ...row,
@@ -331,6 +333,8 @@ export const getVoucherProgramById = async (programId: number, partnerId: number
     admin_feedback: approval?.admin_feedback ?? null,
     submitted_at: approval?.submitted_at ?? null,
     reviewed_at: approval?.reviewed_at ?? null,
+    thumbnail: images.find((image) => image.isPrimary)?.url ?? images[0]?.url ?? null,
+    images,
   };
 };
 
