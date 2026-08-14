@@ -77,3 +77,117 @@ export const customerCartApi = {
       method: "DELETE"
     })
 };
+
+export interface CreateOrderItemInput {
+  cart_item_id?: number;
+  program_id: number;
+  quantity: number;
+}
+
+export interface RecipientInfoInput {
+  full_name: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface CreateOrderPayload {
+  items: CreateOrderItemInput[];
+  is_gift?: boolean;
+  recipient_info?: RecipientInfoInput;
+  payment_method?: string;
+}
+
+export interface CustomerVoucherItem {
+  issued_voucher_id: number;
+  voucher_code: string;
+  usage_status: 'UNUSED' | 'USED' | 'EXPIRED' | 'CANCELLED';
+  issued_at: string;
+  expires_at: string;
+  used_at?: string | null;
+  discount_amount: number;
+  program_id: number;
+  program_name: string;
+  description?: string;
+  terms_conditions?: string;
+  original_price: number;
+  sale_price: number;
+  use_start_at: string;
+  use_end_at: string;
+  category_name?: string;
+  business_name?: string;
+  partner_logo?: string;
+  applicable_branches?: string[];
+  applicable_addresses?: string[];
+  order_id?: number | null;
+  purchase_date?: string;
+  payment_method?: string;
+}
+
+export interface CreateOrderResponse {
+  success: boolean;
+  message: string;
+  order: {
+    order_id: number;
+    created_at: string;
+    total_amount: number;
+    payment_method: string;
+    payment_status: string;
+    order_status: string;
+    is_gift: boolean;
+    recipient_user_id: number;
+    vouchers: Array<{
+      issued_voucher_id: number;
+      voucher_code: string;
+      qr_code: string;
+      usage_status: string;
+      issued_at: string;
+      expires_at: string;
+      program_name: string;
+    }>;
+  };
+}
+
+export interface CustomerOrder {
+  order_id: number;
+  created_at: string;
+  total_amount: number;
+  payment_method: string;
+  payment_status: string;
+  order_status: string;
+  buyer_user_id: number;
+  recipient_user_id: number;
+  buyer_name?: string;
+  recipient_name?: string;
+  items: Array<{
+    order_item_id: number;
+    program_id: number;
+    program_name: string;
+    quantity: number;
+    unit_price: number;
+    line_total: number;
+  }>;
+}
+
+export const customerOrderApi = {
+  createOrder: (payload: CreateOrderPayload) =>
+    request<CreateOrderResponse>("/customer/orders", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  getOrders: (params?: { page?: number; limit?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return request<{ orders: CustomerOrder[]; pagination: any }>(`/customer/orders${query}`);
+  },
+  getOrderById: (orderId: number) =>
+    request<CustomerOrder>(`/customer/orders/${orderId}`),
+  getMyVouchers: (status?: string) => {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    return request<{ vouchers: CustomerVoucherItem[] }>(`/customer/orders/vouchers${query}`);
+  },
+  getMyVoucherById: (issuedVoucherId: number) =>
+    request<CustomerVoucherItem>(`/customer/orders/vouchers/${issuedVoucherId}`)
+};
+

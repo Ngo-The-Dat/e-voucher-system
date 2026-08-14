@@ -4,6 +4,8 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import Image from "next/image";
+import { QRCodeSVG } from "qrcode.react";
+
 import {
   AlertTriangle,
   ArrowLeft,
@@ -297,16 +299,15 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 Đưa mã này cho nhân viên
               </h2>
               <div className="bg-white p-4 rounded-lg shadow-sm border border-outline-variant mb-6 inline-block relative">
-                <Image
-                  width={192}
-                  height={192}
-                  className={`w-48 h-48 object-cover ${
+                <QRCodeSVG
+                  value={myVoucher.code}
+                  size={192}
+                  level="H"
+                  className={`${
                     myVoucher.status === "used" || myVoucher.status === "expired"
                       ? "opacity-20 blur-[1px]"
                       : ""
                   }`}
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuBc1dMvzRTy1x_Nj4nV-9QHwrCN1D0E7xvhAyhQEAv-bbwa8FkRddwxVioePc2Q8GoyOvhnwJR5KYILh6G5l_LxtVINdmlfj3XAuU3E8vpIM4mwhDWdgjnQXKEOJLpOYs_F3pyVzlmMLw8N8r8GLcm3JsTI6Y9P5RM_0-5MbzIO_RsnS-91UTxMfVE8D34wcyL47D5xneCQd5KUdbwBw4Zu3vINUWHww3Vvrp4v968VtLWaZ0G6aTIc"
-                  alt="Voucher QR Code"
                 />
                 {(myVoucher.status === "used" || myVoucher.status === "expired") && (
                   <div className="absolute inset-0 flex items-center justify-center">

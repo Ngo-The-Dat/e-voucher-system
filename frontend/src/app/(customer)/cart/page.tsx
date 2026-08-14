@@ -5,14 +5,15 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { ChevronRight } from "lucide-react";
+import { customerOrderApi, CreateOrderItemInput } from "@/lib/customer-api";
 
 import CartItemList from "@/components/customer/cart/CartItemList";
-import CartSummary from "@/components/customer/cart/CartSummary";
+import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
 import EmptyCart from "@/components/customer/cart/EmptyCart";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, updateCartQuantity, removeFromCart, checkout } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, checkout, refreshCart } = useApp();
 
   // Local page state
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(() => {
@@ -27,6 +28,15 @@ export default function CartPage() {
   const [discountPercent, setDiscountPercent] = useState(0);
   const [promoApplied, setPromoApplied] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Ví VNPay");
+
+  const [isGift, setIsGift] = useState(false);
+  const [recipientInfo, setRecipientInfo] = useState<RecipientState>({
+    full_name: "",
+    email: "",
+    phone: "",
+  });
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const toggleItem = (id: string) => {
     setSelectedItems((prev) => ({
@@ -61,14 +71,54 @@ export default function CartPage() {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     const itemsToCheckout = cart.filter((item) => selectedItems[item.voucher.id]);
     if (itemsToCheckout.length === 0) {
       alert("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
       return;
     }
 
-    // Run checkout for the selected items in state
+    if (isGift) {
+      if (!recipientInfo.full_name.trim()) {
+        alert("Vui lòng nhập tên người nhận khi mua làm quà tặng.");
+        return;
+      }
+      if (!recipientInfo.email.trim() && !recipientInfo.phone.trim()) {
+        alert("Vui lòng nhập Email hoặc Số điện thoại người nhận.");
+        return;
+      }
+    }
+
+    const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
+
+    if (token) {
+      try {
+        setIsSubmitting(true);
+        const apiItems: CreateOrderItemInput[] = itemsToCheckout.map((item) => ({
+          cart_item_id: item.cartItemId,
+          program_id: Number(item.voucher.id),
+          quantity: item.quantity,
+        }));
+
+        const response = await customerOrderApi.createOrder({
+          items: apiItems,
+          is_gift: isGift,
+          recipient_info: isGift ? recipientInfo : undefined,
+          payment_method: paymentMethod,
+        });
+
+        alert(response.message || "Tạo đơn hàng và phát hành voucher thành công!");
+        if (refreshCart) await refreshCart();
+        router.push("/my-vouchers");
+        return;
+      } catch (err: any) {
+        alert(err.message || "Không thể tạo đơn hàng. Vui lòng kiểm tra lại giỏ hàng.");
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
+    // Fallback to local state if offline or guest
     checkout(paymentMethod);
     router.push("/my-vouchers");
   };
@@ -122,7 +172,12 @@ export default function CartPage() {
             applyPromo={applyPromo}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
+            isGift={isGift}
+            setIsGift={setIsGift}
+            recipientInfo={recipientInfo}
+            setRecipientInfo={setRecipientInfo}
             handleCheckout={handleCheckout}
+            isSubmitting={isSubmitting}
           />
         </div>
       ) : (
