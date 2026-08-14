@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { VoucherItem } from "@/lib/types/voucher";
 import { partnerApi } from "@/lib/partner-api";
 
+const VOUCHER_SYNC_INTERVAL_MS = 10_000;
+
 /**
  * Hook lấy toàn bộ danh sách voucher.
  *
@@ -14,16 +16,35 @@ export function useVouchers() {
   const [vouchers, setVouchers] = useState<VoucherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  const reload = useCallback(async () => {
-    setIsLoading(true);
+  const fetchVouchers = useCallback(async (showLoading: boolean) => {
+    if (showLoading) setIsLoading(true);
     try { setVouchers(await partnerApi.getVouchers()); }
-    catch (error) { console.error("Failed to load partner vouchers", error); setVouchers([]); }
-    finally { setIsLoading(false); }
+    catch (error) {
+      console.error("Failed to load partner vouchers", error);
+      if (showLoading) setVouchers([]);
+    }
+    finally { if (showLoading) setIsLoading(false); }
   }, []);
+
+  const reload = useCallback(() => fetchVouchers(true), [fetchVouchers]);
+  const sync = useCallback(() => fetchVouchers(false), [fetchVouchers]);
 
   useEffect(() => {
     void reload();
-  }, [reload]);
+
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") void sync();
+    };
+    const intervalId = window.setInterval(syncWhenVisible, VOUCHER_SYNC_INTERVAL_MS);
+
+    window.addEventListener("focus", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
+  }, [reload, sync]);
 
   const updateVoucher = useCallback((updated: VoucherItem) => {
     setVouchers((prev) => {

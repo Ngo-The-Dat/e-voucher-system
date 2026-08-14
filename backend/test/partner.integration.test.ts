@@ -218,6 +218,45 @@ test('partner update endpoints reject malformed runtime payloads', async () => {
   assert.equal(emptyBranchName.status, 400);
 });
 
+test('voucher image endpoints validate authentication, files, ownership, status, and ordering payloads', async () => {
+  assert.equal((await request('/api/partner/vouchers/1/images', undefined, { method: 'POST' })).status, 401);
+  assert.equal((await request('/api/partner/vouchers/1/images', partnerToken, { method: 'POST' })).status, 400);
+
+  const unsupportedForm = new FormData();
+  unsupportedForm.append('image', new Blob(['not-an-image'], { type: 'text/plain' }), 'voucher.txt');
+  const unsupported = await fetch(`${baseUrl}/api/partner/vouchers/1/images`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${partnerToken}` },
+    body: unsupportedForm,
+  });
+  assert.equal(unsupported.status, 400);
+
+  const pngBytes = Uint8Array.from([137, 80, 78, 71, 13, 10, 26, 10]);
+  const otherPartnerForm = new FormData();
+  otherPartnerForm.append('image', new Blob([pngBytes], { type: 'image/png' }), 'voucher.png');
+  const otherPartner = await fetch(`${baseUrl}/api/partner/vouchers/5/images`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${partnerToken}` },
+    body: otherPartnerForm,
+  });
+  assert.equal(otherPartner.status, 404);
+
+  const publishedForm = new FormData();
+  publishedForm.append('image', new Blob([pngBytes], { type: 'image/png' }), 'voucher.png');
+  const published = await fetch(`${baseUrl}/api/partner/vouchers/1/images`, {
+    method: 'POST',
+    headers: { authorization: `Bearer ${partnerToken}` },
+    body: publishedForm,
+  });
+  assert.equal(published.status, 400);
+
+  const malformedOrder = await request('/api/partner/vouchers/1/images/order', partnerToken, {
+    method: 'PUT',
+    body: JSON.stringify({ image_ids: [1, 1] }),
+  });
+  assert.equal(malformedOrder.status, 400);
+});
+
 test('frontend reference endpoints return categories and redeem details', async () => {
   const categories = await request('/api/partner/vouchers/categories', partnerToken);
   assert.equal(categories.status, 200);

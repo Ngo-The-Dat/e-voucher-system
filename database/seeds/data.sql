@@ -5,7 +5,7 @@
 -- Clear existing data
 TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                reviews_feedback, issued_vouchers, order_items, orders, cart_items,
-               voucher_approval_requests, voucher_program_branches, voucher_programs,
+               voucher_approval_requests, voucher_program_images, voucher_program_branches, voucher_programs,
                partner_employees, branches, categories, partners, user_locks, users RESTART IDENTITY CASCADE;
 
 -- 1. Insert users (30 rows, exactly 1 ADMIN with user_id = 1)

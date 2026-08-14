@@ -12,6 +12,7 @@ DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
 DROP TABLE IF EXISTS cart_items CASCADE;
 DROP TABLE IF EXISTS voucher_approval_requests CASCADE;
+DROP TABLE IF EXISTS voucher_program_images CASCADE;
 DROP TABLE IF EXISTS voucher_program_branches CASCADE;
 DROP TABLE IF EXISTS voucher_programs CASCADE;
 DROP TABLE IF EXISTS partner_employees CASCADE;
