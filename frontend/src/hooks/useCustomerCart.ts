@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Voucher, MyVoucher, mockMyVouchers } from "@/data/mockData";
+import { Voucher, MyVoucher } from "@/data/mockData";
 import { customerCartApi, customerOrderApi, BackendCartItem, CustomerVoucherItem } from "@/lib/customer-api";
 
 export interface CartItem {
@@ -14,7 +14,7 @@ export interface CartItem {
 
 export function useCustomerCart() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>(mockMyVouchers);
+  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchBackendCart = useCallback(async () => {

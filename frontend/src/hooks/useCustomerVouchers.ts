@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Voucher, mockVouchers } from "@/data/mockData";
+import { Voucher } from "@/data/mockData";
 import { customerCatalogApi } from "@/lib/customer-api";
 
 export function useCustomerVouchers() {
@@ -12,14 +12,11 @@ export function useCustomerVouchers() {
     try {
       setIsLoading(true);
       const res = await customerCatalogApi.getVouchers({ limit: 100 });
-      if (res && res.vouchers && res.vouchers.length > 0) {
+      if (res && Array.isArray(res.vouchers)) {
         setVouchers(res.vouchers as Voucher[]);
-      } else {
-        setVouchers(mockVouchers);
       }
     } catch (e) {
-      console.warn("Không kết nối được catalog API, sử dụng dữ liệu mặc định:", e);
-      setVouchers(mockVouchers);
+      console.warn("Không kết nối được catalog API:", e);
     } finally {
       setIsLoading(false);
     }
