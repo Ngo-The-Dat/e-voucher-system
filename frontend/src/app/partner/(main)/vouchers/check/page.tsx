@@ -33,6 +33,7 @@ const mapLookupVoucher = (row: any): VoucherItem => ({
   discountAmount: Number(row.discount_amount ?? 0), issuedQuantity: 1,
   sellStartDate: "", sellEndDate: "", useStartDate: row.use_start_at,
   useEndDate: row.expires_at ?? row.use_end_at, displayStatus: "active", status: "approved",
+  thumbnail: null, images: [],
 });
 
 export default function CheckVoucherPage() {
