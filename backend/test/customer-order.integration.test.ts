@@ -117,7 +117,7 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(Number(detailData.order_id), createdOrderId);
 
   // 5. Get customer vouchers list (Kho voucher)
-  const vouchersRes = await request('/api/customer/orders/vouchers', customerToken);
+  const vouchersRes = await request('/api/customer/my-vouchers', customerToken);
   assert.equal(vouchersRes.status, 200);
   const vouchersData = (await vouchersRes.json()) as any;
   assert.ok(Array.isArray(vouchersData.vouchers));
@@ -125,7 +125,7 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.ok(issuedVoucher);
 
   // 6. Get single customer voucher detail by issued_voucher_id
-  const singleVoucherRes = await request(`/api/customer/orders/vouchers/${issuedVoucher.issued_voucher_id}`, customerToken);
+  const singleVoucherRes = await request(`/api/customer/my-vouchers/${issuedVoucher.issued_voucher_id}`, customerToken);
   assert.equal(singleVoucherRes.status, 200);
   const singleVoucherData = (await singleVoucherRes.json()) as any;
   assert.equal(singleVoucherData.issued_voucher_id, issuedVoucher.issued_voucher_id);
@@ -134,8 +134,8 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(singleVoucherData.order_status, 'CONFIRMED');
 });
 
-test('Customer Order API: get non-existent voucher returns 404', async () => {
-  const res = await request('/api/customer/orders/vouchers/99999999', customerToken);
+test('Customer Voucher API: get non-existent voucher returns 404', async () => {
+  const res = await request('/api/customer/my-vouchers/99999999', customerToken);
   assert.equal(res.status, 404);
 });
 

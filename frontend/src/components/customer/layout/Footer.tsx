@@ -12,7 +12,7 @@ export default function Footer() {
             Lumina Marketplace
           </Link>
           <p className="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant">
-            © 2024 Lumina Marketplace. Nền tảng voucher hàng đầu Việt Nam.
+            © 2026 Lumina Marketplace. Nền tảng voucher hàng đầu Việt Nam.
           </p>
         </div>
         <div className="flex flex-col gap-3">

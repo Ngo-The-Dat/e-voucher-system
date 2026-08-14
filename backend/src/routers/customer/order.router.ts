@@ -10,8 +10,6 @@ router.use(authenticate, requireRole('CUSTOMER'));
 
 router.post('/', orderController.createOrder);
 router.get('/', orderController.getOrders);
-router.get('/vouchers', orderController.getMyVouchers);
-router.get('/vouchers/:id', orderController.getMyVoucherById);
 router.get('/:orderId', orderController.getOrderById);
 
 export default router;

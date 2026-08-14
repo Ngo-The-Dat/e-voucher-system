@@ -4,16 +4,9 @@ if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://")) {
 }
 const API_BASE = envUrl;
 
-const DEMO_CUSTOMER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6IkNVU1RPTUVSIiwiZW1haWwiOiJ0aHVoYUBnbWFpbC5jb20iLCJpYXQiOjE3ODY2ODkwNDMsImV4cCI6MTc4NzI5Mzg0M30.KIV1Okf7vqD219oaP0YRXIdKQ35MIp7JC--t6myoWlA";
-
 const getStoredCustomerToken = (): string | null => {
   if (typeof window === "undefined") return null;
-  let token = localStorage.getItem("customer_access_token") || localStorage.getItem("token");
-  if (!token) {
-    token = DEMO_CUSTOMER_TOKEN;
-    localStorage.setItem("customer_access_token", token);
-  }
-  return token;
+  return localStorage.getItem("customer_access_token") || localStorage.getItem("token");
 };
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -39,6 +32,35 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   }
   return data as T;
 }
+
+export interface CustomerUser {
+  id: number;
+  full_name: string;
+  email: string;
+  phone?: string;
+  role: string;
+  status?: string;
+}
+
+export const customerAuthApi = {
+  login: (payload: { email: string; password: string }) =>
+    request<{ token: string; user: CustomerUser }>("/customer/auth/login", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  register: (payload: { full_name: string; email: string; phone?: string; password: string }) =>
+    request<{ message: string; token: string; user: CustomerUser }>("/customer/auth/register", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  getMe: () => request<CustomerUser>("/customer/auth/me"),
+  logout: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("customer_access_token");
+      localStorage.removeItem("token");
+    }
+  }
+};
 
 export interface BackendCartItem {
   cart_item_id: number;
@@ -185,6 +207,15 @@ export interface CustomerOrder {
   }>;
 }
 
+export const customerVoucherApi = {
+  getMyVouchers: (status?: string) => {
+    const query = status ? `?status=${encodeURIComponent(status)}` : "";
+    return request<{ vouchers: CustomerVoucherItem[] }>(`/customer/my-vouchers${query}`);
+  },
+  getMyVoucherById: (issuedVoucherId: number) =>
+    request<CustomerVoucherItem>(`/customer/my-vouchers/${issuedVoucherId}`)
+};
+
 export const customerOrderApi = {
   createOrder: (payload: CreateOrderPayload) =>
     request<CreateOrderResponse>("/customer/orders", {
@@ -200,12 +231,8 @@ export const customerOrderApi = {
   },
   getOrderById: (orderId: number) =>
     request<CustomerOrder>(`/customer/orders/${orderId}`),
-  getMyVouchers: (status?: string) => {
-    const query = status ? `?status=${encodeURIComponent(status)}` : "";
-    return request<{ vouchers: CustomerVoucherItem[] }>(`/customer/orders/vouchers${query}`);
-  },
-  getMyVoucherById: (issuedVoucherId: number) =>
-    request<CustomerVoucherItem>(`/customer/orders/vouchers/${issuedVoucherId}`)
+  getMyVouchers: (status?: string) => customerVoucherApi.getMyVouchers(status),
+  getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId)
 };
 
 export interface PublicVouchersFilter {

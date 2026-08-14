@@ -317,21 +317,21 @@ export const mockMyVouchers: MyVoucher[] = [
     id: "my-gogi",
     voucherId: "gogi-house-barbecue",
     code: "GOGI88X9",
-    datePurchased: "15/10/2024",
-    expiryDate: "30/11/2024",
+    datePurchased: "15/10/2026",
+    expiryDate: "30/11/2026",
     status: "unused",
-    orderNumber: "ORD-2024-9981",
+    orderNumber: "ORD-2026-9981",
     paymentMethod: "Ví VNPay"
   },
   {
     id: "my-grab",
     voucherId: "grab-discount-used", // custom local
     code: "GRAB20-XXX",
-    datePurchased: "10/10/2024",
-    expiryDate: "20/10/2024",
+    datePurchased: "10/10/2026",
+    expiryDate: "20/10/2026",
     status: "used",
-    dateUsed: "15/10/2024",
-    orderNumber: "ORD-2024-9912",
+    dateUsed: "15/10/2026",
+    orderNumber: "ORD-2026-9912",
     paymentMethod: "Thẻ Visa"
   }
 ];
