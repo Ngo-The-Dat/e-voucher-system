@@ -14,6 +14,8 @@ import { Branch } from "@/lib/types/profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
+const VOUCHER_STATUS_SYNC_INTERVAL_MS = 10_000;
+
 const toGalleryItems = (images: VoucherImage[]): GalleryImageItem[] => images.map((image) => ({
   id: image.id,
   url: image.url,
@@ -71,6 +73,35 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setGalleryImages(toGalleryItems(loaded.images));
     }).catch((error) => console.error("Failed to load voucher detail", error));
   }, [id]);
+
+  useEffect(() => {
+    if (voucher?.status !== "pending") return;
+
+    let disposed = false;
+    const syncStatus = async () => {
+      if (document.visibilityState !== "visible") return;
+      try {
+        const loaded = await partnerApi.getVoucher(id);
+        if (!disposed) {
+          setVoucher(loaded);
+          setGalleryImages(toGalleryItems(loaded.images));
+        }
+      } catch (error) {
+        console.error("Failed to sync voucher status", error);
+      }
+    };
+    const intervalId = window.setInterval(() => void syncStatus(), VOUCHER_STATUS_SYNC_INTERVAL_MS);
+    const syncWhenVisible = () => void syncStatus();
+
+    window.addEventListener("focus", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+    return () => {
+      disposed = true;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
+  }, [id, voucher?.status]);
 
   if (!voucher) {
     return (
