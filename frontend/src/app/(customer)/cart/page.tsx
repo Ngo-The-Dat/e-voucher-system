@@ -89,7 +89,11 @@ export default function CartPage() {
       }
     }
 
-    const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
+    if (!token) {
+      alert("Vui lòng đăng nhập để thực hiện thanh toán đơn hàng.");
+      router.push("/login");
+      return;
+    }
 
     const apiItems: CreateOrderItemInput[] = itemsToCheckout
       .map((item) => ({
@@ -99,7 +103,7 @@ export default function CartPage() {
       }))
       .filter((item) => !isNaN(item.program_id) && item.program_id > 0);
 
-    if (token && apiItems.length > 0) {
+    if (apiItems.length > 0) {
       try {
         setIsSubmitting(true);
         const response = await customerOrderApi.createOrder({
@@ -114,21 +118,15 @@ export default function CartPage() {
         router.push("/my-vouchers");
         return;
       } catch (err: any) {
-        console.warn("API đơn hàng gặp lỗi, sử dụng fallback thanh toán cục bộ:", err);
-        // Nếu là lỗi nghiệp vụ từ backend (ví dụ hết hàng/hết hạn), thông báo cho người dùng
-        if (err.message && !err.message.includes("fetch") && !err.message.includes("kết nối")) {
+        if (err.message) {
           alert(err.message);
-          setIsSubmitting(false);
-          return;
+        } else {
+          alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
         }
       } finally {
         setIsSubmitting(false);
       }
     }
-
-    // Fallback cho dữ liệu giả lập (mock data) hoặc khi chưa đăng nhập API
-    checkout(paymentMethod);
-    router.push("/my-vouchers");
   };
 
   // Calculations
