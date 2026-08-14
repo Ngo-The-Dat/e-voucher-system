@@ -4,7 +4,7 @@ if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://")) {
 }
 const API_BASE = envUrl;
 
-const getStoredCustomerToken = (): string | null => {
+export const getStoredCustomerToken = (): string | null => {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("customer_access_token") || localStorage.getItem("token");
 };

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import { ChevronRight } from "lucide-react";
-import { customerOrderApi, CreateOrderItemInput } from "@/lib/customer-api";
+import { customerOrderApi, CreateOrderItemInput, getStoredCustomerToken } from "@/lib/customer-api";
 
 import CartItemList from "@/components/customer/cart/CartItemList";
 import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
@@ -89,6 +89,7 @@ export default function CartPage() {
       }
     }
 
+    const token = getStoredCustomerToken();
     if (!token) {
       alert("Vui lòng đăng nhập để thực hiện thanh toán đơn hàng.");
       router.push("/login");
