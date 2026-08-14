@@ -14,7 +14,7 @@ export interface CartItem {
 
 export function useCustomerCart() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>([]);
+  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>(mockMyVouchers);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchBackendCart = useCallback(async () => {
@@ -65,14 +65,12 @@ export function useCustomerCart() {
 
     try {
       const res = await customerOrderApi.getMyVouchers();
-      if (res.vouchers && res.vouchers.length > 0) {
+      if (res && res.vouchers) {
         const mappedMyVouchers: MyVoucher[] = res.vouchers.map((item: CustomerVoucherItem) => {
-          let status: "unused" | "used" | "expiring" | "expired" = "unused";
+          let status: MyVoucher["status"] = "unused";
           if (item.usage_status === "USED") status = "used";
-          else if (item.usage_status === "EXPIRED" || item.usage_status === "CANCELLED") status = "expired";
-          else if (item.expires_at && new Date(item.expires_at).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000) {
-            status = "expiring";
-          }
+          else if (item.usage_status === "EXPIRED") status = "expired";
+          else if (item.usage_status === "CANCELLED") status = "expired";
 
           return {
             id: String(item.issued_voucher_id),
@@ -81,9 +79,8 @@ export function useCustomerCart() {
             datePurchased: item.purchase_date ? new Date(item.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
             expiryDate: item.expires_at ? new Date(item.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
             status,
-            orderNumber: item.order_id ? `ORD-${item.order_id}` : "ORD-ONLINE",
+            orderNumber: item.order_id ? `ORD-${item.order_id}` : "ORD-SYSTEM",
             paymentMethod: item.payment_method || "Ví VNPay",
-            dateUsed: item.used_at ? new Date(item.used_at).toLocaleDateString("vi-VN") : undefined,
           };
         });
         setMyVouchers(mappedMyVouchers);
@@ -91,12 +88,12 @@ export function useCustomerCart() {
       }
       return false;
     } catch (e) {
-      console.warn("Chưa lấy được kho voucher từ backend, sử dụng mockData:", e);
+      console.warn("Chưa lấy được kho voucher từ backend API:", e);
       return false;
     }
   }, []);
 
-  // Load cart & my vouchers on init
+  // Load cart and my vouchers on init
   useEffect(() => {
     fetchBackendCart().then((success) => {
       if (!success) {
@@ -144,7 +141,6 @@ export function useCustomerCart() {
       }
     }
 
-    // Fallback to local state if offline or guest
     setCart((prevCart) => {
       const existingIndex = prevCart.findIndex((item) => item.voucher.id === voucher.id);
       const newCart = [...prevCart];
@@ -236,7 +232,7 @@ export function useCustomerCart() {
 
     const newPurchasedVouchers: MyVoucher[] = cart.map((item, index) => {
       const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let code = "EV-";
+      let code = "";
       for (let i = 0; i < 8; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }

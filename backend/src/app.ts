@@ -1,11 +1,9 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import { rateLimit } from 'express-rate-limit';
 import apiRouter from './routers/index.js';
 import type { ErrorRequestHandler } from 'express';
-import multer from 'multer';
 
 const app = express();
 
@@ -28,14 +26,6 @@ app.get('/health', (_req, res) => {
 });
 
 const handleError: ErrorRequestHandler = (err, _req, res, _next) => {
-  if (err instanceof multer.MulterError) {
-    if (err.code === 'LIMIT_FILE_SIZE') {
-      res.status(413).json({ message: 'Ảnh không được vượt quá 5 MB.' });
-      return;
-    }
-    res.status(400).json({ message: 'Dữ liệu upload ảnh không hợp lệ.' });
-    return;
-  }
   if (err instanceof SyntaxError && 'body' in err) {
     res.status(400).json({ message: 'JSON không hợp lệ.' });
     return;

@@ -33,11 +33,10 @@ import customerCatalogRouter from './customer/catalog.router.js';
 const router = Router();
 
 // ─── Customer Routes ─────────────────────────────────────────────────────────
-router.use('/customer/vouchers', customerCatalogRouter);
 router.use('/customer/reviews', customerReviewRouter);
 router.use('/customer/cart', customerCartRouter);
 router.use('/customer/orders', customerOrderRouter);
-
+router.use('/customer', customerCatalogRouter);
 
 
 // ─── Partner Auth (Public) ────────────────────────────────────────────────────

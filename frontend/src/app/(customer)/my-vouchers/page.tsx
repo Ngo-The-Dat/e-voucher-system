@@ -24,8 +24,19 @@ export default function MyVouchersPage() {
   // Filter logic
   const filteredMyVouchers = myVouchers.filter((item) => {
     // Lookup associated base voucher details
-    const baseVoucher = vouchers.find((v) => v.id === item.voucherId);
-    if (!baseVoucher) return false;
+    const baseVoucher = vouchers.find((v) => v.id === item.voucherId) || {
+      id: item.voucherId,
+      title: `Voucher #${item.voucherId}`,
+      brand: "Thương hiệu đối tác",
+      brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      category: "Ưu đãi",
+      thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
+      images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
+      price: 0,
+      rating: 5,
+      reviewsCount: 0,
+      soldCount: "0",
+    };
 
     // 1. Filter by Tab Status
     if (activeTab !== "all" && item.status !== activeTab) {
@@ -143,12 +154,24 @@ export default function MyVouchersPage() {
           {filteredMyVouchers.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
               {filteredMyVouchers.map((item) => {
-                const baseVoucher = vouchers.find((v) => v.id === item.voucherId);
+                const baseVoucher = vouchers.find((v) => v.id === item.voucherId) || {
+                  id: item.voucherId,
+                  title: `Voucher #${item.voucherId}`,
+                  brand: "Thương hiệu đối tác",
+                  brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+                  category: "Ưu đãi",
+                  thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
+                  images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
+                  price: 0,
+                  rating: 5,
+                  reviewsCount: 0,
+                  soldCount: "0",
+                };
                 return (
                   <MyVoucherCard
                     key={item.id}
                     myVoucher={item}
-                    voucher={baseVoucher!}
+                    voucher={baseVoucher}
                     onOpenReview={(mv, v) => setSelectedReviewItem({ myVoucher: mv, voucher: v })}
                   />
                 );

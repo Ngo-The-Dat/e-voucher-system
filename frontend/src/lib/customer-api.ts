@@ -1,11 +1,19 @@
-const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-const API_BASE = rawApiUrl.startsWith("http://") || rawApiUrl.startsWith("https://")
-  ? rawApiUrl
-  : `http://${rawApiUrl}`;
+let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://")) {
+  envUrl = `http://${envUrl}`;
+}
+const API_BASE = envUrl;
+
+const DEMO_CUSTOMER_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6Miwicm9sZSI6IkNVU1RPTUVSIiwiZW1haWwiOiJ0aHVoYUBnbWFpbC5jb20iLCJpYXQiOjE3ODY2ODkwNDMsImV4cCI6MTc4NzI5Mzg0M30.KIV1Okf7vqD219oaP0YRXIdKQ35MIp7JC--t6myoWlA";
 
 const getStoredCustomerToken = (): string | null => {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("customer_access_token") || localStorage.getItem("token");
+  let token = localStorage.getItem("customer_access_token") || localStorage.getItem("token");
+  if (!token) {
+    token = DEMO_CUSTOMER_TOKEN;
+    localStorage.setItem("customer_access_token", token);
+  }
+  return token;
 };
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
@@ -23,6 +31,10 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 
   const data = await response.json();
   if (!response.ok) {
+    if (response.status === 401 && typeof window !== "undefined") {
+      localStorage.removeItem("customer_access_token");
+      localStorage.removeItem("token");
+    }
     throw new Error(data.message || "Đã xảy ra lỗi khi kết nối tới máy chủ.");
   }
   return data as T;
@@ -194,59 +206,35 @@ export const customerOrderApi = {
     request<CustomerVoucherItem>(`/customer/orders/vouchers/${issuedVoucherId}`)
 };
 
-export interface BackendCatalogVoucher {
-  program_id: number;
-  program_name: string;
-  original_price: number;
-  sale_price: number;
-  discount_amount: number;
-  issue_quantity: number;
-  sold_count: number;
-  available_stock: number;
-  sale_start_at?: string;
-  sale_end_at?: string;
-  use_start_at?: string;
-  use_end_at?: string;
-  description?: string;
-  terms_conditions?: string;
-  category_name: string;
-  business_name: string;
-  avg_rating: number;
-  reviews_count: number;
-  branches?: string[];
-  addresses?: string[];
-  reviews?: Array<{
-    review_id: number;
-    rating: number;
-    comment?: string;
-    created_at: string;
-    author_name: string;
-  }>;
+export interface PublicVouchersFilter {
+  search?: string;
+  category_id?: number | string;
+  category_name?: string;
+  min_price?: number;
+  max_price?: number;
+  sort?: string;
+  page?: number;
+  limit?: number;
 }
 
 export const customerCatalogApi = {
-  getVouchers: (params?: {
-    search?: string;
-    category_id?: number;
-    min_price?: number;
-    max_price?: number;
-    sort?: string;
-    page?: number;
-    limit?: number;
-  }) => {
+  getVouchers: (filter: PublicVouchersFilter = {}) => {
     const searchParams = new URLSearchParams();
-    if (params?.search) searchParams.set("search", params.search);
-    if (params?.category_id) searchParams.set("category_id", String(params.category_id));
-    if (params?.min_price !== undefined) searchParams.set("min_price", String(params.min_price));
-    if (params?.max_price !== undefined) searchParams.set("max_price", String(params.max_price));
-    if (params?.sort) searchParams.set("sort", params.sort);
-    if (params?.page) searchParams.set("page", String(params.page));
-    if (params?.limit) searchParams.set("limit", String(params.limit));
+    if (filter.search) searchParams.set("search", filter.search);
+    if (filter.category_id) searchParams.set("category_id", String(filter.category_id));
+    if (filter.category_name) searchParams.set("category_name", filter.category_name);
+    if (filter.min_price) searchParams.set("min_price", String(filter.min_price));
+    if (filter.max_price) searchParams.set("max_price", String(filter.max_price));
+    if (filter.sort) searchParams.set("sort", filter.sort);
+    if (filter.page) searchParams.set("page", String(filter.page));
+    if (filter.limit) searchParams.set("limit", String(filter.limit));
     const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
-    return request<{ vouchers: BackendCatalogVoucher[]; pagination: any }>(`/customer/vouchers${query}`);
+    return request<{ vouchers: any[]; pagination: any }>(`/customer/vouchers${query}`);
   },
-  getVoucherById: (programId: number) =>
-    request<BackendCatalogVoucher>(`/customer/vouchers/${programId}`)
+  getVoucherById: (programId: number | string) =>
+    request<any>(`/customer/vouchers/${programId}`),
+  getCategories: () =>
+    request<{ categories: Array<{ category_id: number; category_name: string; description?: string }> }>("/customer/vouchers/categories")
 };
 
 

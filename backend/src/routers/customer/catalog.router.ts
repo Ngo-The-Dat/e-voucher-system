@@ -3,8 +3,9 @@ import * as catalogController from '../../controllers/customer/catalog.controlle
 
 const router = Router();
 
-// Public routes (Không yêu cầu đăng nhập)
-router.get('/', catalogController.getVouchers);
-router.get('/:id', catalogController.getVoucherById);
+// Public routes cho phép mọi người dùng (kể cả chưa đăng nhập) khám phá voucher và danh mục
+router.get('/vouchers', catalogController.getVouchers);
+router.get('/vouchers/categories', catalogController.getCategories);
+router.get('/vouchers/:id', catalogController.getVoucherById);
 
 export default router;

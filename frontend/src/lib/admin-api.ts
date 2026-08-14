@@ -1,7 +1,4 @@
-const rawAdminApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
-const API_URL = rawAdminApiUrl.startsWith("http://") || rawAdminApiUrl.startsWith("https://")
-  ? rawAdminApiUrl
-  : `http://${rawAdminApiUrl}`;
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
 
 export class AdminApiError extends Error {
   constructor(public status: number, message: string) {

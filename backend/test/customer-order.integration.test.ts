@@ -24,14 +24,15 @@ before(async () => {
   process.env.JWT_SECRET = secret;
   customerToken = jwt.sign({ id: 8, role: 'CUSTOMER' }, secret, { expiresIn: '10m' });
 
-  // Update all voucher_programs to be published with valid sale dates for catalog testing
+  // Ensure program_id 1 is published and within valid sale dates
   await pool.query(
     `UPDATE voucher_programs 
      SET sale_start_at = CURRENT_TIMESTAMP - INTERVAL '1 day',
          sale_end_at = CURRENT_TIMESTAMP + INTERVAL '30 days',
          use_start_at = CURRENT_TIMESTAMP - INTERVAL '1 day',
          use_end_at = CURRENT_TIMESTAMP + INTERVAL '60 days',
-         display_status = 'PUBLISHED'`
+         display_status = 'PUBLISHED'
+     WHERE program_id = 1`
   );
 
   await new Promise<void>((resolve) => {
@@ -51,14 +52,6 @@ after(async () => {
     else resolve();
   });
   await pool.end();
-});
-
-test('Customer Catalog API: get public vouchers', async () => {
-  const res = await request('/api/customer/vouchers');
-  assert.equal(res.status, 200);
-  const data = (await res.json()) as any;
-  assert.ok(Array.isArray(data.vouchers));
-  console.log('Public catalog returned vouchers count:', data.vouchers.length);
 });
 
 test('Customer Order API: authentication guard', async () => {

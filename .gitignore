@@ -35,3 +35,9 @@ frontend/frontend-release.tar.gz
 
 Database specification.docx
 plan.md
+
+# Temporary scratch scripts & testing files
+scratch/
+backend/scratch/
+frontend/scratch/
+*.scratch.*
