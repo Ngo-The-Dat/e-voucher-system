@@ -136,6 +136,8 @@ export interface CustomerVoucherItem {
   order_id?: number | null;
   purchase_date?: string;
   payment_method?: string;
+  payment_status?: string;
+  order_status?: string;
 }
 
 export interface CreateOrderResponse {

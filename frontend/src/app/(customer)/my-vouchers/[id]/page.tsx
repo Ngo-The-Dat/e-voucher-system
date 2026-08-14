@@ -1,10 +1,11 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
+import { customerOrderApi, CustomerVoucherItem } from "@/lib/customer-api";
 
 import {
   AlertTriangle,
@@ -19,7 +20,8 @@ import {
   Check,
   Star,
   HelpCircle,
-  CheckSquare
+  CheckSquare,
+  FileText
 } from "lucide-react";
 
 import ReviewModal from "@/components/customer/ReviewModal";
@@ -31,43 +33,85 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
   const [copied, setCopied] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [apiVoucher, setApiVoucher] = useState<CustomerVoucherItem | null>(null);
 
+  useEffect(() => {
+    const numericId = Number(id);
+    if (!isNaN(numericId) && numericId > 0) {
+      customerOrderApi
+        .getMyVoucherById(numericId)
+        .then((data) => {
+          if (data) setApiVoucher(data);
+        })
+        .catch((err) => {
+          console.warn("Không lấy được voucher từ API backend:", err);
+        });
+    }
+  }, [id]);
 
-  // Find the purchased voucher
-  const myVoucher = myVouchers.find((mv) => mv.id === id);
+  // Find the purchased voucher from context as fallback
+  const fallbackMyVoucher = myVouchers.find((mv) => mv.id === id);
+  const fallbackVoucher = fallbackMyVoucher ? vouchers.find((v) => v.id === fallbackMyVoucher.voucherId) : undefined;
 
-  if (!myVoucher) {
+  // Normalized display object
+  const displayVoucher = apiVoucher
+    ? {
+        id: String(apiVoucher.issued_voucher_id),
+        code: apiVoucher.voucher_code,
+        status:
+          apiVoucher.usage_status === "USED"
+            ? "used"
+            : apiVoucher.usage_status === "EXPIRED" || apiVoucher.usage_status === "CANCELLED"
+            ? "expired"
+            : "unused",
+        title: apiVoucher.program_name,
+        brand: apiVoucher.business_name || "Thương hiệu đối tác",
+        brandLogo: apiVoucher.partner_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+        category: apiVoucher.category_name || "Ưu đãi",
+        datePurchased: apiVoucher.purchase_date ? new Date(apiVoucher.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
+        expiryDate: apiVoucher.expires_at ? new Date(apiVoucher.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
+        orderNumber: apiVoucher.order_id ? `ORD-${apiVoucher.order_id}` : "ORD-SYSTEM",
+        paymentMethod: apiVoucher.payment_method || "Ví VNPay",
+        paymentStatus: apiVoucher.payment_status || "PAID",
+        price: apiVoucher.sale_price || 0,
+        originalPrice: apiVoucher.original_price || 0,
+        description: apiVoucher.description || apiVoucher.program_name,
+        termsConditions: apiVoucher.terms_conditions,
+        branches: apiVoucher.applicable_branches && apiVoucher.applicable_branches.length > 0 ? apiVoucher.applicable_branches : ["Áp dụng toàn hệ thống chi nhánh đối tác."],
+        addresses: apiVoucher.applicable_addresses && apiVoucher.applicable_addresses.length > 0 ? apiVoucher.applicable_addresses : ["Xem chi tiết tại điểm bán."]
+      }
+    : fallbackMyVoucher && fallbackVoucher
+    ? {
+        id: fallbackMyVoucher.id,
+        code: fallbackMyVoucher.code,
+        status: fallbackMyVoucher.status,
+        title: fallbackVoucher.title,
+        brand: fallbackVoucher.brand,
+        brandLogo: fallbackVoucher.brandLogo,
+        category: fallbackVoucher.category,
+        datePurchased: fallbackMyVoucher.datePurchased,
+        expiryDate: fallbackMyVoucher.expiryDate,
+        orderNumber: fallbackMyVoucher.orderNumber,
+        paymentMethod: fallbackMyVoucher.paymentMethod,
+        paymentStatus: "PAID",
+        price: fallbackVoucher.price,
+        originalPrice: fallbackVoucher.originalPrice || fallbackVoucher.price,
+        description: fallbackVoucher.description || fallbackVoucher.title,
+        termsConditions: fallbackVoucher.conditions?.join("\n"),
+        branches: [fallbackVoucher.location || "Áp dụng toàn quốc."],
+        addresses: [fallbackVoucher.location || "Xem tại chi nhánh."]
+      }
+    : null;
+
+  if (!displayVoucher) {
     return (
       <main className="max-w-container-max mx-auto px-margin-mobile py-20 flex flex-col items-center justify-center text-center">
         <AlertTriangle className="w-16 h-16 text-outline mb-4" />
         <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">
-          Không tìm thấy đơn hàng voucher
+          Không tìm thấy voucher đã mua
         </h1>
         <p className="font-body-md text-body-md text-on-surface-variant mb-8">
-          Voucher đã mua này không tồn tại hoặc tài khoản không có quyền truy cập.
-        </p>
-        <Link
-          href="/my-vouchers"
-          className="px-6 py-3 bg-primary text-on-primary rounded-lg font-semibold"
-        >
-          Quay lại danh sách
-        </Link>
-      </main>
-    );
-  }
-
-  // Find the associated original voucher details
-  const voucher = vouchers.find((v) => v.id === myVoucher.voucherId);
-
-  if (!voucher) {
-    return (
-      <main className="max-w-container-max mx-auto px-margin-mobile py-20 flex flex-col items-center justify-center text-center">
-        <AlertTriangle className="w-16 h-16 text-outline mb-4" />
-        <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">
-          Dữ liệu gốc bị lỗi
-        </h1>
-        <p className="font-body-md text-body-md text-on-surface-variant mb-8">
-          Voucher gốc liên kết với mã này không còn tồn tại.
+          Voucher này không tồn tại hoặc bạn không có quyền truy cập.
         </p>
         <Link
           href="/my-vouchers"
@@ -80,14 +124,14 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
   }
 
   const handleCopyCode = () => {
-    navigator.clipboard.writeText(myVoucher.code);
+    navigator.clipboard.writeText(displayVoucher.code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   const handleMarkAsUsed = () => {
-    if (myVoucher.status === "unused" || myVoucher.status === "expiring") {
-      markAsUsed(myVoucher.id);
+    if (displayVoucher.status === "unused") {
+      markAsUsed(displayVoucher.id);
     }
   };
 
@@ -104,19 +148,6 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
         </Link>
       </div>
 
-      {/* Warning Banner for expiring items */}
-      {(myVoucher.status === "expiring" || myVoucher.status === "unused") && (
-        <div className="bg-error-container text-on-error-container p-4 rounded-lg flex items-start md:items-center gap-4 shadow-sm border border-error/20">
-          <Clock className="w-5 h-5 text-error shrink-0" />
-          <div className="flex-grow">
-            <p className="font-label-md text-label-md font-bold text-error">Voucher sắp hết hạn!</p>
-            <p className="font-body-md text-body-md text-sm mt-1">
-              Vui lòng sử dụng voucher này trước ngày {myVoucher.expiryDate} để tránh mất quyền lợi.
-            </p>
-          </div>
-        </div>
-      )}
-
       {/* Two Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
         {/* Left Column: Details (Span 8) */}
@@ -131,8 +162,8 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 width={128}
                 height={128}
                 className="w-full h-full object-contain"
-                src={voucher.brandLogo}
-                alt={voucher.brand}
+                src={displayVoucher.brandLogo}
+                alt={displayVoucher.brand}
               />
             </div>
 
@@ -140,28 +171,22 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
             <div className="flex flex-col flex-grow justify-center z-10">
               <div className="flex flex-wrap items-center gap-3 mb-2">
                 <span className="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm uppercase tracking-wider font-bold">
-                  {voucher.category}
+                  {displayVoucher.category}
                 </span>
 
-                {myVoucher.status === "unused" && (
+                {displayVoucher.status === "unused" && (
                   <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
                     <CheckCircle2 className="w-4 h-4" />
                     Chưa sử dụng
                   </span>
                 )}
-                {myVoucher.status === "used" && (
+                {displayVoucher.status === "used" && (
                   <span className="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
                     <CheckCircle2 className="w-4 h-4" />
                     Đã sử dụng
                   </span>
                 )}
-                {myVoucher.status === "expiring" && (
-                  <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
-                    <Clock className="w-4 h-4" />
-                    Sắp hết hạn
-                  </span>
-                )}
-                {myVoucher.status === "expired" && (
+                {displayVoucher.status === "expired" && (
                   <span className="bg-surface-dim text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
                     <XCircle className="w-4 h-4" />
                     Đã hết hạn
@@ -169,10 +194,10 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 )}
               </div>
               <h1 className="font-headline-lg text-headline-lg font-bold text-on-surface mb-2">
-                {voucher.title}
+                {displayVoucher.title}
               </h1>
               <p className="font-title-md text-title-md text-on-surface-variant font-semibold mb-4">
-                Thương hiệu: {voucher.brand}
+                Thương hiệu: {displayVoucher.brand}
               </p>
               <div className="grid grid-cols-2 gap-4 mt-auto border-t border-outline-variant/30 pt-4">
                 <div>
@@ -180,7 +205,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                     Ngày mua
                   </p>
                   <p className="font-body-md text-body-md font-semibold text-on-surface">
-                    {myVoucher.datePurchased}
+                    {displayVoucher.datePurchased}
                   </p>
                 </div>
                 <div>
@@ -189,7 +214,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   </p>
                   <p className="font-body-md text-body-md font-bold text-error flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    {myVoucher.expiryDate}
+                    {displayVoucher.expiryDate}
                   </p>
                 </div>
               </div>
@@ -205,7 +230,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 Điều kiện sử dụng
               </h3>
               <ul className="font-body-md text-body-md space-y-3 text-on-surface-variant">
-                {(voucher.conditions || [
+                {(displayVoucher.termsConditions ? displayVoucher.termsConditions.split("\n") : [
                   "Áp dụng cho mọi chi nhánh.",
                   "Không có giá trị quy đổi thành tiền mặt."
                 ]).map((cond, i) => (
@@ -224,32 +249,32 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 Hướng dẫn sử dụng
               </h3>
               <ol className="font-body-md text-body-md space-y-4 text-on-surface-variant relative before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-outline-variant">
-                {(voucher.guideSteps || [
-                  "Đến cửa hàng.",
-                  "Đưa mã QR cho nhân viên thu ngân.",
-                  "Áp dụng ưu đãi."
-                ]).map((step, idx) => {
-                  const parts = step.split(":");
-                  const stepText = parts.length > 1 ? parts[1] : parts[0];
-
-                  return (
-                    <li key={idx} className="flex gap-4 relative">
-                      <div className="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs flex-shrink-0 z-10 ring-4 ring-surface">
-                        {idx + 1}
-                      </div>
-                      <div>{stepText.trim()}</div>
-                    </li>
-                  );
-                })}
+                {[
+                  "Đến cửa hàng thuộc danh sách chi nhánh áp dụng.",
+                  "Xuất trình mã QR Code hoặc mã Voucher Code cho nhân viên thu ngân.",
+                  "Nhân viên quét mã và áp dụng ưu đãi cho hóa đơn của bạn."
+                ].map((step, idx) => (
+                  <li key={idx} className="flex gap-4 relative">
+                    <div className="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs flex-shrink-0 z-10 ring-4 ring-surface">
+                      {idx + 1}
+                    </div>
+                    <div>{step}</div>
+                  </li>
+                ))}
               </ol>
             </div>
           </div>
 
-          {/* Location & Order details */}
-          <div className="bg-surface rounded-xl shadow-sm border border-outline-variant p-6">
+          {/* Digital Receipt Card (Biên lai đơn hàng - BR-CUS-07) */}
+          <div className="bg-surface rounded-xl shadow-sm border border-outline-variant p-6 relative overflow-hidden">
+            {/* Payment Stamp */}
+            <div className="absolute top-4 right-4 rotate-12 border-2 border-primary/30 text-primary px-4 py-1 rounded font-bold uppercase tracking-widest text-xs select-none">
+              {displayVoucher.paymentStatus === "PAID" ? "Đã Thanh Toán" : "Thanh Toán Thất Bại"}
+            </div>
+
             <h3 className="font-title-md text-title-md font-bold flex items-center gap-2 mb-4 text-on-surface">
-              <Store className="w-5 h-5 text-primary" />
-              Địa điểm áp dụng &amp; Thông tin đơn hàng
+              <FileText className="w-5 h-5 text-primary" />
+              Biên lai thanh toán &amp; Chi nhánh áp dụng
             </h3>
             <div className="flex flex-col md:flex-row gap-8">
               <div className="flex-1">
@@ -257,31 +282,37 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   Chi nhánh áp dụng:
                 </h4>
                 <ul className="font-body-md text-body-md space-y-2 text-on-surface-variant">
-                  <li className="flex items-start gap-2">
-                    <MapPin className="w-4 h-4 mt-1 shrink-0" />
-                    <span>{voucher.location || "Áp dụng toàn quốc."}</span>
-                  </li>
+                  {displayVoucher.branches.map((b, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <MapPin className="w-4 h-4 mt-1 shrink-0 text-primary" />
+                      <span>{b}</span>
+                    </li>
+                  ))}
                 </ul>
               </div>
               <div className="w-px bg-outline-variant hidden md:block" />
               <div className="flex-1">
                 <h4 className="font-label-md text-label-md font-bold mb-2 text-on-surface">
-                  Thông tin thanh toán:
+                  Thông tin hóa đơn biên lai:
                 </h4>
                 <div className="space-y-1 font-body-md text-body-md text-on-surface-variant">
                   <div className="flex justify-between">
                     <span>Mã đơn hàng:</span>
-                    <span className="font-medium text-on-surface">{myVoucher.orderNumber}</span>
+                    <span className="font-medium text-on-surface">{displayVoucher.orderNumber}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Ngày thanh toán:</span>
                     <span className="font-medium text-on-surface">
-                      {myVoucher.datePurchased}
+                      {displayVoucher.datePurchased}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Phương thức:</span>
-                    <span className="font-medium text-on-surface">{myVoucher.paymentMethod}</span>
+                    <span>Phương thức thanh toán:</span>
+                    <span className="font-medium text-on-surface">{displayVoucher.paymentMethod}</span>
+                  </div>
+                  <div className="flex justify-between border-t border-outline-variant/40 pt-2 mt-2 font-bold">
+                    <span>Giá mua voucher:</span>
+                    <span className="text-primary">{displayVoucher.price.toLocaleString("vi-VN")} đ</span>
                   </div>
                 </div>
               </div>
@@ -300,19 +331,19 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
               </h2>
               <div className="bg-white p-4 rounded-lg shadow-sm border border-outline-variant mb-6 inline-block relative">
                 <QRCodeSVG
-                  value={myVoucher.code}
+                  value={displayVoucher.code}
                   size={192}
                   level="H"
                   className={`${
-                    myVoucher.status === "used" || myVoucher.status === "expired"
+                    displayVoucher.status === "used" || displayVoucher.status === "expired"
                       ? "opacity-20 blur-[1px]"
                       : ""
                   }`}
                 />
-                {(myVoucher.status === "used" || myVoucher.status === "expired") && (
+                {(displayVoucher.status === "used" || displayVoucher.status === "expired") && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="bg-inverse-surface/90 text-surface-bright px-4 py-2 rounded-lg font-bold text-sm shadow-md uppercase tracking-wider">
-                      {myVoucher.status === "used" ? "Đã sử dụng" : "Đã hết hạn"}
+                      {displayVoucher.status === "used" ? "Đã sử dụng" : "Đã hết hạn"}
                     </span>
                   </div>
                 )}
@@ -325,7 +356,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 </p>
                 <div className="flex items-center justify-between bg-surface-container-low border border-outline-variant rounded-lg p-3">
                   <span className="font-headline-lg text-headline-lg font-bold text-primary tracking-widest font-mono select-all">
-                    {myVoucher.code}
+                    {displayVoucher.code}
                   </span>
                   <button
                     onClick={handleCopyCode}
@@ -342,7 +373,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
               {/* Action buttons */}
               <div className="w-full flex flex-col gap-3">
-                {(myVoucher.status === "unused" || myVoucher.status === "expiring") ? (
+                {displayVoucher.status === "unused" ? (
                   <button
                     onClick={handleMarkAsUsed}
                     className="w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded-lg font-bold shadow-sm hover:opacity-95 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
@@ -391,11 +422,11 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
       <ReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}
-        voucherTitle={voucher.title}
-        voucherCode={myVoucher.code}
+        voucherTitle={displayVoucher.title}
+        voucherCode={displayVoucher.code}
         onSubmit={(rating, reviewContent, complaintContent) => {
           addReview(
-            voucher.id,
+            displayVoucher.id,
             "Khách hàng",
             rating,
             reviewContent,

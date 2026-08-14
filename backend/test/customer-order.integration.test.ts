@@ -22,7 +22,21 @@ const request = (path: string, token?: string, init: RequestInit = {}) =>
 before(async () => {
   const secret = process.env.JWT_SECRET || 'testsecret';
   process.env.JWT_SECRET = secret;
-  customerToken = jwt.sign({ id: 8, role: 'CUSTOMER' }, secret, { expiresIn: '10m' });
+
+  // Lấy hoặc tạo user CUSTOMER active
+  let userRes = await pool.query(`SELECT user_id FROM users WHERE role = 'CUSTOMER' AND status = 'ACTIVE' LIMIT 1`);
+  let customerId = userRes.rows[0]?.user_id;
+
+  if (!customerId) {
+    const newUserRes = await pool.query(
+      `INSERT INTO users (email, full_name, role, status, password_hash)
+       VALUES ('testcustomer_order@example.com', 'Test Customer Order', 'CUSTOMER', 'ACTIVE', 'hash')
+       RETURNING user_id`
+    );
+    customerId = newUserRes.rows[0].user_id;
+  }
+
+  customerToken = jwt.sign({ id: Number(customerId), role: 'CUSTOMER' }, secret, { expiresIn: '10m' });
 
   // Ensure program_id 1 is published and within valid sale dates
   await pool.query(
@@ -107,7 +121,22 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(vouchersRes.status, 200);
   const vouchersData = (await vouchersRes.json()) as any;
   assert.ok(Array.isArray(vouchersData.vouchers));
-  assert.ok(vouchersData.vouchers.some((v: any) => v.voucher_code === data.order.vouchers[0].voucher_code));
+  const issuedVoucher = vouchersData.vouchers.find((v: any) => v.voucher_code === data.order.vouchers[0].voucher_code);
+  assert.ok(issuedVoucher);
+
+  // 6. Get single customer voucher detail by issued_voucher_id
+  const singleVoucherRes = await request(`/api/customer/orders/vouchers/${issuedVoucher.issued_voucher_id}`, customerToken);
+  assert.equal(singleVoucherRes.status, 200);
+  const singleVoucherData = (await singleVoucherRes.json()) as any;
+  assert.equal(singleVoucherData.issued_voucher_id, issuedVoucher.issued_voucher_id);
+  assert.equal(singleVoucherData.voucher_code, issuedVoucher.voucher_code);
+  assert.equal(singleVoucherData.payment_status, 'PAID');
+  assert.equal(singleVoucherData.order_status, 'CONFIRMED');
+});
+
+test('Customer Order API: get non-existent voucher returns 404', async () => {
+  const res = await request('/api/customer/orders/vouchers/99999999', customerToken);
+  assert.equal(res.status, 404);
 });
 
 test('Customer Order API: create gift order', async () => {

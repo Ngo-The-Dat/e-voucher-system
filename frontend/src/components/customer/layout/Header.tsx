@@ -125,6 +125,16 @@ export default function Header() {
             >
               Voucher của tôi
             </Link>
+            <Link
+              href="/orders"
+              className={`font-label-md text-label-md transition-colors duration-200 pb-1 ${
+                pathname.startsWith("/orders")
+                  ? "text-white font-bold border-b-2 border-white"
+                  : "text-white/80 font-medium hover:text-white"
+              }`}
+            >
+              Đơn hàng
+            </Link>
           </nav>
 
           {/* Cart Icon */}
@@ -227,6 +237,15 @@ export default function Header() {
               }`}
             >
               Voucher của tôi
+            </Link>
+            <Link
+              href="/orders"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`py-2 px-3 rounded-lg ${
+                pathname.startsWith("/orders") ? "bg-primary-container text-on-primary-container font-bold" : "text-on-surface-variant"
+              }`}
+            >
+              Đơn hàng của tôi
             </Link>
             <Link
               href="/cart"

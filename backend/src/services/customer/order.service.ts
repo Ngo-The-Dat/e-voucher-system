@@ -527,8 +527,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
       iv.discount_amount,
       vp.program_id,
       vp.program_name,
-      vp.description,
-      vp.terms_conditions,
+      c.description as description,
       vp.original_price,
       vp.sale_price,
       vp.use_start_at,
@@ -549,7 +548,9 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
       ) AS applicable_addresses,
       o.order_id,
       o.created_at as purchase_date,
-      o.payment_method
+      o.payment_method,
+      o.payment_status,
+      o.order_status
     FROM issued_vouchers iv
     JOIN voucher_programs vp ON vp.program_id = iv.program_id
     LEFT JOIN categories c ON c.category_id = vp.category_id
@@ -576,7 +577,6 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
     program_id: Number(row.program_id),
     program_name: row.program_name,
     description: row.description,
-    terms_conditions: row.terms_conditions,
     original_price: Number(row.original_price),
     sale_price: Number(row.sale_price),
     use_start_at: row.use_start_at,
@@ -589,5 +589,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
     order_id: row.order_id ? Number(row.order_id) : null,
     purchase_date: row.purchase_date,
     payment_method: row.payment_method,
+    payment_status: row.payment_status || 'PAID',
+    order_status: row.order_status || 'CONFIRMED',
   };
 }
