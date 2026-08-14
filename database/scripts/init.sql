@@ -51,7 +51,8 @@ CREATE TABLE partners (
     business_license_no VARCHAR(100),                           -- Số ĐKKD
     license_issue_date DATE,                                    -- Ngày cấp ĐKKD
     license_issue_place VARCHAR(255),                           -- Nơi cấp ĐKKD
-    representative_title VARCHAR(100)                           -- Chức danh người đại diện
+    representative_title VARCHAR(100),                          -- Chức danh người đại diện
+    brand_logo VARCHAR(500)                                     -- URL ảnh logo thương hiệu
 );
 
 -- 3. Bảng categories (Danh mục)
