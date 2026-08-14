@@ -1,4 +1,7 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const rawApiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+const API_BASE = rawApiUrl.startsWith("http://") || rawApiUrl.startsWith("https://")
+  ? rawApiUrl
+  : `http://${rawApiUrl}`;
 
 const getStoredCustomerToken = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -190,4 +193,60 @@ export const customerOrderApi = {
   getMyVoucherById: (issuedVoucherId: number) =>
     request<CustomerVoucherItem>(`/customer/orders/vouchers/${issuedVoucherId}`)
 };
+
+export interface BackendCatalogVoucher {
+  program_id: number;
+  program_name: string;
+  original_price: number;
+  sale_price: number;
+  discount_amount: number;
+  issue_quantity: number;
+  sold_count: number;
+  available_stock: number;
+  sale_start_at?: string;
+  sale_end_at?: string;
+  use_start_at?: string;
+  use_end_at?: string;
+  description?: string;
+  terms_conditions?: string;
+  category_name: string;
+  business_name: string;
+  avg_rating: number;
+  reviews_count: number;
+  branches?: string[];
+  addresses?: string[];
+  reviews?: Array<{
+    review_id: number;
+    rating: number;
+    comment?: string;
+    created_at: string;
+    author_name: string;
+  }>;
+}
+
+export const customerCatalogApi = {
+  getVouchers: (params?: {
+    search?: string;
+    category_id?: number;
+    min_price?: number;
+    max_price?: number;
+    sort?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.set("search", params.search);
+    if (params?.category_id) searchParams.set("category_id", String(params.category_id));
+    if (params?.min_price !== undefined) searchParams.set("min_price", String(params.min_price));
+    if (params?.max_price !== undefined) searchParams.set("max_price", String(params.max_price));
+    if (params?.sort) searchParams.set("sort", params.sort);
+    if (params?.page) searchParams.set("page", String(params.page));
+    if (params?.limit) searchParams.set("limit", String(params.limit));
+    const query = searchParams.toString() ? `?${searchParams.toString()}` : "";
+    return request<{ vouchers: BackendCatalogVoucher[]; pagination: any }>(`/customer/vouchers${query}`);
+  },
+  getVoucherById: (programId: number) =>
+    request<BackendCatalogVoucher>(`/customer/vouchers/${programId}`)
+};
+
 

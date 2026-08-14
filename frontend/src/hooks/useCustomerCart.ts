@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Voucher, MyVoucher, mockMyVouchers } from "@/data/mockData";
-import { customerCartApi, BackendCartItem } from "@/lib/customer-api";
+import { customerCartApi, customerOrderApi, BackendCartItem, CustomerVoucherItem } from "@/lib/customer-api";
 
 export interface CartItem {
   cartItemId?: number;
@@ -14,7 +14,7 @@ export interface CartItem {
 
 export function useCustomerCart() {
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>(mockMyVouchers);
+  const [myVouchers, setMyVouchers] = useState<MyVoucher[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchBackendCart = useCallback(async () => {
@@ -59,7 +59,44 @@ export function useCustomerCart() {
     }
   }, []);
 
-  // Load cart on init
+  const fetchBackendMyVouchers = useCallback(async () => {
+    const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
+    if (!token) return false;
+
+    try {
+      const res = await customerOrderApi.getMyVouchers();
+      if (res.vouchers && res.vouchers.length > 0) {
+        const mappedMyVouchers: MyVoucher[] = res.vouchers.map((item: CustomerVoucherItem) => {
+          let status: "unused" | "used" | "expiring" | "expired" = "unused";
+          if (item.usage_status === "USED") status = "used";
+          else if (item.usage_status === "EXPIRED" || item.usage_status === "CANCELLED") status = "expired";
+          else if (item.expires_at && new Date(item.expires_at).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000) {
+            status = "expiring";
+          }
+
+          return {
+            id: String(item.issued_voucher_id),
+            voucherId: String(item.program_id),
+            code: item.voucher_code,
+            datePurchased: item.purchase_date ? new Date(item.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
+            expiryDate: item.expires_at ? new Date(item.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
+            status,
+            orderNumber: item.order_id ? `ORD-${item.order_id}` : "ORD-ONLINE",
+            paymentMethod: item.payment_method || "Ví VNPay",
+            dateUsed: item.used_at ? new Date(item.used_at).toLocaleDateString("vi-VN") : undefined,
+          };
+        });
+        setMyVouchers(mappedMyVouchers);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      console.warn("Chưa lấy được kho voucher từ backend, sử dụng mockData:", e);
+      return false;
+    }
+  }, []);
+
+  // Load cart & my vouchers on init
   useEffect(() => {
     fetchBackendCart().then((success) => {
       if (!success) {
@@ -74,15 +111,19 @@ export function useCustomerCart() {
       }
     });
 
-    const savedMyVouchers = localStorage.getItem("lumina_my_vouchers");
-    if (savedMyVouchers) {
-      try {
-        setMyVouchers(JSON.parse(savedMyVouchers));
-      } catch (e) {
-        console.error(e);
+    fetchBackendMyVouchers().then((success) => {
+      if (!success) {
+        const savedMyVouchers = localStorage.getItem("lumina_my_vouchers");
+        if (savedMyVouchers) {
+          try {
+            setMyVouchers(JSON.parse(savedMyVouchers));
+          } catch (e) {
+            console.error(e);
+          }
+        }
       }
-    }
-  }, [fetchBackendCart]);
+    });
+  }, [fetchBackendCart, fetchBackendMyVouchers]);
 
   const addToCart = useCallback(async (voucher: Voucher, quantity = 1, selectedDate?: string) => {
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
@@ -180,6 +221,7 @@ export function useCustomerCart() {
     if (token) {
       try {
         await customerCartApi.clearCart();
+        await fetchBackendMyVouchers();
       } catch (e) {
         console.error("Lỗi khi dọn dẹp giỏ hàng backend:", e);
       }
@@ -194,7 +236,7 @@ export function useCustomerCart() {
 
     const newPurchasedVouchers: MyVoucher[] = cart.map((item, index) => {
       const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-      let code = "";
+      let code = "EV-";
       for (let i = 0; i < 8; i++) {
         code += characters.charAt(Math.floor(Math.random() * characters.length));
       }
@@ -219,7 +261,7 @@ export function useCustomerCart() {
 
     setCart([]);
     localStorage.setItem("lumina_cart", JSON.stringify([]));
-  }, [cart]);
+  }, [cart, fetchBackendMyVouchers]);
 
   const markAsUsed = useCallback((myVoucherId: string) => {
     const today = new Date();
@@ -252,6 +294,7 @@ export function useCustomerCart() {
     removeFromCart,
     checkout,
     markAsUsed,
-    refreshCart: fetchBackendCart
+    refreshCart: fetchBackendCart,
+    refreshMyVouchers: fetchBackendMyVouchers
   };
 }

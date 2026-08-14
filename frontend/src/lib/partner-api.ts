@@ -1,7 +1,10 @@
 import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const rawPartnerApiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const API_URL = rawPartnerApiUrl.startsWith("http://") || rawPartnerApiUrl.startsWith("https://")
+  ? rawPartnerApiUrl
+  : `http://${rawPartnerApiUrl}`;
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) { super(message); }

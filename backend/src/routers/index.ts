@@ -28,13 +28,16 @@ import {
 import customerReviewRouter from './customer/review.router.js';
 import customerCartRouter from './customer/cart.router.js';
 import customerOrderRouter from './customer/order.router.js';
+import customerCatalogRouter from './customer/catalog.router.js';
 
 const router = Router();
 
 // ─── Customer Routes ─────────────────────────────────────────────────────────
+router.use('/customer/vouchers', customerCatalogRouter);
 router.use('/customer/reviews', customerReviewRouter);
 router.use('/customer/cart', customerCartRouter);
 router.use('/customer/orders', customerOrderRouter);
+
 
 
 // ─── Partner Auth (Public) ────────────────────────────────────────────────────

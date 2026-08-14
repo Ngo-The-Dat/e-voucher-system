@@ -91,15 +91,17 @@ export default function CartPage() {
 
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
 
-    if (token) {
+    const apiItems: CreateOrderItemInput[] = itemsToCheckout
+      .map((item) => ({
+        cart_item_id: item.cartItemId,
+        program_id: Number(item.voucher.id),
+        quantity: item.quantity,
+      }))
+      .filter((item) => !isNaN(item.program_id) && item.program_id > 0);
+
+    if (token && apiItems.length > 0) {
       try {
         setIsSubmitting(true);
-        const apiItems: CreateOrderItemInput[] = itemsToCheckout.map((item) => ({
-          cart_item_id: item.cartItemId,
-          program_id: Number(item.voucher.id),
-          quantity: item.quantity,
-        }));
-
         const response = await customerOrderApi.createOrder({
           items: apiItems,
           is_gift: isGift,
@@ -112,13 +114,19 @@ export default function CartPage() {
         router.push("/my-vouchers");
         return;
       } catch (err: any) {
-        alert(err.message || "Không thể tạo đơn hàng. Vui lòng kiểm tra lại giỏ hàng.");
+        console.warn("API đơn hàng gặp lỗi, sử dụng fallback thanh toán cục bộ:", err);
+        // Nếu là lỗi nghiệp vụ từ backend (ví dụ hết hàng/hết hạn), thông báo cho người dùng
+        if (err.message && !err.message.includes("fetch") && !err.message.includes("kết nối")) {
+          alert(err.message);
+          setIsSubmitting(false);
+          return;
+        }
+      } finally {
         setIsSubmitting(false);
-        return;
       }
     }
 
-    // Fallback to local state if offline or guest
+    // Fallback cho dữ liệu giả lập (mock data) hoặc khi chưa đăng nhập API
     checkout(paymentMethod);
     router.push("/my-vouchers");
   };
