@@ -4,6 +4,7 @@ export interface Review {
   rating: number;
   timeAgo: string;
   content: string;
+  complaint?: string;
   avatarBg: string; // Tailwind class
 }
 

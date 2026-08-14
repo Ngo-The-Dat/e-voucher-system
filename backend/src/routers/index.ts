@@ -25,7 +25,13 @@ import {
   contentHelperRouter as adminContentHelperRouter,
 } from './admin/content.router.js';
 
+import customerReviewRouter from './customer/review.router.js';
+
 const router = Router();
+
+// ─── Customer Routes ─────────────────────────────────────────────────────────
+router.use('/customer/reviews', customerReviewRouter);
+
 
 // ─── Partner Auth (Public) ────────────────────────────────────────────────────
 router.use('/partner/auth', partnerAuthRouter);

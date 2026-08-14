@@ -14,7 +14,7 @@ interface AppContextType {
   removeFromCart: (voucherId: string) => void;
   checkout: (paymentMethod: string) => void;
   markAsUsed: (myVoucherId: string) => void;
-  addReview: (voucherId: string, author: string, rating: number, content: string) => void;
+  addReview: (voucherId: string, author: string, rating: number, content: string, complaint?: string) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);

@@ -7,7 +7,7 @@ export function useCustomerVouchers() {
   const [vouchers, setVouchers] = useState<Voucher[]>(mockVouchers);
   // Khi có API thực tế, bạn sẽ thêm isLoading, useEffect để fetch data ở đây
 
-  const addReview = useCallback((voucherId: string, author: string, rating: number, content: string) => {
+  const addReview = useCallback((voucherId: string, author: string, rating: number, content: string, complaint?: string) => {
     setVouchers((prevVouchers) => {
       return prevVouchers.map((v) => {
         if (v.id === voucherId) {
@@ -17,7 +17,8 @@ export function useCustomerVouchers() {
             avatarBg: "bg-primary-container text-on-primary-container",
             rating,
             timeAgo: "Vừa xong",
-            content
+            content: content || "Khách hàng không để lại lời nhắn.",
+            complaint: complaint && complaint.trim() ? complaint.trim() : undefined
           };
 
           const existingReviews = v.reviews || [];

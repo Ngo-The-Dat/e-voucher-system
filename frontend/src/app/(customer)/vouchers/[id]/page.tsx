@@ -43,7 +43,8 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [reviewName, setReviewName] = useState("");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("");
-
+  const [hasComplaint, setHasComplaint] = useState(false);
+  const [complaintContent, setComplaintContent] = useState("");
   if (!voucher) {
     return (
       <main className="max-w-container-max mx-auto px-margin-mobile py-20 flex flex-col items-center justify-center text-center">
@@ -91,11 +92,19 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const handleAddReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewName.trim() || !reviewContent.trim()) return;
-    addReview(voucher.id, reviewName.trim(), reviewRating, reviewContent.trim());
+    if (!reviewName.trim()) return;
+    addReview(
+      voucher.id,
+      reviewName.trim(),
+      reviewRating,
+      reviewContent.trim(),
+      hasComplaint ? complaintContent.trim() : undefined
+    );
     setReviewName("");
     setReviewContent("");
     setReviewRating(5);
+    setHasComplaint(false);
+    setComplaintContent("");
   };
 
   return (
@@ -497,23 +506,57 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
               <div>
-                <label className="block text-label-md text-on-surface font-semibold mb-1">
-                  Nội dung đánh giá
-                </label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-label-md text-on-surface font-semibold">
+                    Nội dung đánh giá
+                  </label>
+                  <span className="text-xs text-on-surface-variant font-medium">(Không bắt buộc)</span>
+                </div>
                 <textarea
                   rows={3}
-                  required
                   value={reviewContent}
                   onChange={(e) => setReviewContent(e.target.value)}
                   className="w-full bg-surface-bright border border-outline-variant rounded-lg p-3 text-body-md focus:border-primary outline-none"
                   placeholder="Chia sẻ trải nghiệm của bạn về voucher..."
                 />
               </div>
+
+              {/* Checkbox khiếu nại */}
+              <div className="pt-1">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={hasComplaint}
+                    onChange={(e) => setHasComplaint(e.target.checked)}
+                    className="w-4 h-4 accent-error rounded cursor-pointer"
+                  />
+                  <span className="font-label-md text-label-md font-bold text-error">
+                    Tôi có phản ánh / khiếu nại
+                  </span>
+                </label>
+
+                {hasComplaint && (
+                  <div className="mt-2 space-y-1">
+                    <label className="block text-label-md text-on-surface font-semibold">
+                      Nội dung khiếu nại
+                    </label>
+                    <textarea
+                      rows={3}
+                      required={hasComplaint}
+                      value={complaintContent}
+                      onChange={(e) => setComplaintContent(e.target.value)}
+                      className="w-full bg-error-container/20 border border-error/40 rounded-lg p-3 text-body-md focus:border-error outline-none"
+                      placeholder="Mô tả chi tiết sự cố hoặc phản ánh của bạn..."
+                    />
+                  </div>
+                )}
+              </div>
+
               <button
                 type="submit"
                 className="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:opacity-90 self-end transition-all shadow-sm cursor-pointer font-bold"
               >
-                Gửi đánh giá
+                Gửi phiếu đánh giá
               </button>
             </form>
           </div>
@@ -558,6 +601,14 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                   </div>
                   <p className="font-body-md text-body-md text-on-surface-variant">{rev.content}</p>
+                  {rev.complaint && (
+                    <div className="mt-2 p-3 bg-error-container/30 border border-error/20 rounded-lg text-sm">
+                      <p className="font-bold text-error text-xs uppercase tracking-wider mb-1">
+                        ⚠️ Phản ánh / Khiếu nại:
+                      </p>
+                      <p className="text-on-surface">{rev.complaint}</p>
+                    </div>
+                  )}
                 </div>
               ))
             ) : (

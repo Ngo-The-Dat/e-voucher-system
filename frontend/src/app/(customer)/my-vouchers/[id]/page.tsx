@@ -20,12 +20,16 @@ import {
   CheckSquare
 } from "lucide-react";
 
+import ReviewModal from "@/components/customer/ReviewModal";
+
 export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { myVouchers, vouchers, markAsUsed } = useApp();
+  const { myVouchers, vouchers, markAsUsed, addReview } = useApp();
 
   const [copied, setCopied] = useState(false);
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+
 
   // Find the purchased voucher
   const myVoucher = myVouchers.find((mv) => mv.id === id);
@@ -352,13 +356,13 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   </div>
                 )}
 
-                <Link
-                  href={`/vouchers/${voucher.id}#reviews`}
+                <button
+                  onClick={() => setIsReviewModalOpen(true)}
                   className="w-full bg-surface-container-low text-primary border border-primary font-label-md text-label-md py-3 px-4 rounded-lg font-bold shadow-sm hover:bg-surface-container-high transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Star className="w-5 h-5" />
                   Đánh giá ngay
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -381,6 +385,23 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
       </div>
+
+      {/* Review & Feedback Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => setIsReviewModalOpen(false)}
+        voucherTitle={voucher.title}
+        voucherCode={myVoucher.code}
+        onSubmit={(rating, reviewContent, complaintContent) => {
+          addReview(
+            voucher.id,
+            "Khách hàng",
+            rating,
+            reviewContent,
+            complaintContent
+          );
+        }}
+      />
     </main>
   );
 }

@@ -4,15 +4,18 @@ import Link from "next/link";
 import { useState } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
+import ReviewModal from "@/components/customer/ReviewModal";
+import { MyVoucher, Voucher } from "@/data/mockData";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
 export default function MyVouchersPage() {
-  const { myVouchers, vouchers } = useApp();
+  const { myVouchers, vouchers, addReview } = useApp();
 
   // Local Page Filters
   const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
+  const [selectedReviewItem, setSelectedReviewItem] = useState<{ myVoucher: MyVoucher; voucher: Voucher } | null>(null);
 
   const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired") => {
     setActiveTab(tab);
@@ -142,7 +145,12 @@ export default function MyVouchersPage() {
               {filteredMyVouchers.map((item) => {
                 const baseVoucher = vouchers.find((v) => v.id === item.voucherId);
                 return (
-                  <MyVoucherCard key={item.id} myVoucher={item} voucher={baseVoucher!} />
+                  <MyVoucherCard
+                    key={item.id}
+                    myVoucher={item}
+                    voucher={baseVoucher!}
+                    onOpenReview={(mv, v) => setSelectedReviewItem({ myVoucher: mv, voucher: v })}
+                  />
                 );
               })}
             </div>
@@ -165,6 +173,25 @@ export default function MyVouchersPage() {
             </div>
           )}
       </div>
+
+      {/* Review Modal */}
+      {selectedReviewItem && (
+        <ReviewModal
+          isOpen={!!selectedReviewItem}
+          onClose={() => setSelectedReviewItem(null)}
+          voucherTitle={selectedReviewItem.voucher.title}
+          voucherCode={selectedReviewItem.myVoucher.code}
+          onSubmit={(rating, reviewContent, complaintContent) => {
+            addReview(
+              selectedReviewItem.voucher.id,
+              "Khách hàng",
+              rating,
+              reviewContent,
+              complaintContent
+            );
+          }}
+        />
+      )}
     </main>
   );
 }
