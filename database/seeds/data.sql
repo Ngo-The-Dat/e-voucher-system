@@ -8,59 +8,66 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                voucher_approval_requests, voucher_program_images, voucher_program_branches, voucher_programs,
                partner_employees, branches, categories, partners, user_locks, users RESTART IDENTITY CASCADE;
 
--- 1. Insert users (30 rows, exactly 1 ADMIN with user_id = 1)
+-- 1. Insert users (33 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
-(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
-(2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
-(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001088000003', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
-(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001185000004', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
-(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001089000005', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
-(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'MALE', '001092000006', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
-(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER_EMPLOYEE', 'FEMALE', '001194000007', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
-(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001196000008', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
-(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001097000009', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
-(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000010', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00'),
-(11, 'Nguyễn Thị Sen', 'partner_sen@senvang.vn', '0905000011', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001196000011', 'Việt Nam', 'ACTIVE', '2026-08-01 14:30:00'),
-(12, 'Trần Văn Hải', 'partner_haisanx@gmail.com', '0905000012', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001097000012', 'Việt Nam', 'ACTIVE', '2026-07-31 09:15:00'),
-(13, 'Nguyễn Thị Hương', 'partner_highlands@coffee.vn', '0905000013', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001198000013', 'Việt Nam', 'ACTIVE', '2026-07-28 10:20:00'),
-(14, 'Lê Quốc Trung', 'partner_cgv@cinema.vn', '0905000014', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001099000014', 'Việt Nam', 'ACTIVE', '2026-07-25 11:00:00'),
-(15, 'Hoàng Văn Tuấn', 'partner_tocotoco@bubbletea.vn', '0905000015', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001090000015', 'Việt Nam', 'ACTIVE', '2026-08-02 16:15:00'),
-(16, 'Phạm Văn Long', 'partner_goldengate@restaurant.vn', '0906000016', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001091000016', 'Việt Nam', 'ACTIVE', '2026-08-04 09:00:00'),
-(17, 'Nguyễn Thị Thùy Dung', 'partner_cali@fitness.vn', '0906000017', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001192000017', 'Việt Nam', 'ACTIVE', '2026-08-04 10:30:00'),
-(18, 'Vũ Đình Toàn', 'partner_tch@coffeehouse.vn', '0906000018', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001093000018', 'Việt Nam', 'ACTIVE', '2026-08-03 14:15:00'),
-(19, 'Hoàng Mai Anh', 'partner_seoulcenter@spa.vn', '0906000019', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'FEMALE', '001194000019', 'Việt Nam', 'ACTIVE', '2026-08-02 11:20:00'),
-(20, 'Trần Minh Đức', 'partner_muongthanh@hotel.vn', '0906000020', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001095000020', 'Việt Nam', 'ACTIVE', '2026-08-01 16:45:00'),
-(21, 'Đỗ Quốc Bảo', 'partner_haidilao@hotpot.vn', '0906000021', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'PARTNER', 'MALE', '001096000021', 'Việt Nam', 'ACTIVE', '2026-07-30 08:30:00'),
+(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
+(2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
+(3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001088000003', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
+(4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001185000004', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
+(5, 'Hoàng Văn Travel Đối Tác', 'partner_travel@voucher.vn', '0902000003', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001089000005', 'Việt Nam', 'ACTIVE', '2026-01-02 10:00:00'),
+(6, 'Nguyễn Nhân Viên F&B', 'employee_fb1@voucher.vn', '0903000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'MALE', '001092000006', 'Việt Nam', 'ACTIVE', '2026-01-03 10:30:00'),
+(7, 'Đỗ Nhân Viên Spa', 'employee_spa1@voucher.vn', '0903000002', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'FEMALE', '001194000007', 'Việt Nam', 'ACTIVE', '2026-01-03 11:00:00'),
+(8, 'Vũ Thị Khách Hàng 1', 'customer1@gmail.com', '0904000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001196000008', 'Việt Nam', 'ACTIVE', '2026-01-04 14:00:00'),
+(9, 'Bùi Văn Khách Hàng 2', 'customer2@gmail.com', '0904000002', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001097000009', 'Việt Nam', 'ACTIVE', '2026-01-04 15:00:00'),
+(10, 'Đặng Thị Khách Hàng 3', 'customer3@gmail.com', '0904000003', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001198000010', 'Việt Nam', 'ACTIVE', '2026-01-04 16:00:00'),
+(11, 'Nguyễn Thị Sen', 'partner_sen@senvang.vn', '0905000011', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001196000011', 'Việt Nam', 'ACTIVE', '2026-08-01 14:30:00'),
+(12, 'Trần Văn Hải', 'partner_haisanx@gmail.com', '0905000012', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001097000012', 'Việt Nam', 'ACTIVE', '2026-07-31 09:15:00'),
+(13, 'Nguyễn Thị Hương', 'partner_highlands@coffee.vn', '0905000013', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001198000013', 'Việt Nam', 'ACTIVE', '2026-07-28 10:20:00'),
+(14, 'Lê Quốc Trung', 'partner_cgv@cinema.vn', '0905000014', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001099000014', 'Việt Nam', 'ACTIVE', '2026-07-25 11:00:00'),
+(15, 'Hoàng Văn Tuấn', 'partner_tocotoco@bubbletea.vn', '0905000015', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001090000015', 'Việt Nam', 'ACTIVE', '2026-08-02 16:15:00'),
+(16, 'Phạm Văn Long', 'partner_goldengate@restaurant.vn', '0906000016', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001091000016', 'Việt Nam', 'ACTIVE', '2026-08-04 09:00:00'),
+(17, 'Nguyễn Thị Thùy Dung', 'partner_cali@fitness.vn', '0906000017', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001192000017', 'Việt Nam', 'ACTIVE', '2026-08-04 10:30:00'),
+(18, 'Vũ Đình Toàn', 'partner_tch@coffeehouse.vn', '0906000018', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001093000018', 'Việt Nam', 'ACTIVE', '2026-08-03 14:15:00'),
+(19, 'Hoàng Mai Anh', 'partner_seoulcenter@spa.vn', '0906000019', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001194000019', 'Việt Nam', 'ACTIVE', '2026-08-02 11:20:00'),
+(20, 'Trần Minh Đức', 'partner_muongthanh@hotel.vn', '0906000020', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001095000020', 'Việt Nam', 'ACTIVE', '2026-08-01 16:45:00'),
+(21, 'Đỗ Quốc Bảo', 'partner_haidilao@hotpot.vn', '0906000021', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001096000021', 'Việt Nam', 'ACTIVE', '2026-07-30 08:30:00'),
 -- Khách hàng mới trong tháng 7 và tháng 8/2026
-(22, 'Lê Hoàng Yến', 'hoangyen@gmail.com', '0907000022', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000022', 'Việt Nam', 'ACTIVE', '2026-07-15 10:00:00'),
-(23, 'Trịnh Quốc Thái', 'quocthai@gmail.com', '0907000023', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001098000023', 'Việt Nam', 'ACTIVE', '2026-07-25 14:20:00'),
-(24, 'Ngô Gia Huy', 'giahuy@gmail.com', '0907000024', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001098000024', 'Việt Nam', 'ACTIVE', '2026-08-04 09:30:00'),
-(25, 'Vương Thúy Kiều', 'thuykieu@gmail.com', '0907000025', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000025', 'Việt Nam', 'ACTIVE', '2026-08-08 11:15:00'),
-(26, 'Phan Hải Đăng', 'haidang@gmail.com', '0907000026', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001098000026', 'Việt Nam', 'ACTIVE', '2026-08-10 08:30:00'),
-(27, 'Lâm Bích Ngọc', 'bichngoc@gmail.com', '0907000027', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000027', 'Việt Nam', 'ACTIVE', '2026-08-11 15:45:00'),
-(28, 'Dương Minh Khang', 'minhkhang@gmail.com', '0907000028', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001098000028', 'Việt Nam', 'ACTIVE', '2026-08-12 08:15:00'),
-(29, 'Tạ Thanh Thảo', 'thanhthao@gmail.com', '0907000029', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'FEMALE', '001198000029', 'Việt Nam', 'ACTIVE', '2026-08-12 11:30:00'),
-(30, 'Cao Tuấn Anh', 'tuananh@gmail.com', '0907000030', '$2a$12$eImiTXuWVxfM37uY4JANjO46d6k3x1H9k0L8M2N3O4P5Q6R7S8T9U', 'CUSTOMER', 'MALE', '001098000030', 'Việt Nam', 'ACTIVE', '2026-08-12 16:45:00');
+(22, 'Lê Hoàng Yến', 'hoangyen@gmail.com', '0907000022', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001198000022', 'Việt Nam', 'ACTIVE', '2026-07-15 10:00:00'),
+(23, 'Trịnh Quốc Thái', 'quocthai@gmail.com', '0907000023', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001098000023', 'Việt Nam', 'ACTIVE', '2026-07-25 14:20:00'),
+(24, 'Ngô Gia Huy', 'giahuy@gmail.com', '0907000024', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001098000024', 'Việt Nam', 'ACTIVE', '2026-08-04 09:30:00'),
+(25, 'Vương Thúy Kiều', 'thuykieu@gmail.com', '0907000025', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001198000025', 'Việt Nam', 'ACTIVE', '2026-08-08 11:15:00'),
+(26, 'Phan Hải Đăng', 'haidang@gmail.com', '0907000026', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001098000026', 'Việt Nam', 'ACTIVE', '2026-08-10 08:30:00'),
+(27, 'Lâm Bích Ngọc', 'bichngoc@gmail.com', '0907000027', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001198000027', 'Việt Nam', 'ACTIVE', '2026-08-11 15:45:00'),
+(28, 'Dương Minh Khang', 'minhkhang@gmail.com', '0907000028', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001098000028', 'Việt Nam', 'ACTIVE', '2026-08-12 08:15:00'),
+(29, 'Tạ Thanh Thảo', 'thanhthao@gmail.com', '0907000029', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001198000029', 'Việt Nam', 'ACTIVE', '2026-08-12 11:30:00'),
+(30, 'Cao Tuấn Anh', 'tuananh@gmail.com', '0907000030', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001098000030', 'Việt Nam', 'ACTIVE', '2026-08-12 16:45:00'),
+-- Đối tác bổ sung mới
+(31, 'Lâm Thị Mỹ Hạnh', 'partner_phuclong@tea.vn', '0908000031', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001198000031', 'Việt Nam', 'ACTIVE', '2026-08-05 09:15:00'),
+(32, 'Trần Gia Bảo', 'partner_shopeefood@food.vn', '0908000032', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000032', 'Việt Nam', 'ACTIVE', '2026-08-06 10:30:00'),
+(33, 'Vũ Hải Nam', 'partner_uniqlo@fashion.vn', '0908000033', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000033', 'Việt Nam', 'ACTIVE', '2026-08-07 14:00:00');
 
--- 2. Insert partners (14 rows: 6 APPROVED, 6 PENDING, 1 REVISION_REQUESTED, 1 REJECTED)
-INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place) VALUES
+-- 2. Insert partners (17 rows: 8 APPROVED, 7 PENDING, 1 REVISION_REQUESTED, 1 REJECTED)
+INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place, brand_logo) VALUES
 -- Đối tác đã duyệt (APPROVED)
-(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'APPROVED', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội'),
-(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'APPROVED', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội'),
-(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(11, 'Công ty TNHH Dịch vụ Spa Sen Vàng', '0102123456', 'APPROVED', 'ACTIVE', '2026-08-01 14:30:00', '0102123456-001', '2022-03-15', 'Sở KH&ĐT TP. Hà Nội'),
-(13, 'Công ty Cổ phần DV Cà Phê Cao Nguyên (Highlands)', '0303725714', 'APPROVED', 'ACTIVE', '2026-07-28 10:20:00', '0303725714-001', '2020-01-18', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(14, 'Công ty TNHH CJ CGV Việt Nam', '0303675394', 'APPROVED', 'ACTIVE', '2026-07-25 11:00:00', '0303675394-001', '2018-09-05', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(15, 'Công ty Cổ phần Trà sữa TocoToco', '0106789012', 'APPROVED', 'ACTIVE', '2026-08-02 16:15:00', '0106789012-001', '2023-02-20', 'Sở KH&ĐT TP. Hà Nội'),
-(16, 'Công ty TNHH Golden Gate Restaurant Group', '0102721191', 'APPROVED', 'ACTIVE', '2026-08-04 09:00:00', '0102721191-001', '2021-04-10', 'Sở KH&ĐT TP. Hà Nội'),
-(17, 'Công ty Cổ phần Thương mại Dịch vụ California Fitness & Yoga', '0305123987', 'APPROVED', 'ACTIVE', '2026-08-04 10:30:00', '0305123987-001', '2020-08-20', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(20, 'Công ty Cổ phần Đầu tư Du lịch Mường Thanh', '0101998877', 'APPROVED', 'ACTIVE', '2026-08-01 16:45:00', '0101998877-001', '2019-09-01', 'Sở KH&ĐT Tỉnh Nghệ An'),
+(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'APPROVED', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
+(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'APPROVED', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
+(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'APPROVED', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
+(11, 'Công ty TNHH Dịch vụ Spa Sen Vàng', '0102123456', 'APPROVED', 'ACTIVE', '2026-08-01 14:30:00', '0102123456-001', '2022-03-15', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
+(13, 'Công ty Cổ phần DV Cà Phê Cao Nguyên (Highlands)', '0303725714', 'APPROVED', 'ACTIVE', '2026-07-28 10:20:00', '0303725714-001', '2020-01-18', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
+(14, 'Công ty TNHH CJ CGV Việt Nam', '0303675394', 'APPROVED', 'ACTIVE', '2026-07-25 11:00:00', '0303675394-001', '2018-09-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-kB-zIGuyRwEa8ynWbzI3QV6-5uXYHfsglxEWUl6fl2wd_juPog4hQUEy924ResZ6tvCxyFw4UmDM1ll_itltegYbEtbYMPVokuvkvrLP5beAjQ5_QgbCV-47OiNn0TlhWxI42z6ZHQro0CAUtmqzEgU50tISW8hA66LDva2p98P7FTJa5wp69EpkiIclnGZGbxObtMp3LPsLtzLZAgEQsAgHemvNvhNNRx0osaCrzpgixQ6Ji1E_'),
+(15, 'Công ty Cổ phần Trà sữa TocoToco', '0106789012', 'APPROVED', 'ACTIVE', '2026-08-02 16:15:00', '0106789012-001', '2023-02-20', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
+(16, 'Công ty TNHH Golden Gate Restaurant Group', '0102721191', 'APPROVED', 'ACTIVE', '2026-08-04 09:00:00', '0102721191-001', '2021-04-10', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
+(17, 'Công ty Cổ phần Thương mại Dịch vụ California Fitness & Yoga', '0305123987', 'APPROVED', 'ACTIVE', '2026-08-04 10:30:00', '0305123987-001', '2020-08-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
+(20, 'Công ty Cổ phần Đầu tư Du lịch Mường Thanh', '0101998877', 'APPROVED', 'ACTIVE', '2026-08-01 16:45:00', '0101998877-001', '2019-09-01', 'Sở KH&ĐT Tỉnh Nghệ An', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
+(31, 'Công ty Cổ phần Phúc Long Heritage', '0302789123', 'APPROVED', 'ACTIVE', '2026-08-05 09:15:00', '0302789123-001', '2021-03-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
+(32, 'Công ty Cổ phần Foody Việt Nam (ShopeeFood)', '0314567890', 'APPROVED', 'ACTIVE', '2026-08-06 10:30:00', '0314567890-001', '2019-12-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
 -- Đối tác chờ duyệt (PENDING)
-(18, 'Hộ Kinh Doanh Chuỗi Cafe The Coffee House', '0312345678', 'PENDING', 'INACTIVE', '2026-08-03 14:15:00', '0312345678-001', '2022-11-15', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(19, 'Công ty TNHH Thẩm Mỹ Viện Quốc Tế Seoul Center', '0108889999', 'PENDING', 'INACTIVE', '2026-08-02 11:20:00', '0108889999-001', '2023-05-12', 'Sở KH&ĐT TP. Hà Nội'),
+(18, 'Hộ Kinh Doanh Chuỗi Cafe The Coffee House', '0312345678', 'PENDING', 'INACTIVE', '2026-08-03 14:15:00', '0312345678-001', '2022-11-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
+(19, 'Công ty TNHH Thẩm Mỹ Viện Quốc Tế Seoul Center', '0108889999', 'PENDING', 'INACTIVE', '2026-08-02 11:20:00', '0108889999-001', '2023-05-12', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
+(33, 'Công ty TNHH Uniqlo Việt Nam', '0315678901', 'PENDING', 'INACTIVE', '2026-08-07 14:00:00', '0315678901-001', '2023-08-01', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
 -- Đối tác yêu cầu sửa đổi & bị từ chối
-(21, 'Công ty TNHH Lẩu Nướng Haidilao Việt Nam', '0315897462', 'REVISION_REQUESTED', 'INACTIVE', '2026-07-30 08:30:00', '0315897462-001', '2022-07-15', 'Sở KH&ĐT TP. Hồ Chí Minh'),
-(12, 'Công ty Cổ phần Nhà hàng Hải Sản X', '0103456789', 'REJECTED', 'INACTIVE', '2026-07-31 09:15:00', '0103456789-001', '2021-06-10', 'Sở KH&ĐT TP. Hồ Chí Minh');
+(21, 'Công ty TNHH Lẩu Nướng Haidilao Việt Nam', '0315897462', 'REVISION_REQUESTED', 'INACTIVE', '2026-07-30 08:30:00', '0315897462-001', '2022-07-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
+(12, 'Công ty Cổ phần Nhà hàng Hải Sản X', '0103456789', 'REJECTED', 'INACTIVE', '2026-07-31 09:15:00', '0103456789-001', '2021-06-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9');
 
 -- 3. Insert categories (4 rows)
 INSERT INTO categories (category_id, category_name, description, status) VALUES
@@ -69,7 +76,7 @@ INSERT INTO categories (category_id, category_name, description, status) VALUES
 (3, 'Du lịch & Khách sạn', 'Voucher nghỉ dưỡng khách sạn, tour du lịch', 'ACTIVE'),
 (4, 'Giải trí & Sự kiện', 'Vé xem phim, khu vui chơi, nghe nhạc', 'ACTIVE');
 
--- 4. Insert branches (20 rows)
+-- 4. Insert branches (25 rows)
 INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES
 (1, 3, 'Ẩm Thực Việt - Chi nhánh Quận 1', '123 Lê Lợi, Phường Bến Thành, Quận 1, TP.HCM', 'Miền Nam', '02838221234', 'ACTIVE'),
 (2, 3, 'Ẩm Thực Việt - Chi nhánh Hoàn Kiếm', '45 Tràng Tiền, Quận Hoàn Kiếm, Hà Nội', 'Miền Bắc', '02439349999', 'ACTIVE'),
@@ -90,7 +97,12 @@ INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone
 (17, 18, 'The Coffee House - Thái Hà', '56 Thái Hà, Đống Đa, Hà Nội', 'Miền Bắc', '02471087088', 'ACTIVE'),
 (18, 19, 'Seoul Center - Chi nhánh Cách Mạng Tháng 8', '375 Nguyễn Thượng Hiền, Phường 11, Quận 10, TP.HCM', 'Miền Nam', '1800088878', 'ACTIVE'),
 (19, 20, 'Mường Thanh Luxury Đà Nẵng', '270 Võ Nguyên Giáp, Bắc Mỹ Phú, Ngũ Hành Sơn, Đà Nẵng', 'Miền Trung', '02363956789', 'ACTIVE'),
-(20, 21, 'Haidilao Hotpot - Bitexco Financial Tower', 'Tầng 2 Bitexco, 2 Hải Triều, Bến Nghé, Quận 1, TP.HCM', 'Miền Nam', '02822539156', 'ACTIVE');
+(20, 21, 'Haidilao Hotpot - Bitexco Financial Tower', 'Tầng 2 Bitexco, 2 Hải Triều, Bến Nghé, Quận 1, TP.HCM', 'Miền Nam', '02822539156', 'ACTIVE'),
+(21, 31, 'Phúc Long Coffee & Tea - Chi nhánh Hàm Nghi', '29 Ngô Đức Kế, Bến Nghé, Quận 1, TP.HCM', 'Miền Nam', '02838218181', 'ACTIVE'),
+(22, 31, 'Phúc Long Coffee & Tea - Chi nhánh Nhà Thờ', '23 Nhà Thờ, Hàng Trống, Hoàn Kiếm, Hà Nội', 'Miền Bắc', '02438289898', 'ACTIVE'),
+(23, 32, 'ShopeeFood Trung Tâm Vận Hành', 'Tầng 12 Saigon Centre, 65 Lê Lợi, Quận 1, TP.HCM', 'Miền Nam', '19002042', 'ACTIVE'),
+(24, 33, 'Uniqlo Đồng Khởi', 'Vincom Center Đồng Khởi, 72 Lê Thánh Tôn, Quận 1, TP.HCM', 'Miền Nam', '02838279999', 'ACTIVE'),
+(25, 33, 'Uniqlo Vincom Phạm Ngọc Thạch', '02 Phạm Ngọc Thạch, Trung Tự, Đống Đa, Hà Nội', 'Miền Bắc', '02438278888', 'ACTIVE');
 
 -- 5. Insert partner_employees (2 rows)
 INSERT INTO partner_employees (user_id, branch_id) VALUES
