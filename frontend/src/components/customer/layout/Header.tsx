@@ -36,7 +36,7 @@ export default function Header() {
     router.push(`/vouchers?category=${encodeURIComponent(categoryName)}`);
   };
 
-  const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartItemsCount = cart.length;
 
   const categories = [
     "Điện tử",

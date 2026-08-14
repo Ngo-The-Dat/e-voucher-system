@@ -32,7 +32,7 @@ export const createReview = async (req: AuthRequest, res: Response): Promise<voi
 
 export const getProgramReviews = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { programId } = req.params;
+    const programId = Array.isArray(req.params.programId) ? req.params.programId[0] : req.params.programId;
     if (!programId) {
       res.status(400).json({ message: 'Thiếu programId.' });
       return;
