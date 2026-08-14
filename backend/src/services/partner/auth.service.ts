@@ -1,6 +1,11 @@
 import pool from '../../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt, { type SignOptions } from 'jsonwebtoken';
+import {
+  beginOtpConsumption,
+  completeOtpConsumption,
+  releaseOtpConsumption,
+} from './registration-otp.service.js';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -12,6 +17,7 @@ interface RegisterInput {
   password: string;
   business_name: string;
   tax_code: string;
+  otp_challenge_id: string;
 }
 
 interface LoginInput {
@@ -21,6 +27,47 @@ interface LoginInput {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 
+export interface RegistrationCheckInput {
+  email: string;
+  identity_no: string;
+  tax_code: string;
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const TAX_CODE_PATTERN = /^[0-9]{10,13}$/;
+
+export const checkRegistrationAvailability = async (input: RegistrationCheckInput): Promise<void> => {
+  const email = input.email.trim().toLowerCase();
+  const identityNo = input.identity_no.trim();
+  const taxCode = input.tax_code.trim();
+
+  if (!EMAIL_PATTERN.test(email)) {
+    throw { status: 400, field: 'email', message: 'Định dạng email không hợp lệ.' };
+  }
+  if (!identityNo) {
+    throw { status: 400, field: 'identity_no', message: 'Vui lòng nhập số CCCD/CMND.' };
+  }
+  if (!TAX_CODE_PATTERN.test(taxCode)) {
+    throw { status: 400, field: 'tax_code', message: 'Mã số thuế phải gồm 10 đến 13 chữ số.' };
+  }
+
+  const [emailCheck, identityCheck, taxCheck] = await Promise.all([
+    pool.query('SELECT user_id FROM users WHERE email = $1', [email]),
+    pool.query('SELECT user_id FROM users WHERE identity_no = $1', [identityNo]),
+    pool.query('SELECT user_id FROM partners WHERE tax_code = $1', [taxCode]),
+  ]);
+
+  if (emailCheck.rows.length > 0) {
+    throw { status: 409, field: 'email', message: 'Email này đã được đăng ký.' };
+  }
+  if (identityCheck.rows.length > 0) {
+    throw { status: 409, field: 'identity_no', message: 'Số CCCD/CMND này đã được đăng ký trên hệ thống.' };
+  }
+  if (taxCheck.rows.length > 0) {
+    throw { status: 409, field: 'tax_code', message: 'Mã số thuế này đã được đăng ký.' };
+  }
+};
+
 export const register = async (input: RegisterInput) => {
   const full_name = input.full_name.trim();
   const email = input.email.trim().toLowerCase();
@@ -29,69 +76,95 @@ export const register = async (input: RegisterInput) => {
   const password = input.password;
   const business_name = input.business_name.trim();
   const tax_code = input.tax_code.trim();
+  const otp_challenge_id = input.otp_challenge_id;
 
-  // 1. Kiểm tra email đã tồn tại chưa
-  const emailCheck = await pool.query(
-    'SELECT user_id FROM users WHERE email = $1',
-    [email]
-  );
-  if (emailCheck.rows.length > 0) {
-    throw { status: 409, message: 'Email này đã được đăng ký.' };
+  if (!TAX_CODE_PATTERN.test(tax_code)) {
+    throw { status: 400, field: 'tax_code', message: 'Mã số thuế phải gồm 10 đến 13 chữ số.' };
   }
 
-  // 2. Kiểm tra CCCD/CMND đã tồn tại chưa
-  if (identity_no) {
-    const cccdCheck = await pool.query(
-      'SELECT user_id FROM users WHERE identity_no = $1',
-      [identity_no]
-    );
-    if (cccdCheck.rows.length > 0) {
-      throw { status: 409, message: 'Số CCCD/CMND này đã được đăng ký trên hệ thống.' };
-    }
-  }
+  beginOtpConsumption(email, otp_challenge_id);
 
-  // 3. Kiểm tra mã số thuế đã tồn tại chưa
-  const taxCheck = await pool.query(
-    'SELECT user_id FROM partners WHERE tax_code = $1',
-    [tax_code]
-  );
-  if (taxCheck.rows.length > 0) {
-    throw { status: 409, message: 'Mã số thuế này đã được đăng ký.' };
-  }
-
-  // 4. Hash mật khẩu
-  const password_hash = await bcrypt.hash(password, 10);
-
-  // 5. Tạo user với role PARTNER (dùng transaction)
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-
-    const userResult = await client.query(
-      `INSERT INTO users (full_name, email, phone, identity_no, password_hash, role)
-       VALUES ($1, $2, $3, $4, $5, 'PARTNER')
-       RETURNING user_id, full_name, email, phone, identity_no, role, status, created_at`,
-      [full_name, email, phone, identity_no, password_hash]
+    // 1. Kiểm tra email đã tồn tại chưa
+    const emailCheck = await pool.query(
+      'SELECT user_id FROM users WHERE email = $1',
+      [email]
     );
-    const user = userResult.rows[0];
-
-    // 6. Tạo bản ghi partner (trạng thái PENDING, chờ Admin duyệt)
-    await client.query(
-      `INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status)
-       VALUES ($1, $2, $3, 'PENDING', 'ACTIVE')`,
-      [user.user_id, business_name, tax_code]
-    );
-
-    await client.query('COMMIT');
-    return user;
-  } catch (err) {
-    await client.query('ROLLBACK');
-    if ((err as { code?: string }).code === '23505') {
-      throw { status: 409, message: 'Email, số định danh hoặc mã số thuế đã được đăng ký.' };
+    if (emailCheck.rows.length > 0) {
+      throw { status: 409, field: 'email', message: 'Email này đã được đăng ký.' };
     }
+
+    // 2. Kiểm tra CCCD/CMND đã tồn tại chưa
+    if (identity_no) {
+      const cccdCheck = await pool.query(
+        'SELECT user_id FROM users WHERE identity_no = $1',
+        [identity_no]
+      );
+      if (cccdCheck.rows.length > 0) {
+        throw { status: 409, field: 'identity_no', message: 'Số CCCD/CMND này đã được đăng ký trên hệ thống.' };
+      }
+    }
+
+    // 3. Kiểm tra mã số thuế đã tồn tại chưa
+    const taxCheck = await pool.query(
+      'SELECT user_id FROM partners WHERE tax_code = $1',
+      [tax_code]
+    );
+    if (taxCheck.rows.length > 0) {
+      throw { status: 409, field: 'tax_code', message: 'Mã số thuế này đã được đăng ký.' };
+    }
+
+    // 4. Hash mật khẩu
+    const password_hash = await bcrypt.hash(password, 10);
+
+    // 5. Tạo user với role PARTNER (dùng transaction)
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const userResult = await client.query(
+        `INSERT INTO users (full_name, email, phone, identity_no, password_hash, role)
+         VALUES ($1, $2, $3, $4, $5, 'PARTNER')
+         RETURNING user_id, full_name, email, phone, identity_no, role, status, created_at`,
+        [full_name, email, phone, identity_no, password_hash]
+      );
+      const user = userResult.rows[0];
+
+      // 6. Tạo bản ghi partner (trạng thái PENDING, chờ Admin duyệt)
+      await client.query(
+        `INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status)
+         VALUES ($1, $2, $3, 'PENDING', 'ACTIVE')`,
+        [user.user_id, business_name, tax_code]
+      );
+
+      await client.query('COMMIT');
+      completeOtpConsumption(email, otp_challenge_id);
+      return user;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      const databaseError = err as { code?: string; constraint?: string };
+      if (databaseError.code === '23505') {
+        if (databaseError.constraint?.includes('email')) {
+          throw { status: 409, field: 'email', message: 'Email này đã được đăng ký.' };
+        }
+        if (databaseError.constraint?.includes('identity_no')) {
+          throw { status: 409, field: 'identity_no', message: 'Số CCCD/CMND này đã được đăng ký trên hệ thống.' };
+        }
+        if (databaseError.constraint?.includes('phone')) {
+          throw { status: 409, field: 'phone', message: 'Số điện thoại này đã được đăng ký.' };
+        }
+        if (databaseError.constraint?.includes('tax_code')) {
+          throw { status: 409, field: 'tax_code', message: 'Mã số thuế này đã được đăng ký.' };
+        }
+        throw { status: 409, message: 'Email, số định danh hoặc mã số thuế đã được đăng ký.' };
+      }
+      throw err;
+    } finally {
+      client.release();
+    }
+  } catch (err) {
+    releaseOtpConsumption(email, otp_challenge_id);
     throw err;
-  } finally {
-    client.release();
   }
 };
 

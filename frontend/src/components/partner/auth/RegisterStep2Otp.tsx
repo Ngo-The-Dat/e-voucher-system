@@ -7,6 +7,7 @@ interface RegisterStep2OtpProps {
   otpCode: string[];
   otpError: string;
   isVerifyingOtp: boolean;
+  isSendingOtp: boolean;
   resendSeconds: number;
   isResendExpired: boolean;
   onSelectDeliveryMethod: (method: "email" | "phone") => void;
@@ -25,6 +26,7 @@ export default function RegisterStep2Otp({
   otpCode,
   otpError,
   isVerifyingOtp,
+  isSendingOtp,
   resendSeconds,
   isResendExpired,
   onSelectDeliveryMethod,
@@ -57,6 +59,7 @@ export default function RegisterStep2Otp({
               key={method}
               type="button"
               onClick={() => onSelectDeliveryMethod(method)}
+              disabled={isSendingOtp}
               className="w-full p-4 rounded-xl border border-outline-variant hover:border-primary hover:bg-surface-container-low transition-all text-left flex items-center justify-between group"
             >
               <div className="flex items-center gap-3">
@@ -64,7 +67,9 @@ export default function RegisterStep2Otp({
                   <Icon name={icon} className="text-xl" />
                 </div>
                 <div>
-                  <p className="font-bold text-sm text-on-surface group-hover:text-primary">{label}</p>
+                  <p className="font-bold text-sm text-on-surface group-hover:text-primary">
+                    {method === "email" && isSendingOtp ? "Đang gửi mã qua Email..." : label}
+                  </p>
                   <p className="text-on-surface-variant text-[11px] tracking-wide font-medium">{value}</p>
                 </div>
               </div>
@@ -117,7 +122,9 @@ export default function RegisterStep2Otp({
                   onChange={(e) => onOtpChange(i, e.target.value)}
                   onKeyDown={(e) => onOtpKeyDown(i, e)}
                   onPaste={onOtpPaste}
-                  disabled={isVerifyingOtp}
+                  inputMode="numeric"
+                  autoComplete={i === 0 ? "one-time-code" : "off"}
+                  disabled={isVerifyingOtp || isSendingOtp}
                   className={`w-11 h-13 text-center text-xl font-bold bg-surface border ${
                     otpError
                       ? "border-error ring-1 ring-error bg-error-container/10"
@@ -137,8 +144,13 @@ export default function RegisterStep2Otp({
             <p className="text-on-surface-variant text-[11px]">
               Không nhận được mã?{" "}
               {isResendExpired ? (
-                <button type="button" onClick={onResend} className="text-primary font-bold hover:underline">
-                  Gửi lại mã
+                <button
+                  type="button"
+                  onClick={onResend}
+                  disabled={isSendingOtp}
+                  className="text-primary font-bold hover:underline disabled:opacity-50"
+                >
+                  {isSendingOtp ? "Đang gửi..." : "Gửi lại mã"}
                 </button>
               ) : (
                 <span className="text-outline">Gửi lại mã ({resendSeconds}s)</span>

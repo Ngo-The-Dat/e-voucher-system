@@ -18,6 +18,7 @@ interface RegisterStep1FormProps {
   fieldErrors: FieldErrors;
   onChange: (field: keyof FormData, value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
+  isSubmitting: boolean;
 }
 
 export default function RegisterStep1Form({
@@ -25,6 +26,7 @@ export default function RegisterStep1Form({
   fieldErrors,
   onChange,
   onSubmit,
+  isSubmitting,
 }: RegisterStep1FormProps) {
   const inputClass = (field: keyof FormData) =>
     fieldErrors[field]
@@ -58,7 +60,7 @@ export default function RegisterStep1Form({
           { key: "cccd", label: "Số CCCD / CMND", type: "text", placeholder: "Nhập 12 số CCCD", required: true },
           { key: "phone", label: "Số điện thoại", type: "tel", placeholder: "09xx xxx xxx", required: true },
           { key: "email", label: "Email liên hệ", type: "email", placeholder: "doitac@domain.com", required: true },
-          { key: "businessName", label: "Tên thương hiệu / Cửa hàng", type: "text", placeholder: "Nhập tên doanh nghiệp hoặc cửa hàng", required: false },
+          { key: "businessName", label: "Tên thương hiệu / Cửa hàng", type: "text", placeholder: "Nhập tên doanh nghiệp hoặc cửa hàng", required: true },
           { key: "taxCode", label: "Mã số thuế", type: "text", placeholder: "Nhập mã số thuế doanh nghiệp", required: true },
         ] as const
       ).map(({ key, label, type, placeholder, required }) => (
@@ -83,8 +85,8 @@ export default function RegisterStep1Form({
       ))}
 
       <div className="pt-4 flex justify-end">
-        <Button type="submit" className="gap-2">
-          <span>Xác nhận đăng ký</span>
+        <Button type="submit" className="gap-2" isLoading={isSubmitting}>
+          <span>{isSubmitting ? "Đang kiểm tra" : "Xác nhận đăng ký"}</span>
           <Icon name="arrow_forward" className="text-base" />
         </Button>
       </div>
