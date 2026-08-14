@@ -7,6 +7,7 @@ import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import BranchModal from "@/components/partner/profile/BranchModal";
+import BrandLogoSection from "@/components/partner/profile/BrandLogoSection";
 import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
 import RepresentativeSection from "@/components/partner/profile/RepresentativeSection";
 import BranchesSection from "@/components/partner/profile/BranchesSection";
@@ -17,6 +18,7 @@ import { partnerApi } from "@/lib/partner-api";
 
 const TABS = [
   { id: "all", label: "Tất cả thông tin hồ sơ", icon: "assignment" },
+  { id: "brand", label: "Logo thương hiệu", icon: "image" },
   { id: "legal", label: "Thông tin pháp lý & Mã số thuế", icon: "gavel" },
   { id: "rep", label: "Người đại diện", icon: "badge" },
   { id: "branch", label: "Danh sách chi nhánh", icon: "location_city" },
@@ -48,6 +50,19 @@ export default function ProfilePage() {
   }
 
   // --- Change handlers ---
+  const handleLogoChange = (value: string) => {
+    setProfile((prev) => (prev ? { ...prev, brandLogo: value } : prev));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleLogoUploadSuccess = (uploadedUrl: string) => {
+    setProfile((prev) => (prev ? { ...prev, brandLogo: uploadedUrl } : prev));
+    setHasUnsavedChanges(false);
+    setToastType("success");
+    setToastMessage("Tải lên và lưu logo thương hiệu thành công!");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleLegalChange = (field: keyof PartnerProfile["legalInfo"], value: string) => {
     setProfile((prev) =>
       prev ? { ...prev, legalInfo: { ...prev.legalInfo, [field]: value } } : prev
@@ -140,7 +155,7 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-2xl font-bold text-on-surface mb-1">Quản lý hồ sơ đối tác</h2>
             <p className="text-base text-on-surface-variant">
-              Xem và chỉnh sửa các nhóm thông tin: Thông tin pháp lý, Người đại diện và Danh sách chi nhánh.
+              Xem và chỉnh sửa các nhóm thông tin: Logo thương hiệu, Thông tin pháp lý, Người đại diện và Danh sách chi nhánh.
             </p>
           </div>
           <StatusBadge status="running" label="Hồ sơ đã sẵn sàng" />
@@ -174,6 +189,15 @@ export default function ProfilePage() {
 
         {/* Sections */}
         <div className="space-y-8">
+          {(activeTab === "all" || activeTab === "brand") && (
+            <BrandLogoSection
+              brandLogo={profile.brandLogo}
+              businessName={profile.businessName}
+              onChange={handleLogoChange}
+              onUploadSuccess={handleLogoUploadSuccess}
+            />
+          )}
+
           {(activeTab === "all" || activeTab === "legal") && (
             <LegalInfoSection
               legalInfo={profile.legalInfo}
