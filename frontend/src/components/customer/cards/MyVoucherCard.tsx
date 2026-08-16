@@ -1,14 +1,15 @@
 import Link from "next/link";
 import { MyVoucher, Voucher } from "@/data/mockData";
-import { Ticket, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Ticket, CheckCircle2, Clock, XCircle, Star } from "lucide-react";
 import Image from "next/image";
 
 interface MyVoucherCardProps {
   myVoucher: MyVoucher;
   voucher: Voucher;
+  onOpenReview?: (myVoucher: MyVoucher, voucher: Voucher) => void;
 }
 
-export default function MyVoucherCard({ myVoucher, voucher }: MyVoucherCardProps) {
+export default function MyVoucherCard({ myVoucher, voucher, onOpenReview }: MyVoucherCardProps) {
   const getStatusBadge = () => {
     switch (myVoucher.status) {
       case "unused":
@@ -104,12 +105,23 @@ export default function MyVoucherCard({ myVoucher, voucher }: MyVoucherCardProps
           </div>
         </div>
 
-        <Link
-          href={`/my-vouchers/${myVoucher.id}`}
-          className="w-full mt-auto bg-surface-container-high hover:bg-surface-variant text-on-surface py-2.5 rounded-lg font-label-md text-label-md font-semibold text-center transition-all duration-200 cursor-pointer block"
-        >
-          Xem chi tiết
-        </Link>
+        {/* Action Buttons */}
+        <div className="mt-auto flex gap-2.5">
+          <Link
+            href={`/my-vouchers/${myVoucher.id}`}
+            className="flex-1 bg-surface-container-high hover:bg-surface-variant text-on-surface py-2.5 rounded-lg font-label-md text-label-md font-semibold text-center transition-all duration-200 cursor-pointer block"
+          >
+            Xem chi tiết
+          </Link>
+          <button
+            type="button"
+            onClick={() => onOpenReview?.(myVoucher, voucher)}
+            className="flex-1 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 py-2.5 rounded-lg font-label-md text-label-md font-semibold text-center transition-all duration-200 cursor-pointer flex items-center justify-center gap-1.5"
+          >
+            <Star className="w-4 h-4 fill-primary/20" />
+            Đánh giá
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -25,7 +25,23 @@ import {
   contentHelperRouter as adminContentHelperRouter,
 } from './admin/content.router.js';
 
+import customerAuthRouter from './customer/auth.router.js';
+import customerReviewRouter from './customer/review.router.js';
+import customerCartRouter from './customer/cart.router.js';
+import customerOrderRouter from './customer/order.router.js';
+import customerVoucherRouter from './customer/voucher.router.js';
+import customerCatalogRouter from './customer/catalog.router.js';
+
 const router = Router();
+
+// ─── Customer Routes ─────────────────────────────────────────────────────────
+router.use('/customer/auth', customerAuthRouter);
+router.use('/customer/reviews', customerReviewRouter);
+router.use('/customer/cart', customerCartRouter);
+router.use('/customer/orders', customerOrderRouter);
+router.use('/customer/my-vouchers', customerVoucherRouter);
+router.use('/customer', customerCatalogRouter);
+
 
 // ─── Partner Auth (Public) ────────────────────────────────────────────────────
 router.use('/partner/auth', partnerAuthRouter);

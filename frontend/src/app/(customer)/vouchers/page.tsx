@@ -82,7 +82,9 @@ function VoucherCatalogContent() {
 
     // 2. Category Match
     if (selectedCategory && selectedCategory !== "Tất cả") {
-      if (v.category !== selectedCategory) return false;
+      const sel = selectedCategory.toLowerCase().trim();
+      const cat = (v.category || "").toLowerCase().trim();
+      if (!cat.includes(sel) && !sel.includes(cat)) return false;
     }
 
     // 3. Price Filter Match

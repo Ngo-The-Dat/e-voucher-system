@@ -1,7 +1,13 @@
 "use client";
 
-import { ArrowRight, ShieldCheck } from "lucide-react";
+import { ArrowRight, Gift, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+
+export interface RecipientState {
+  full_name: string;
+  email: string;
+  phone: string;
+}
 
 interface CartSummaryProps {
   activeCartItemsLength: number;
@@ -14,7 +20,12 @@ interface CartSummaryProps {
   applyPromo: () => void;
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
+  isGift: boolean;
+  setIsGift: (isGift: boolean) => void;
+  recipientInfo: RecipientState;
+  setRecipientInfo: React.Dispatch<React.SetStateAction<RecipientState>>;
   handleCheckout: () => void;
+  isSubmitting?: boolean;
 }
 
 export default function CartSummary({
@@ -28,7 +39,12 @@ export default function CartSummary({
   applyPromo,
   paymentMethod,
   setPaymentMethod,
+  isGift,
+  setIsGift,
+  recipientInfo,
+  setRecipientInfo,
   handleCheckout,
+  isSubmitting = false,
 }: CartSummaryProps) {
   return (
     <div className="lg:col-span-4 lg:sticky lg:top-[128px] h-fit">
@@ -36,6 +52,7 @@ export default function CartSummary({
         <h2 className="font-title-md text-title-md font-bold text-on-surface border-b border-outline-variant pb-4">
           Tóm tắt đơn hàng
         </h2>
+
         <div className="flex flex-col gap-3">
           <div className="flex justify-between items-center">
             <span className="font-label-md text-label-md text-on-surface-variant">
@@ -45,6 +62,7 @@ export default function CartSummary({
               {formatCurrency(subtotal)}
             </span>
           </div>
+
           <div className="flex justify-between items-center text-secondary">
             <span className="font-label-md text-label-md">Giảm giá voucher</span>
             <span className="font-body-md text-body-md font-semibold">
@@ -76,8 +94,72 @@ export default function CartSummary({
             </p>
           )}
 
+          {/* Gift Option (BR-CUS-06) */}
+          <div className="mt-4 pt-4 border-t border-outline-variant/30 flex flex-col gap-3">
+            <label className="flex items-center gap-2 font-label-md text-label-md text-on-surface font-bold cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={isGift}
+                onChange={(e) => setIsGift(e.target.checked)}
+                className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
+              />
+              <Gift className="w-4 h-4 text-primary" />
+              <span>Mua làm quà tặng người khác</span>
+            </label>
+
+            {isGift && (
+              <div className="bg-surface-container-low p-4 rounded-lg border border-primary/20 space-y-3 mt-1">
+                <p className="text-xs text-on-surface-variant font-medium">
+                  Voucher phát hành sẽ được gán quyền sở hữu trực tiếp cho người nhận.
+                </p>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                    Họ và tên người nhận <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={recipientInfo.full_name}
+                    onChange={(e) =>
+                      setRecipientInfo((prev) => ({ ...prev, full_name: e.target.value }))
+                    }
+                    placeholder="Nguyễn Văn A"
+                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                    Email người nhận
+                  </label>
+                  <input
+                    type="email"
+                    value={recipientInfo.email}
+                    onChange={(e) =>
+                      setRecipientInfo((prev) => ({ ...prev, email: e.target.value }))
+                    }
+                    placeholder="nguyenvana@example.com"
+                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-on-surface mb-1">
+                    Số điện thoại người nhận
+                  </label>
+                  <input
+                    type="tel"
+                    value={recipientInfo.phone}
+                    onChange={(e) =>
+                      setRecipientInfo((prev) => ({ ...prev, phone: e.target.value }))
+                    }
+                    placeholder="0912345678"
+                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Payment Method Option */}
-          <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-outline-variant/30">
+          <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-outline-variant/30">
             <label className="font-label-md text-label-md text-on-surface font-bold">
               Phương thức thanh toán
             </label>
@@ -111,11 +193,13 @@ export default function CartSummary({
 
         <button
           onClick={handleCheckout}
-          className="w-full bg-primary hover:opacity-95 text-on-primary font-title-md text-title-md py-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-bold flex justify-center items-center gap-2 cursor-pointer"
+          disabled={isSubmitting}
+          className="w-full bg-primary hover:opacity-95 text-on-primary font-title-md text-title-md py-4 rounded-lg shadow-sm hover:shadow-md transition-all duration-200 font-bold flex justify-center items-center gap-2 cursor-pointer disabled:opacity-50"
         >
-          Tiến hành đặt hàng
+          {isSubmitting ? "Đang xử lý đơn hàng..." : "Tiến hành đặt hàng"}
           <ArrowRight className="w-5 h-5" />
         </button>
+
         <div className="flex items-center justify-center gap-2 text-on-surface-variant font-label-sm text-label-sm">
           <ShieldCheck className="w-4 h-4 text-secondary" />
           Thanh toán an toàn &amp; bảo mật

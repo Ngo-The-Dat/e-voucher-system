@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { Search, ShoppingCart, Bell, Ticket, Menu, X } from "lucide-react";
-import Image from "next/image";
+import { Search, ShoppingCart, Bell, Ticket, Menu, X, LogIn, UserPlus, LogOut, User } from "lucide-react";
+import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
 
 export default function Header() {
   const router = useRouter();
@@ -15,6 +15,46 @@ export default function Header() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [user, setUser] = useState<CustomerUser | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+
+  // Sync auth state
+  const checkAuth = () => {
+    if (typeof window === "undefined") return;
+    const token = localStorage.getItem("customer_access_token") || localStorage.getItem("token");
+    if (token) {
+      setIsLoggedIn(true);
+      const storedUser = localStorage.getItem("customer_user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          setUser(null);
+        }
+      }
+      customerAuthApi.getMe().then((userData) => {
+        setUser(userData);
+        localStorage.setItem("customer_user", JSON.stringify(userData));
+      }).catch(() => {
+        // If token expired/invalid
+      });
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  };
+
+  useEffect(() => {
+    checkAuth();
+    const handleAuthChange = () => checkAuth();
+    window.addEventListener("customer-auth-changed", handleAuthChange);
+    window.addEventListener("storage", handleAuthChange);
+    return () => {
+      window.removeEventListener("customer-auth-changed", handleAuthChange);
+      window.removeEventListener("storage", handleAuthChange);
+    };
+  }, []);
 
   // Sync state with url query if present
   useEffect(() => {
@@ -22,6 +62,19 @@ export default function Header() {
     if (q) setSearchQuery(q);
     else setSearchQuery("");
   }, [searchParams]);
+
+  const handleLogout = () => {
+    customerAuthApi.logout();
+    localStorage.removeItem("customer_user");
+    setIsLoggedIn(false);
+    setUser(null);
+    setUserDropdownOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("customer-auth-changed"));
+    }
+    router.push("/login");
+    router.refresh();
+  };
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,7 +89,7 @@ export default function Header() {
     router.push(`/vouchers?category=${encodeURIComponent(categoryName)}`);
   };
 
-  const cartItemsCount = cart.reduce((acc, item) => acc + item.quantity, 0);
+  const cartItemsCount = cart.length;
 
   const categories = [
     "Điện tử",
@@ -125,6 +178,16 @@ export default function Header() {
             >
               Voucher của tôi
             </Link>
+            <Link
+              href="/orders"
+              className={`font-label-md text-label-md transition-colors duration-200 pb-1 ${
+                pathname.startsWith("/orders")
+                  ? "text-white font-bold border-b-2 border-white"
+                  : "text-white/80 font-medium hover:text-white"
+              }`}
+            >
+              Đơn hàng
+            </Link>
           </nav>
 
           {/* Cart Icon */}
@@ -158,16 +221,75 @@ export default function Header() {
             Voucher của tôi
           </Link>
 
-          {/* Avatar (Mock) */}
-          <div className="hidden sm:block w-10 h-10 rounded-full overflow-hidden border border-white/20 cursor-pointer ml-1 md:ml-2 relative">
-            <Image
-              width={40}
-              height={40}
-              alt="Ảnh đại diện người dùng"
-              className="w-full h-full object-cover"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAqGdpRficcqsgdz-i0dIgDVTErKxUqYhHMUQnh_Kz9yj1HPD9DIKVtvZg-YBsJFLFv4VFYtsS3r4FylIVrLhCew3c_JFPQnZRUrTPHcV8Pfa771gYZewmF9k5LER3RWzoGwjixjPtLVbfXxLqHD5fUUIxeTN6AB7iZJUdX0BXWTSZQ0vqbOCBkDT77vETSGdpWLq7g6ySvbCZk0OKmqqVSjtB71THFtD1-BFzgHsT6KT1-gRW87gOi"
-            />
-          </div>
+          {/* Account Logo / Avatar Button (ONLY CHANGED THIS AREA) */}
+          {isLoggedIn ? (
+            <div className="relative hidden sm:block ml-1 md:ml-2">
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="w-10 h-10 rounded-full border border-white/30 bg-white/20 text-white font-bold text-base flex items-center justify-center cursor-pointer hover:bg-white/30 transition-colors shadow-sm"
+                title={user?.full_name || "Tài khoản"}
+              >
+                {user?.full_name ? user.full_name.charAt(0).toUpperCase() : <User className="w-5 h-5" />}
+              </button>
+
+              {userDropdownOpen && (
+                <div
+                  onMouseLeave={() => setUserDropdownOpen(false)}
+                  className="absolute right-0 mt-2 w-56 bg-surface border border-outline-variant rounded-xl shadow-xl py-2 z-50 text-on-surface animate-fadeIn"
+                >
+                  <div className="px-4 py-3 border-b border-outline-variant">
+                    <p className="font-title-sm text-title-sm font-bold truncate">{user?.full_name || "Khách hàng"}</p>
+                    <p className="font-body-xs text-body-xs text-text-muted truncate">{user?.email}</p>
+                  </div>
+
+                  <Link
+                    href="/my-vouchers"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 font-label-md text-label-md hover:bg-surface-container-high transition-colors"
+                  >
+                    <Ticket className="w-4 h-4 text-primary" />
+                    <span>Voucher của tôi</span>
+                  </Link>
+
+                  <Link
+                    href="/orders"
+                    onClick={() => setUserDropdownOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 font-label-md text-label-md hover:bg-surface-container-high transition-colors"
+                  >
+                    <User className="w-4 h-4 text-primary" />
+                    <span>Đơn hàng của tôi</span>
+                  </Link>
+
+                  <div className="border-t border-outline-variant my-1" />
+
+                  <button
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-2.5 font-label-md text-label-md text-error hover:bg-error/10 transition-colors text-left cursor-pointer"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Đăng xuất</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="hidden sm:flex items-center gap-2 ml-1 md:ml-2">
+              <Link
+                href="/login"
+                className="flex items-center gap-1.5 px-3 py-2 text-white hover:bg-white/10 rounded-lg font-label-md text-label-md font-semibold transition-colors"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Đăng nhập</span>
+              </Link>
+              <Link
+                href="/register"
+                className="flex items-center gap-1.5 bg-white text-primary px-3.5 py-2 rounded-lg font-label-md text-label-md font-bold hover:bg-white/90 transition-all shadow-sm"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Đăng ký</span>
+              </Link>
+            </div>
+          )}
 
           {/* Mobile Menu Burger Icon */}
           <button
@@ -182,6 +304,43 @@ export default function Header() {
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-outline-variant bg-surface-container-lowest p-4 transition-all flex flex-col gap-4">
+          {/* Mobile Auth Status Header */}
+          {!isLoggedIn ? (
+            <div className="flex gap-2 p-2 bg-primary/5 rounded-xl border border-primary/10 mb-2">
+              <Link
+                href="/login"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 py-2.5 text-center font-label-md text-label-md font-semibold bg-surface border border-outline-variant rounded-lg text-primary"
+              >
+                Đăng nhập
+              </Link>
+              <Link
+                href="/register"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex-1 py-2.5 text-center font-label-md text-label-md font-semibold bg-primary text-on-primary rounded-lg"
+              >
+                Đăng ký
+              </Link>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between p-3 bg-surface-container-high rounded-xl border border-outline-variant mb-2">
+              <div className="min-w-0 pr-2">
+                <p className="font-title-sm text-title-sm font-bold text-on-surface truncate">{user?.full_name}</p>
+                <p className="font-body-xs text-body-xs text-text-muted truncate">{user?.email}</p>
+              </div>
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setMobileMenuOpen(false);
+                }}
+                className="p-2 text-error hover:bg-error/10 rounded-lg flex items-center gap-1 font-label-sm text-label-sm font-semibold shrink-0 cursor-pointer"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Thoát</span>
+              </button>
+            </div>
+          )}
+
           {/* Mobile Search */}
           <form onSubmit={handleSearch} className="relative w-full">
             <input
@@ -227,6 +386,15 @@ export default function Header() {
               }`}
             >
               Voucher của tôi
+            </Link>
+            <Link
+              href="/orders"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`py-2 px-3 rounded-lg ${
+                pathname.startsWith("/orders") ? "bg-primary-container text-on-primary-container font-bold" : "text-on-surface-variant"
+              }`}
+            >
+              Đơn hàng của tôi
             </Link>
             <Link
               href="/cart"
