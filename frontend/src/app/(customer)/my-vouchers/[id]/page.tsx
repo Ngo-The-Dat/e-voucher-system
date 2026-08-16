@@ -29,7 +29,7 @@ import ReviewModal from "@/components/customer/ReviewModal";
 export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { myVouchers, vouchers, markAsUsed, addReview } = useApp();
+  const { myVouchers, vouchers, markAsUsed, addReview, refreshMyVouchers } = useApp();
 
   const [copied, setCopied] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -37,17 +37,54 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     const numericId = Number(id);
-    if (!isNaN(numericId) && numericId > 0) {
-      customerOrderApi
-        .getMyVoucherById(numericId)
-        .then((data) => {
-          if (data) setApiVoucher(data);
-        })
-        .catch((err) => {
-          console.warn("Không lấy được voucher từ API backend:", err);
+    if (isNaN(numericId) || numericId <= 0) return;
+
+    let isMounted = true;
+
+    const fetchVoucher = async () => {
+      try {
+        const data = await customerOrderApi.getMyVoucherById(numericId);
+        if (!isMounted || !data) return;
+
+        setApiVoucher((prev) => {
+          if (prev && prev.usage_status !== data.usage_status) {
+            if (refreshMyVouchers) refreshMyVouchers();
+          }
+          return data;
         });
-    }
-  }, [id]);
+      } catch (err) {
+        console.warn("Không lấy được voucher từ API backend:", err);
+      }
+    };
+
+    // Initial fetch
+    fetchVoucher();
+
+    // Auto-polling every 2.5 seconds while unused
+    const interval = setInterval(() => {
+      if (apiVoucher && apiVoucher.usage_status !== "UNUSED") {
+        clearInterval(interval);
+        return;
+      }
+      fetchVoucher();
+    }, 2500);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        fetchVoucher();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [id, apiVoucher?.usage_status, refreshMyVouchers]);
 
   // Find the purchased voucher from context as fallback
   const fallbackMyVoucher = myVouchers.find((mv) => mv.id === id);
