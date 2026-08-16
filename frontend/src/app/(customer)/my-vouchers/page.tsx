@@ -18,12 +18,12 @@ export default function MyVouchersPage() {
   }, [refreshMyVouchers]);
 
   // Local Page Filters
-  const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired" | "cancelled">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedReviewItem, setSelectedReviewItem] = useState<{ myVoucher: MyVoucher; voucher: Voucher } | null>(null);
 
-  const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired") => {
+  const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired" | "cancelled") => {
     setActiveTab(tab);
   };
 
@@ -104,7 +104,8 @@ export default function MyVouchersPage() {
               { id: "unused", label: "Chưa sử dụng", count: getUnusedCount() },
               { id: "used", label: "Đã sử dụng" },
               { id: "expiring", label: "Sắp hết hạn" },
-              { id: "expired", label: "Đã hết hạn" }
+              { id: "expired", label: "Đã hết hạn" },
+              { id: "cancelled", label: "Đã hủy" }
             ].map((tab) => (
               <button
                 key={tab.id}

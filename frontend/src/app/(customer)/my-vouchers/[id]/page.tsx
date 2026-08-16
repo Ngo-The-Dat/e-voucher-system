@@ -61,7 +61,9 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
         status:
           apiVoucher.usage_status === "USED"
             ? "used"
-            : apiVoucher.usage_status === "EXPIRED" || apiVoucher.usage_status === "CANCELLED"
+            : apiVoucher.usage_status === "CANCELLED"
+            ? "cancelled"
+            : apiVoucher.usage_status === "EXPIRED"
             ? "expired"
             : "unused",
         title: apiVoucher.program_name,
@@ -190,6 +192,12 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   <span className="bg-surface-dim text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
                     <XCircle className="w-4 h-4" />
                     Đã hết hạn
+                  </span>
+                )}
+                {displayVoucher.status === "cancelled" && (
+                  <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
+                    <XCircle className="w-4 h-4" />
+                    Đã hủy
                   </span>
                 )}
               </div>
@@ -335,15 +343,19 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   size={192}
                   level="H"
                   className={`${
-                    displayVoucher.status === "used" || displayVoucher.status === "expired"
+                    displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
                       ? "opacity-20 blur-[1px]"
                       : ""
                   }`}
                 />
-                {(displayVoucher.status === "used" || displayVoucher.status === "expired") && (
+                {(displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled") && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="bg-inverse-surface/90 text-surface-bright px-4 py-2 rounded-lg font-bold text-sm shadow-md uppercase tracking-wider">
-                      {displayVoucher.status === "used" ? "Đã sử dụng" : "Đã hết hạn"}
+                      {displayVoucher.status === "used"
+                        ? "Đã sử dụng"
+                        : displayVoucher.status === "cancelled"
+                        ? "Đã hủy"
+                        : "Đã hết hạn"}
                     </span>
                   </div>
                 )}
