@@ -1,5 +1,5 @@
 import { Branch, PartnerProfile } from "./types/profile";
-import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
+import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
 
@@ -41,10 +41,11 @@ const getStoredPartnerToken = (): string | null => {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredPartnerToken();
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
@@ -91,6 +92,13 @@ const mapVoucher = (row: any): VoucherItem => ({
   adminFeedback: row.admin_feedback ?? undefined,
   soldCount: Number(row.sold_count ?? 0), usedCount: Number(row.used_count ?? 0),
   expiredCount: Number(row.expired_count ?? 0), revenue: Number(row.revenue ?? 0),
+  thumbnail: row.thumbnail ?? null,
+  images: (row.images ?? []).map((image: any): VoucherImage => ({
+    id: String(image.id ?? image.image_id),
+    url: image.url ?? image.image_url,
+    isPrimary: Boolean(image.isPrimary ?? image.is_primary),
+    sortOrder: Number(image.sortOrder ?? image.sort_order ?? 0),
+  })),
 });
 
 export const partnerApi = {
@@ -175,7 +183,7 @@ export const partnerApi = {
     return list.data.map((row) => mapVoucher({ ...row, ...statMap.get(String(row.program_id)) }));
   },
   getVoucher: async (id: string) => mapVoucher(await request<any>(`/partner/vouchers/${id}`)),
-  createVoucher: (voucher: CreateVoucherInput) => request("/partner/vouchers", {
+  createVoucher: (voucher: CreateVoucherInput) => request<{ message: string; program: { program_id: number } }>("/partner/vouchers", {
     method: "POST", body: JSON.stringify({
       program_name: voucher.title, category_id: Number(voucher.categoryId),
       original_price: voucher.originalPrice, sale_price: voucher.sellingPrice,
@@ -193,6 +201,35 @@ export const partnerApi = {
       use_end_at: voucher.useEndDate, branch_ids: voucher.branchIds.map(Number),
     }),
   }),
+  uploadVoucherImage: async (
+    voucherId: string,
+    file: File,
+    isPrimary: boolean,
+    sortOrder: number,
+  ): Promise<VoucherImage> => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("is_primary", String(isPrimary));
+    formData.append("sort_order", String(sortOrder));
+    const result = await request<{ message: string; image: VoucherImage }>(`/partner/vouchers/${voucherId}/images`, {
+      method: "POST",
+      body: formData,
+    });
+    return result.image;
+  },
+  setPrimaryVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, {
+      method: "PATCH",
+    })).images,
+  reorderVoucherImages: async (voucherId: string, imageIds: string[]): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/order`, {
+      method: "PUT",
+      body: JSON.stringify({ image_ids: imageIds.map(Number) }),
+    })).images,
+  deleteVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}`, {
+      method: "DELETE",
+    })).images,
   submitVoucher: (id: string) => request(`/partner/vouchers/${id}/submit`, { method: "POST" }),
   lookupVoucher: (code: string) => request<any>(`/partner/redeem/lookup?code=${encodeURIComponent(code)}`),
   lookupVoucherByQr: (qrValue: string) => request<any>("/partner/redeem/lookup-qr", {
