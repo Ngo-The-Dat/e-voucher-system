@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { customerOrderApi, CustomerVoucherItem } from "@/lib/customer-api";
+import { customerOrderApi, CustomerVoucherItem, getStoredCustomerUser } from "@/lib/customer-api";
 
 import {
   AlertTriangle,
@@ -437,9 +437,10 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
         voucherTitle={displayVoucher.title}
         voucherCode={displayVoucher.code}
         onSubmit={(rating, reviewContent, complaintContent) => {
+          const user = getStoredCustomerUser();
           addReview(
             displayVoucher.id,
-            "Khách hàng",
+            user?.full_name || "Khách hàng",
             rating,
             reviewContent,
             complaintContent

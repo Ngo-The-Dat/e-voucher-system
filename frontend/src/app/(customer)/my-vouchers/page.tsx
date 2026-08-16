@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
 import { MyVoucher, Voucher } from "@/data/mockData";
+import { getStoredCustomerUser } from "@/lib/customer-api";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
 export default function MyVouchersPage() {
@@ -212,9 +213,10 @@ export default function MyVouchersPage() {
           voucherTitle={selectedReviewItem.voucher.title}
           voucherCode={selectedReviewItem.myVoucher.code}
           onSubmit={(rating, reviewContent, complaintContent) => {
+            const user = getStoredCustomerUser();
             addReview(
               selectedReviewItem.voucher.id,
-              "Khách hàng",
+              user?.full_name || "Khách hàng",
               rating,
               reviewContent,
               complaintContent

@@ -1,9 +1,10 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
+import { getStoredCustomerUser, CustomerUser } from "@/lib/customer-api";
 import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
@@ -40,11 +41,19 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   // States
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [reviewName, setReviewName] = useState("");
+  const [currentUser, setCurrentUser] = useState<CustomerUser | null>(null);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("");
   const [hasComplaint, setHasComplaint] = useState(false);
   const [complaintContent, setComplaintContent] = useState("");
+
+  useEffect(() => {
+    const user = getStoredCustomerUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  }, []);
+
   if (!voucher) {
     return (
       <main className="max-w-container-max mx-auto px-margin-mobile py-20 flex flex-col items-center justify-center text-center">
@@ -92,15 +101,14 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const handleAddReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reviewName.trim()) return;
+    const authorName = currentUser?.full_name || "Khách hàng";
     addReview(
       voucher.id,
-      reviewName.trim(),
+      authorName,
       reviewRating,
       reviewContent.trim(),
       hasComplaint ? complaintContent.trim() : undefined
     );
-    setReviewName("");
     setReviewContent("");
     setReviewRating(5);
     setHasComplaint(false);
@@ -470,40 +478,32 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Add Review Form */}
           <div className="bg-surface-container-lowest/50 p-6 rounded-xl border border-outline-variant/50 shadow-sm">
-            <h3 className="font-title-md text-title-md font-bold text-on-surface mb-4">
-              Viết đánh giá của bạn
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+              <h3 className="font-title-md text-title-md font-bold text-on-surface">
+                Viết đánh giá của bạn
+              </h3>
+              {currentUser?.full_name && (
+                <span className="text-xs text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full font-medium self-start sm:self-auto">
+                  Đánh giá với tên: <strong className="text-on-surface font-semibold">{currentUser.full_name}</strong>
+                </span>
+              )}
+            </div>
             <form onSubmit={handleAddReviewSubmit} className="flex flex-col gap-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-label-md text-on-surface font-semibold mb-1">
-                    Tên của bạn
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={reviewName}
-                    onChange={(e) => setReviewName(e.target.value)}
-                    className="w-full bg-surface-bright border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary outline-none"
-                    placeholder="Nhập tên..."
-                  />
-                </div>
-                <div>
-                  <label className="block text-label-md text-on-surface font-semibold mb-1">
-                    Đánh giá sao
-                  </label>
-                  <select
-                    value={reviewRating}
-                    onChange={(e) => setReviewRating(parseInt(e.target.value))}
-                    className="w-full bg-surface-bright border border-outline-variant rounded-lg p-2 text-body-md focus:border-primary outline-none cursor-pointer"
-                  >
-                    <option value="5">5 Sao (Rất tốt)</option>
-                    <option value="4">4 Sao (Tốt)</option>
-                    <option value="3">3 Sao (Bình thường)</option>
-                    <option value="2">2 Sao (Tệ)</option>
-                    <option value="1">1 Sao (Rất tệ)</option>
-                  </select>
-                </div>
+              <div className="max-w-xs">
+                <label className="block text-label-md text-on-surface font-semibold mb-1">
+                  Đánh giá sao
+                </label>
+                <select
+                  value={reviewRating}
+                  onChange={(e) => setReviewRating(parseInt(e.target.value))}
+                  className="w-full bg-surface-bright border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary outline-none cursor-pointer"
+                >
+                  <option value="5">⭐⭐⭐⭐⭐ 5 Sao (Rất tốt)</option>
+                  <option value="4">⭐⭐⭐⭐ 4 Sao (Tốt)</option>
+                  <option value="3">⭐⭐⭐ 3 Sao (Bình thường)</option>
+                  <option value="2">⭐⭐ 2 Sao (Tệ)</option>
+                  <option value="1">⭐ 1 Sao (Rất tệ)</option>
+                </select>
               </div>
               <div>
                 <div className="flex justify-between items-center mb-1">
