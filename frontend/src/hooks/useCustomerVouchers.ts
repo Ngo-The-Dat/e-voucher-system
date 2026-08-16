@@ -1,13 +1,32 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { Voucher, mockVouchers } from "@/data/mockData";
+import { useState, useCallback, useEffect } from "react";
+import { Voucher } from "@/data/mockData";
+import { customerCatalogApi } from "@/lib/customer-api";
 
 export function useCustomerVouchers() {
-  const [vouchers, setVouchers] = useState<Voucher[]>(mockVouchers);
-  // Khi có API thực tế, bạn sẽ thêm isLoading, useEffect để fetch data ở đây
+  const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  const addReview = useCallback((voucherId: string, author: string, rating: number, content: string) => {
+  const fetchVouchers = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const res = await customerCatalogApi.getVouchers({ limit: 100 });
+      if (res && Array.isArray(res.vouchers)) {
+        setVouchers(res.vouchers as Voucher[]);
+      }
+    } catch (e) {
+      console.warn("Không kết nối được catalog API:", e);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchVouchers();
+  }, [fetchVouchers]);
+
+  const addReview = useCallback((voucherId: string, author: string, rating: number, content: string, complaint?: string) => {
     setVouchers((prevVouchers) => {
       return prevVouchers.map((v) => {
         if (v.id === voucherId) {
@@ -17,19 +36,20 @@ export function useCustomerVouchers() {
             avatarBg: "bg-primary-container text-on-primary-container",
             rating,
             timeAgo: "Vừa xong",
-            content
+            content: content || "Khách hàng không để lại lời nhắn.",
+            complaint: complaint && complaint.trim() ? complaint.trim() : undefined
           };
 
           const existingReviews = v.reviews || [];
           const updatedReviews = [newReview, ...existingReviews];
           const newRating = parseFloat(
-            ((v.rating * v.reviewsCount + rating) / (v.reviewsCount + 1)).toFixed(1)
+            ((v.rating * (v.reviewsCount || 0) + rating) / ((v.reviewsCount || 0) + 1)).toFixed(1)
           );
 
           return {
             ...v,
             rating: newRating,
-            reviewsCount: v.reviewsCount + 1,
+            reviewsCount: (v.reviewsCount || 0) + 1,
             reviews: updatedReviews
           };
         }
@@ -41,6 +61,8 @@ export function useCustomerVouchers() {
   return {
     vouchers,
     setVouchers,
-    addReview
+    isLoading,
+    addReview,
+    refreshVouchers: fetchVouchers,
   };
 }

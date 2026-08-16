@@ -7,7 +7,8 @@ import { useApp } from "@/context/AppContext";
 
 export default function FeaturedDeals() {
   const { vouchers } = useApp();
-  const featuredVouchers = vouchers.filter((v) => v.featured || v.bestSeller).slice(0, 4);
+  const featuredList = vouchers.filter((v) => v.featured || v.bestSeller);
+  const featuredVouchers = (featuredList.length > 0 ? featuredList : vouchers).slice(0, 4);
 
   return (
     <section className="py-20 bg-surface-container-lowest px-margin-mobile md:px-margin-desktop relative overflow-hidden">

@@ -14,14 +14,16 @@ interface AppContextType {
   removeFromCart: (voucherId: string) => void;
   checkout: (paymentMethod: string) => void;
   markAsUsed: (myVoucherId: string) => void;
-  addReview: (voucherId: string, author: string, rating: number, content: string) => void;
+  addReview: (voucherId: string, author: string, rating: number, content: string, complaint?: string) => void;
+  refreshCart: () => Promise<boolean>;
+  refreshMyVouchers: () => Promise<boolean>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const { vouchers, addReview } = useCustomerVouchers();
-  const { cart, myVouchers, addToCart, updateCartQuantity, removeFromCart, checkout, markAsUsed } = useCustomerCart();
+  const { cart, myVouchers, addToCart, updateCartQuantity, removeFromCart, checkout, markAsUsed, refreshCart, refreshMyVouchers } = useCustomerCart();
 
   return (
     <AppContext.Provider
@@ -34,7 +36,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         removeFromCart,
         checkout,
         markAsUsed,
-        addReview
+        addReview,
+        refreshCart,
+        refreshMyVouchers
       }}
     >
       {children}

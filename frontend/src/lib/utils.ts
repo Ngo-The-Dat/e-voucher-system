@@ -37,7 +37,7 @@ export function formatCurrency(value: number): string {
 }
 
 /**
- * Format ngày tháng từ chuỗi ISO hoặc YYYY-MM-DD (VD: 01/10/2023)
+ * Format ngày tháng từ chuỗi ISO hoặc YYYY-MM-DD (VD: 01/10/2026)
  */
 export function formatDate(dateStr: string): string {
   if (!dateStr) return "—";
