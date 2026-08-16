@@ -20,8 +20,8 @@ export function useOtpTimer(initialSeconds = 60) {
     return () => clearTimeout(timer);
   }, [seconds, isRunning]);
 
-  const start = useCallback(() => {
-    setSeconds(initialSeconds);
+  const start = useCallback((duration = initialSeconds) => {
+    setSeconds(duration);
     setIsRunning(true);
   }, [initialSeconds]);
 
@@ -30,5 +30,10 @@ export function useOtpTimer(initialSeconds = 60) {
     setIsRunning(false);
   }, [initialSeconds]);
 
-  return { seconds, isRunning, isExpired: seconds <= 0, start, reset };
+  const expire = useCallback(() => {
+    setSeconds(0);
+    setIsRunning(false);
+  }, []);
+
+  return { seconds, isRunning, isExpired: seconds <= 0, start, reset, expire };
 }

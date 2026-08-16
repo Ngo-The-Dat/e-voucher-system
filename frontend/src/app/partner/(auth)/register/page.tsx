@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import Icon from "@/components/shared/ui/Icon";
 import RegisterStep1Form from "@/components/partner/auth/RegisterStep1Form";
 import RegisterStep2Otp from "@/components/partner/auth/RegisterStep2Otp";
 import RegisterStep3Password from "@/components/partner/auth/RegisterStep3Password";
 import { useOtpTimer } from "@/hooks/useOtpTimer";
-import { partnerApi } from "@/lib/partner-api";
+import { ApiError, partnerApi } from "@/lib/partner-api";
 
 type FormData = {
   fullName: string;
@@ -32,21 +33,22 @@ export default function RegisterPage() {
 
   // Form State
   const [formData, setFormData] = useState<FormData>({
-    fullName: "Nguyễn Văn A",
-    cccd: "012345678901",
-    phone: "0912345678",
-    email: "doitac@lumina.vn",
-    businessName: "Cửa hàng Lumina Store",
-    taxCode: "0101234567",
+    fullName: "",
+    cccd: "",
+    phone: "",
+    email: "",
+    businessName: "",
+    taxCode: "",
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-
+  const [isCheckingRegistration, setIsCheckingRegistration] = useState(false);
 
   // OTP State
   const [otpDeliveryMethod, setOtpDeliveryMethod] = useState<"email" | "phone" | null>(null);
+  const [otpChallengeId, setOtpChallengeId] = useState<string | null>(null);
   const [otpCode, setOtpCode] = useState(["", "", "", "", "", ""]);
   const [otpError, setOtpError] = useState("");
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const otpTimer = useOtpTimer(60);
 
@@ -66,51 +68,93 @@ export default function RegisterPage() {
   }, [currentStep]);
 
   // --- Step 1 ---
-  const handleStep1Submit = (e: React.FormEvent) => {
+  const getOtpIdentity = () => ({
+    email: formData.email,
+    identity_no: formData.cccd,
+    tax_code: formData.taxCode,
+  });
+
+  const mapApiField = (field?: string): keyof FormData | null => {
+    if (field === "email") return "email";
+    if (field === "identity_no") return "cccd";
+    if (field === "phone") return "phone";
+    if (field === "tax_code") return "taxCode";
+    return null;
+  };
+
+  const resetOtpState = () => {
+    setOtpDeliveryMethod(null);
+    setOtpChallengeId(null);
+    setOtpCode(["", "", "", "", "", ""]);
+    setOtpError("");
+    otpTimer.reset();
+  };
+
+  const handleFormChange = (field: keyof FormData, value: string) => {
+    setFormData((previous) => ({ ...previous, [field]: value }));
+    setFieldErrors((previous) => ({ ...previous, [field]: undefined, global: undefined }));
+    resetOtpState();
+  };
+
+  const handleStep1Submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const errors: FieldErrors = {};
     if (!formData.fullName.trim()) errors.fullName = "Vui lòng nhập Họ và Tên";
     if (!formData.cccd.trim()) errors.cccd = "Vui lòng nhập số CCCD / CMND";
     if (!formData.phone.trim()) errors.phone = "Vui lòng nhập Số điện thoại";
     if (!formData.email.trim()) errors.email = "Vui lòng nhập Email liên hệ";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) errors.email = "Định dạng email không hợp lệ";
     if (!formData.businessName.trim()) errors.businessName = "Vui lòng nhập Tên thương hiệu / Cửa hàng";
     if (!/^[0-9]{10,13}$/.test(formData.taxCode.trim())) {
       errors.taxCode = "Mã số thuế phải gồm 10 đến 13 chữ số";
     }
     if (Object.keys(errors).length > 0) { setFieldErrors(errors); return; }
 
-    const isCccdDuplicate = formData.cccd === "012345678901";
-    if (isCccdDuplicate) {
-      setFieldErrors({
-        global: "Thông tin định danh đã tồn tại",
-        cccd: "Số CCCD/CMND đã được đăng ký trên hệ thống",
-      });
-      return;
+    setIsCheckingRegistration(true);
+    try {
+      await partnerApi.checkRegistration(getOtpIdentity());
+      setFieldErrors({});
+      setCurrentStep(2);
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      const field = mapApiField(apiError?.field);
+      setFieldErrors(field
+        ? { global: "Thông tin đăng ký chưa hợp lệ", [field]: apiError?.message ?? "Vui lòng kiểm tra lại thông tin." }
+        : { global: apiError?.message ?? "Không thể kiểm tra thông tin đăng ký." });
+    } finally {
+      setIsCheckingRegistration(false);
     }
-    setFieldErrors({});
-    setCurrentStep(2);
   };
 
   // --- Step 2: OTP ---
-  const triggerAutoVerify = (codeArray: string[]) => {
+  const triggerAutoVerify = async (codeArray: string[]) => {
     const fullCode = codeArray.join("");
-    if (fullCode.length < 6) return;
+    if (fullCode.length < 6 || !otpChallengeId || isVerifyingOtp) return;
     setIsVerifyingOtp(true);
     setOtpError("");
-    setTimeout(() => {
-      setIsVerifyingOtp(false);
-      if (fullCode !== "123456") {
-        setOtpError("Mã OTP không hợp lệ");
-        setOtpCode(["", "", "", "", "", ""]);
-        setTimeout(() => {
-          const el = document.getElementById("otp-input-0") as HTMLInputElement | null;
-          el?.focus(); el?.select();
-        }, 50);
-        return;
-      }
+    try {
+      await partnerApi.verifyRegistrationOtp({
+        email: formData.email,
+        challenge_id: otpChallengeId,
+        otp: fullCode,
+      });
       setOtpError("");
       setCurrentStep(3);
-    }, 450);
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      setOtpError(apiError?.message ?? "Không thể xác minh mã OTP.");
+      setOtpCode(["", "", "", "", "", ""]);
+      if (apiError?.status === 410 || apiError?.status === 429) {
+        setOtpChallengeId(null);
+        otpTimer.expire();
+      }
+      setTimeout(() => {
+        const el = document.getElementById("otp-input-0") as HTMLInputElement | null;
+        el?.focus(); el?.select();
+      }, 50);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -142,23 +186,61 @@ export default function RegisterPage() {
     if (digits.length === 6) triggerAutoVerify(newOtp);
   };
 
-  const handleSelectDeliveryMethod = (method: "email" | "phone") => {
-    setOtpDeliveryMethod(method);
+  const handleSelectDeliveryMethod = async (method: "email" | "phone") => {
+    if (method === "phone") {
+      toast.info("Tính năng nhận OTP qua SMS hiện chưa khả dụng. Vui lòng chọn Email.");
+      return;
+    }
+
+    if (otpChallengeId && !otpTimer.isExpired) {
+      setOtpDeliveryMethod("email");
+      setTimeout(() => document.getElementById("otp-input-0")?.focus(), 50);
+      return;
+    }
+
+    setIsSendingOtp(true);
     setOtpError("");
-    setOtpCode(["", "", "", "", "", ""]);
-    otpTimer.start();
-    setTimeout(() => {
-      (document.getElementById("otp-input-0") as HTMLInputElement | null)?.focus();
-    }, 50);
+    try {
+      const result = await partnerApi.sendRegistrationOtp(getOtpIdentity());
+      setOtpChallengeId(result.challenge_id);
+      setOtpDeliveryMethod("email");
+      setOtpCode(["", "", "", "", "", ""]);
+      otpTimer.start(result.resend_after);
+      toast.success("Mã OTP đã được gửi tới email của bạn.");
+      setTimeout(() => document.getElementById("otp-input-0")?.focus(), 50);
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      if (apiError?.field) {
+        const field = mapApiField(apiError.field);
+        if (field) {
+          setFieldErrors({ global: "Thông tin đăng ký đã thay đổi", [field]: apiError.message });
+          setCurrentStep(1);
+        }
+      }
+      toast.error(apiError?.message ?? "Không thể gửi mã OTP.");
+      if (apiError?.retryAfter) otpTimer.start(apiError.retryAfter);
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
-  const handleResendOtp = () => {
-    setOtpCode(["", "", "", "", "", ""]);
+  const handleResendOtp = async () => {
+    setIsSendingOtp(true);
     setOtpError("");
-    otpTimer.start();
-    setTimeout(() => {
-      (document.getElementById("otp-input-0") as HTMLInputElement | null)?.focus();
-    }, 50);
+    try {
+      const result = await partnerApi.sendRegistrationOtp(getOtpIdentity());
+      setOtpChallengeId(result.challenge_id);
+      setOtpCode(["", "", "", "", "", ""]);
+      otpTimer.start(result.resend_after);
+      toast.success("Đã gửi một mã OTP mới tới email của bạn.");
+      setTimeout(() => document.getElementById("otp-input-0")?.focus(), 50);
+    } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      setOtpError(apiError?.message ?? "Không thể gửi lại mã OTP.");
+      if (apiError?.retryAfter) otpTimer.start(apiError.retryAfter);
+    } finally {
+      setIsSendingOtp(false);
+    }
   };
 
   // --- Step 3: Password ---
@@ -173,16 +255,30 @@ export default function RegisterPage() {
       return;
     }
     setPasswordError("");
+    if (!otpChallengeId) {
+      setPasswordError("Phiên xác thực OTP không còn hợp lệ. Vui lòng xác thực lại.");
+      setCurrentStep(2);
+      return;
+    }
     try {
       await partnerApi.register({
         full_name: formData.fullName, identity_no: formData.cccd,
         phone: formData.phone, email: formData.email,
         business_name: formData.businessName,
         tax_code: formData.taxCode,
+        otp_challenge_id: otpChallengeId,
         password,
       });
       setCurrentStep(4);
     } catch (error) {
+      const apiError = error instanceof ApiError ? error : null;
+      const field = mapApiField(apiError?.field);
+      if (field) {
+        setFieldErrors({ global: "Thông tin đăng ký không còn khả dụng", [field]: apiError?.message });
+        resetOtpState();
+        setCurrentStep(1);
+        return;
+      }
       setPasswordError(error instanceof Error ? error.message : "Đăng ký thất bại");
     }
   };
@@ -226,8 +322,9 @@ export default function RegisterPage() {
           <RegisterStep1Form
             formData={formData}
             fieldErrors={fieldErrors}
-            onChange={(field, value) => setFormData((p) => ({ ...p, [field]: value }))}
+            onChange={handleFormChange}
             onSubmit={handleStep1Submit}
+            isSubmitting={isCheckingRegistration}
           />
         )}
 
@@ -239,6 +336,7 @@ export default function RegisterPage() {
             otpCode={otpCode}
             otpError={otpError}
             isVerifyingOtp={isVerifyingOtp}
+            isSendingOtp={isSendingOtp}
             resendSeconds={otpTimer.seconds}
             isResendExpired={otpTimer.isExpired}
             onSelectDeliveryMethod={handleSelectDeliveryMethod}

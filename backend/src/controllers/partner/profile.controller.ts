@@ -30,6 +30,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       ['business_license_no', 100, true],
       ['license_issue_place', 255, true],
       ['representative_title', 100, true],
+      ['brand_logo', 500, true],
     ];
     const allowedFields = new Set([
       ...stringFields.map(([field]) => field),
@@ -62,6 +63,28 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
     }
     const updated = await profileService.updateProfile(partnerId, req.body);
     res.status(200).json({ message: 'Cập nhật hồ sơ thành công.', profile: updated });
+  } catch (err: unknown) {
+    sendHttpError(res, err);
+  }
+};
+
+export const uploadLogo = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const partnerId = req.user!.id;
+    if (!req.file) {
+      res.status(400).json({ message: 'Vui lòng chọn một ảnh logo để upload.' });
+      return;
+    }
+
+    const { uploadBrandLogo } = await import('../../services/storage/r2.service.js');
+    const logoUrl = await uploadBrandLogo(partnerId, req.file);
+    const updated = await profileService.updateProfile(partnerId, { brand_logo: logoUrl });
+
+    res.status(200).json({
+      message: 'Upload logo thành công.',
+      logo_url: logoUrl,
+      profile: updated,
+    });
   } catch (err: unknown) {
     sendHttpError(res, err);
   }

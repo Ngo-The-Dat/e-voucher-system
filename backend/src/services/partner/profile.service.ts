@@ -16,6 +16,7 @@ interface UpdateProfileInput {
   license_issue_place?: string;
   // Chức danh người đại diện; thông tin định danh dùng từ users
   representative_title?: string;
+  brand_logo?: string | null;
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -27,7 +28,7 @@ export const getProfile = async (partnerId: number) => {
        u.nationality, u.status, u.created_at, u.last_login_at,
        p.business_name, p.tax_code, p.approval_status, p.activity_status, p.registered_at,
        p.business_license_no, p.license_issue_date, p.license_issue_place,
-       p.representative_title
+       p.representative_title, p.brand_logo
      FROM users u
      JOIN partners p ON u.user_id = p.user_id
      WHERE u.user_id = $1`,
@@ -69,14 +70,17 @@ export const updateProfile = async (partnerId: number, input: UpdateProfileInput
          business_license_no = COALESCE($2, business_license_no),
          license_issue_date = COALESCE($3, license_issue_date),
          license_issue_place = COALESCE($4, license_issue_place),
-         representative_title = COALESCE($5, representative_title)
-       WHERE user_id = $6`,
+         representative_title = COALESCE($5, representative_title),
+         brand_logo = CASE WHEN $6::boolean THEN $7 ELSE brand_logo END
+       WHERE user_id = $8`,
       [
         input.business_name,
         input.business_license_no,
         input.license_issue_date,
         input.license_issue_place,
         input.representative_title,
+        input.brand_logo !== undefined,
+        input.brand_logo ?? null,
         partnerId,
       ]
     );

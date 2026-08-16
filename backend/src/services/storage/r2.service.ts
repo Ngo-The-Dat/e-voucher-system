@@ -72,6 +72,28 @@ export const uploadVoucherImage = async (
   return `${config.publicBaseUrl}/${objectKey}`;
 };
 
+export const uploadBrandLogo = async (
+  partnerId: number,
+  file: Express.Multer.File
+): Promise<string> => {
+  const extension = EXTENSIONS_BY_MIME[file.mimetype];
+  if (!extension) {
+    throw { status: 400, message: 'Chỉ chấp nhận ảnh JPEG, PNG hoặc WebP.' };
+  }
+
+  const config = getConfig();
+  const objectKey = `partners/${partnerId}/logo/${randomUUID()}.${extension}`;
+  await config.client.send(new PutObjectCommand({
+    Bucket: config.bucket,
+    Key: objectKey,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
+
+  return `${config.publicBaseUrl}/${objectKey}`;
+};
+
 const objectKeyFromPublicUrl = (imageUrl: string, publicBaseUrl: string): string => {
   const base = new URL(`${publicBaseUrl}/`);
   const image = new URL(imageUrl);

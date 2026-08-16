@@ -7,16 +7,19 @@ import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
 import BranchModal from "@/components/partner/profile/BranchModal";
+import BrandLogoSection from "@/components/partner/profile/BrandLogoSection";
 import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
 import RepresentativeSection from "@/components/partner/profile/RepresentativeSection";
 import BranchesSection from "@/components/partner/profile/BranchesSection";
 import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
 import { useProfile } from "@/hooks/useProfile";
 import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { usePartnerContext } from "@/context/PartnerContext";
 import { partnerApi } from "@/lib/partner-api";
 
 const TABS = [
   { id: "all", label: "Tất cả thông tin hồ sơ", icon: "assignment" },
+  { id: "brand", label: "Logo thương hiệu", icon: "image" },
   { id: "legal", label: "Thông tin pháp lý & Mã số thuế", icon: "gavel" },
   { id: "rep", label: "Người đại diện", icon: "badge" },
   { id: "branch", label: "Danh sách chi nhánh", icon: "location_city" },
@@ -24,6 +27,7 @@ const TABS = [
 
 export default function ProfilePage() {
   const { profile, isLoading, setProfile, reload, save } = useProfile();
+  const { refreshPartner } = usePartnerContext();
   const { validate } = useProfileValidation();
 
   const [activeTab, setActiveTab] = useState("all");
@@ -48,6 +52,22 @@ export default function ProfilePage() {
   }
 
   // --- Change handlers ---
+  const handleLogoChange = (value: string) => {
+    setProfile((prev) => (prev ? { ...prev, brandLogo: value } : prev));
+    setHasUnsavedChanges(true);
+  };
+
+  const handleLogoUploadSuccess = async (uploadedUrl: string) => {
+    setProfile((prev) => (prev ? { ...prev, brandLogo: uploadedUrl } : prev));
+    setHasUnsavedChanges(false);
+    if (refreshPartner) {
+      await refreshPartner();
+    }
+    setToastType("success");
+    setToastMessage("Tải lên và lưu logo thương hiệu thành công!");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleLegalChange = (field: keyof PartnerProfile["legalInfo"], value: string) => {
     setProfile((prev) =>
       prev ? { ...prev, legalInfo: { ...prev.legalInfo, [field]: value } } : prev
@@ -76,6 +96,9 @@ export default function ProfilePage() {
     }
     try {
       await save(profile);
+      if (refreshPartner) {
+        await refreshPartner();
+      }
       setHasUnsavedChanges(false);
       setErrors({});
       setToastType("success");
@@ -87,8 +110,11 @@ export default function ProfilePage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const handleResetProfile = () => {
-    reload();
+  const handleResetProfile = async () => {
+    await reload();
+    if (refreshPartner) {
+      await refreshPartner();
+    }
     setHasUnsavedChanges(false);
     setErrors({});
   };
@@ -140,7 +166,7 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-2xl font-bold text-on-surface mb-1">Quản lý hồ sơ đối tác</h2>
             <p className="text-base text-on-surface-variant">
-              Xem và chỉnh sửa các nhóm thông tin: Thông tin pháp lý, Người đại diện và Danh sách chi nhánh.
+              Xem và chỉnh sửa các nhóm thông tin: Logo thương hiệu, Thông tin pháp lý, Người đại diện và Danh sách chi nhánh.
             </p>
           </div>
           <StatusBadge status="running" label="Hồ sơ đã sẵn sàng" />
@@ -174,6 +200,15 @@ export default function ProfilePage() {
 
         {/* Sections */}
         <div className="space-y-8">
+          {(activeTab === "all" || activeTab === "brand") && (
+            <BrandLogoSection
+              brandLogo={profile.brandLogo}
+              businessName={profile.businessName}
+              onChange={handleLogoChange}
+              onUploadSuccess={handleLogoUploadSuccess}
+            />
+          )}
+
           {(activeTab === "all" || activeTab === "legal") && (
             <LegalInfoSection
               legalInfo={profile.legalInfo}

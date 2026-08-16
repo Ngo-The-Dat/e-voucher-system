@@ -4,10 +4,14 @@ import type { AddressInfo } from 'node:net';
 import jwt from 'jsonwebtoken';
 import app from '../src/app.js';
 import pool from '../src/config/db.js';
+import { requestRegistrationOtp } from '../src/services/partner/registration-otp.service.js';
 
 const TEST_CODE = 'TEST-PARTNER-REDEEM-RACE';
 const EARLY_TEST_CODE = 'TEST-PARTNER-REDEEM-EARLY';
 const TEST_EMAIL = 'test.partner.integration@example.com';
+const TEST_IDENTITY_NO = '079999999991';
+const TEST_PHONE = '0999999991';
+const TEST_TAX_CODE = '999999999991';
 const PROFILE_TEST_EMAIL = 'test.partner.profile@example.com';
 const PROFILE_TEST_TAX_CODE = 'TEST-PARTNER-PROFILE-TAX';
 let server: ReturnType<typeof app.listen>;
@@ -56,7 +60,7 @@ before(async () => {
 
   await pool.query('DELETE FROM partners WHERE user_id IN (SELECT user_id FROM users WHERE email = $1)', [TEST_EMAIL]);
   await pool.query('DELETE FROM users WHERE email = $1', [TEST_EMAIL]);
-  await pool.query('DELETE FROM issued_vouchers WHERE voucher_code = $1', [TEST_CODE]);
+  await pool.query('DELETE FROM issued_vouchers WHERE voucher_code IN ($1, $2)', [TEST_CODE, EARLY_TEST_CODE]);
   await pool.query(
     `SELECT setval(
        pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'),
@@ -145,13 +149,14 @@ test('partner profile reuses user identity fields and only stores representative
       phone: '0922222222',
       identity_no: '079222222222',
       representative_title: 'Tổng giám đốc',
+      brand_logo: 'https://example.com/partner-logo.png',
       email: 'ignored.profile.email@example.com',
     }),
   });
   assert.equal(updateResponse.status, 200);
 
   const stored = await pool.query(
-    `SELECT u.full_name, u.email, u.phone, u.identity_no, p.representative_title
+    `SELECT u.full_name, u.email, u.phone, u.identity_no, p.representative_title, p.brand_logo
      FROM users u
      JOIN partners p ON p.user_id = u.user_id
      WHERE u.email = $1`,
@@ -163,6 +168,7 @@ test('partner profile reuses user identity fields and only stores representative
     phone: '0922222222',
     identity_no: '079222222222',
     representative_title: 'Tổng giám đốc',
+    brand_logo: 'https://example.com/partner-logo.png',
   });
 
   const duplicateResponse = await request('/api/partner/profile', profileToken, {
@@ -177,17 +183,61 @@ test('registration validates input, handles duplicates, and blocks pending login
     method: 'POST',
     body: JSON.stringify({
       full_name: 'Test Partner', email: TEST_EMAIL, password: 'short',
-      business_name: 'Test Business', tax_code: 'TEST-INTEGRATION-TAX',
+      identity_no: TEST_IDENTITY_NO, business_name: 'Test Business', tax_code: TEST_TAX_CODE,
     }),
   });
   assert.equal(weakPassword.status, 400);
 
-  const body = JSON.stringify({
-    full_name: 'Test Partner', email: TEST_EMAIL, password: 'SecurePass123!',
-    business_name: 'Test Business', tax_code: 'TEST-INTEGRATION-TAX',
+  const checkBody = JSON.stringify({
+    email: TEST_EMAIL, identity_no: TEST_IDENTITY_NO, tax_code: TEST_TAX_CODE,
   });
+  const check = await request('/api/partner/auth/registration/check', undefined, {
+    method: 'POST', body: checkBody,
+  });
+  assert.equal(check.status, 200);
+
+  const duplicateTaxCheck = await request('/api/partner/auth/registration/check', undefined, {
+    method: 'POST',
+    body: JSON.stringify({
+      email: TEST_EMAIL, identity_no: TEST_IDENTITY_NO, tax_code: '0101234567',
+    }),
+  });
+  assert.equal(duplicateTaxCheck.status, 409);
+  assert.equal((await duplicateTaxCheck.json() as { field: string }).field, 'tax_code');
+
+  let deliveredOtp = '';
+  const challenge = await requestRegistrationOtp(TEST_EMAIL, async (_email, otp) => {
+    deliveredOtp = otp;
+  });
+  assert.match(deliveredOtp, /^\d{6}$/);
+
+  const incorrectOtp = deliveredOtp === '000000' ? '000001' : '000000';
+  const wrongOtp = await request('/api/partner/auth/registration/otp/verify', undefined, {
+    method: 'POST',
+    body: JSON.stringify({ email: TEST_EMAIL, challenge_id: challenge.challenge_id, otp: incorrectOtp }),
+  });
+  assert.equal(wrongOtp.status, 400);
+
+  const verifyOtp = await request('/api/partner/auth/registration/otp/verify', undefined, {
+    method: 'POST',
+    body: JSON.stringify({ email: TEST_EMAIL, challenge_id: challenge.challenge_id, otp: deliveredOtp }),
+  });
+  assert.equal(verifyOtp.status, 200);
+
+  const registrationPayload = {
+    full_name: 'Test Partner', email: TEST_EMAIL, password: 'SecurePass123!',
+    phone: TEST_PHONE, identity_no: TEST_IDENTITY_NO,
+    business_name: 'Test Business', tax_code: TEST_TAX_CODE,
+    otp_challenge_id: challenge.challenge_id,
+  };
+  const body = JSON.stringify(registrationPayload);
   assert.equal((await request('/api/partner/auth/register', undefined, { method: 'POST', body })).status, 201);
-  assert.equal((await request('/api/partner/auth/register', undefined, { method: 'POST', body })).status, 409);
+  assert.equal((await request('/api/partner/auth/register', undefined, { method: 'POST', body })).status, 400);
+
+  const duplicateCheck = await request('/api/partner/auth/registration/check', undefined, {
+    method: 'POST', body: checkBody,
+  });
+  assert.equal(duplicateCheck.status, 409);
 
   const login = await request('/api/partner/auth/login', undefined, {
     method: 'POST',
