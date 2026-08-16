@@ -39,7 +39,7 @@ export interface MyVoucher {
   code: string;
   datePurchased: string;
   expiryDate: string;
-  status: "unused" | "used" | "expiring" | "expired";
+  status: "unused" | "used" | "expiring" | "expired" | "cancelled";
   dateUsed?: string;
   orderNumber: string;
   paymentMethod: string;

@@ -70,7 +70,7 @@ export function useCustomerCart() {
           let status: MyVoucher["status"] = "unused";
           if (item.usage_status === "USED") status = "used";
           else if (item.usage_status === "EXPIRED") status = "expired";
-          else if (item.usage_status === "CANCELLED") status = "expired";
+          else if (item.usage_status === "CANCELLED") status = "cancelled";
 
           return {
             id: String(item.issued_voucher_id),
