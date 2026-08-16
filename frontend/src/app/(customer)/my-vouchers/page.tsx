@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
@@ -9,7 +9,13 @@ import { MyVoucher, Voucher } from "@/data/mockData";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
 export default function MyVouchersPage() {
-  const { myVouchers, vouchers, addReview } = useApp();
+  const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
+
+  useEffect(() => {
+    if (refreshMyVouchers) {
+      refreshMyVouchers();
+    }
+  }, [refreshMyVouchers]);
 
   // Local Page Filters
   const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired">("all");
