@@ -16,13 +16,10 @@ export default function PromoPopupModal() {
       .then((res) => {
         if (!isMounted || !res.popups || res.popups.length === 0) return;
         const firstPopup = res.popups[0];
-        const dismissedId = sessionStorage.getItem(`customer_dismissed_popup_${firstPopup.popup_id}`);
-        if (!dismissedId) {
-          setPopup(firstPopup);
-          setTimeout(() => {
-            if (isMounted) setIsOpen(true);
-          }, 800);
-        }
+        setPopup(firstPopup);
+        setTimeout(() => {
+          if (isMounted) setIsOpen(true);
+        }, 400);
       })
       .catch((err) => {
         console.error("Failed to load active popup:", err);
@@ -34,9 +31,6 @@ export default function PromoPopupModal() {
   }, []);
 
   const handleClose = () => {
-    if (popup) {
-      sessionStorage.setItem(`customer_dismissed_popup_${popup.popup_id}`, "true");
-    }
     setIsOpen(false);
   };
 
