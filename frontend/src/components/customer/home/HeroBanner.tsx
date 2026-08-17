@@ -16,7 +16,7 @@ export default function HeroBanner() {
       .getBanners()
       .then((res) => {
         if (isMounted && res.banners && res.banners.length > 0) {
-          setBanners(res.banners);
+          setBanners(res.banners.slice(0, 5));
         }
       })
       .catch((err) => {

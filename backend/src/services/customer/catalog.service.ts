@@ -347,7 +347,8 @@ export async function getPublicBanners(position?: string) {
     LEFT JOIN voucher_programs vp ON vp.program_id = b.program_id
     LEFT JOIN partners p ON p.user_id = vp.partner_id
     WHERE ${conditions.join(' AND ')}
-    ORDER BY b.banner_id ASC
+    ORDER BY b.banner_id DESC
+    LIMIT 5
   `;
   const res = await pool.query(query, params);
   return res.rows.map((row) => ({

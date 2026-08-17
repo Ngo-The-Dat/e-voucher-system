@@ -17,7 +17,7 @@ export default function PromoPopupModal() {
       .getActivePopups()
       .then((res) => {
         if (!isMounted || !res.popups || res.popups.length === 0) return;
-        setPopups(res.popups);
+        setPopups(res.popups.slice(0, 5));
         setTimeout(() => {
           if (isMounted) setIsOpen(true);
         }, 400);
