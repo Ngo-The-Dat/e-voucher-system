@@ -172,6 +172,33 @@ INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name,
 (13, 5, 4, 'Chiến dịch Mùa Hè Rực Rỡ - Giảm 50% Vé Công Viên Nước', 200000.00, 100000.00, 800, '2026-05-01 00:00:00', '2026-07-31 23:59:59', '2026-05-01 00:00:00', '2026-08-31 23:59:59', 'ENDED'),
 (15, 3, 1, 'Set Menu Tiệc Tất Niên Gia Đình Ấm Cúng 2025', 1200000.00, 850000.00, 100, '2025-01-01 00:00:00', '2025-02-15 23:59:59', '2025-01-01 00:00:00', '2025-02-28 23:59:59', 'PUBLISHED');
 
+-- 6a. Insert voucher_program_images (24 rows)
+INSERT INTO voucher_program_images (image_id, program_id, image_url, is_primary, sort_order) VALUES
+(1, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
+(2, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', FALSE, 1),
+(3, 2, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
+(4, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
+(5, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', FALSE, 1),
+(6, 4, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
+(7, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
+(8, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', FALSE, 1),
+(9, 6, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
+(10, 7, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
+(11, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
+(12, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', FALSE, 1),
+(13, 9, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
+(14, 10, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
+(15, 11, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
+(16, 12, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
+(17, 13, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
+(18, 14, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
+(19, 15, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
+(20, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
+(21, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', FALSE, 1),
+(22, 17, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
+(23, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
+(24, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', FALSE, 1);
+
 -- 7. Insert voucher_program_branches
 INSERT INTO voucher_program_branches (program_id, branch_id) VALUES
 (1, 1), (1, 2),
@@ -356,14 +383,14 @@ INSERT INTO order_cancellations (cancellation_id, order_id, admin_id, requested_
 
 -- 15. Insert banners (3 rows)
 INSERT INTO banners (banner_id, program_id, title, image_url, target_url, display_position, display_from, display_to, status) VALUES
-(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://cdn.voucher.vn/banners/buffet30.jpg', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://cdn.voucher.vn/banners/spa.jpg', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://cdn.voucher.vn/banners/nhatrang.jpg', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 16. Insert popups (2 rows)
 INSERT INTO popups (popup_id, program_id, title, content, target_url, image_url, start_at, end_at, status) VALUES
-(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://cdn.voucher.vn/popups/buffet.jpg', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://cdn.voucher.vn/popups/spa.jpg', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 17. Insert contents (3 rows)
 INSERT INTO contents (content_id, program_id, title, body, content_type, created_at, updated_at, status) VALUES
@@ -396,6 +423,7 @@ SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT COALESCE(
 SELECT setval(pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_approval_requests));
 SELECT setval(pg_get_serial_sequence('partner_employee_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_employee_approval_requests));
 SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT COALESCE(MAX(program_id), 1) FROM voucher_programs));
+SELECT setval(pg_get_serial_sequence('voucher_program_images', 'image_id'), (SELECT COALESCE(MAX(image_id), 1) FROM voucher_program_images));
 SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM voucher_approval_requests));
 SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), (SELECT COALESCE(MAX(cart_item_id), 1) FROM cart_items));
 SELECT setval(pg_get_serial_sequence('orders', 'order_id'), (SELECT COALESCE(MAX(order_id), 1) FROM orders));
