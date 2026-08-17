@@ -2,7 +2,7 @@ import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
 import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   constructor(
