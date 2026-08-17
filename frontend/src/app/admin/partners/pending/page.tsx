@@ -70,8 +70,6 @@ export default function PendingPartnersPage() {
     switch (status) {
       case "PENDING":
         return "Chờ duyệt";
-      case "REVISION_REQUESTED":
-        return "Yêu cầu bổ sung";
       case "REJECTED":
         return "Từ chối";
       case "APPROVED":
@@ -166,7 +164,6 @@ export default function PendingPartnersPage() {
                 >
                   <option value="ALL">Tất cả</option>
                   <option value="PENDING">Chờ duyệt</option>
-                  <option value="REVISION_REQUESTED">Yêu cầu bổ sung</option>
                   <option value="REJECTED">Từ chối</option>
                 </select>
                 <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />

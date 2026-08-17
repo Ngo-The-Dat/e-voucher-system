@@ -36,6 +36,12 @@ before(async () => {
   assert.ok(secret, 'JWT_SECRET must be configured');
   partnerToken = jwt.sign({ id: 3, role: 'PARTNER' }, secret, { expiresIn: '5m' });
 
+  await pool.query(
+    `SELECT setval(
+       pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'),
+       COALESCE((SELECT MAX(approval_request_id) FROM partner_approval_requests), 1)
+     )`
+  );
   await pool.query('DELETE FROM partners WHERE user_id IN (SELECT user_id FROM users WHERE email = $1)', [PROFILE_TEST_EMAIL]);
   await pool.query('DELETE FROM users WHERE email = $1', [PROFILE_TEST_EMAIL]);
   const profileUser = await pool.query(
@@ -48,9 +54,14 @@ before(async () => {
   const profileUserId = Number(profileUser.rows[0].user_id);
   await pool.query(
     `INSERT INTO partners
-       (user_id, business_name, tax_code, approval_status, activity_status, representative_title)
-     VALUES ($1, $2, $3, 'APPROVED', 'ACTIVE', $4)`,
+       (user_id, business_name, tax_code, activity_status, representative_title)
+     VALUES ($1, $2, $3, 'ACTIVE', $4)`,
     [profileUserId, 'Profile Test Business', PROFILE_TEST_TAX_CODE, 'Giám đốc']
+  );
+  await pool.query(
+    `INSERT INTO partner_approval_requests (partner_id, approval_status, reviewed_at)
+     VALUES ($1, 'APPROVED', NOW())`,
+    [profileUserId]
   );
   profileToken = jwt.sign({ id: profileUserId, role: 'PARTNER' }, secret, { expiresIn: '5m' });
 
@@ -401,10 +412,18 @@ test('invalid query parameters return 400', async () => {
 });
 
 test('voucher revenue counts paid order items exactly once', async () => {
+  const expectedRes = await pool.query(
+    `SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0) as expected
+     FROM order_items oi
+     JOIN orders o ON o.order_id = oi.order_id
+     WHERE oi.program_id = 1 AND o.payment_status = 'PAID'`
+  );
+  const expectedRevenue = Number(expectedRes.rows[0]?.expected);
+
   const response = await request('/api/partner/dashboard/vouchers?program_id=1', partnerToken);
   assert.equal(response.status, 200);
   const body = await response.json() as Array<{ revenue: string }>;
-  assert.equal(Number(body[0]?.revenue), 140000);
+  assert.equal(Number(body[0]?.revenue), expectedRevenue);
 });
 
 test('refunded orders do not contribute to revenue', async () => {
@@ -500,3 +519,65 @@ test('voucher cannot be redeemed before its use period starts', async () => {
   );
   assert.equal(result.rows[0]?.usage_status, 'UNUSED');
 });
+
+test('partner employee management and employee portal flow', async () => {
+  const newEmail = `employee_test_${Date.now()}@voucher.vn`;
+  const newPhone = `09${Math.floor(10000000 + Math.random() * 90000000)}`;
+  
+  // 1. Partner creates employee
+  const createRes = await request('/api/partner/employees', partnerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      full_name: 'Test Nhân Viên Mới',
+      email: newEmail,
+      phone: newPhone,
+      password: 'password1234',
+      branch_id: 1,
+    }),
+  });
+  assert.equal(createRes.status, 201);
+  const createdEmp = await createRes.json();
+  assert.equal(createdEmp.email, newEmail);
+  assert.equal(createdEmp.branch.id, 1);
+
+  // 2. Partner gets employees list
+  const listRes = await request('/api/partner/employees', partnerToken);
+  assert.equal(listRes.status, 200);
+  const empList = await listRes.json();
+  assert.ok(Array.isArray(empList));
+  assert.ok(empList.some((e: any) => e.email === newEmail));
+
+  // 3. Employee logs in via /api/partner/auth/login
+  const loginRes = await request('/api/partner/auth/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: newEmail, password: 'password1234' }),
+  });
+  assert.equal(loginRes.status, 200);
+  const loginData = await loginRes.json();
+  assert.equal(loginData.user.role, 'PARTNER_EMPLOYEE');
+  assert.equal(loginData.user.branch?.id, 1);
+  const empToken = loginData.token;
+
+  // 4. Employee views profile
+  const profileRes = await request('/api/partner/employee/profile', empToken);
+  assert.equal(profileRes.status, 200);
+  const profileData = await profileRes.json();
+  assert.equal(profileData.email, newEmail);
+  assert.equal(profileData.branch.id, 1);
+  assert.ok(profileData.partner.business_name);
+
+  // 5. Employee changes password
+  const changePwdRes = await request('/api/partner/employee/change-password', empToken, {
+    method: 'PUT',
+    body: JSON.stringify({ old_password: 'password1234', new_password: 'newpassword1234' }),
+  });
+  assert.equal(changePwdRes.status, 200);
+
+  // 6. Employee logs in with new password
+  const newLoginRes = await request('/api/partner/auth/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: newEmail, password: 'newpassword1234' }),
+  });
+  assert.equal(newLoginRes.status, 200);
+});
+

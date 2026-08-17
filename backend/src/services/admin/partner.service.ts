@@ -17,7 +17,7 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
   const offset = (page - 1) * limit;
 
-  const conditions: string[] = ["p.approval_status IN ('PENDING', 'REJECTED', 'REVISION_REQUESTED')"];
+  const conditions: string[] = ["COALESCE(par.approval_status, 'PENDING') IN ('PENDING', 'REJECTED')"];
   const params: any[] = [];
   let paramIdx = 1;
 
@@ -35,7 +35,7 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   }
 
   if (filter.status && filter.status !== 'ALL') {
-    conditions.push(`p.approval_status = $${paramIdx}`);
+    conditions.push(`COALESCE(par.approval_status, 'PENDING') = $${paramIdx}`);
     params.push(filter.status);
     paramIdx++;
   }
@@ -58,6 +58,13 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
     SELECT COUNT(*) as total
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN LATERAL (
+      SELECT approval_request_id, approval_status, submitted_at, reviewed_at, admin_feedback
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
     ${whereClause}
   `;
   const countRes = await pool.query(countQuery, params);
@@ -68,9 +75,13 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
       p.user_id,
       p.business_name,
       p.tax_code,
-      p.approval_status,
+      par.approval_request_id,
+      COALESCE(par.approval_status, 'PENDING') as approval_status,
       p.activity_status,
       p.registered_at,
+      par.submitted_at,
+      par.reviewed_at,
+      par.admin_feedback,
       p.business_license_no,
       p.license_issue_date,
       p.license_issue_place,
@@ -80,8 +91,15 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
       (SELECT COUNT(*) FROM branches b WHERE b.partner_id = p.user_id) as branches_count
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN LATERAL (
+      SELECT approval_request_id, approval_status, submitted_at, reviewed_at, admin_feedback
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
     ${whereClause}
-    ORDER BY p.registered_at DESC
+    ORDER BY COALESCE(par.submitted_at, p.registered_at) DESC
     LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
   `;
   const dataRes = await pool.query(dataQuery, [...params, limit, offset]);
@@ -103,9 +121,13 @@ export async function getPendingPartnerById(partnerId: number) {
       p.user_id,
       p.business_name,
       p.tax_code,
-      p.approval_status,
+      par.approval_request_id,
+      COALESCE(par.approval_status, 'PENDING') as approval_status,
       p.activity_status,
       p.registered_at,
+      par.submitted_at,
+      par.reviewed_at,
+      par.admin_feedback,
       p.business_license_no,
       p.license_issue_date,
       p.license_issue_place,
@@ -118,6 +140,13 @@ export async function getPendingPartnerById(partnerId: number) {
       (SELECT COUNT(*) FROM branches b WHERE b.partner_id = p.user_id) as branches_count
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN LATERAL (
+      SELECT approval_request_id, approval_status, submitted_at, reviewed_at, admin_feedback
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
     WHERE p.user_id = $1
   `;
   const res = await pool.query(query, [partnerId]);
@@ -141,8 +170,16 @@ export async function approvePartner(partnerId: number, adminId: number) {
     await client.query('BEGIN');
 
     const checkRes = await client.query(
-      `SELECT p.user_id, p.approval_status, p.activity_status, p.business_name
-       FROM partners p WHERE p.user_id = $1`,
+      `SELECT p.user_id, p.business_name, p.activity_status, par.approval_request_id, par.approval_status
+       FROM partners p
+       LEFT JOIN LATERAL (
+         SELECT approval_request_id, approval_status
+         FROM partner_approval_requests
+         WHERE partner_id = p.user_id
+         ORDER BY submitted_at DESC, approval_request_id DESC
+         LIMIT 1
+       ) par ON TRUE
+       WHERE p.user_id = $1`,
       [partnerId]
     );
 
@@ -152,9 +189,24 @@ export async function approvePartner(partnerId: number, adminId: number) {
 
     const oldPartner = checkRes.rows[0];
 
+    if (oldPartner.approval_request_id) {
+      await client.query(
+        `UPDATE partner_approval_requests 
+         SET approval_status = 'APPROVED', reviewed_at = CURRENT_TIMESTAMP, admin_id = $2
+         WHERE approval_request_id = $1`,
+        [oldPartner.approval_request_id, adminId]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, admin_id, approval_status, reviewed_at)
+         VALUES ($1, $2, 'APPROVED', CURRENT_TIMESTAMP)`,
+        [partnerId, adminId]
+      );
+    }
+
     await client.query(
       `UPDATE partners 
-       SET approval_status = 'APPROVED', activity_status = 'ACTIVE' 
+       SET activity_status = 'ACTIVE' 
        WHERE user_id = $1`,
       [partnerId]
     );
@@ -196,8 +248,16 @@ export async function rejectPartner(partnerId: number, reason: string, adminId: 
     await client.query('BEGIN');
 
     const checkRes = await client.query(
-      `SELECT p.user_id, p.approval_status, p.business_name
-       FROM partners p WHERE p.user_id = $1`,
+      `SELECT p.user_id, p.business_name, par.approval_request_id, par.approval_status
+       FROM partners p
+       LEFT JOIN LATERAL (
+         SELECT approval_request_id, approval_status
+         FROM partner_approval_requests
+         WHERE partner_id = p.user_id
+         ORDER BY submitted_at DESC, approval_request_id DESC
+         LIMIT 1
+       ) par ON TRUE
+       WHERE p.user_id = $1`,
       [partnerId]
     );
 
@@ -207,10 +267,20 @@ export async function rejectPartner(partnerId: number, reason: string, adminId: 
 
     const oldPartner = checkRes.rows[0];
 
-    await client.query(
-      `UPDATE partners SET approval_status = 'REJECTED' WHERE user_id = $1`,
-      [partnerId]
-    );
+    if (oldPartner.approval_request_id) {
+      await client.query(
+        `UPDATE partner_approval_requests 
+         SET approval_status = 'REJECTED', reviewed_at = CURRENT_TIMESTAMP, admin_id = $2, admin_feedback = $3
+         WHERE approval_request_id = $1`,
+        [oldPartner.approval_request_id, adminId, reason]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, admin_id, approval_status, reviewed_at, admin_feedback)
+         VALUES ($1, $2, 'REJECTED', CURRENT_TIMESTAMP, $3)`,
+        [partnerId, adminId, reason]
+      );
+    }
 
     await client.query('COMMIT');
 
@@ -249,8 +319,16 @@ export async function requestRevisionPartner(partnerId: number, note: string, ad
     await client.query('BEGIN');
 
     const checkRes = await client.query(
-      `SELECT p.user_id, p.approval_status
-       FROM partners p WHERE p.user_id = $1`,
+      `SELECT p.user_id, par.approval_request_id, par.approval_status
+       FROM partners p
+       LEFT JOIN LATERAL (
+         SELECT approval_request_id, approval_status
+         FROM partner_approval_requests
+         WHERE partner_id = p.user_id
+         ORDER BY submitted_at DESC, approval_request_id DESC
+         LIMIT 1
+       ) par ON TRUE
+       WHERE p.user_id = $1`,
       [partnerId]
     );
 
@@ -260,10 +338,20 @@ export async function requestRevisionPartner(partnerId: number, note: string, ad
 
     const oldPartner = checkRes.rows[0];
 
-    await client.query(
-      `UPDATE partners SET approval_status = 'REVISION_REQUESTED' WHERE user_id = $1`,
-      [partnerId]
-    );
+    if (oldPartner.approval_request_id) {
+      await client.query(
+        `UPDATE partner_approval_requests 
+         SET admin_feedback = $2, admin_id = $3
+         WHERE approval_request_id = $1`,
+        [oldPartner.approval_request_id, note, adminId]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, admin_id, approval_status, admin_feedback)
+         VALUES ($1, $2, 'PENDING', $3)`,
+        [partnerId, adminId, note]
+      );
+    }
 
     await client.query('COMMIT');
 
@@ -274,7 +362,7 @@ export async function requestRevisionPartner(partnerId: number, note: string, ad
       objectId: partnerId,
       objectType: 'PARTNER',
       oldValue: { approval_status: oldPartner.approval_status },
-      newValue: { approval_status: 'REVISION_REQUESTED', note },
+      newValue: { approval_status: oldPartner.approval_status, note },
       result: 'SUCCESS',
     });
 
@@ -303,7 +391,7 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
   const offset = (page - 1) * limit;
 
-  const conditions: string[] = ["p.approval_status = 'APPROVED'"];
+  const conditions: string[] = ["par.approval_status = 'APPROVED'"];
   const params: any[] = [];
   let paramIdx = 1;
 
@@ -344,6 +432,13 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
     SELECT COUNT(*) as total
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN LATERAL (
+      SELECT approval_status
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
     ${whereClause}
   `;
   const countRes = await pool.query(countQuery, params);
@@ -354,7 +449,7 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
       p.user_id,
       p.business_name,
       p.tax_code,
-      p.approval_status,
+      COALESCE(par.approval_status, 'APPROVED') as approval_status,
       p.activity_status,
       p.registered_at,
       p.business_license_no,
@@ -368,6 +463,13 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
       (SELECT COUNT(*) FROM voucher_programs vp WHERE vp.partner_id = p.user_id) as voucher_programs_count
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN LATERAL (
+      SELECT approval_status
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
     ${whereClause}
     ORDER BY p.registered_at DESC
     LIMIT $${paramIdx} OFFSET $${paramIdx + 1}
@@ -392,7 +494,7 @@ export async function getManagedPartnerById(partnerId: number) {
       p.user_id,
       p.business_name,
       p.tax_code,
-      p.approval_status,
+      COALESCE(par.approval_status, 'APPROVED') as approval_status,
       p.activity_status,
       p.registered_at,
       p.business_license_no,
@@ -409,7 +511,14 @@ export async function getManagedPartnerById(partnerId: number) {
     FROM partners p
     JOIN users u ON u.user_id = p.user_id
     LEFT JOIN user_locks ul ON ul.user_id = p.user_id
-    WHERE p.user_id = $1 AND p.approval_status = 'APPROVED'
+    LEFT JOIN LATERAL (
+      SELECT approval_status
+      FROM partner_approval_requests par
+      WHERE par.partner_id = p.user_id
+      ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+      LIMIT 1
+    ) par ON TRUE
+    WHERE p.user_id = $1 AND par.approval_status = 'APPROVED'
   `;
   const partnerRes = await pool.query(partnerQuery, [partnerId]);
   if (partnerRes.rows.length === 0) return null;

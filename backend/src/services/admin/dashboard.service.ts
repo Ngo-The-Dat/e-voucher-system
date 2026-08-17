@@ -169,11 +169,18 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
 
   // 4. Đối tác hoạt động
   const partnersRes = await pool.query(
-    `SELECT
-       COUNT(*) FILTER (WHERE approval_status = 'APPROVED') AS active_partners,
-       COUNT(*) FILTER (WHERE approval_status = 'PENDING' AND registered_at >= $1 AND registered_at <= $2) AS new_pending_partners,
-       COUNT(*) FILTER (WHERE approval_status = 'PENDING') AS total_pending_partners
-     FROM partners`,
+    `SELECT 
+       COUNT(*) FILTER (WHERE par.approval_status = 'APPROVED') AS active_partners,
+       COUNT(*) FILTER (WHERE par.approval_status = 'PENDING' AND p.registered_at >= $1 AND p.registered_at <= $2) AS new_pending_partners,
+       COUNT(*) FILTER (WHERE par.approval_status = 'PENDING') AS total_pending_partners
+     FROM partners p
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests par
+       WHERE par.partner_id = p.user_id
+       ORDER BY par.submitted_at DESC, par.approval_request_id DESC
+       LIMIT 1
+     ) par ON TRUE`,
     [currentStart, currentEnd]
   );
   const rowPartners = partnersRes.rows[0] || {};

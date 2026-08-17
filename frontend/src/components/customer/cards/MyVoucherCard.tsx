@@ -40,6 +40,13 @@ export default function MyVoucherCard({ myVoucher, voucher, onOpenReview }: MyVo
             Đã hết hạn
           </div>
         );
+      case "cancelled":
+        return (
+          <div className="bg-error-container/40 text-error px-2.5 py-1 rounded flex items-center gap-1 font-label-md text-label-md font-medium">
+            <XCircle className="w-3.5 h-3.5" />
+            Đã hủy
+          </div>
+        );
     }
   };
 

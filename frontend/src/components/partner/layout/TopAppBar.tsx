@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import Icon from "@/components/shared/ui/Icon";
 import { usePartner } from "@/context/PartnerContext";
 
 interface TopAppBarProps {
@@ -33,19 +32,10 @@ export default function TopAppBar({
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Notification Icon */}
-        <button
-          aria-label="Thông báo"
-          className="w-10 h-10 rounded-full hover:bg-surface-container-high flex items-center justify-center relative text-on-surface-variant transition-colors"
-        >
-          <Icon name="notifications" className="text-[22px]" />
-          <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-error" />
-        </button>
-
         {/* Profile Avatar & Link to /profile */}
         <Link
           href="/partner/profile"
-          className="flex items-center gap-3 pl-3 border-l border-outline-variant/40 hover:opacity-80 transition-opacity"
+          className="flex items-center gap-3 hover:opacity-80 transition-opacity"
         >
           <div className="w-9 h-9 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-bold text-sm shadow-sm overflow-hidden relative shrink-0 border border-outline-variant/30">
             {brandLogo ? (

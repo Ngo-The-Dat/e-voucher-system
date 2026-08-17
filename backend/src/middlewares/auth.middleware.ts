@@ -46,8 +46,12 @@ export const authenticate = async (
   try {
     const result = await pool.query(
       `SELECT u.user_id, u.email, u.role, u.status,
-              CASE WHEN u.role = 'PARTNER_EMPLOYEE'
-                   THEN employee_partner.approval_status ELSE p.approval_status END AS approval_status,
+              COALESCE(
+                (SELECT par.approval_status FROM partner_approval_requests par
+                 WHERE par.partner_id = CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN employee_branch.partner_id ELSE u.user_id END
+                 ORDER BY par.submitted_at DESC, par.approval_request_id DESC LIMIT 1),
+                'PENDING'
+              ) AS approval_status,
               CASE WHEN u.role = 'PARTNER_EMPLOYEE'
                    THEN employee_partner.activity_status ELSE p.activity_status END AS activity_status,
               employee_branch.status AS branch_status

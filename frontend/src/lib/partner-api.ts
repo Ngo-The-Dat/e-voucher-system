@@ -1,5 +1,6 @@
 import { Branch, PartnerProfile } from "./types/profile";
-import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
+import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
+import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
 
 let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
 if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://") && !envUrl.startsWith("/")) {
@@ -45,10 +46,11 @@ const getStoredPartnerToken = (): string | null => {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredPartnerToken();
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      ...(init.body ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
@@ -96,12 +98,27 @@ const mapVoucher = (row: any): VoucherItem => ({
   soldCount: Number(row.sold_count ?? 0), usedCount: Number(row.used_count ?? 0),
   expiredCount: Number(row.expired_count ?? 0), revenue: Number(row.revenue ?? 0),
   thumbnail: row.thumbnail ?? null,
-  images: row.images ?? [],
+  images: (row.images ?? []).map((image: any): VoucherImage => ({
+    id: String(image.id ?? image.image_id),
+    url: image.url ?? image.image_url,
+    isPrimary: Boolean(image.isPrimary ?? image.is_primary),
+    sortOrder: Number(image.sortOrder ?? image.sort_order ?? 0),
+  })),
 });
 
 export const partnerApi = {
   login: (payload: { email: string; password: string }) =>
-    request<{ token: string; user: { full_name: string; email: string } }>("/partner/auth/login", {
+    request<{
+      token: string;
+      user: {
+        id: number;
+        full_name: string;
+        email: string;
+        role: string;
+        business_name?: string;
+        branch?: { id: number; name: string; address: string };
+      };
+    }>("/partner/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -181,7 +198,7 @@ export const partnerApi = {
     return list.data.map((row) => mapVoucher({ ...row, ...statMap.get(String(row.program_id)) }));
   },
   getVoucher: async (id: string) => mapVoucher(await request<any>(`/partner/vouchers/${id}`)),
-  createVoucher: (voucher: CreateVoucherInput) => request<{ program: { program_id: number | string } }>("/partner/vouchers", {
+  createVoucher: (voucher: CreateVoucherInput) => request<{ message: string; program: { program_id: number } }>("/partner/vouchers", {
     method: "POST", body: JSON.stringify({
       program_name: voucher.title, category_id: Number(voucher.categoryId),
       original_price: voucher.originalPrice, sale_price: voucher.sellingPrice,
@@ -199,31 +216,67 @@ export const partnerApi = {
       use_end_at: voucher.useEndDate, branch_ids: voucher.branchIds.map(Number),
     }),
   }),
-  uploadVoucherImage: async (id: string, file: File, isPrimary: boolean, sortOrder: number): Promise<any> => {
+  uploadVoucherImage: async (
+    voucherId: string,
+    file: File,
+    isPrimary: boolean,
+    sortOrder: number,
+  ): Promise<VoucherImage> => {
     const formData = new FormData();
     formData.append("image", file);
     formData.append("is_primary", String(isPrimary));
     formData.append("sort_order", String(sortOrder));
-    return request<any>(`/partner/vouchers/${id}/images`, {
+    const result = await request<{ message: string; image: VoucherImage }>(`/partner/vouchers/${voucherId}/images`, {
       method: "POST",
       body: formData,
     });
+    return result.image;
   },
-  deleteVoucherImage: (voucherId: string, imageId: string): Promise<any[]> =>
-    request<any[]>(`/partner/vouchers/${voucherId}/images/${imageId}`, { method: "DELETE" }),
-  setPrimaryVoucherImage: (voucherId: string, imageId: string): Promise<any[]> =>
-    request<any[]>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, { method: "PUT" }),
-  reorderVoucherImages: (voucherId: string, imageIds: string[]): Promise<any[]> =>
-    request<any[]>(`/partner/vouchers/${voucherId}/images/reorder`, {
+  setPrimaryVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, {
+      method: "PATCH",
+    })).images,
+  reorderVoucherImages: async (voucherId: string, imageIds: string[]): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/order`, {
       method: "PUT",
-      body: JSON.stringify({ image_ids: imageIds }),
-    }),
+      body: JSON.stringify({ image_ids: imageIds.map(Number) }),
+    })).images,
+  deleteVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}`, {
+      method: "DELETE",
+    })).images,
   submitVoucher: (id: string) => request(`/partner/vouchers/${id}/submit`, { method: "POST" }),
   lookupVoucher: (code: string) => request<any>(`/partner/redeem/lookup?code=${encodeURIComponent(code)}`),
   lookupVoucherByQr: (qrValue: string) => request<any>("/partner/redeem/lookup-qr", {
     method: "POST", body: JSON.stringify({ qr_value: qrValue }),
   }),
-  redeemVoucher: (code: string, branchId: string) => request<any>("/partner/redeem", {
+  redeemVoucher: (code: string, branchId: string | number) => request<any>("/partner/redeem", {
     method: "POST", body: JSON.stringify({ voucher_code: code, branch_id: Number(branchId) }),
   }),
+
+  // Employee Portal API
+  getEmployeeProfile: () => request<EmployeeProfile>("/partner/employee/profile"),
+  updateEmployeeProfile: (payload: { full_name?: string; phone?: string; gender?: string; nationality?: string }) =>
+    request<EmployeeProfile>("/partner/employee/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  changeEmployeePassword: (payload: { old_password: string; new_password: string }) =>
+    request<{ message: string }>("/partner/employee/change-password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // Partner Employee Management API (For Partner Owner)
+  getEmployees: () => request<PartnerEmployeeItem[]>("/partner/employees"),
+  createEmployee: (payload: CreateEmployeePayload) =>
+    request<PartnerEmployeeItem>("/partner/employees", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateEmployee: (id: number | string, payload: Partial<CreateEmployeePayload>) =>
+    request<{ message: string }>(`/partner/employees/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 };

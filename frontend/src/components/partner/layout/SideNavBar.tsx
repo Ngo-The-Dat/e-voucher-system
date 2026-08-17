@@ -8,6 +8,7 @@ const navItems = [
   { href: "/partner", label: "Tổng quan", icon: "dashboard" },
   { href: "/partner/vouchers", label: "Quản lý Voucher", icon: "confirmation_number" },
   { href: "/partner/vouchers/check", label: "Kiểm tra Voucher", icon: "qr_code_scanner" },
+  { href: "/partner/employees", label: "Quản lý Nhân viên", icon: "badge" },
   { href: "/partner/reports", label: "Thống kê hiệu quả", icon: "analytics" },
 ];
 
