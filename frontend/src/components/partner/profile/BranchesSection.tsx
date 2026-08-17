@@ -60,7 +60,7 @@ export default function BranchesSection({
                   <td className="p-4 font-bold text-on-surface">{b.name}</td>
                   <td className="p-4">
                     <span className="px-3 py-1 bg-surface-container-high text-on-surface font-semibold text-sm rounded-full border border-outline-variant">
-                      {b.region || "Miền Nam"}
+                      {b.region || "Chưa cập nhật"}
                     </span>
                   </td>
                   <td className="p-4 text-on-surface">{b.address}</td>

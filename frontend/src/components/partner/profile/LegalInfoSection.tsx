@@ -70,7 +70,22 @@ export default function LegalInfoSection({
             Trạng thái xác minh hồ sơ pháp lý
           </label>
           <div className="mt-1">
-            <StatusBadge status="running" label="Đã xác minh đầy đủ" />
+            <StatusBadge
+              status={
+                legalInfo.verificationStatus === "verified"
+                  ? "active"
+                  : legalInfo.verificationStatus === "rejected"
+                  ? "rejected"
+                  : "pending"
+              }
+              label={
+                legalInfo.verificationStatus === "verified"
+                  ? "Đã xác minh"
+                  : legalInfo.verificationStatus === "rejected"
+                  ? "Bị từ chối"
+                  : "Chờ xác minh"
+              }
+            />
           </div>
         </div>
       </div>
