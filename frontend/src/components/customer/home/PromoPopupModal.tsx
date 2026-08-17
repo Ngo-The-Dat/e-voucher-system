@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { X, Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import { customerContentApi, CustomerPopup } from "@/lib/customer-api";
@@ -9,7 +9,7 @@ export default function PromoPopupModal() {
   const [popups, setPopups] = useState<CustomerPopup[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,31 +32,44 @@ export default function PromoPopupModal() {
   }, []);
 
   const handleNext = useCallback(() => {
-    if (popups.length === 0) return;
-    setCurrentIndex((prev) => (prev + 1) % popups.length);
-  }, [popups.length]);
+    setPopups((currentPopups) => {
+      if (currentPopups.length > 0) {
+        setCurrentIndex((prev) => (prev + 1) % currentPopups.length);
+      }
+      return currentPopups;
+    });
+  }, []);
 
   const handlePrev = useCallback(() => {
-    if (popups.length === 0) return;
-    setCurrentIndex((prev) => (prev - 1 + popups.length) % popups.length);
-  }, [popups.length]);
+    setPopups((currentPopups) => {
+      if (currentPopups.length > 0) {
+        setCurrentIndex((prev) => (prev - 1 + currentPopups.length) % currentPopups.length);
+      }
+      return currentPopups;
+    });
+  }, []);
 
   // Chuyển popup tự động mỗi 5 giây
   useEffect(() => {
-    if (popups.length <= 1 || isPaused || !isOpen) return;
-    const timer = setInterval(() => {
-      handleNext();
+    if (!isOpen || popups.length <= 1) return;
+
+    timerRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % popups.length);
     }, 5000);
-    return () => clearInterval(timer);
-  }, [popups.length, isPaused, isOpen, handleNext]);
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isOpen, popups.length]);
 
   const handleClose = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setIsOpen(false);
   };
 
   if (!isOpen || popups.length === 0) return null;
 
-  const currentPopup = popups[currentIndex];
+  const currentPopup = popups[currentIndex] || popups[0];
   const targetLink =
     currentPopup.target_url ||
     (currentPopup.program_id ? `/vouchers/${currentPopup.program_id}` : "/vouchers");
@@ -66,13 +79,25 @@ export default function PromoPopupModal() {
       <div
         className="relative w-full max-w-lg overflow-hidden bg-surface rounded-2xl shadow-2xl border border-outline-variant/30 transform transition-all group"
         onClick={(e) => e.stopPropagation()}
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
       >
+        {/* Thanh tiến trình thời gian 5s tự chuyển */}
+        {popups.length > 1 && (
+          <div className="absolute top-0 left-0 right-0 h-1 bg-surface-container-high z-30 overflow-hidden">
+            <div
+              key={currentIndex}
+              className="h-full bg-primary transition-all ease-linear"
+              style={{
+                width: "100%",
+                animation: "timerBar 5s linear infinite"
+              }}
+            />
+          </div>
+        )}
+
         {/* Nút đóng */}
         <button
           onClick={handleClose}
-          className="absolute top-3 right-3 z-20 p-2 rounded-full bg-surface/80 hover:bg-surface text-on-surface hover:text-primary transition-colors shadow-md backdrop-blur-sm cursor-pointer"
+          className="absolute top-3 right-3 z-30 p-2 rounded-full bg-surface/80 hover:bg-surface text-on-surface hover:text-primary transition-colors shadow-md backdrop-blur-sm cursor-pointer"
           aria-label="Đóng popup"
         >
           <X className="w-5 h-5" />
@@ -83,14 +108,14 @@ export default function PromoPopupModal() {
           <>
             <button
               onClick={handlePrev}
-              className="absolute left-3 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md"
+              className="absolute left-3 top-1/3 -translate-y-1/2 z-30 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md transition-all opacity-70 group-hover:opacity-100 cursor-pointer shadow-md"
               aria-label="Popup trước"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
             <button
               onClick={handleNext}
-              className="absolute right-3 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md"
+              className="absolute right-3 top-1/3 -translate-y-1/2 z-30 p-2 rounded-full bg-black/50 hover:bg-black/80 text-white backdrop-blur-md transition-all opacity-70 group-hover:opacity-100 cursor-pointer shadow-md"
               aria-label="Popup tiếp theo"
             >
               <ChevronRight className="w-5 h-5" />
@@ -105,14 +130,14 @@ export default function PromoPopupModal() {
               key={currentPopup.popup_id}
               src={currentPopup.image_url}
               alt={currentPopup.title}
-              className="w-full h-full object-cover transition-all duration-500"
+              className="w-full h-full object-cover transition-opacity duration-500"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80";
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
-            <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-bold tracking-wide uppercase shadow-sm">
+            <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-bold tracking-wide uppercase shadow-sm z-20">
               <Sparkles className="w-3.5 h-3.5" /> Ưu Đãi Độc Quyền ({currentIndex + 1}/{popups.length})
             </div>
           </div>
