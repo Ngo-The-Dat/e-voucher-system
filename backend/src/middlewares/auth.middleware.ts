@@ -46,20 +46,37 @@ export const authenticate = async (
   try {
     const result = await pool.query(
       `SELECT u.user_id, u.email, u.role, u.status,
-              COALESCE(
-                (SELECT par.approval_status FROM partner_approval_requests par
-                 WHERE par.partner_id = CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN employee_branch.partner_id ELSE u.user_id END
-                 ORDER BY par.submitted_at DESC, par.approval_request_id DESC LIMIT 1),
-                'PENDING'
-              ) AS approval_status,
+              CASE 
+                WHEN u.role = 'PARTNER_EMPLOYEE' THEN
+                  CASE 
+                    WHEN emp_pear.approval_status = 'REJECTED' THEN 'REJECTED'
+                    WHEN emp_pear.approval_status = 'PENDING' THEN 'PENDING'
+                    ELSE COALESCE(par.approval_status, 'APPROVED')
+                  END
+                ELSE COALESCE(par.approval_status, 'PENDING')
+              END AS approval_status,
               CASE WHEN u.role = 'PARTNER_EMPLOYEE'
                    THEN employee_partner.activity_status ELSE p.activity_status END AS activity_status,
               employee_branch.status AS branch_status
        FROM users u
        LEFT JOIN partners p ON p.user_id = u.user_id
        LEFT JOIN partner_employees pe ON pe.user_id = u.user_id
+       LEFT JOIN LATERAL (
+         SELECT approval_status
+         FROM partner_employee_approval_requests
+         WHERE user_id = u.user_id
+         ORDER BY submitted_at DESC, approval_request_id DESC
+         LIMIT 1
+       ) emp_pear ON TRUE
        LEFT JOIN branches employee_branch ON employee_branch.branch_id = pe.branch_id
        LEFT JOIN partners employee_partner ON employee_partner.user_id = employee_branch.partner_id
+       LEFT JOIN LATERAL (
+         SELECT approval_status
+         FROM partner_approval_requests
+         WHERE partner_id = CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN employee_branch.partner_id ELSE u.user_id END
+         ORDER BY submitted_at DESC, approval_request_id DESC
+         LIMIT 1
+       ) par ON TRUE
        WHERE u.user_id = $1`,
       [decoded.id]
     );

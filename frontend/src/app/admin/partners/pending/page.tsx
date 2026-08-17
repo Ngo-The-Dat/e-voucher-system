@@ -99,6 +99,12 @@ export default function PendingPartnersPage() {
             </span>
           </Link>
           <Link
+            href="/admin/partners/employee-pending"
+            className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-400 hover:text-slate-700"
+          >
+            <span>Duyệt nhân viên đối tác</span>
+          </Link>
+          <Link
             href="/admin/partners/manage"
             className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-400 hover:text-slate-700"
           >

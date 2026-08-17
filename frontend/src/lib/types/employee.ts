@@ -33,6 +33,8 @@ export interface PartnerEmployeeItem {
   identity_no: string | null;
   nationality: string | null;
   status: 'ACTIVE' | 'LOCKED';
+  approval_status?: 'PENDING' | 'APPROVED' | 'REJECTED';
+  admin_feedback?: string | null;
   created_at: string;
   last_login_at: string | null;
   branch: {
