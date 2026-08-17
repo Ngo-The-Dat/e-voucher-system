@@ -50,6 +50,7 @@ export default function VoucherDateSection({
             <Input
               type="date"
               value={sellEndDate}
+              min={sellStartDate || undefined}
               onChange={(e) => onSellEndChange(e.target.value)}
               className={getInputClass(!!errors.sellEndDate)}
             />
@@ -65,6 +66,7 @@ export default function VoucherDateSection({
             <Input
               type="date"
               value={useStartDate}
+              min={sellStartDate || undefined}
               onChange={(e) => onUseStartChange(e.target.value)}
               className={getInputClass(!!errors.useStartDate)}
             />
@@ -74,6 +76,13 @@ export default function VoucherDateSection({
             <Input
               type="date"
               value={useEndDate}
+              min={
+                useStartDate && sellEndDate
+                  ? useStartDate > sellEndDate
+                    ? useStartDate
+                    : sellEndDate
+                  : sellEndDate || useStartDate || undefined
+              }
               onChange={(e) => onUseEndChange(e.target.value)}
               className={getInputClass(!!errors.useEndDate)}
             />

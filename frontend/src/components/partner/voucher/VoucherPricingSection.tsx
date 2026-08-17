@@ -25,6 +25,12 @@ export default function VoucherPricingSection({
   onSellingPriceChange,
   onIssuedQuantityChange,
 }: VoucherPricingSectionProps) {
+  const originalPrice = parseFloat(originalPriceStr) || 0;
+  const discountPercent =
+    originalPrice > 0 && discountAmount > 0
+      ? Math.round((discountAmount / originalPrice) * 100)
+      : 0;
+
   return (
     <div className="bg-surface-bright rounded-xl border border-outline-variant p-6 shadow-sm space-y-6">
       <h3 className="text-lg font-bold text-on-surface pb-3 border-b border-outline-variant/40 flex items-center gap-2">
@@ -37,7 +43,7 @@ export default function VoucherPricingSection({
           <Input
             type="number"
             min="0"
-            step="1000"
+            step="1"
             value={originalPriceStr}
             onChange={(e) => onOriginalPriceChange(e.target.value)}
             placeholder="VD: 100000"
@@ -49,7 +55,7 @@ export default function VoucherPricingSection({
           <Input
             type="number"
             min="0"
-            step="1000"
+            step="1"
             value={sellingPriceStr}
             onChange={(e) => onSellingPriceChange(e.target.value)}
             placeholder="VD: 80000"
@@ -63,7 +69,14 @@ export default function VoucherPricingSection({
             Mức giảm (tự động)
           </label>
           <div className="w-full border border-primary/40 bg-primary-container/20 rounded-lg px-4 py-3 text-lg font-bold text-primary flex items-center justify-between">
-            <span>{discountAmount > 0 ? formatCurrency(discountAmount) : "0 ₫"}</span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span>{discountAmount > 0 ? formatCurrency(discountAmount) : "0 ₫"}</span>
+              {discountPercent > 0 && (
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                  -{discountPercent}%
+                </span>
+              )}
+            </div>
             <span className="text-xs text-on-surface-variant font-normal">(Giá gốc − Giá bán)</span>
           </div>
         </div>

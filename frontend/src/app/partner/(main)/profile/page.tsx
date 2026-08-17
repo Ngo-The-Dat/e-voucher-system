@@ -169,7 +169,22 @@ export default function ProfilePage() {
               Xem và chỉnh sửa các nhóm thông tin: Logo thương hiệu, Thông tin pháp lý, Người đại diện và Danh sách chi nhánh.
             </p>
           </div>
-          <StatusBadge status="running" label="Hồ sơ đã sẵn sàng" />
+          <StatusBadge
+            status={
+              profile.legalInfo.verificationStatus === "verified"
+                ? "active"
+                : profile.legalInfo.verificationStatus === "rejected"
+                ? "rejected"
+                : "pending"
+            }
+            label={
+              profile.legalInfo.verificationStatus === "verified"
+                ? "Hồ sơ đã xác minh"
+                : profile.legalInfo.verificationStatus === "rejected"
+                ? "Hồ sơ bị từ chối"
+                : "Hồ sơ chờ xác minh"
+            }
+          />
         </div>
 
         <ValidationErrorBanner errorCount={errorCount} submitLabel="Xác nhận" />

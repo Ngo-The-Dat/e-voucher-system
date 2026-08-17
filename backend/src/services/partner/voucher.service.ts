@@ -55,24 +55,38 @@ const FRONTEND_STATUS_TO_DB: Record<string, string[]> = {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const validateVoucherValues = (input: VoucherValues) => {
-  if (!Number.isFinite(input.original_price) || input.original_price < 0 ||
-      !Number.isFinite(input.sale_price) || input.sale_price < 0) {
-    throw { status: 400, message: 'Giá voucher phải là số không âm.' };
+  if (!Number.isFinite(input.original_price) || input.original_price <= 0) {
+    throw { status: 400, message: 'Giá gốc voucher phải là số lớn hơn 0.' };
   }
-  if (input.sale_price > input.original_price) {
-    throw { status: 400, message: 'Giá bán không thể lớn hơn giá gốc.' };
+  if (!Number.isFinite(input.sale_price) || input.sale_price < 0) {
+    throw { status: 400, message: 'Giá bán voucher không hợp lệ (không thể âm).' };
+  }
+  if (input.sale_price >= input.original_price) {
+    throw { status: 400, message: 'Giá bán phải nhỏ hơn giá gốc (Voucher phải có mức giảm giá > 0).' };
   }
   if (!Number.isSafeInteger(input.issue_quantity) || input.issue_quantity <= 0) {
     throw { status: 400, message: 'Số lượng phát hành phải là số nguyên dương.' };
   }
 
-  const dates = [input.sale_start_at, input.sale_end_at, input.use_start_at, input.use_end_at]
-    .map((value) => new Date(value));
-  if (dates.some((date) => Number.isNaN(date.getTime()))) {
+  const saleStart = new Date(input.sale_start_at);
+  const saleEnd = new Date(input.sale_end_at);
+  const useStart = new Date(input.use_start_at);
+  const useEnd = new Date(input.use_end_at);
+
+  if ([saleStart, saleEnd, useStart, useEnd].some((date) => Number.isNaN(date.getTime()))) {
     throw { status: 400, message: 'Ngày bắt đầu hoặc kết thúc không hợp lệ.' };
   }
-  if (dates[1] <= dates[0] || dates[3] <= dates[2]) {
-    throw { status: 400, message: 'Ngày kết thúc phải sau ngày bắt đầu.' };
+  if (saleEnd <= saleStart) {
+    throw { status: 400, message: 'Thời gian kết thúc bán phải sau ngày bắt đầu bán.' };
+  }
+  if (useStart < saleStart) {
+    throw { status: 400, message: 'Thời gian bắt đầu sử dụng không thể trước ngày bắt đầu bán.' };
+  }
+  if (useEnd <= useStart) {
+    throw { status: 400, message: 'Thời gian kết thúc sử dụng phải sau ngày bắt đầu sử dụng.' };
+  }
+  if (useEnd < saleEnd) {
+    throw { status: 400, message: 'Hạn chót sử dụng voucher phải sau hoặc bằng ngày kết thúc bán.' };
   }
 };
 
