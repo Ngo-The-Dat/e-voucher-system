@@ -46,19 +46,6 @@ export default function PartnerEmployeesPage() {
     loadData();
   }, []);
 
-  const handleToggleStatus = async (emp: PartnerEmployeeItem) => {
-    const actionText = emp.status === "ACTIVE" ? "khóa" : "mở khóa";
-    if (!confirm(`Bạn có chắc chắn muốn ${actionText} tài khoản của "${emp.full_name}"?`)) return;
-
-    try {
-      await partnerApi.toggleEmployeeStatus(emp.id);
-      await loadData();
-      showToast(`Đã ${actionText} tài khoản thành công!`);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : `Không thể ${actionText} tài khoản.`, "error");
-    }
-  };
-
   // Filter employees
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
@@ -102,9 +89,9 @@ export default function PartnerEmployeesPage() {
 
           <button
             onClick={() => setIsCreateModalOpen(true)}
-            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm hover:opacity-95 shadow-sm transition-all"
+            className="self-start sm:self-auto flex items-center gap-2 px-4 py-2.5 rounded-xl bg-primary text-on-primary font-bold text-sm hover:opacity-95 shadow-sm transition-all cursor-pointer"
           >
-            <Icon name="person_add" className="text-lg" />
+            <Icon name="add" className="text-xl font-bold" />
             <span>Thêm nhân viên mới</span>
           </button>
         </div>
@@ -169,8 +156,7 @@ export default function PartnerEmployeesPage() {
                     <th className="py-3.5 px-4">Số điện thoại / CCCD</th>
                     <th className="py-3.5 px-4">Chi nhánh phân công</th>
                     <th className="py-3.5 px-4">Trạng thái</th>
-                    <th className="py-3.5 px-4">Ngày tạo</th>
-                    <th className="py-3.5 px-6 text-right">Thao tác</th>
+                    <th className="py-3.5 px-6 text-right">Ngày tạo</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/30">
@@ -218,25 +204,8 @@ export default function PartnerEmployeesPage() {
                           <StatusBadge status={emp.status === "ACTIVE" ? "approved" : "rejected"} />
                         </td>
 
-                        <td className="py-4 px-4 text-xs text-on-surface-variant font-medium">
+                        <td className="py-4 px-6 text-right text-xs text-on-surface-variant font-medium">
                           {formatDate(emp.created_at)}
-                        </td>
-
-                        <td className="py-4 px-6 text-right">
-                          <button
-                            onClick={() => handleToggleStatus(emp)}
-                            className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                              emp.status === "ACTIVE"
-                                ? "text-error bg-error-container/30 hover:bg-error-container/60"
-                                : "text-primary bg-primary-container/40 hover:bg-primary-container/80"
-                            }`}
-                          >
-                            <Icon
-                              name={emp.status === "ACTIVE" ? "lock" : "lock_open"}
-                              className="text-sm"
-                            />
-                            <span>{emp.status === "ACTIVE" ? "Khóa" : "Mở khóa"}</span>
-                          </button>
                         </td>
                       </tr>
                     );

@@ -231,33 +231,3 @@ export const updateEmployee = async (
     client.release();
   }
 };
-
-export const toggleEmployeeStatus = async (
-  partnerId: number,
-  employeeId: number,
-  status?: 'ACTIVE' | 'LOCKED'
-) => {
-  const empCheck = await pool.query(
-    `SELECT u.user_id, u.status
-     FROM users u
-     JOIN partner_employees pe ON u.user_id = pe.user_id
-     JOIN branches b ON pe.branch_id = b.branch_id
-     WHERE u.user_id = $1 AND b.partner_id = $2`,
-    [employeeId, partnerId]
-  );
-
-  if (empCheck.rows.length === 0) {
-    throw { status: 404, message: 'Không tìm thấy nhân viên.' };
-  }
-
-  const currentStatus = empCheck.rows[0].status;
-  const newStatus = status ?? (currentStatus === 'ACTIVE' ? 'LOCKED' : 'ACTIVE');
-
-  await pool.query('UPDATE users SET status = $1 WHERE user_id = $2', [newStatus, employeeId]);
-
-  return {
-    user_id: employeeId,
-    status: newStatus,
-    message: newStatus === 'ACTIVE' ? 'Đã kích hoạt tài khoản nhân viên.' : 'Đã khóa tài khoản nhân viên.',
-  };
-};

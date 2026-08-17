@@ -275,9 +275,4 @@ export const partnerApi = {
       method: "PUT",
       body: JSON.stringify(payload),
     }),
-  toggleEmployeeStatus: (id: number | string, status?: "ACTIVE" | "LOCKED") =>
-    request<{ user_id: number; status: string; message: string }>(`/partner/employees/${id}/status`, {
-      method: "PATCH",
-      body: JSON.stringify({ status }),
-    }),
 };

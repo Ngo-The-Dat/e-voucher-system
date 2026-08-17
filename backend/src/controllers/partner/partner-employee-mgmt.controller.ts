@@ -44,18 +44,3 @@ export const updateEmployee = async (req: AuthRequest, res: Response): Promise<v
     sendHttpError(res, err);
   }
 };
-
-export const toggleEmployeeStatus = async (req: AuthRequest, res: Response): Promise<void> => {
-  try {
-    const employeeId = Number(req.params.id);
-    if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
-      res.status(400).json({ message: 'ID nhân viên không hợp lệ.' });
-      return;
-    }
-    const { status } = req.body ?? {};
-    const result = await partnerEmployeeMgmtService.toggleEmployeeStatus(req.user!.id, employeeId, status);
-    res.status(200).json(result);
-  } catch (err: unknown) {
-    sendHttpError(res, err);
-  }
-};

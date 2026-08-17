@@ -12,7 +12,4 @@ router.post('/', partnerEmployeeMgmtController.createEmployee);
 // PUT  /api/partner/employees/:id
 router.put('/:id', partnerEmployeeMgmtController.updateEmployee);
 
-// PATCH /api/partner/employees/:id/status
-router.patch('/:id/status', partnerEmployeeMgmtController.toggleEmployeeStatus);
-
 export default router;
