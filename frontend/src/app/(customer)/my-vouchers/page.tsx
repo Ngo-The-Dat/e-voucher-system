@@ -13,9 +13,30 @@ export default function MyVouchersPage() {
   const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
 
   useEffect(() => {
-    if (refreshMyVouchers) {
+    if (!refreshMyVouchers) return;
+
+    // Initial fetch
+    refreshMyVouchers();
+
+    // Auto-polling every 2.5s to immediately catch admin cancellations/status changes
+    const interval = setInterval(() => {
       refreshMyVouchers();
-    }
+    }, 2500);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        refreshMyVouchers();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
   }, [refreshMyVouchers]);
 
   // Local Page Filters

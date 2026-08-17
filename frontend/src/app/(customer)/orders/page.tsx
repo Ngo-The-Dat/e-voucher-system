@@ -33,7 +33,6 @@ export default function OrderHistoryPage() {
   useEffect(() => {
     async function loadOrders() {
       try {
-        setIsLoading(true);
         const res = await customerOrderApi.getOrders({ page: 1, limit: 50 });
         if (res && res.orders) {
           setOrders(res.orders);
@@ -44,7 +43,29 @@ export default function OrderHistoryPage() {
         setIsLoading(false);
       }
     }
+
+    // Initial fetch
     loadOrders();
+
+    // Auto-polling every 2.5s for instant status sync with admin actions
+    const interval = setInterval(() => {
+      loadOrders();
+    }, 2500);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        loadOrders();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
   }, []);
 
   const toggleExpand = (orderId: number) => {
