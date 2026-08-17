@@ -1,7 +1,24 @@
+/**
+ * =========================================================================================
+ * FILE: order.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận và điều phối các yêu cầu HTTP liên quan đến Đơn hàng.
+ *   - Các Endpoint chính:
+ *       1. GET /api/admin/orders: Lấy danh sách đơn hàng có phân trang, bộ lọc và thống kê trạng thái.
+ *       2. GET /api/admin/orders/:id: Lấy chi tiết đơn hàng (người mua, người nhận, voucher phát hành, QR code).
+ *       3. POST /api/admin/orders/:id/cancel: Quản trị viên hủy đơn hàng và hoàn tiền (kèm lý do).
+ * =========================================================================================
+ */
+
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as orderService from '../../services/admin/order.service.js';
 
+/**
+ * GET /api/admin/orders
+ * Lấy danh sách đơn hàng toàn sàn (hỗ trợ lọc theo từ khóa, trạng thái đơn, trạng thái thanh toán, khoảng ngày)
+ */
 export async function getOrders(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { search, order_status, payment_status, start_date, end_date, page, limit } = req.query;
@@ -20,6 +37,10 @@ export async function getOrders(req: AuthRequest, res: Response, next: NextFunct
   }
 }
 
+/**
+ * GET /api/admin/orders/:id
+ * Lấy chi tiết 1 đơn hàng theo ID
+ */
 export async function getOrderById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const orderId = Number(req.params.id);
@@ -39,6 +60,10 @@ export async function getOrderById(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+/**
+ * POST /api/admin/orders/:id/cancel
+ * Hủy đơn hàng và hoàn tiền (Yêu cầu nhập lý do hủy)
+ */
 export async function cancelOrder(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const orderId = Number(req.params.id);

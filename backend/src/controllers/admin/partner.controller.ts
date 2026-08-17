@@ -1,21 +1,27 @@
 /**
- * @file partner.controller.ts
- * @description Controller dành riêng cho Quản trị viên (Admin) để quản lý toàn diện các Đối tác doanh nghiệp (Partners):
- * - Xét duyệt hồ sơ đối tác mới đăng ký (Pending Partners): duyệt (`approve`), từ chối (`reject`), yêu cầu bổ sung hồ sơ (`request-revision`).
- * - Quản lý đối tác đang hoạt động (Managed Partners): xem danh sách, chi tiết, khóa tài khoản (`lock`), mở khóa tài khoản (`unlock`).
- * - Can thiệp quản trị chi nhánh của đối tác: tạo mới, cập nhật, xóa mềm chi nhánh.
+ * =========================================================================================
+ * FILE: partner.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận toàn bộ các Request quản lý & xét duyệt Doanh nghiệp Đối tác.
+ *   - Các nhóm Endpoint:
+ *       1. Hàng đợi duyệt đối tác (Pending Partners): GET danh sách, GET chi tiết, POST duyệt, POST từ chối, POST yêu cầu sửa.
+ *       2. Quản lý đối tác hoạt động (Managed Partners): GET danh sách, GET chi tiết, POST khóa (LOCK), POST mở khóa (UNLOCK).
+ *       3. Quản lý chi nhánh (Branches): POST tạo mới, PUT cập nhật, DELETE xóa chi nhánh.
+ * =========================================================================================
  */
 
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as partnerService from '../../services/admin/partner.service.js';
 
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 1. NHÓM CONTROLLER: XÉT DUYỆT HỒ SƠ ĐỐI TÁC (PENDING PARTNERS)
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
 /**
- * [GET] /api/admin/partners/pending
- * Lấy danh sách đối tác đang chờ duyệt, hỗ trợ tìm kiếm, lọc theo ngày nộp và phân trang.
- * 
- * @param req AuthRequest chứa query: search, status, start_date, end_date, page, limit
- * @param res Express Response trả về { data, total, page, totalPages }
+ * GET /api/admin/partners/pending
+ * Lấy danh sách hồ sơ đối tác đang chờ duyệt
  */
 export async function getPendingPartners(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -35,11 +41,8 @@ export async function getPendingPartners(req: AuthRequest, res: Response, next: 
 }
 
 /**
- * [GET] /api/admin/partners/pending/:id
- * Xem chi tiết hồ sơ đăng ký của một đối tác đang chờ duyệt.
- * 
- * @param req AuthRequest chứa ID đối tác
- * @param res Express Response trả về thông tin hồ sơ
+ * GET /api/admin/partners/pending/:id
+ * Lấy chi tiết 1 hồ sơ đối tác đang chờ duyệt (kèm danh sách chi nhánh và giấy tờ)
  */
 export async function getPendingPartnerById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -62,11 +65,8 @@ export async function getPendingPartnerById(req: AuthRequest, res: Response, nex
 }
 
 /**
- * [POST] /api/admin/partners/:id/approve
- * Phê duyệt hồ sơ đối tác: chuyển trạng thái sang `APPROVED`, kích hoạt tài khoản `ACTIVE`.
- * 
- * @param req AuthRequest chứa ID đối tác
- * @param res Express Response thông báo phê duyệt thành công
+ * POST /api/admin/partners/pending/:id/approve
+ * Phê duyệt đối tác và kích hoạt hoạt động
  */
 export async function approvePartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -90,11 +90,8 @@ export async function approvePartner(req: AuthRequest, res: Response, next: Next
 }
 
 /**
- * [POST] /api/admin/partners/:id/reject
- * Từ chối hồ sơ đối tác kèm lý do giải thích.
- * 
- * @param req AuthRequest chứa ID đối tác và `{ reason: string }`
- * @param res Express Response thông báo từ chối thành công
+ * POST /api/admin/partners/pending/:id/reject
+ * Từ chối hồ sơ đối tác kèm lý do
  */
 export async function rejectPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -119,11 +116,8 @@ export async function rejectPartner(req: AuthRequest, res: Response, next: NextF
 }
 
 /**
- * [POST] /api/admin/partners/:id/request-revision
- * Yêu cầu đối tác bổ sung/chỉnh sửa lại hồ sơ đăng ký kèm ghi chú hướng dẫn (`note`).
- * 
- * @param req AuthRequest chứa ID đối tác và `{ note: string }`
- * @param res Express Response thông báo yêu cầu bổ sung thành công
+ * POST /api/admin/partners/pending/:id/request-revision
+ * Yêu cầu đối tác bổ sung/chỉnh sửa hồ sơ
  */
 export async function requestRevisionPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -147,12 +141,13 @@ export async function requestRevisionPartner(req: AuthRequest, res: Response, ne
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 2. NHÓM CONTROLLER: QUẢN LÝ ĐỐI TÁC ĐÃ DUYỆT (MANAGED PARTNERS)
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
 /**
- * [GET] /api/admin/partners/manage
- * Lấy danh sách các đối tác đã được duyệt và đang trong hệ thống quản lý của Admin.
- * 
- * @param req AuthRequest chứa các tiêu chí lọc và phân trang
- * @param res Express Response trả về danh sách đối tác
+ * GET /api/admin/partners/manage
+ * Lấy danh sách các đối tác đã duyệt đang hoạt động trên sàn
  */
 export async function getManagedPartners(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -172,11 +167,8 @@ export async function getManagedPartners(req: AuthRequest, res: Response, next: 
 }
 
 /**
- * [GET] /api/admin/partners/manage/:id
- * Lấy thông tin chi tiết một đối tác trong hệ thống quản lý (hồ sơ, pháp lý, chi nhánh, số lượng voucher).
- * 
- * @param req AuthRequest chứa ID đối tác
- * @param res Express Response trả về chi tiết đối tác
+ * GET /api/admin/partners/manage/:id
+ * Lấy chi tiết đối tác quản lý (kèm danh sách chi nhánh và chương trình voucher)
  */
 export async function getManagedPartnerById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -199,11 +191,8 @@ export async function getManagedPartnerById(req: AuthRequest, res: Response, nex
 }
 
 /**
- * [POST] /api/admin/partners/:id/lock
- * Khóa tài khoản đối tác (`status = 'LOCKED'`) kèm lý do vi phạm hoặc tạm ngưng hoạt động.
- * 
- * @param req AuthRequest chứa ID đối tác và `{ reason: string }`
- * @param res Express Response thông báo khóa thành công
+ * POST /api/admin/partners/manage/:id/lock
+ * Khóa tài khoản đối tác (LOCKED)
  */
 export async function lockPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -233,11 +222,8 @@ export async function lockPartner(req: AuthRequest, res: Response, next: NextFun
 }
 
 /**
- * [POST] /api/admin/partners/:id/unlock
- * Mở khóa tài khoản đối tác (`status = 'ACTIVE'`).
- * 
- * @param req AuthRequest chứa ID đối tác
- * @param res Express Response thông báo mở khóa thành công
+ * POST /api/admin/partners/manage/:id/unlock
+ * Mở khóa tài khoản đối tác (ACTIVE)
  */
 export async function unlockPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -260,12 +246,13 @@ export async function unlockPartner(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// 3. NHÓM CONTROLLER: QUẢN LÝ CHI NHÁNH ĐỐI TÁC (BRANCHES)
+// ─────────────────────────────────────────────────────────────────────────────────────────
+
 /**
- * [POST] /api/admin/partners/:id/branches
- * Admin can thiệp tạo chi nhánh cho một đối tác cụ thể.
- * 
- * @param req AuthRequest chứa ID đối tác và thông tin chi nhánh trong body
- * @param res Express Response trả về chi nhánh vừa tạo (HTTP 201 Created)
+ * POST /api/admin/partners/manage/:id/branches
+ * Tạo chi nhánh mới cho đối tác
  */
 export async function createBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -303,11 +290,8 @@ export async function createBranch(req: AuthRequest, res: Response, next: NextFu
 }
 
 /**
- * [PUT] /api/admin/partners/:id/branches/:branchId
- * Admin cập nhật thông tin chi nhánh của đối tác.
- * 
- * @param req AuthRequest chứa partnerId và branchId
- * @param res Express Response trả về chi nhánh sau cập nhật
+ * PUT /api/admin/partners/manage/:id/branches/:branchId
+ * Cập nhật thông tin chi nhánh
  */
 export async function updateBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -344,11 +328,8 @@ export async function updateBranch(req: AuthRequest, res: Response, next: NextFu
 }
 
 /**
- * [DELETE] /api/admin/partners/:id/branches/:branchId
- * Admin xóa mềm chi nhánh của đối tác.
- * 
- * @param req AuthRequest chứa partnerId và branchId
- * @param res Express Response thông báo xóa thành công
+ * DELETE /api/admin/partners/manage/:id/branches/:branchId
+ * Xóa chi nhánh
  */
 export async function deleteBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {

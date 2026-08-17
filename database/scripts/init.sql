@@ -223,7 +223,7 @@ CREATE TABLE system_logs (
     action VARCHAR(100) NOT NULL,
     object_id VARCHAR(100),
     object_type VARCHAR(50) CONSTRAINT chk_sl_object_type CHECK (object_type IS NULL OR object_type IN (
-        'USER', 'PARTNER', 'BRANCH', 'CATEGORY', 'VOUCHER_PROGRAM',
+        'USER', 'PARTNER', 'PARTNER_EMPLOYEE', 'BRANCH', 'CATEGORY', 'VOUCHER_PROGRAM',
         'APPROVAL_REQUEST', 'CART_ITEM', 'ORDER', 'ORDER_ITEM',
         'ISSUED_VOUCHER', 'REVIEW_FEEDBACK', 'ORDER_CANCELLATION',
         'BANNER', 'POPUP', 'CONTENT'

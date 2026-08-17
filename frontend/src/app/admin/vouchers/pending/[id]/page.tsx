@@ -1,3 +1,19 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/vouchers/pending/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chi tiết Xét duyệt Voucher (UC-ADM-03: Xét duyệt Voucher).
+ *   - Các tính năng chính:
+ *       1. Hiển thị thông tin chương trình voucher, cấu trúc giá (giá gốc, giá bán, % giảm giá), số lượng phát hành.
+ *       2. Hiển thị bộ sưu tập hình ảnh (Gallery & Thumbnails) và danh sách chi nhánh áp dụng.
+ *       3. Tự động kiểm tra vi phạm quy tắc kinh doanh (Business Rules):
+ *          - Cảnh báo nếu Giá bán >= Giá gốc, Thời gian bán không hợp lệ, Thời hạn dùng không hợp lệ, Số lượng <= 0.
+ *          - Tự động VÔ HIỆU HÓA nút "Phê duyệt" nếu có vi phạm.
+ *       4. Thao tác Phê duyệt voucher (xuất bản công khai) hoặc Từ chối kèm Modal nhập lý do phản hồi.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
@@ -13,21 +29,29 @@ import {
 } from "@/lib/admin-api";
 
 export default function PendingVoucherDetailPage() {
+  // ─── 1. Lấy requestId từ URL Params ────────────────────────────────────────────────
   const params = useParams();
   const requestId = (params?.id as string) || "";
 
+  // ─── 2. State Dữ liệu & Trạng thái tải ─────────────────────────────────────────────
   const [voucher, setVoucher] = useState<AdminPendingVoucherDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Gallery State
+  // State xem ảnh trong Gallery
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  // Reject Modal State
+  // State Modal Từ chối & Lý do
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchVoucherDetail
+   * MỤC ĐÍCH: Gọi API `adminApi.getPendingVoucher` để lấy toàn bộ thông tin chi tiết voucher chờ duyệt.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchVoucherDetail = useCallback(async () => {
     if (!requestId) return;
     setIsLoading(true);
@@ -48,19 +72,20 @@ export default function PendingVoucherDetailPage() {
     fetchVoucherDetail();
   }, [fetchVoucherDetail]);
 
+  // ─── 3. Tính toán & Kiểm tra Vi phạm Quy tắc Nghiệp vụ ──────────────────────────────
   const originalPriceNum = Number(voucher?.original_price) || 0;
   const salePriceNum = Number(voucher?.sale_price) || 0;
   const discountRate = originalPriceNum > 0
     ? Math.round(((originalPriceNum - salePriceNum) / originalPriceNum) * 100)
     : 0;
 
-  // Kiểm tra vi phạm giá
+  // Kiểm tra vi phạm giá: Giá bán phải nhỏ hơn giá gốc và lớn hơn 0
   const isInvalidOriginalPrice = originalPriceNum <= 0;
   const isInvalidSalePrice = salePriceNum <= 0;
   const isPriceNotDiscounted = originalPriceNum > 0 && salePriceNum > 0 && salePriceNum >= originalPriceNum;
   const isViolationPrice = isInvalidOriginalPrice || isInvalidSalePrice || isPriceNotDiscounted;
 
-  // Kiểm tra vi phạm thời gian
+  // Kiểm tra vi phạm thời gian: Ngày kết thúc phải sau ngày bắt đầu
   const isInvalidSaleDates = voucher
     ? new Date(voucher.sale_end_at).getTime() <= new Date(voucher.sale_start_at).getTime()
     : false;
@@ -68,10 +93,10 @@ export default function PendingVoucherDetailPage() {
     ? new Date(voucher.use_end_at).getTime() <= new Date(voucher.use_start_at).getTime()
     : false;
 
-  // Kiểm tra số lượng
+  // Kiểm tra số lượng phát hành
   const isInvalidQuantity = !voucher?.issue_quantity || Number(voucher.issue_quantity) <= 0;
 
-  // Tổng hợp tất cả vi phạm
+  // Cờ tổng hợp có vi phạm hay không (Dùng để disable nút duyệt)
   const hasViolation = isViolationPrice || isInvalidSaleDates || isInvalidUseDates || isInvalidQuantity;
 
   const formatCurrency = (val: number | string) => {
@@ -140,7 +165,12 @@ export default function PendingVoucherDetailPage() {
     }
   };
 
-  // Duyệt voucher
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleApprove
+   * MỤC ĐÍCH: Phê duyệt voucher và xuất bản mở bán công khai lên sàn.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleApprove = async () => {
     if (!requestId || !voucher) return;
     if (hasViolation) {
@@ -160,7 +190,12 @@ export default function PendingVoucherDetailPage() {
     }
   };
 
-  // Từ chối voucher
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmReject
+   * MỤC ĐÍCH: Xác nhận từ chối voucher trong Modal và gửi lý do phản hồi cho đối tác.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmReject = async () => {
     if (!requestId || !voucher) return;
     if (!rejectReason.trim()) {
@@ -182,6 +217,7 @@ export default function PendingVoucherDetailPage() {
     }
   };
 
+  // Loading State
   if (isLoading) {
     return (
       <div className="p-12 text-center">
@@ -191,6 +227,7 @@ export default function PendingVoucherDetailPage() {
     );
   }
 
+  // Error State
   if (error || !voucher) {
     return (
       <div className="p-12 text-center max-w-lg mx-auto">
@@ -215,7 +252,7 @@ export default function PendingVoucherDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header & Breadcrumb */}
+      {/* ─── PHẦN 1: Header & Nút Phê Duyệt / Từ Chối ─────────────────────────────── */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div className="min-w-0 flex-1">
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5 flex-wrap">
@@ -246,7 +283,7 @@ export default function PendingVoucherDetailPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Nút bấm Phê duyệt / Từ chối */}
         <div className="flex items-center gap-2.5 shrink-0 flex-nowrap self-start lg:self-center overflow-x-auto max-w-full pb-1 lg:pb-0">
           <Link
             href="/admin/vouchers/pending"
@@ -257,6 +294,7 @@ export default function PendingVoucherDetailPage() {
           </Link>
           {voucher.approval_status === "PENDING" && (
             <>
+              {/* Nút Mở Modal Từ chối */}
               <Button
                 variant="outline"
                 type="button"
@@ -267,6 +305,8 @@ export default function PendingVoucherDetailPage() {
                 <Icon name="close" className="text-sm mr-1" />
                 <span>Từ chối duyệt</span>
               </Button>
+
+              {/* Nút Phê duyệt - Tự động khóa nếu có vi phạm quy tắc */}
               <Button
                 type="button"
                 onClick={handleApprove}
@@ -290,7 +330,7 @@ export default function PendingVoucherDetailPage() {
         </div>
       </div>
 
-      {/* Banner cảnh báo phát hiện vi phạm quy tắc */}
+      {/* ─── PHẦN 2: Banner Cảnh Báo Vi Phạm Quy Tắc Nghiệp Vụ (Nếu Có) ───────────── */}
       {hasViolation && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-900 space-y-2 shadow-xs">
           <div className="font-bold flex items-center gap-2 text-rose-900 text-sm">
@@ -335,11 +375,11 @@ export default function PendingVoucherDetailPage() {
         </div>
       )}
 
-      {/* Main Grid Layout (2 Cols Left + 1 Col Right) */}
+      {/* ─── PHẦN 3: Bố cục 2 Cột Chi Tiết (Gallery, Thông tin, Đối tác) ───────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column: Voucher Details & Gallery */}
+        {/* CỘT TRÁI (2/3): Gallery hình ảnh, Thông tin chung, Giá & Thời gian */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Bộ sưu tập hình ảnh Voucher */}
+          {/* Card Bộ sưu tập hình ảnh Voucher */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -364,7 +404,7 @@ export default function PendingVoucherDetailPage() {
 
             {images.length > 0 && activeImage ? (
               <div className="space-y-3">
-                {/* Ảnh chính được chọn xem */}
+                {/* Ảnh xem chính */}
                 <div className="relative aspect-[16/9] w-full rounded-xl overflow-hidden bg-slate-900/5 border border-slate-200/80 shadow-xs flex items-center justify-center">
                   <img
                     src={activeImage.image_url}
@@ -384,7 +424,7 @@ export default function PendingVoucherDetailPage() {
                   )}
                 </div>
 
-                {/* Dải ảnh thumbnails */}
+                {/* Danh sách ảnh thu nhỏ Thumbnails */}
                 {images.length > 1 && (
                   <div className="flex items-center gap-2.5 overflow-x-auto pb-1 pt-0.5">
                     {images.map((img, idx) => {
@@ -424,7 +464,7 @@ export default function PendingVoucherDetailPage() {
             )}
           </div>
 
-          {/* Thông tin chi tiết Chương trình Voucher */}
+          {/* Card Thông tin chương trình Voucher */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="confirmation_number" className="text-blue-600" />
@@ -474,7 +514,7 @@ export default function PendingVoucherDetailPage() {
             </div>
           </div>
 
-          {/* Cấu trúc Giá & Số lượng */}
+          {/* Card Cấu trúc Giá & Số lượng */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="payments" className="text-blue-600" />
@@ -508,7 +548,7 @@ export default function PendingVoucherDetailPage() {
             </div>
           </div>
 
-          {/* Thời gian mở bán & Thời gian sử dụng */}
+          {/* Card Thời gian mở bán & Thời gian sử dụng */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="event" className="text-blue-600" />
@@ -534,7 +574,7 @@ export default function PendingVoucherDetailPage() {
             </div>
           </div>
 
-          {/* Lịch sử phản hồi từ Admin nếu có */}
+          {/* Lịch sử phản hồi từ chối nếu có */}
           {voucher.admin_feedback && (
             <div className="p-5 bg-rose-50 border border-rose-200 rounded-2xl space-y-1.5">
               <div className="font-bold text-rose-800 text-xs uppercase tracking-wider flex items-center gap-1.5">
@@ -548,9 +588,9 @@ export default function PendingVoucherDetailPage() {
           )}
         </div>
 
-        {/* Right Column: Partner Info & Branch List & Validation Checklist */}
+        {/* CỘT PHẢI (1/3): Thông tin Đối tác, Chi nhánh áp dụng, Checklist kiểm tra */}
         <div className="space-y-6">
-          {/* Thông tin Đối tác phát hành */}
+          {/* Doanh nghiệp đối tác */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="storefront" className="text-blue-600" />
@@ -635,7 +675,7 @@ export default function PendingVoucherDetailPage() {
             )}
           </div>
 
-          {/* Checklist Kiểm tra Nghiệp vụ */}
+          {/* Checklist Kiểm tra Quy tắc Nghiệp vụ tự động */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-6 space-y-3 text-xs">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="fact_check" className="text-blue-600" />
@@ -707,7 +747,7 @@ export default function PendingVoucherDetailPage() {
         </div>
       </div>
 
-      {/* Modal Từ chối duyệt Voucher */}
+      {/* ─── PHẦN 4: Modal Từ Chối Duyệt Voucher ───────────────────────────────────── */}
       <VoucherRejectModal
         isOpen={isRejectModalOpen}
         voucher={voucher}

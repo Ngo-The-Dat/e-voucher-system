@@ -1,7 +1,12 @@
 /**
- * @file employee-approval.controller.ts
- * @description Controller dành riêng cho Quản trị viên (Admin) để quản lý và phê duyệt
- * các yêu cầu tạo tài khoản Nhân viên chi nhánh đối tác (Partner Employee Approvals).
+ * =========================================================================================
+ * FILE: employee-approval.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận các HTTP Request từ Router Admin.
+ *   - Thực hiện kiểm tra tính hợp lệ (Validation) của dữ liệu đầu vào (params, query, body).
+ *   - Chuyển tiếp yêu cầu xử lý sang `employeeApprovalService` và định dạng phản hồi HTTP (200, 400, 404, 500) trả về cho Frontend.
+ * =========================================================================================
  */
 
 import { type Response, type NextFunction } from 'express';
@@ -9,11 +14,17 @@ import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as employeeApprovalService from '../../services/admin/employee-approval.service.js';
 
 /**
- * [GET] /api/admin/partners/employee-approvals/pending
- * Lấy danh sách hồ sơ nhân viên đối tác đang chờ duyệt hoặc đã duyệt, có phân trang, lọc theo trạng thái và tìm kiếm.
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getPendingEmployees
+ * ENDPOINT: GET /api/admin/partners/employee-approvals
+ * MỤC ĐÍCH: Tiếp nhận yêu cầu lọc danh sách nhân viên đối tác từ client
  * 
- * @param req AuthRequest chứa query: `search`, `status`, `start_date`, `end_date`, `page`, `limit`
- * @param res Express Response trả về { data, total, page, totalPages }
+ * LUỒNG XỬ LÝ:
+ *   1. Trích xuất các query parameters: search, status, start_date, end_date, page, limit.
+ *   2. Chuyển đổi kiểu dữ liệu (cast string sang number cho page & limit).
+ *   3. Gọi `employeeApprovalService.getPendingEmployees(...)` để truy vấn CSDL.
+ *   4. Trả về mã HTTP 200 kèm danh sách nhân viên và thông tin phân trang.
+ * -----------------------------------------------------------------------------------------
  */
 export async function getPendingEmployees(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -28,16 +39,24 @@ export async function getPendingEmployees(req: AuthRequest, res: Response, next:
     });
     res.json(result);
   } catch (error) {
+    // Chuyển tiếp lỗi cho Global Error Middleware xử lý
     next(error);
   }
 }
 
 /**
- * [GET] /api/admin/partners/employee-approvals/pending/:id
- * Xem chi tiết một hồ sơ nhân viên chi nhánh đối tác đang chờ phê duyệt.
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getPendingEmployeeById
+ * ENDPOINT: GET /api/admin/partners/employee-approvals/:id
+ * MỤC ĐÍCH: Tiếp nhận yêu cầu lấy chi tiết 1 hồ sơ nhân viên đối tác
  * 
- * @param req AuthRequest chứa ID nhân viên
- * @param res Express Response trả về chi tiết hồ sơ
+ * LUỒNG XỬ LÝ:
+ *   1. Lấy `id` từ `req.params` và kiểm tra có phải là số nguyên dương hợp lệ không.
+ *      - Nếu không hợp lệ: Trả về HTTP 400 Bad Request.
+ *   2. Gọi Service để tìm thông tin nhân viên theo ID.
+ *   3. Nếu không tìm thấy: Trả về HTTP 404 Not Found.
+ *   4. Nếu tìm thấy: Trả về dữ liệu chi tiết JSON với HTTP 200.
+ * -----------------------------------------------------------------------------------------
  */
 export async function getPendingEmployeeById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
@@ -60,17 +79,22 @@ export async function getPendingEmployeeById(req: AuthRequest, res: Response, ne
 }
 
 /**
- * [POST] /api/admin/partners/employee-approvals/:id/approve
- * Admin phê duyệt tài khoản nhân viên đối tác:
- * chuyển trạng thái yêu cầu sang APPROVED và kích hoạt tài khoản nhân viên.
+ * -----------------------------------------------------------------------------------------
+ * HÀM: approveEmployee
+ * ENDPOINT: POST /api/admin/partners/employee-approvals/:id/approve
+ * MỤC ĐÍCH: Xử lý hành động phê duyệt hồ sơ nhân viên đối tác của Admin
  * 
- * @param req AuthRequest chứa ID nhân viên
- * @param res Express Response thông báo phê duyệt thành công
+ * LUỒNG XỬ LÝ:
+ *   1. Lấy `employeeId` từ param và `adminId` từ `req.user` (đã được giải mã từ JWT Token).
+ *   2. Validate mã nhân viên.
+ *   3. Gọi Service để kích hoạt tài khoản nhân viên và ghi nhật ký hệ thống.
+ *   4. Trả về thông báo thành công cho client.
+ * -----------------------------------------------------------------------------------------
  */
 export async function approveEmployee(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const employeeId = Number(req.params.id);
-    const adminId = req.user?.id || 1;
+    const adminId = req.user?.id || 1; // Lấy ID admin thực hiện từ JWT token
 
     if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
       res.status(400).json({ message: 'Mã nhân viên không hợp lệ' });
@@ -89,11 +113,17 @@ export async function approveEmployee(req: AuthRequest, res: Response, next: Nex
 }
 
 /**
- * [POST] /api/admin/partners/employee-approvals/:id/reject
- * Admin từ chối phê duyệt tài khoản nhân viên đối tác kèm lý do phản hồi.
+ * -----------------------------------------------------------------------------------------
+ * HÀM: rejectEmployee
+ * ENDPOINT: POST /api/admin/partners/employee-approvals/:id/reject
+ * MỤC ĐÍCH: Xử lý hành động từ chối hồ sơ nhân viên đối tác kèm lý do phản hồi
  * 
- * @param req AuthRequest chứa ID nhân viên và `{ reason: string }`
- * @param res Express Response thông báo từ chối thành công
+ * LUỒNG XỬ LÝ:
+ *   1. Lấy `employeeId` từ param, `reason` từ body và `adminId` từ token.
+ *   2. Validate dữ liệu đầu vào.
+ *   3. Gọi Service để chuyển trạng thái sang `REJECTED`, lưu lý do từ chối và ghi log.
+ *   4. Trả về phản hồi thành công.
+ * -----------------------------------------------------------------------------------------
  */
 export async function rejectEmployee(req: AuthRequest, res: Response, next: NextFunction) {
   try {

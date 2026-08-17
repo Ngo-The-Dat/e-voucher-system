@@ -1,3 +1,19 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/orders/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chi tiết Đơn hàng & Quản trị Hủy đơn / Hoàn tiền (UC-ADM-04, UC-ADM-10: Hủy đơn hàng).
+ *   - Các tính năng chính:
+ *       1. Hiển thị thông tin Người mua (Buyer) và Người nhận (Recipient - phân biệt trường hợp Mua tặng quà).
+ *       2. Hiển thị bảng dòng sản phẩm (order_items) kèm đơn giá, số lượng, thành tiền.
+ *       3. Hiển thị danh sách toàn bộ mã voucher phát hành (issued_vouchers) kèm mã code, hạn dùng, trạng thái (UNUSED / USED / CANCELLED).
+ *       4. Kiểm tra điều kiện ràng buộc RB-14:
+ *          - Vô hiệu hóa nút hủy đơn và hiển thị cảnh báo nếu có bất kỳ voucher nào đã được khách sử dụng tại Store.
+ *       5. Modal nhập lý do hủy đơn hàng và gọi API hoàn tiền mô phỏng.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -10,20 +26,28 @@ import StatusBadge from "@/components/shared/ui/StatusBadge";
 import { adminApi, AdminOrderDetail, AdminApiError } from "@/lib/admin-api";
 
 export default function OrderDetailPage() {
+  // ─── 1. Lấy orderId từ URL Params ──────────────────────────────────────────────────
   const params = useParams();
   const rawId = params?.id as string;
   const orderId = Number(rawId);
 
+  // ─── 2. State Dữ liệu & Trạng thái tải ─────────────────────────────────────────────
   const [order, setOrder] = useState<AdminOrderDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Dialog State
+  // State Modal Hủy đơn & Hoàn tiền
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
   const [isCancelling, setIsCancelling] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: loadOrderDetail
+   * MỤC ĐÍCH: Gọi API `adminApi.getOrder` để lấy thông tin chi tiết đơn hàng, người mua, người nhận, các mã voucher.
+   * ---------------------------------------------------------------------------------------
+   */
   const loadOrderDetail = useCallback(async () => {
     if (!orderId || isNaN(orderId)) {
       setError("Mã đơn hàng không hợp lệ.");
@@ -108,7 +132,7 @@ export default function OrderDetailPage() {
     }
   };
 
-  // Thu thập tất cả issued_vouchers của các items trong đơn
+  // Gom toàn bộ danh sách voucher phát hành của tất cả các dòng sản phẩm trong đơn
   const allVouchers = (order?.items || []).flatMap((item) =>
     (item.vouchers || []).map((v) => ({
       ...v,
@@ -118,15 +142,25 @@ export default function OrderDetailPage() {
     }))
   );
 
-  // Kiểm tra chính sách hủy đơn hàng (RB-14 / UC-ADM-10)
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: isEligibleForCancellation
+   * MỤC ĐÍCH: Kiểm tra xem đơn hàng có đủ điều kiện để Admin hủy hay không (Chính sách RB-14 / UC-ADM-10).
+   * QUY TẮC: Nếu có bất kỳ voucher nào trong đơn đã ở trạng thái USED -> KHÔNG CHO PHÉP HỦY.
+   * ---------------------------------------------------------------------------------------
+   */
   const isEligibleForCancellation = () => {
     if (!order || order.order_status === "CANCELLED") return false;
-    // Nếu có voucher nào trong đơn đã sử dụng (USED) -> Không đủ điều kiện hủy
     const hasUsedVoucher = allVouchers.some((v) => v.usage_status === "USED");
     return !hasUsedVoucher;
   };
 
-  // Thực hiện Hủy đơn hàng và hoàn tiền (UC-ADM-10)
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmCancelOrder
+   * MỤC ĐÍCH: Xác nhận trong Modal để hủy đơn hàng và hoàn tiền mô phỏng cho khách.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmCancelOrder = async () => {
     if (!cancelReason.trim()) {
       setModalError("Vui lòng nhập lý do hủy đơn hàng!");
@@ -191,7 +225,7 @@ export default function OrderDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Top Header & Breadcrumb */}
+      {/* ─── PHẦN 1: Top Header & Breadcrumb ─────────────────────────────────────── */}
       <div className="border-b border-slate-200 pb-4">
         <div className="flex items-center justify-between gap-4">
           <div className="space-y-1">
@@ -219,7 +253,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Cảnh báo Không đủ điều kiện Hủy */}
+      {/* Cảnh báo Không đủ điều kiện Hủy nếu đã có voucher USED */}
       {hasUsedVoucher && order.order_status !== "CANCELLED" && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 space-y-1">
           <div className="font-bold flex items-center gap-1.5 text-rose-900">
@@ -232,7 +266,7 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* Thông tin Hủy đơn (Nếu đơn đã hủy) */}
+      {/* Thông tin Hủy đơn (Nếu đơn đã hủy trước đó) */}
       {order.order_status === "CANCELLED" && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-1">
           <div className="font-bold text-xs text-rose-900 flex items-center gap-1.5">
@@ -251,9 +285,9 @@ export default function OrderDetailPage() {
         </div>
       )}
 
-      {/* Grid: Người Mua & Người Nhận (Phân định buyer_user_id & recipient_user_id) */}
+      {/* ─── PHẦN 2: Thông tin Người Mua (Buyer) & Người Nhận (Recipient) ─────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Khung 1: Người mua (Buyer) */}
+        {/* Card 1: Người mua (Buyer) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -283,7 +317,7 @@ export default function OrderDetailPage() {
           </div>
         </div>
 
-        {/* Khung 2: Người nhận (Recipient) */}
+        {/* Card 2: Người nhận (Recipient) */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-5 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
             <div className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -326,7 +360,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Khung 3: Bảng Dòng Sản Phẩm (`order_items`) */}
+      {/* ─── PHẦN 3: Bảng Dòng Sản Phẩm (`order_items`) ──────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -379,7 +413,7 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      {/* Khung 4: Danh Sách Voucher Phát Hành */}
+      {/* ─── PHẦN 4: Danh Sách Voucher Phát Hành (issued_vouchers) ────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between">
           <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">
@@ -449,7 +483,7 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Action Footer: Nút Hủy Đơn Hàng (UC-ADM-10) */}
+      {/* ─── PHẦN 5: Footer & Nút Hủy Đơn Hàng ────────────────────────────────────── */}
       <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="text-xs text-slate-500">
           Trạng thái đơn: <strong className="text-slate-800">{oBadge.label}</strong> | Thanh toán:{" "}
@@ -481,7 +515,7 @@ export default function OrderDetailPage() {
         )}
       </div>
 
-      {/* Dialog con: Nhập lý do hủy đơn hàng (UC-ADM-10) */}
+      {/* ─── PHẦN 6: Modal Xác Nhận Hủy Đơn & Hoàn Tiền ───────────────────────────── */}
       {isCancelModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 animate-in fade-in zoom-in-95">
