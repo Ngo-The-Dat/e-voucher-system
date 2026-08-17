@@ -38,13 +38,15 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
   // Tự động load số lượng chờ duyệt thực tế từ database
   const loadPendingCounts = useCallback(async () => {
     try {
-      const [partnerRes, voucherRes] = await Promise.allSettled([
+      const [partnerRes, empRes, voucherRes] = await Promise.allSettled([
         adminApi.getPendingPartners({ limit: 1 }),
+        adminApi.getPendingEmployees({ limit: 1 }),
         adminApi.getPendingVouchers({ limit: 1 }),
       ]);
 
       const partnersCount =
-        partnerRes.status === "fulfilled" ? partnerRes.value.pagination.total : 0;
+        (partnerRes.status === "fulfilled" ? partnerRes.value.pagination.total : 0) +
+        (empRes.status === "fulfilled" ? empRes.value.pagination.total : 0);
       const vouchersCount =
         voucherRes.status === "fulfilled" ? voucherRes.value.pagination.total : 0;
 

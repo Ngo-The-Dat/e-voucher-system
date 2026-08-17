@@ -152,6 +152,50 @@ export interface PartnersResponse {
   };
 }
 
+export interface AdminPendingEmployeeListItem {
+  user_id: number;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  identity_no?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  account_status: string;
+  created_at: string;
+  approval_request_id?: number | null;
+  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  submitted_at: string;
+  reviewed_at?: string | null;
+  admin_feedback?: string | null;
+  branch_id: number;
+  branch_name: string;
+  branch_address: string;
+  branch_phone?: string | null;
+  partner_id: number;
+  business_name: string;
+  tax_code: string;
+}
+
+export interface AdminPendingEmployeeDetail extends AdminPendingEmployeeListItem {
+  last_login_at?: string | null;
+  reviewer_name?: string | null;
+  branch_region?: string | null;
+  branch_status?: string;
+  brand_logo?: string | null;
+  partner_activity_status?: string;
+  business_license_no?: string | null;
+}
+
+export interface EmployeesResponse {
+  employees: AdminPendingEmployeeListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface AdminVoucherBranch {
   branch_id: number;
   branch_name: string;
@@ -413,6 +457,47 @@ export const adminApi = {
 
   getLog: async (id: string | number): Promise<SystemLogDetail> => {
     return adminRequest<SystemLogDetail>(`/admin/logs/${id}`);
+  },
+
+  // Employee Approvals
+  getPendingEmployees: async (params?: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<EmployeesResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<EmployeesResponse>(`/admin/partners/employee-approvals/pending${qs}`);
+  },
+
+  getPendingEmployee: async (id: string | number): Promise<AdminPendingEmployeeDetail> => {
+    return adminRequest<AdminPendingEmployeeDetail>(`/admin/partners/employee-approvals/pending/${id}`);
+  },
+
+  approveEmployee: async (id: string | number): Promise<{ message: string; employee_id: number }> => {
+    return adminRequest(`/admin/partners/employee-approvals/${id}/approve`, {
+      method: "POST",
+    });
+  },
+
+  rejectEmployee: async (
+    id: string | number,
+    reason?: string
+  ): Promise<{ message: string; employee_id: number; reason?: string }> => {
+    return adminRequest(`/admin/partners/employee-approvals/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason || "" }),
+    });
   },
 
   // Partners - Pending

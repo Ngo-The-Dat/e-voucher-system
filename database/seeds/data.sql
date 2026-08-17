@@ -6,9 +6,9 @@
 TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                reviews_feedback, issued_vouchers, order_items, orders, cart_items,
                voucher_approval_requests, voucher_program_images, voucher_program_branches, voucher_programs,
-               partner_employees, branches, categories, partner_approval_requests, partners, user_locks, users RESTART IDENTITY CASCADE;
+               partner_employee_approval_requests, partner_employees, branches, categories, partner_approval_requests, partners, user_locks, users RESTART IDENTITY CASCADE;
 
--- 1. Insert users (33 rows, exactly 1 ADMIN with user_id = 1)
+-- 1. Insert users (36 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
 (1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
 (2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
@@ -44,7 +44,11 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender
 -- Đối tác bổ sung mới
 (31, 'Lâm Thị Mỹ Hạnh', 'partner_phuclong@tea.vn', '0908000031', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001198000031', 'Việt Nam', 'ACTIVE', '2026-08-05 09:15:00'),
 (32, 'Trần Gia Bảo', 'partner_shopeefood@food.vn', '0908000032', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000032', 'Việt Nam', 'ACTIVE', '2026-08-06 10:30:00'),
-(33, 'Vũ Hải Nam', 'partner_uniqlo@fashion.vn', '0908000033', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000033', 'Việt Nam', 'ACTIVE', '2026-08-07 14:00:00');
+(33, 'Vũ Hải Nam', 'partner_uniqlo@fashion.vn', '0908000033', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000033', 'Việt Nam', 'ACTIVE', '2026-08-07 14:00:00'),
+-- Nhân viên đối tác mới chờ duyệt (PENDING)
+(34, 'Phạm Minh Quân', 'employee_quan@voucher.vn', '0903000034', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'MALE', '001095000034', 'Việt Nam', 'ACTIVE', '2026-08-14 09:30:00'),
+(35, 'Trần Ngọc Linh', 'employee_linh@voucher.vn', '0903000035', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'FEMALE', '001196000035', 'Việt Nam', 'ACTIVE', '2026-08-15 14:15:00'),
+(36, 'Lê Quốc Bảo', 'employee_bao@voucher.vn', '0903000036', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'MALE', '001097000036', 'Việt Nam', 'ACTIVE', '2026-08-16 10:00:00');
 
 -- 2. Insert partners (17 rows: 12 ACTIVE, 5 INACTIVE)
 INSERT INTO partners (user_id, business_name, tax_code, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place, brand_logo) VALUES
@@ -126,10 +130,21 @@ INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone
 (24, 33, 'Uniqlo Đồng Khởi', 'Vincom Center Đồng Khởi, 72 Lê Thánh Tôn, Quận 1, TP.HCM', 'Miền Nam', '02838279999', 'ACTIVE'),
 (25, 33, 'Uniqlo Vincom Phạm Ngọc Thạch', '02 Phạm Ngọc Thạch, Trung Tự, Đống Đa, Hà Nội', 'Miền Bắc', '02438278888', 'ACTIVE');
 
--- 5. Insert partner_employees (2 rows)
+-- 5. Insert partner_employees (5 rows)
 INSERT INTO partner_employees (user_id, branch_id) VALUES
 (6, 1),
-(7, 3);
+(7, 3),
+(34, 1),
+(35, 3),
+(36, 5);
+
+-- 5a. Insert partner_employee_approval_requests (5 rows)
+INSERT INTO partner_employee_approval_requests (approval_request_id, user_id, admin_id, submitted_at, reviewed_at, approval_status, admin_feedback) VALUES
+(1, 6, 1, '2026-01-03 10:30:00', '2026-01-03 11:00:00', 'APPROVED', NULL),
+(2, 7, 1, '2026-01-03 11:00:00', '2026-01-03 11:30:00', 'APPROVED', NULL),
+(3, 34, NULL, '2026-08-14 09:30:00', NULL, 'PENDING', NULL),
+(4, 35, NULL, '2026-08-15 14:15:00', NULL, 'PENDING', NULL),
+(5, 36, NULL, '2026-08-16 10:00:00', NULL, 'PENDING', NULL);
 
 -- 6. Insert voucher_programs (18 rows đa dạng danh mục)
 INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status) VALUES
@@ -379,6 +394,7 @@ SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT COALESCE(MAX(u
 SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT COALESCE(MAX(category_id), 1) FROM categories));
 SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT COALESCE(MAX(branch_id), 1) FROM branches));
 SELECT setval(pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_approval_requests));
+SELECT setval(pg_get_serial_sequence('partner_employee_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_employee_approval_requests));
 SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT COALESCE(MAX(program_id), 1) FROM voucher_programs));
 SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM voucher_approval_requests));
 SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), (SELECT COALESCE(MAX(cart_item_id), 1) FROM cart_items));

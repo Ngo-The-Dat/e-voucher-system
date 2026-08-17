@@ -28,10 +28,19 @@ export const getEmployees = async (partnerId: number) => {
     `SELECT
        u.user_id, u.full_name, u.email, u.phone, u.gender, u.identity_no,
        u.nationality, u.status, u.created_at, u.last_login_at,
+       COALESCE(pear.approval_status, 'APPROVED') AS approval_status,
+       pear.admin_feedback,
        b.branch_id, b.branch_name, b.address AS branch_address, b.status AS branch_status
      FROM users u
      JOIN partner_employees pe ON u.user_id = pe.user_id
      JOIN branches b ON pe.branch_id = b.branch_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status, admin_feedback
+       FROM partner_employee_approval_requests
+       WHERE user_id = u.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) pear ON TRUE
      WHERE b.partner_id = $1 AND u.role = 'PARTNER_EMPLOYEE'
      ORDER BY u.created_at DESC`,
     [partnerId]
@@ -46,6 +55,8 @@ export const getEmployees = async (partnerId: number) => {
     identity_no: row.identity_no,
     nationality: row.nationality,
     status: row.status,
+    approval_status: row.approval_status,
+    admin_feedback: row.admin_feedback,
     created_at: row.created_at,
     last_login_at: row.last_login_at,
     branch: {
@@ -128,6 +139,12 @@ export const createEmployee = async (partnerId: number, input: CreateEmployeeInp
       [user.user_id, branch_id]
     );
 
+    await client.query(
+      `INSERT INTO partner_employee_approval_requests (user_id, approval_status, submitted_at)
+       VALUES ($1, 'PENDING', CURRENT_TIMESTAMP)`,
+      [user.user_id]
+    );
+
     await client.query('COMMIT');
 
     return {
@@ -139,6 +156,7 @@ export const createEmployee = async (partnerId: number, input: CreateEmployeeInp
       identity_no: user.identity_no,
       nationality: user.nationality,
       status: user.status,
+      approval_status: 'PENDING',
       created_at: user.created_at,
       branch: {
         id: branch_id,
