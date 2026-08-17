@@ -1,3 +1,13 @@
+/**
+ * @file page.tsx (Partner Main Employees Management)
+ * @description Trang quản lý danh sách Nhân viên chi nhánh dành cho Đối tác chủ quản (Partner Owner):
+ * - Hiển thị danh sách nhân viên thuộc tất cả các chi nhánh của đối tác.
+ * - Bộ lọc tìm kiếm thời gian thực theo họ tên, email, số điện thoại.
+ * - Lọc theo từng chi nhánh cụ thể hoặc tất cả chi nhánh.
+ * - Hiển thị trạng thái phê duyệt từ Admin (Đang hoạt động / Chưa duyệt).
+ * - Modal tạo mới tài khoản nhân viên và gán vào chi nhánh làm việc.
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -19,19 +29,21 @@ export default function PartnerEmployeesPage() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [toastType, setToastType] = useState<"success" | "error">("success");
 
+  /** Hiển thị thông báo Toast tự động ẩn sau 4 giây */
   const showToast = (message: string, type: "success" | "error" = "success") => {
     setToastMessage(message);
     setToastType(type);
     setTimeout(() => setToastMessage(null), 4000);
   };
 
+  /** Tải danh sách chi nhánh để hiển thị trong dropdown bộ lọc */
   useEffect(() => {
     partnerApi.getBranches().then(setBranches).catch((err) => {
       console.error("Failed to load branches", err);
     });
   }, []);
 
-  // Filter employees
+  /** Lọc danh sách nhân viên theo từ khóa tìm kiếm và chi nhánh đã chọn */
   const filteredEmployees = employees.filter((emp) => {
     const matchesSearch =
       emp.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -42,6 +54,7 @@ export default function PartnerEmployeesPage() {
     return matchesSearch && matchesBranch;
   });
 
+  /** Định dạng ngày tháng hiển thị theo chuẩn Việt Nam */
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "—";
     try {
@@ -63,7 +76,7 @@ export default function PartnerEmployeesPage() {
       )}
 
       <main className="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto max-w-6xl w-full mx-auto space-y-6">
-        {/* Header & Action Button */}
+        {/* Header tiêu đề và nút Thêm mới */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-2xl font-bold text-on-surface">Danh sách Nhân viên</h2>
@@ -81,7 +94,7 @@ export default function PartnerEmployeesPage() {
           </button>
         </div>
 
-        {/* Filters Bar */}
+        {/* Thanh công cụ tìm kiếm và lọc chi nhánh */}
         <div className="bg-surface-bright border border-outline-variant rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row items-center gap-4">
           <div className="relative flex-1 w-full">
             <Icon
@@ -113,7 +126,7 @@ export default function PartnerEmployeesPage() {
           </div>
         </div>
 
-        {/* Employee List Table */}
+        {/* Bảng danh sách nhân viên */}
         <div className="bg-surface-bright border border-outline-variant rounded-2xl shadow-sm overflow-hidden">
           {isLoading ? (
             <div className="p-12 text-center text-on-surface-variant flex items-center justify-center gap-3">
@@ -205,7 +218,7 @@ export default function PartnerEmployeesPage() {
         </div>
       </main>
 
-      {/* Create Modal */}
+      {/* Modal thêm mới nhân viên */}
       <CreateEmployeeModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}

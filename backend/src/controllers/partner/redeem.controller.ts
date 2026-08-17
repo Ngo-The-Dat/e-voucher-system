@@ -1,3 +1,10 @@
+/**
+ * @file redeem.controller.ts
+ * @description Controller xử lý nghiệp vụ tra cứu và đổi voucher (Redeem) tại quầy chi nhánh:
+ * hỗ trợ phân giải ngữ cảnh người gọi (Đối tác chủ quản hoặc Nhân viên chi nhánh),
+ * tra cứu voucher bằng chuỗi mã (Voucher Code) hoặc quét mã QR, và xác nhận đổi voucher (Redeem).
+ */
+
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as redeemService from '../../services/partner/redeem.service.js';
@@ -5,9 +12,14 @@ import pool from '../../config/db.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
 /**
- * Resolve partnerId từ user đang login:
- * - Nếu role = PARTNER → dùng trực tiếp user.id
- * - Nếu role = PARTNER_EMPLOYEE → tra bảng partner_employees để lấy partner_id
+ * Phân giải ngữ cảnh đối tác và chi nhánh từ thông tin phiên đăng nhập:
+ * - Nếu role = `PARTNER`: User ID chính là `partnerId`, có quyền tra cứu/đổi trên toàn bộ chi nhánh của mình.
+ * - Nếu role = `PARTNER_EMPLOYEE`: Tra cứu `partner_id` của chủ quản và `branch_id` của chi nhánh nhân viên được phân công.
+ * 
+ * @param userId User ID của tài khoản đang đăng nhập
+ * @param role Vai trò người dùng ('PARTNER' | 'PARTNER_EMPLOYEE')
+ * @returns { partnerId: number, employeeBranchId?: number }
+ * @throws {Object} Lỗi HTTP 403 nếu nhân viên chưa được gán vào chi nhánh
  */
 const resolvePartnerContext = async (
   userId: number,
@@ -15,7 +27,7 @@ const resolvePartnerContext = async (
 ): Promise<{ partnerId: number; employeeBranchId?: number }> => {
   if (role === 'PARTNER') return { partnerId: userId };
 
-  // PARTNER_EMPLOYEE: lấy partner_id qua branch
+  // PARTNER_EMPLOYEE: Lấy partner_id và branch_id thông qua bảng liên kết partner_employees và branches
   const result = await pool.query(
     `SELECT b.partner_id, b.branch_id
      FROM partner_employees pe
@@ -35,6 +47,13 @@ const resolvePartnerContext = async (
   };
 };
 
+/**
+ * [GET] /api/partner/redeem/lookup?code=
+ * Tra cứu thông tin chi tiết của voucher đã phát hành dựa trên chuỗi mã code.
+ * 
+ * @param req AuthRequest chứa `code` trong query params
+ * @param res Express Response trả về chi tiết voucher, chủ sở hữu và điều kiện áp dụng
+ */
 export const lookupVoucher = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { code } = req.query as { code?: string };
@@ -53,6 +72,13 @@ export const lookupVoucher = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+/**
+ * [POST] /api/partner/redeem/lookup-qr
+ * Tra cứu thông tin voucher dựa trên payload quét được từ mã QR (chuỗi định danh mã hóa hoặc raw code).
+ * 
+ * @param req AuthRequest chứa `{ qr_value: string }` trong request body
+ * @param res Express Response trả về thông tin voucher
+ */
 export const lookupVoucherByQr = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { qr_value } = req.body ?? {};
@@ -69,6 +95,17 @@ export const lookupVoucherByQr = async (req: AuthRequest, res: Response): Promis
   }
 };
 
+/**
+ * [POST] /api/partner/redeem/confirm
+ * Xác nhận đổi / sử dụng voucher (Redeem) tại quầy thu ngân của chi nhánh.
+ * 
+ * @description
+ * - Kiểm tra nhân viên chỉ được đổi tại đúng chi nhánh được phân công (`employeeBranchId === branch_id`).
+ * - Gọi service thực hiện đổi voucher có khóa dòng giao dịch chống Race Condition.
+ * 
+ * @param req AuthRequest chứa `{ voucher_code, branch_id }`
+ * @param res Express Response trả về kết quả đổi voucher thành công kèm thời điểm `redeemed_at`
+ */
 export const redeemVoucher = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const { voucher_code, branch_id } = req.body;
@@ -85,6 +122,7 @@ export const redeemVoucher = async (req: AuthRequest, res: Response): Promise<vo
     }
 
     const { partnerId, employeeBranchId } = await resolvePartnerContext(req.user!.id, req.user!.role);
+    // Kiểm tra bảo mật: Nhân viên không thể redeem hộ cho chi nhánh khác
     if (employeeBranchId !== undefined && employeeBranchId !== parsedBranchId) {
       res.status(403).json({ message: 'Nhân viên chỉ được xác nhận voucher tại chi nhánh được phân công.' });
       return;

@@ -1,10 +1,26 @@
+/**
+ * @file redeem.service.ts
+ * @description Service xử lý nghiệp vụ tra cứu và đổi voucher (Redeem) tại quầy cửa hàng:
+ * - Tra cứu thông tin voucher đã phát hành (`issued_vouchers`) kèm điều kiện áp dụng, danh sách chi nhánh và thông tin khách hàng.
+ * - Tra cứu qua payload mã QR.
+ * - Nghiệp vụ Redeem Voucher với cơ chế kiểm soát đồng thời (Concurrency Control): sử dụng Transaction và khóa bi quan
+ *   `FOR UPDATE OF iv` để chống triệt để lỗi Double Spending (hai thu ngân cùng quét 1 voucher đồng thời).
+ */
+
 import pool from '../../config/db.js';
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service Methods ──────────────────────────────────────────────────────────
 
 /**
- * Tra cứu issued voucher theo mã.
- * Kiểm tra voucher phải thuộc chương trình của partner đang đăng nhập.
+ * Tra cứu thông tin chi tiết của voucher đã phát hành (`issued_vouchers`) theo mã code.
+ * 
+ * @description
+ * Đảm bảo tính bảo mật: chỉ cho phép tra cứu nếu voucher thuộc chương trình của đối tác chủ quản (`vp.partner_id = $2`).
+ * 
+ * @param voucherCode Chuỗi mã voucher (VD: 'VOUCHER-ABC-123')
+ * @param partnerId User ID của đối tác chủ quản
+ * @returns Thông tin voucher kèm giá, chi nhánh áp dụng và người sở hữu
+ * @throws {Object} Lỗi HTTP 404 nếu mã không tồn tại hoặc không thuộc đối tác
  */
 export const lookupVoucher = async (voucherCode: string, partnerId: number) => {
   const result = await pool.query(
@@ -38,8 +54,13 @@ export const lookupVoucher = async (voucherCode: string, partnerId: number) => {
 };
 
 /**
- * Tra cứu voucher từ payload QR đã lưu. Raw voucher code cũng được chấp nhận
- * để tương thích với các QR cũ chỉ chứa mã voucher.
+ * Tra cứu voucher từ giá trị quét được từ mã QR.
+ * Chấp nhận cả chuỗi payload định danh QR hoặc raw voucher code (để tương thích ngược).
+ * 
+ * @param qrValue Chuỗi giá trị quét từ mã QR
+ * @param partnerId User ID của đối tác chủ quản
+ * @returns Chi tiết bản ghi voucher
+ * @throws {Object} Lỗi HTTP 404 nếu không tìm thấy hoặc HTTP 409 nếu mã QR bị trùng
  */
 export const lookupVoucherByQr = async (qrValue: string, partnerId: number) => {
   const result = await pool.query(
@@ -79,19 +100,34 @@ export const lookupVoucherByQr = async (qrValue: string, partnerId: number) => {
 };
 
 /**
- * Xác nhận sử dụng (redeem) voucher tại điểm bán.
- * partnerId có thể là PARTNER hoặc PARTNER_EMPLOYEE (đã xác nhận branch ownership ở caller).
+ * Xác nhận sử dụng (Redeem) voucher tại chi nhánh cửa hàng.
+ * 
+ * @description
+ * Thuật toán xử lý giao dịch an toàn (Concurrency & Race Condition Control):
+ * 1. Mở Transaction `BEGIN`.
+ * 2. Khóa dòng bản ghi voucher `FOR UPDATE OF iv` để chặn mọi request song song khác cùng cố đổi voucher này.
+ * 3. Kiểm tra trạng thái hiện tại (`usage_status` phải là `UNUSED`).
+ * 4. Kiểm tra thời hạn: `NOW() >= use_start_at` và `NOW() <= expires_at`.
+ * 5. Kiểm tra tính hợp lệ của chi nhánh: Chi nhánh (`branchId`) phải nằm trong danh sách chi nhánh áp dụng của chương trình và đang `ACTIVE`.
+ * 6. Thực hiện câu lệnh cập nhật `UPDATE issued_vouchers SET usage_status = 'USED', used_at = NOW() WHERE usage_status = 'UNUSED'`.
+ * 7. Kiểm tra `rowCount`: nếu bằng 0 chứng tỏ đã bị request khác thay đổi ngay trước đó -> quăng lỗi HTTP 409 Conflict.
+ * 8. `COMMIT` Transaction và trả về thời điểm đổi thành công.
+ * 
+ * @param voucherCode Mã voucher cần đổi
+ * @param branchId ID chi nhánh nơi khách hàng đang đổi voucher
+ * @param partnerId User ID của đối tác chủ quản
+ * @returns { issued_voucher_id, voucher_code, redeemed_at, message }
  */
 export const redeemVoucher = async (
   voucherCode: string,
   branchId: number,
-  partnerId: number  // partner_id của người đang đăng nhập (lấy từ partner_employees nếu là employee)
+  partnerId: number
 ) => {
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Lấy và khóa voucher để hai request không thể redeem đồng thời
+    // 1. Lấy và khóa dòng bản ghi voucher bằng khóa bi quan (Pessimistic Lock)
     const voucherResult = await client.query(
       `SELECT
          iv.issued_voucher_id, iv.usage_status, iv.expires_at, iv.program_id,
@@ -108,6 +144,8 @@ export const redeemVoucher = async (
     }
 
     const voucher = voucherResult.rows[0];
+
+    // 2. Kiểm tra trạng thái sử dụng của voucher
     if (voucher.usage_status !== 'UNUSED') {
       const statusMessages: Record<string, string> = {
         USED: 'Voucher này đã được sử dụng rồi.',
@@ -120,14 +158,17 @@ export const redeemVoucher = async (
       };
     }
 
+    // 3. Kiểm tra ngày bắt đầu cho phép sử dụng
     if (new Date(voucher.use_start_at) > new Date()) {
       throw { status: 400, message: 'Voucher chưa đến thời gian sử dụng.' };
     }
 
+    // 4. Kiểm tra ngày hết hạn sử dụng
     if (new Date(voucher.expires_at) < new Date()) {
       throw { status: 400, message: 'Voucher đã hết hạn sử dụng.' };
     }
 
+    // 5. Kiểm tra chi nhánh này có được phép áp dụng voucher này không
     const branchCheck = await client.query(
       `SELECT 1
        FROM voucher_program_branches vpb
@@ -140,6 +181,7 @@ export const redeemVoucher = async (
       throw { status: 400, message: 'Chi nhánh này không nằm trong danh sách áp dụng của voucher.' };
     }
 
+    // 6. Cập nhật trạng thái sang USED và ghi nhận thời điểm used_at
     const updateResult = await client.query(
       `UPDATE issued_vouchers
        SET usage_status = 'USED', used_at = NOW()

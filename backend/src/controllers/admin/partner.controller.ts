@@ -1,7 +1,22 @@
+/**
+ * @file partner.controller.ts
+ * @description Controller dành riêng cho Quản trị viên (Admin) để quản lý toàn diện các Đối tác doanh nghiệp (Partners):
+ * - Xét duyệt hồ sơ đối tác mới đăng ký (Pending Partners): duyệt (`approve`), từ chối (`reject`), yêu cầu bổ sung hồ sơ (`request-revision`).
+ * - Quản lý đối tác đang hoạt động (Managed Partners): xem danh sách, chi tiết, khóa tài khoản (`lock`), mở khóa tài khoản (`unlock`).
+ * - Can thiệp quản trị chi nhánh của đối tác: tạo mới, cập nhật, xóa mềm chi nhánh.
+ */
+
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as partnerService from '../../services/admin/partner.service.js';
 
+/**
+ * [GET] /api/admin/partners/pending
+ * Lấy danh sách đối tác đang chờ duyệt, hỗ trợ tìm kiếm, lọc theo ngày nộp và phân trang.
+ * 
+ * @param req AuthRequest chứa query: search, status, start_date, end_date, page, limit
+ * @param res Express Response trả về { data, total, page, totalPages }
+ */
 export async function getPendingPartners(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { search, status, start_date, end_date, page, limit } = req.query;
@@ -19,6 +34,13 @@ export async function getPendingPartners(req: AuthRequest, res: Response, next: 
   }
 }
 
+/**
+ * [GET] /api/admin/partners/pending/:id
+ * Xem chi tiết hồ sơ đăng ký của một đối tác đang chờ duyệt.
+ * 
+ * @param req AuthRequest chứa ID đối tác
+ * @param res Express Response trả về thông tin hồ sơ
+ */
 export async function getPendingPartnerById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -39,6 +61,13 @@ export async function getPendingPartnerById(req: AuthRequest, res: Response, nex
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/approve
+ * Phê duyệt hồ sơ đối tác: chuyển trạng thái sang `APPROVED`, kích hoạt tài khoản `ACTIVE`.
+ * 
+ * @param req AuthRequest chứa ID đối tác
+ * @param res Express Response thông báo phê duyệt thành công
+ */
 export async function approvePartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -60,6 +89,13 @@ export async function approvePartner(req: AuthRequest, res: Response, next: Next
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/reject
+ * Từ chối hồ sơ đối tác kèm lý do giải thích.
+ * 
+ * @param req AuthRequest chứa ID đối tác và `{ reason: string }`
+ * @param res Express Response thông báo từ chối thành công
+ */
 export async function rejectPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -82,6 +118,13 @@ export async function rejectPartner(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/request-revision
+ * Yêu cầu đối tác bổ sung/chỉnh sửa lại hồ sơ đăng ký kèm ghi chú hướng dẫn (`note`).
+ * 
+ * @param req AuthRequest chứa ID đối tác và `{ note: string }`
+ * @param res Express Response thông báo yêu cầu bổ sung thành công
+ */
 export async function requestRevisionPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -104,6 +147,13 @@ export async function requestRevisionPartner(req: AuthRequest, res: Response, ne
   }
 }
 
+/**
+ * [GET] /api/admin/partners/manage
+ * Lấy danh sách các đối tác đã được duyệt và đang trong hệ thống quản lý của Admin.
+ * 
+ * @param req AuthRequest chứa các tiêu chí lọc và phân trang
+ * @param res Express Response trả về danh sách đối tác
+ */
 export async function getManagedPartners(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { search, status, start_date, end_date, page, limit } = req.query;
@@ -121,6 +171,13 @@ export async function getManagedPartners(req: AuthRequest, res: Response, next: 
   }
 }
 
+/**
+ * [GET] /api/admin/partners/manage/:id
+ * Lấy thông tin chi tiết một đối tác trong hệ thống quản lý (hồ sơ, pháp lý, chi nhánh, số lượng voucher).
+ * 
+ * @param req AuthRequest chứa ID đối tác
+ * @param res Express Response trả về chi tiết đối tác
+ */
 export async function getManagedPartnerById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -141,6 +198,13 @@ export async function getManagedPartnerById(req: AuthRequest, res: Response, nex
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/lock
+ * Khóa tài khoản đối tác (`status = 'LOCKED'`) kèm lý do vi phạm hoặc tạm ngưng hoạt động.
+ * 
+ * @param req AuthRequest chứa ID đối tác và `{ reason: string }`
+ * @param res Express Response thông báo khóa thành công
+ */
 export async function lockPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -168,6 +232,13 @@ export async function lockPartner(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/unlock
+ * Mở khóa tài khoản đối tác (`status = 'ACTIVE'`).
+ * 
+ * @param req AuthRequest chứa ID đối tác
+ * @param res Express Response thông báo mở khóa thành công
+ */
 export async function unlockPartner(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -189,6 +260,13 @@ export async function unlockPartner(req: AuthRequest, res: Response, next: NextF
   }
 }
 
+/**
+ * [POST] /api/admin/partners/:id/branches
+ * Admin can thiệp tạo chi nhánh cho một đối tác cụ thể.
+ * 
+ * @param req AuthRequest chứa ID đối tác và thông tin chi nhánh trong body
+ * @param res Express Response trả về chi nhánh vừa tạo (HTTP 201 Created)
+ */
 export async function createBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -224,6 +302,13 @@ export async function createBranch(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+/**
+ * [PUT] /api/admin/partners/:id/branches/:branchId
+ * Admin cập nhật thông tin chi nhánh của đối tác.
+ * 
+ * @param req AuthRequest chứa partnerId và branchId
+ * @param res Express Response trả về chi nhánh sau cập nhật
+ */
 export async function updateBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -258,6 +343,13 @@ export async function updateBranch(req: AuthRequest, res: Response, next: NextFu
   }
 }
 
+/**
+ * [DELETE] /api/admin/partners/:id/branches/:branchId
+ * Admin xóa mềm chi nhánh của đối tác.
+ * 
+ * @param req AuthRequest chứa partnerId và branchId
+ * @param res Express Response thông báo xóa thành công
+ */
 export async function deleteBranch(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const partnerId = Number(req.params.id);
@@ -279,4 +371,3 @@ export async function deleteBranch(req: AuthRequest, res: Response, next: NextFu
     next(error);
   }
 }
-

@@ -1,15 +1,35 @@
+/**
+ * @file employee-approval.service.ts
+ * @description Service xử lý nghiệp vụ xét duyệt nhân viên đối tác từ phía Quản trị viên (Admin):
+ * - Tìm kiếm, lọc và phân trang danh sách nhân viên chờ duyệt / đã duyệt.
+ * - Xem chi tiết thông tin hồ sơ nhân viên, chi nhánh và doanh nghiệp đối tác chủ quản.
+ * - Phê duyệt (`APPROVED`): kích hoạt tài khoản `status = 'ACTIVE'`, ghi nhận thời điểm duyệt và log hành động Admin.
+ * - Từ chối (`REJECTED`): cập nhật trạng thái từ chối kèm phản hồi (`admin_feedback`), ghi log kiểm toán Admin.
+ */
+
 import pool from '../../config/db.js';
 import { logAdminAction } from './system-log.service.js';
 
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
+
+/** Bộ lọc danh sách nhân viên chờ duyệt */
 export interface GetEmployeesFilter {
-  search?: string;
-  status?: string;
-  startDate?: string;
-  endDate?: string;
-  page?: number;
-  limit?: number;
+  search?: string;     // Từ khóa tìm theo họ tên, email, SĐT, CCCD, tên công ty, tên chi nhánh
+  status?: string;     // Trạng thái phê duyệt ('ALL' | 'PENDING' | 'APPROVED' | 'REJECTED')
+  startDate?: string;  // Lọc từ ngày gửi yêu cầu
+  endDate?: string;    // Lọc đến ngày gửi yêu cầu
+  page?: number;       // Trang hiện tại
+  limit?: number;      // Số bản ghi / trang
 }
 
+// ─── Service Methods ──────────────────────────────────────────────────────────
+
+/**
+ * Lấy danh sách hồ sơ nhân viên đối tác có áp dụng bộ lọc và phân trang.
+ * 
+ * @param filter Các điều kiện tìm kiếm và phân trang
+ * @returns { employees, pagination }
+ */
 export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -19,6 +39,7 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
   const params: any[] = [];
   let paramIdx = 1;
 
+  // 1. Lọc theo trạng thái phê duyệt
   if (filter.status && filter.status !== 'ALL') {
     conditions.push(`COALESCE(pear.approval_status, 'PENDING') = $${paramIdx}`);
     params.push(filter.status);
@@ -27,6 +48,7 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
     conditions.push(`COALESCE(pear.approval_status, 'PENDING') = 'PENDING'`);
   }
 
+  // 2. Tìm kiếm đa trường (họ tên, email, SĐT, CCCD, doanh nghiệp, chi nhánh)
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
@@ -41,6 +63,7 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
     paramIdx++;
   }
 
+  // 3. Lọc theo khoảng ngày nộp hồ sơ
   if (filter.startDate) {
     conditions.push(`COALESCE(pear.submitted_at, u.created_at) >= $${paramIdx}::date`);
     params.push(filter.startDate);
@@ -55,6 +78,7 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
 
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
 
+  // Đếm tổng số bản ghi thỏa mãn điều kiện
   const countQuery = `
     SELECT COUNT(*) as total
     FROM users u
@@ -74,6 +98,7 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
   const countRes = await pool.query(countQuery, params);
   const total = parseInt(countRes.rows[0]?.total ?? '0', 10);
 
+  // Lấy dữ liệu trang hiện tại
   const dataQuery = `
     SELECT 
       u.user_id,
@@ -126,6 +151,12 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
   };
 }
 
+/**
+ * Lấy chi tiết hồ sơ của một nhân viên chi nhánh theo ID.
+ * 
+ * @param employeeId User ID của nhân viên
+ * @returns Hồ sơ chi tiết hoặc null nếu không tồn tại
+ */
 export async function getPendingEmployeeById(employeeId: number) {
   const query = `
     SELECT 
@@ -178,6 +209,18 @@ export async function getPendingEmployeeById(employeeId: number) {
   return res.rows[0];
 }
 
+/**
+ * Phê duyệt hồ sơ nhân viên chi nhánh đối tác (kèm Transaction & Audit Logging).
+ * 
+ * @description
+ * 1. Mở Transaction.
+ * 2. Cập nhật `partner_employee_approval_requests` sang `APPROVED`, gán `admin_id` và `reviewed_at`.
+ * 3. Kích hoạt tài khoản người dùng: `UPDATE users SET status = 'ACTIVE'`.
+ * 4. Ghi log hệ thống qua `logAdminAction`.
+ * 
+ * @param employeeId User ID của nhân viên
+ * @param adminId User ID của Admin thực hiện duyệt
+ */
 export async function approveEmployee(employeeId: number, adminId: number) {
   const client = await pool.connect();
   try {
@@ -227,6 +270,7 @@ export async function approveEmployee(employeeId: number, adminId: number) {
 
     await client.query('COMMIT');
 
+    // Ghi nhật ký hành động Admin
     await logAdminAction({
       userId: adminId,
       action: 'APPROVE_PARTNER_EMPLOYEE',
@@ -253,6 +297,13 @@ export async function approveEmployee(employeeId: number, adminId: number) {
   }
 }
 
+/**
+ * Từ chối hồ sơ nhân viên chi nhánh đối tác kèm lý do phản hồi.
+ * 
+ * @param employeeId User ID của nhân viên
+ * @param reason Lý do từ chối
+ * @param adminId User ID của Admin
+ */
 export async function rejectEmployee(employeeId: number, reason: string, adminId: number) {
   const client = await pool.connect();
   try {
@@ -295,6 +346,7 @@ export async function rejectEmployee(employeeId: number, reason: string, adminId
 
     await client.query('COMMIT');
 
+    // Ghi nhật ký hành động Admin
     await logAdminAction({
       userId: adminId,
       action: 'REJECT_PARTNER_EMPLOYEE',

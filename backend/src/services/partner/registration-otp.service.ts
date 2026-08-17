@@ -1,3 +1,10 @@
+/**
+ * @file registration-otp.service.ts
+ * @description Service quản lý toàn bộ vòng đời của mã OTP xác thực email khi đăng ký Đối tác:
+ * sinh mã 6 số ngẫu nhiên, băm mật mã lưu trong bộ nhớ (in-memory Map), giới hạn tốc độ (Rate Limiting),
+ * kiểm soát số lần thử sai tối đa (Anti Brute-Force), và quản lý phiên challenge trước khi tạo tài khoản.
+ */
+
 import { randomInt, randomUUID } from 'node:crypto';
 import bcrypt from 'bcrypt';
 import {
@@ -5,29 +12,50 @@ import {
   type OtpEmailSender,
 } from '../email/otp-email.service.js';
 
+/** Thời gian hiệu lực của mã OTP nhập vào: 5 phút */
 const OTP_EXPIRES_IN_MS = 5 * 60 * 1000;
+
+/** Thời gian hiệu lực của phiên đăng ký sau khi đã xác thực OTP thành công: 10 phút */
 const OTP_REGISTRATION_EXPIRES_IN_MS = 10 * 60 * 1000;
+
+/** Thời gian giãn cách tối thiểu giữa 2 lần gửi lại OTP: 60 giây (Rate Limit) */
 const OTP_RESEND_AFTER_MS = 60 * 1000;
+
+/** Số lần nhập sai OTP tối đa trước khi vô hiệu hóa challenge: 5 lần */
 const OTP_MAX_ATTEMPTS = 5;
+
+/** Số lượng challenge tối đa đồng thời lưu trong bộ nhớ để phòng ngừa tràn RAM */
 const MAX_ACTIVE_CHALLENGES = 10_000;
 
+/**
+ * Cấu trúc thông tin một phiên Challenge OTP
+ */
 interface OtpChallenge {
-  id: string;
-  email: string;
-  codeHash: string;
-  expiresAt: number;
-  resendAt: number;
-  failedAttempts: number;
-  verifiedAt: number | null;
-  registrationExpiresAt: number | null;
-  consuming: boolean;
+  id: string;                          // Mã định danh duy nhất của challenge (UUID)
+  email: string;                       // Email đăng ký (đã chuẩn hóa lowercase)
+  codeHash: string;                    // Mật mã OTP đã băm bằng bcrypt
+  expiresAt: number;                   // Timestamp hết hạn nhập OTP (5 phút)
+  resendAt: number;                    // Timestamp cho phép bấm gửi lại (60s)
+  failedAttempts: number;              // Số lần người dùng đã nhập sai
+  verifiedAt: number | null;           // Timestamp thời điểm xác thực OTP thành công
+  registrationExpiresAt: number | null;// Timestamp hết hạn phiên hoàn tất đăng ký (10 phút)
+  consuming: boolean;                  // Đang trong quá trình ghi database đăng ký (chống trùng lặp request)
 }
 
+/** Bộ nhớ in-memory lưu trữ các challenge theo email */
 const challenges = new Map<string, OtpChallenge>();
+
+/** Tập hợp các email đang trong tiến trình gửi email (chống gửi trùng đồng thời) */
 const pendingSends = new Set<string>();
 
+/** Chuẩn hóa địa chỉ email về dạng chữ thường và cắt khoảng trắng thừa */
 const normalizeEmail = (email: string) => email.trim().toLowerCase();
 
+/**
+ * Dọn dẹp các challenge đã hết hạn khỏi bộ nhớ để giải phóng tài nguyên.
+ * 
+ * @param now Timestamp hiện tại
+ */
 const cleanupExpiredChallenges = (now = Date.now()): void => {
   for (const [email, challenge] of challenges) {
     const expiresAt = challenge.registrationExpiresAt ?? challenge.expiresAt;
@@ -35,9 +63,24 @@ const cleanupExpiredChallenges = (now = Date.now()): void => {
   }
 };
 
+/** Chạy tác vụ dọn dẹp định kỳ mỗi 60 giây một lần */
 const cleanupTimer = setInterval(cleanupExpiredChallenges, 60_000);
 cleanupTimer.unref();
 
+/**
+ * Yêu cầu phát hành và gửi mã OTP xác thực email cho đối tác đăng ký.
+ * 
+ * @description
+ * 1. Dọn dẹp các challenge cũ đã hết hạn.
+ * 2. Kiểm tra Rate Limit: nếu chưa qua 60s kể từ lần gửi trước, từ chối với mã HTTP 429 kèm `retry_after`.
+ * 3. Sinh chuỗi ngẫu nhiên 6 chữ số (`000000` - `999999`) và băm với bcrypt.
+ * 4. Gửi email chứa mã OTP và thời gian hiệu lực.
+ * 5. Lưu challenge mới vào `Map` và trả về `challenge_id`.
+ * 
+ * @param rawEmail Email người nhận
+ * @param sendEmail Hàm gửi email thực tế (mặc định gửi qua SMTP / Resend / SES)
+ * @returns Thông tin challenge_id, thời gian hết hạn (giây) và thời gian chờ gửi lại (giây)
+ */
 export const requestRegistrationOtp = async (
   rawEmail: string,
   sendEmail: OtpEmailSender = sendPartnerRegistrationOtp,
@@ -90,6 +133,21 @@ export const requestRegistrationOtp = async (
   }
 };
 
+/**
+ * Xác thực mã OTP người dùng nhập vào.
+ * 
+ * @description
+ * 1. Kiểm tra tồn tại của challenge và so khớp `challenge_id`.
+ * 2. Kiểm tra thời hạn hiệu lực (5 phút). Nếu quá hạn, xóa challenge và trả về HTTP 410 Gone.
+ * 3. Kiểm tra số lần nhập sai. Nếu quá 5 lần, hủy challenge và trả về HTTP 429 Too Many Requests.
+ * 4. So sánh mã với `codeHash` qua `bcrypt.compare`.
+ * 5. Nếu chính xác, cấp trạng thái `verifiedAt` và gia hạn phiên hoàn tất đăng ký thêm 10 phút.
+ * 
+ * @param rawEmail Email người dùng
+ * @param challengeId ID của challenge đã nhận khi gửi OTP
+ * @param code Mã OTP 6 số do người dùng nhập
+ * @returns { verified: true, challenge_id: string }
+ */
 export const verifyRegistrationOtp = async (rawEmail: string, challengeId: string, code: string) => {
   const email = normalizeEmail(rawEmail);
   const challenge = challenges.get(email);
@@ -128,6 +186,13 @@ export const verifyRegistrationOtp = async (rawEmail: string, challengeId: strin
   return { verified: true, challenge_id: challenge.id };
 };
 
+/**
+ * Bắt đầu tiêu thụ phiên challenge OTP khi bắt đầu thực hiện đăng ký đối tác (bước gọi `register`).
+ * Khóa cờ `consuming = true` để ngăn ngừa 2 request đăng ký đồng thời cùng dùng 1 challenge.
+ * 
+ * @param rawEmail Email đăng ký
+ * @param challengeId ID challenge
+ */
 export const beginOtpConsumption = (rawEmail: string, challengeId: string): void => {
   const email = normalizeEmail(rawEmail);
   const challenge = challenges.get(email);
@@ -147,11 +212,23 @@ export const beginOtpConsumption = (rawEmail: string, challengeId: string): void
   challenge.consuming = true;
 };
 
+/**
+ * Nhả lại cờ `consuming = false` nếu quá trình ghi database gặp lỗi (Rollback).
+ * 
+ * @param rawEmail Email đăng ký
+ * @param challengeId ID challenge
+ */
 export const releaseOtpConsumption = (rawEmail: string, challengeId: string): void => {
   const challenge = challenges.get(normalizeEmail(rawEmail));
   if (challenge?.id === challengeId) challenge.consuming = false;
 };
 
+/**
+ * Hoàn tất và hủy bỏ challenge OTP sau khi tài khoản đối tác đã được ghi thành công vào database.
+ * 
+ * @param rawEmail Email đăng ký
+ * @param challengeId ID challenge
+ */
 export const completeOtpConsumption = (rawEmail: string, challengeId: string): void => {
   const email = normalizeEmail(rawEmail);
   const challenge = challenges.get(email);

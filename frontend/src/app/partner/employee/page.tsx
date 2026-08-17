@@ -1,3 +1,12 @@
+/**
+ * @file page.tsx (Partner Employee Portal)
+ * @description Trang giao diện làm việc chính của Nhân viên chi nhánh đối tác tại quầy thu ngân / điểm bán:
+ * - Tra cứu và xác thực tính hợp lệ của voucher bằng cách nhập mã code thủ công hoặc quét mã QR qua camera.
+ * - Quản lý máy trạng thái giao diện (`resultState`): idle, invalid_code, invalid_qr, valid (chờ xác nhận), redeemed_success, request_error.
+ * - Khóa thao tác (`checkLockRef`, `redeemLockRef`) để ngăn ngừa click đúp (Double Submission).
+ * - Xác nhận đổi voucher (Redeem) gắn liền với chi nhánh làm việc của nhân viên đang đăng nhập.
+ */
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -14,16 +23,23 @@ import {
   CheckResultRequestError,
 } from "@/components/partner/voucher/CheckResultStates";
 
+/** Phương thức kiểm tra: 'code' (nhập tay) hoặc 'qr' (quét camera) */
 type CheckType = "code" | "qr";
 
+/**
+ * Máy trạng thái giao diện kết quả kiểm tra voucher
+ */
 type CheckResultState =
-  | { type: "idle" }
-  | { type: "invalid_code" }
-  | { type: "invalid_qr" }
-  | { type: "request_error"; message: string }
-  | { type: "valid"; voucher: VoucherItem }
-  | { type: "redeemed_success"; voucherTitle: string; code: string; redeemedAt: string };
+  | { type: "idle" }                                                                             // Trạng thái ban đầu, chờ nhập/quét
+  | { type: "invalid_code" }                                                                     // Mã code không tồn tại, hết hạn hoặc đã dùng
+  | { type: "invalid_qr" }                                                                       // Mã QR không hợp lệ hoặc quét lỗi
+  | { type: "request_error"; message: string }                                                   // Lỗi hệ thống hoặc kết nối mạng
+  | { type: "valid"; voucher: VoucherItem }                                                      // Voucher hợp lệ, hiển thị chi tiết và nút xác nhận đổi
+  | { type: "redeemed_success"; voucherTitle: string; code: string; redeemedAt: string };       // Đã đổi thành công tại quầy
 
+/**
+ * Chuyển đổi dữ liệu trả về từ API tra cứu voucher sang định dạng VoucherItem của Frontend
+ */
 const mapLookupVoucher = (row: any): VoucherItem => ({
   id: String(row.issued_voucher_id),
   code: row.voucher_code,
@@ -53,12 +69,17 @@ export default function EmployeeCheckVoucherPage() {
   const [resultState, setResultState] = useState<CheckResultState>({ type: "idle" });
   const [isChecking, setIsChecking] = useState(false);
   const [isRedeeming, setIsRedeeming] = useState(false);
+
+  // Khóa logic chống click liên tiếp khi đang gọi API
   const checkLockRef = useRef(false);
   const redeemLockRef = useRef(false);
 
   const branchName = profile?.branch?.name ?? "Chi nhánh được phân công";
   const branchId = profile?.branch?.id;
 
+  /**
+   * Xử lý tra cứu voucher qua mã code nhập tay
+   */
   const handleCheckCode = async (codeVal?: string) => {
     if (checkLockRef.current) return;
     const codeToTest = (codeVal !== undefined ? codeVal : inputCode).trim().toUpperCase();
@@ -90,6 +111,9 @@ export default function EmployeeCheckVoucherPage() {
     }
   };
 
+  /**
+   * Xử lý tra cứu voucher qua mã QR quét được từ camera
+   */
   const handleCheckQr = async (qrValue: string) => {
     if (checkLockRef.current) return;
     checkLockRef.current = true;
@@ -116,6 +140,9 @@ export default function EmployeeCheckVoucherPage() {
     }
   };
 
+  /**
+   * Xác nhận sử dụng voucher (Redeem) tại chi nhánh của nhân viên
+   */
   const handleConfirmRedeem = async () => {
     if (resultState.type !== "valid" || redeemLockRef.current) return;
 
@@ -148,6 +175,7 @@ export default function EmployeeCheckVoucherPage() {
     }
   };
 
+  /** Đặt lại trạng thái màn hình để kiểm tra voucher kế tiếp */
   const handleReset = () => {
     setInputCode("");
     setResultState({ type: "idle" });
@@ -155,7 +183,7 @@ export default function EmployeeCheckVoucherPage() {
 
   return (
     <main className="p-4 sm:p-6 md:p-8 flex-1 overflow-y-auto max-w-4xl w-full mx-auto flex flex-col space-y-6">
-      {/* Header Info */}
+      {/* Header thông tin chi nhánh công tác */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-outline-variant/40 pb-4">
         <div>
           <h2 className="text-2xl font-bold text-on-surface">Kiểm tra & Xác nhận Voucher</h2>
@@ -169,7 +197,7 @@ export default function EmployeeCheckVoucherPage() {
         </div>
       </div>
 
-      {/* Tabs Chọn Phương Thức */}
+      {/* Tabs chuyển đổi giữa Nhập mã tay và Quét QR */}
       <div className="bg-surface-container-high rounded-xl p-1.5 flex shadow-inner">
         {(["code", "qr"] as const).map((type) => (
           <button
@@ -190,7 +218,7 @@ export default function EmployeeCheckVoucherPage() {
         ))}
       </div>
 
-      {/* Workspace Hiển Thị Kết Quả */}
+      {/* Vùng hiển thị kết quả kiểm tra & thao tác Redeem */}
       <div className="bg-surface-bright border border-outline-variant rounded-2xl p-6 md:p-8 shadow-sm flex-1 min-h-[420px] flex flex-col justify-center relative overflow-hidden">
         {resultState.type === "invalid_code" && (
           <CheckResultInvalid type="code" onReset={handleReset} />

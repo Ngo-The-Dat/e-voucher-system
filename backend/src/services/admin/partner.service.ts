@@ -1,17 +1,50 @@
+/**
+ * @file partner.service.ts
+ * @description Service quản trị Đối tác doanh nghiệp dành cho Quản trị viên (Admin):
+ * 1. Phê duyệt hồ sơ đối tác mới đăng ký (Pending Partners):
+ *    - Xem danh sách chờ duyệt / từ chối kèm phân trang và tìm kiếm.
+ *    - Xem chi tiết hồ sơ đăng ký đối tác (pháp lý, đại diện, chi nhánh).
+ *    - Phê duyệt (`approvePartner`), Từ chối (`rejectPartner`), Yêu cầu chỉnh sửa (`requestRevisionPartner`).
+ * 2. Quản lý đối tác đã phê duyệt (Managed Partners):
+ *    - Xem danh sách đối tác đang hoạt động / bị khóa.
+ *    - Khóa tài khoản (`lockPartner`) và mở khóa tài khoản (`unlockPartner`).
+ * 3. Can thiệp quản trị chi nhánh đối tác (Branches):
+ *    - Tạo mới chi nhánh, cập nhật thông tin và xóa mềm chi nhánh.
+ * Tất cả các thao tác thay đổi trạng thái đều được ghi log kiểm toán qua `logAdminAction`.
+ */
+
 import pool from '../../config/db.js';
 import { logAdminAction } from './system-log.service.js';
 
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
+
+/** Bộ lọc danh sách đối tác */
 export interface GetPartnersFilter {
-  search?: string;
-  status?: string;
-  startDate?: string;
-  endDate?: string;
-  page?: number;
-  limit?: number;
+  search?: string;     // Từ khóa tìm kiếm theo tên doanh nghiệp, MST, tên đại diện, email, SĐT
+  status?: string;     // Trạng thái phê duyệt hoặc trạng thái hoạt động
+  startDate?: string;  // Ngày bắt đầu đăng ký
+  endDate?: string;    // Ngày kết thúc đăng ký
+  page?: number;       // Trang hiện tại
+  limit?: number;      // Số lượng bản ghi / trang
 }
 
-// ─── 1. Pending Partners (Duyệt hồ sơ) ──────────────────────────────────────────
+/** Dữ liệu đầu vào khi Admin tạo hoặc cập nhật chi nhánh đối tác */
+export interface BranchInput {
+  branch_name: string;
+  address: string;
+  region?: string;
+  phone?: string;
+  status?: 'ACTIVE' | 'INACTIVE';
+}
 
+// ─── 1. Pending Partners (Duyệt hồ sơ Đối tác mới) ─────────────────────────────
+
+/**
+ * Lấy danh sách hồ sơ đối tác đang chờ duyệt hoặc đã bị từ chối.
+ * 
+ * @param filter Bộ lọc search, status, startDate, endDate, page, limit
+ * @returns { partners, pagination }
+ */
 export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -21,6 +54,7 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const params: any[] = [];
   let paramIdx = 1;
 
+  // Tìm kiếm theo từ khóa
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
@@ -34,12 +68,14 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
     paramIdx++;
   }
 
+  // Lọc theo trạng thái phê duyệt
   if (filter.status && filter.status !== 'ALL') {
     conditions.push(`COALESCE(par.approval_status, 'PENDING') = $${paramIdx}`);
     params.push(filter.status);
     paramIdx++;
   }
 
+  // Lọc theo khoảng ngày đăng ký
   if (filter.startDate) {
     conditions.push(`p.registered_at >= $${paramIdx}::date`);
     params.push(filter.startDate);
@@ -54,6 +90,7 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
 
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
 
+  // Đếm tổng số bản ghi
   const countQuery = `
     SELECT COUNT(*) as total
     FROM partners p
@@ -70,6 +107,7 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const countRes = await pool.query(countQuery, params);
   const total = parseInt(countRes.rows[0]?.total ?? '0', 10);
 
+  // Truy vấn dữ liệu phân trang
   const dataQuery = `
     SELECT 
       p.user_id,
@@ -115,6 +153,12 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   };
 }
 
+/**
+ * Xem thông tin chi tiết hồ sơ đăng ký của một đối tác đang chờ duyệt.
+ * 
+ * @param partnerId User ID của đối tác
+ * @returns Chi tiết đối tác kèm danh sách chi nhánh
+ */
 export async function getPendingPartnerById(partnerId: number) {
   const query = `
     SELECT 
@@ -164,6 +208,12 @@ export async function getPendingPartnerById(partnerId: number) {
   return partner;
 }
 
+/**
+ * Phê duyệt hồ sơ đối tác (kèm Transaction và ghi System Log).
+ * 
+ * @param partnerId User ID của đối tác
+ * @param adminId User ID của Admin duyệt
+ */
 export async function approvePartner(partnerId: number, adminId: number) {
   const client = await pool.connect();
   try {
@@ -189,6 +239,7 @@ export async function approvePartner(partnerId: number, adminId: number) {
 
     const oldPartner = checkRes.rows[0];
 
+    // Cập nhật yêu cầu duyệt sang APPROVED
     if (oldPartner.approval_request_id) {
       await client.query(
         `UPDATE partner_approval_requests 
@@ -204,6 +255,7 @@ export async function approvePartner(partnerId: number, adminId: number) {
       );
     }
 
+    // Kích hoạt trạng thái hoạt động của đối tác
     await client.query(
       `UPDATE partners 
        SET activity_status = 'ACTIVE' 
@@ -242,6 +294,13 @@ export async function approvePartner(partnerId: number, adminId: number) {
   }
 }
 
+/**
+ * Từ chối hồ sơ đối tác kèm lý do giải thích.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param reason Lý do từ chối
+ * @param adminId User ID của Admin
+ */
 export async function rejectPartner(partnerId: number, reason: string, adminId: number) {
   const client = await pool.connect();
   try {
@@ -313,6 +372,13 @@ export async function rejectPartner(partnerId: number, reason: string, adminId: 
   }
 }
 
+/**
+ * Yêu cầu đối tác bổ sung/chỉnh sửa hồ sơ đăng ký kèm ghi chú hướng dẫn.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param note Ghi chú yêu cầu bổ sung
+ * @param adminId User ID của Admin
+ */
 export async function requestRevisionPartner(partnerId: number, note: string, adminId: number) {
   const client = await pool.connect();
   try {
@@ -384,8 +450,14 @@ export async function requestRevisionPartner(partnerId: number, note: string, ad
   }
 }
 
-// ─── 2. Managed Partners (Đối tác đã duyệt) ───────────────────────────────────
+// ─── 2. Managed Partners (Đối tác đã được phê duyệt) ───────────────────────────
 
+/**
+ * Lấy danh sách các đối tác đã được duyệt (APPROVED), hỗ trợ lọc theo trạng thái hoạt động (ACTIVE / LOCKED).
+ * 
+ * @param filter Bộ lọc và phân trang
+ * @returns { partners, pagination }
+ */
 export async function getManagedPartners(filter: GetPartnersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -487,6 +559,11 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
   };
 }
 
+/**
+ * Xem thông tin chi tiết một đối tác đã được duyệt kèm danh sách chi nhánh và các chương trình voucher.
+ * 
+ * @param partnerId User ID của đối tác
+ */
 export async function getManagedPartnerById(partnerId: number) {
   // Query partner & user details
   const partnerQuery = `
@@ -525,7 +602,7 @@ export async function getManagedPartnerById(partnerId: number) {
 
   const partner = partnerRes.rows[0];
 
-  // Query branches
+  // Danh sách chi nhánh của đối tác
   const branchesQuery = `
     SELECT branch_id, branch_name, address, region, phone, status
     FROM branches
@@ -534,7 +611,7 @@ export async function getManagedPartnerById(partnerId: number) {
   `;
   const branchesRes = await pool.query(branchesQuery, [partnerId]);
 
-  // Query voucher programs summary
+  // Danh sách các chiến dịch voucher của đối tác
   const vouchersQuery = `
     SELECT program_id, program_name, original_price, sale_price, issue_quantity, display_status, sale_start_at, sale_end_at
     FROM voucher_programs
@@ -552,6 +629,13 @@ export async function getManagedPartnerById(partnerId: number) {
   };
 }
 
+/**
+ * Khóa tài khoản đối tác (`status = 'LOCKED'`) và lưu lý do vào bảng `user_locks`.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param reason Lý do khóa
+ * @param adminId User ID của Admin
+ */
 export async function lockPartner(partnerId: number, reason: string, adminId: number) {
   const client = await pool.connect();
   try {
@@ -570,7 +654,7 @@ export async function lockPartner(partnerId: number, reason: string, adminId: nu
 
     const oldData = checkRes.rows[0];
 
-    // Update partner & user status to LOCKED
+    // Cập nhật trạng thái đối tác và user sang LOCKED
     await client.query(
       `UPDATE partners SET activity_status = 'LOCKED' WHERE user_id = $1`,
       [partnerId]
@@ -580,7 +664,7 @@ export async function lockPartner(partnerId: number, reason: string, adminId: nu
       [partnerId]
     );
 
-    // Upsert into user_locks
+    // Ghi nhận lý do khóa vào bảng user_locks
     await client.query(
       `INSERT INTO user_locks (user_id, reason) VALUES ($1, $2)
        ON CONFLICT (user_id) DO UPDATE SET reason = $2`,
@@ -618,6 +702,12 @@ export async function lockPartner(partnerId: number, reason: string, adminId: nu
   }
 }
 
+/**
+ * Mở khóa tài khoản đối tác (`status = 'ACTIVE'`).
+ * 
+ * @param partnerId User ID của đối tác
+ * @param adminId User ID của Admin
+ */
 export async function unlockPartner(partnerId: number, adminId: number) {
   const client = await pool.connect();
   try {
@@ -636,7 +726,7 @@ export async function unlockPartner(partnerId: number, adminId: number) {
 
     const oldData = checkRes.rows[0];
 
-    // Update partner & user status to ACTIVE
+    // Cập nhật trạng thái đối tác và user sang ACTIVE
     await client.query(
       `UPDATE partners SET activity_status = 'ACTIVE' WHERE user_id = $1`,
       [partnerId]
@@ -646,7 +736,7 @@ export async function unlockPartner(partnerId: number, adminId: number) {
       [partnerId]
     );
 
-    // Remove from user_locks
+    // Xóa bản ghi khóa trong user_locks
     await client.query(`DELETE FROM user_locks WHERE user_id = $1`, [partnerId]);
 
     await client.query('COMMIT');
@@ -680,16 +770,15 @@ export async function unlockPartner(partnerId: number, adminId: number) {
   }
 }
 
-// ─── 3. Branch Management ──────────────────────────────────────────────────────
+// ─── 3. Branch Management (Admin can thiệp chi nhánh) ─────────────────────────
 
-export interface BranchInput {
-  branch_name: string;
-  address: string;
-  region?: string;
-  phone?: string;
-  status?: 'ACTIVE' | 'INACTIVE';
-}
-
+/**
+ * Admin tạo chi nhánh trực tiếp cho một đối tác.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param input Thông tin chi nhánh
+ * @param adminId User ID của Admin
+ */
 export async function createBranch(partnerId: number, input: BranchInput, adminId: number) {
   const { branch_name, address, region = 'Hà Nội', phone = '', status = 'ACTIVE' } = input;
 
@@ -719,6 +808,14 @@ export async function createBranch(partnerId: number, input: BranchInput, adminI
   return createdBranch;
 }
 
+/**
+ * Admin cập nhật thông tin chi nhánh của đối tác.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param branchId ID chi nhánh cần sửa
+ * @param input Dữ liệu cập nhật
+ * @param adminId User ID của Admin
+ */
 export async function updateBranch(partnerId: number, branchId: number, input: Partial<BranchInput>, adminId: number) {
   const checkRes = await pool.query(
     `SELECT branch_id, partner_id, branch_name, address, region, phone, status
@@ -762,6 +859,13 @@ export async function updateBranch(partnerId: number, branchId: number, input: P
   return updatedBranch;
 }
 
+/**
+ * Admin xóa mềm chi nhánh của đối tác.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param branchId ID chi nhánh cần xóa
+ * @param adminId User ID của Admin
+ */
 export async function deleteBranch(partnerId: number, branchId: number, adminId: number) {
   const checkRes = await pool.query(
     `SELECT branch_id, partner_id, branch_name, address, region, phone, status
@@ -788,4 +892,3 @@ export async function deleteBranch(partnerId: number, branchId: number, adminId:
 
   return { message: 'Xóa chi nhánh thành công', branch_id: branchId };
 }
-
