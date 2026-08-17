@@ -1,7 +1,23 @@
+/**
+ * =========================================================================================
+ * FILE: log.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận các yêu cầu truy vấn Nhật ký Hệ thống (UC-ADM-08).
+ *   - Các Endpoint chính:
+ *       1. GET /api/admin/logs: Lấy danh sách nhật ký kiểm toán hệ thống có phân trang và bộ lọc.
+ *       2. GET /api/admin/logs/:id: Lấy chi tiết 1 bản ghi nhật ký (kèm dữ liệu trước/sau thay đổi).
+ * =========================================================================================
+ */
+
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as logService from '../../services/admin/log.service.js';
 
+/**
+ * GET /api/admin/logs
+ * Lấy danh sách nhật ký kiểm toán hệ thống (hỗ trợ lọc từ khóa, object_type, result, khoảng ngày)
+ */
 export async function getLogs(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { search, object_type, result, start_date, end_date, page, limit } = req.query;
@@ -20,6 +36,10 @@ export async function getLogs(req: AuthRequest, res: Response, next: NextFunctio
   }
 }
 
+/**
+ * GET /api/admin/logs/:id
+ * Lấy chi tiết 1 bản ghi nhật ký hệ thống theo Log ID
+ */
 export async function getLogById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const logId = String(req.params.id);

@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/pending/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chi tiết Hồ sơ Đăng ký Đối tác chờ duyệt (UC-ADM-01).
+ *   - Chức năng:
+ *       1. Hiển thị thông tin pháp lý doanh nghiệp (Tên DN, MST, Số ĐKKD, Ngày/Nơi cấp).
+ *       2. Hiển thị danh sách các chi nhánh đăng ký nộp kèm.
+ *       3. Hiển thị thông tin người đại diện pháp luật (Họ tên, Email, SĐT, CCCD).
+ *       4. Thao tác Phê duyệt đối tác (Chuyển trạng thái sang ACTIVE, đồng bộ dữ liệu).
+ *       5. Thao tác Từ chối hồ sơ kèm Modal nhập lý do.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -9,18 +24,26 @@ import { Button } from "@/components/shared/ui/Button";
 import { adminApi, AdminPartnerDetail } from "@/lib/admin-api";
 
 export default function PendingPartnerDetailPage() {
+  // ─── 1. Lấy partnerId từ URL Route Params ──────────────────────────────────────────
   const params = useParams();
   const partnerIdStr = (params?.id as string) || "";
 
+  // ─── 2. State dữ liệu hồ sơ & Trạng thái thao tác ─────────────────────────────────
   const [partner, setPartner] = useState<AdminPartnerDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // State Modal Từ chối & Lý do
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
-
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchPartnerDetail
+   * MỤC ĐÍCH: Gọi API `adminApi.getPendingPartner` để lấy toàn bộ thông tin chi tiết của đối tác.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchPartnerDetail = useCallback(async () => {
     if (!partnerIdStr) return;
     setIsLoading(true);
@@ -40,6 +63,12 @@ export default function PendingPartnerDetailPage() {
     fetchPartnerDetail();
   }, [fetchPartnerDetail]);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleApprove
+   * MỤC ĐÍCH: Phê duyệt hồ sơ đối tác, kích hoạt tài khoản đối tác hoạt động trên sàn.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleApprove = async () => {
     if (!partnerIdStr) return;
     setActionLoading(true);
@@ -54,6 +83,12 @@ export default function PendingPartnerDetailPage() {
     }
   };
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmReject
+   * MỤC ĐÍCH: Xác nhận từ chối hồ sơ đối tác trong Modal kèm lý do.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmReject = async () => {
     if (!partnerIdStr || !rejectionReason.trim()) return;
     setActionLoading(true);
@@ -69,8 +104,9 @@ export default function PendingPartnerDetailPage() {
     }
   };
 
-
-
+  /**
+   * Định dạng ngày tháng
+   */
   const formatDateDisplay = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     try {
@@ -82,6 +118,9 @@ export default function PendingPartnerDetailPage() {
     }
   };
 
+  /**
+   * Cấu hình nhãn và màu sắc trạng thái duyệt
+   */
   const getStatusDisplay = (approvalStatus?: string) => {
     switch (approvalStatus) {
       case "PENDING":
@@ -95,6 +134,7 @@ export default function PendingPartnerDetailPage() {
     }
   };
 
+  // Loading Skeleton State
   if (isLoading) {
     return (
       <div className="p-12 text-center">
@@ -104,6 +144,7 @@ export default function PendingPartnerDetailPage() {
     );
   }
 
+  // Error State
   if (error || !partner) {
     return (
       <div className="p-12 text-center max-w-lg mx-auto">
@@ -124,7 +165,7 @@ export default function PendingPartnerDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header & Breadcrumb */}
+      {/* ─── PHẦN 1: Header & Breadcrumb Navigation ──────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -151,7 +192,7 @@ export default function PendingPartnerDetailPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
+        {/* Các nút bấm thao tác (Phê duyệt / Từ chối) */}
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/partners/pending"
@@ -161,7 +202,7 @@ export default function PendingPartnerDetailPage() {
           </Link>
           {partner.approval_status === "PENDING" && (
             <>
-
+              {/* Nút Mở Modal Từ chối */}
               <Button
                 variant="outline"
                 type="button"
@@ -171,6 +212,8 @@ export default function PendingPartnerDetailPage() {
               >
                 Từ chối hồ sơ
               </Button>
+
+              {/* Nút Phê duyệt hồ sơ */}
               <Button
                 type="button"
                 onClick={handleApprove}
@@ -185,11 +228,11 @@ export default function PendingPartnerDetailPage() {
         </div>
       </div>
 
-      {/* Main Content Grid */}
+      {/* ─── PHẦN 2: Nội dung chính dạng 2 Cột (2/3 & 1/3) ─────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols) */}
+        {/* CỘT TRÁI (2/3): Thông tin doanh nghiệp & Danh sách chi nhánh */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Thông tin doanh nghiệp */}
+          {/* Card Thông tin doanh nghiệp */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="storefront" className="text-blue-600" />
@@ -246,9 +289,7 @@ export default function PendingPartnerDetailPage() {
             </div>
           </div>
 
-
-
-          {/* Danh sách chi nhánh nộp duyệt */}
+          {/* Card Danh sách chi nhánh nộp duyệt */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
@@ -299,9 +340,8 @@ export default function PendingPartnerDetailPage() {
           </div>
         </div>
 
-        {/* Right Column (1 Col) */}
+        {/* CỘT PHẢI (1/3): Thông tin người đại diện pháp luật */}
         <div className="space-y-6">
-          {/* Thông tin đại diện */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="person" className="text-blue-600" />
@@ -374,7 +414,7 @@ export default function PendingPartnerDetailPage() {
         </div>
       </div>
 
-      {/* Modal Từ chối */}
+      {/* ─── PHẦN 3: Modal Nhập Lý Do Từ Chối ────────────────────────────────────── */}
       {rejectModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -421,8 +461,6 @@ export default function PendingPartnerDetailPage() {
           </div>
         </div>
       )}
-
-
     </div>
   );
 }

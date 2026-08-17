@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/orders/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản lý & Tra cứu Đơn hàng Toàn Sàn (UC-ADM-04: Quản lý Đơn hàng, UC-ADM-09: Tra cứu đơn hàng).
+ *   - Các tính năng chính:
+ *       1. Tìm kiếm Debounce 400ms đa trường (Mã đơn, Người mua, Người nhận).
+ *       2. Bộ lọc đa tiêu chí: Trạng thái đơn hàng (order_status), Trạng thái thanh toán (payment_status), Khoảng ngày đặt.
+ *       3. Bảng danh sách đơn hàng chi tiết: Phân biệt người mua và người nhận (Trường hợp Mua tặng - Gift Order),
+ *          Tổng tiền, Số lượng voucher, Badge trạng thái đồng bộ màu sắc chuẩn thiết kế.
+ *       4. Phân trang 10 đơn hàng/trang và chuyển hướng sang trang chi tiết đơn hàng `[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -11,6 +26,7 @@ import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, AdminOrderListItem, AdminApiError } from "@/lib/admin-api";
 
 export default function OrdersPage() {
+  // ─── 1. State Bộ lọc & Tìm kiếm ──────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("ALL");
@@ -19,6 +35,7 @@ export default function OrdersPage() {
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ─── 2. State Dữ liệu Đơn hàng & Thống kê ─────────────────────────────────────────
   const [orders, setOrders] = useState<AdminOrderListItem[]>([]);
   const [stats, setStats] = useState({
     all: 0,
@@ -32,7 +49,9 @@ export default function OrdersPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search debounce
+  /**
+   * Debounce 400ms cho ô tìm kiếm
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -41,7 +60,12 @@ export default function OrdersPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load orders from API
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: loadOrders
+   * MỤC ĐÍCH: Gọi API `adminApi.getOrders` với toàn bộ bộ lọc và phân trang hiện tại.
+   * ---------------------------------------------------------------------------------------
+   */
   const loadOrders = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -131,7 +155,7 @@ export default function OrdersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Page Header */}
+      {/* ─── PHẦN 1: Tiêu đề trang ──────────────────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Quản lý & Tra cứu Đơn hàng</h1>
@@ -141,10 +165,10 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Tra cứu & Bộ lọc Nâng cao (UC-ADM-09) */}
+      {/* ─── PHẦN 2: Bộ Lọc Nâng Cao Đa Tiêu Chí (UC-ADM-09) ─────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5 space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-          {/* Ô Tìm kiếm */}
+          {/* Ô Tìm kiếm từ khóa */}
           <div className="sm:col-span-2 md:col-span-1">
             <FormField label="Tìm kiếm đơn hàng">
               <div className="relative">
@@ -160,7 +184,7 @@ export default function OrdersPage() {
             </FormField>
           </div>
 
-          {/* Lọc Trạng thái đơn hàng */}
+          {/* Lọc Trạng thái đơn hàng (order_status) */}
           <div>
             <FormField label="Trạng thái đơn hàng">
               <div className="relative">
@@ -183,7 +207,7 @@ export default function OrdersPage() {
             </FormField>
           </div>
 
-          {/* Lọc Trạng thái thanh toán */}
+          {/* Lọc Trạng thái thanh toán (payment_status) */}
           <div>
             <FormField label="Trạng thái thanh toán">
               <div className="relative">
@@ -206,7 +230,7 @@ export default function OrdersPage() {
             </FormField>
           </div>
 
-          {/* Lọc ngày đặt hàng */}
+          {/* Lọc Khoảng ngày đặt hàng */}
           <div>
             <FormField label="Ngày đặt hàng">
               <DateRangePicker
@@ -231,7 +255,7 @@ export default function OrdersPage() {
         </div>
       </div>
 
-      {/* Error State */}
+      {/* Thông báo lỗi nếu có */}
       {error && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-xs text-rose-700">
           <div className="flex items-center gap-2">
@@ -244,7 +268,7 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Bảng Danh Sách Đơn Hàng */}
+      {/* ─── PHẦN 3: Bảng Danh Sách Đơn Hàng ─────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -261,6 +285,7 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-base">
+              {/* Skeleton loading */}
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -292,6 +317,7 @@ export default function OrdersPage() {
                   </tr>
                 ))
               ) : orders.length === 0 ? (
+                /* Empty state */
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
                     <Icon name="search_off" className="text-4xl block mb-2 text-slate-300 mx-auto" />
@@ -299,6 +325,7 @@ export default function OrdersPage() {
                   </td>
                 </tr>
               ) : (
+                /* Dữ liệu đơn hàng */
                 orders.map((order) => {
                   const { date, time } = formatDateDisplay(order.created_at);
                   const oBadge = getOrderStatusBadge(order.order_status);
@@ -306,13 +333,18 @@ export default function OrdersPage() {
 
                   return (
                     <tr key={order.order_id} className="hover:bg-slate-50/60 transition">
+                      {/* Mã đơn hàng */}
                       <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs whitespace-nowrap">
                         ORD-{order.order_id}
                       </td>
+
+                      {/* Người mua (Buyer) */}
                       <td className="py-4 px-5">
                         <div className="font-bold text-slate-900">{order.buyer_name}</div>
                         <div className="text-xs text-slate-400 mt-0.5">{order.buyer_phone || order.buyer_email}</div>
                       </td>
+
+                      {/* Người nhận (Recipient) - Phân biệt trường hợp quà tặng */}
                       <td className="py-4 px-5">
                         {order.recipient_name ? (
                           <div>
@@ -329,22 +361,32 @@ export default function OrdersPage() {
                           </span>
                         )}
                       </td>
+
+                      {/* Tổng tiền & Số lượng voucher */}
                       <td className="py-4 px-5 font-bold text-slate-900 whitespace-nowrap">
                         {formatCurrency(order.total_amount)}
                         <span className="text-[11px] text-slate-400 font-normal block">
                           ({order.total_quantity} voucher)
                         </span>
                       </td>
+
+                      {/* Trạng thái đơn hàng */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         <StatusBadge status={oBadge.status} label={oBadge.label} />
                       </td>
+
+                      {/* Trạng thái thanh toán */}
                       <td className="py-4 px-5 whitespace-nowrap">
                         <StatusBadge status={pBadge.status} label={pBadge.label} />
                       </td>
+
+                      {/* Ngày đặt hàng */}
                       <td className="py-4 px-5 text-xs text-slate-600 whitespace-nowrap">
                         <div className="font-semibold text-slate-800">{date}</div>
                         <div className="text-slate-400">{time}</div>
                       </td>
+
+                      {/* Thao tác xem chi tiết */}
                       <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link
                           href={`/admin/orders/${order.order_id}`}
@@ -361,7 +403,7 @@ export default function OrdersPage() {
           </table>
         </div>
 
-        {/* Footer & Phân trang */}
+        {/* ─── PHẦN 4: Footer & Phân trang ────────────────────────────────────────── */}
         {!isLoading && totalItems > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -377,7 +419,12 @@ export default function OrdersPage() {
   );
 }
 
-// Sub-component Bộ chọn Ngày (DateRangePicker)
+/**
+ * -----------------------------------------------------------------------------------------
+ * SUB-COMPONENT: DateRangePicker
+ * MỤC ĐÍCH: Dropdown popover chọn khoảng thời gian (Từ ngày - Đến ngày) kèm nút reset.
+ * -----------------------------------------------------------------------------------------
+ */
 function DateRangePicker({
   startDate,
   endDate,
@@ -394,6 +441,7 @@ function DateRangePicker({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Xử lý đóng dropdown khi nhấp ra bên ngoài
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {

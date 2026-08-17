@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/pending/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Trang Giao diện Hàng đợi Xét duyệt Doanh nghiệp Đối tác (UC-ADM-01).
+ *   - Thực hiện các chức năng:
+ *       1. Hiển thị danh sách hồ sơ đối tác đang chờ duyệt (Pending Partners Queue).
+ *       2. Tìm kiếm theo tên doanh nghiệp, MST, người đại diện, email, SĐT.
+ *       3. Lọc theo ngày gửi đăng ký (startDate, endDate).
+ *       4. Hiển thị số lượng chi nhánh kèm theo từng hồ sơ.
+ *       5. Phân trang và điều hướng đến màn hình chi tiết hồ sơ `pending/[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -10,11 +25,13 @@ import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, AdminPartnerListItem } from "@/lib/admin-api";
 
 export default function PendingPartnersPage() {
+  // ─── 1. State quản lý Bộ lọc & Phân trang ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ─── 2. State quản lý Dữ liệu đối tác & Loading ───────────────────────────────────
   const [partners, setPartners] = useState<AdminPartnerListItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -23,13 +40,23 @@ export default function PendingPartnersPage() {
 
   const itemsPerPage = 10;
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchPendingPartners
+   * MỤC ĐÍCH: Gọi API `adminApi.getPendingPartners` để lấy danh sách đối tác đang chờ duyệt.
+   * 
+   * TẠI SAO DÙNG useCallback?
+   *   - Memoize hàm fetch để tránh tạo lại hàm khi các state không liên quan thay đổi.
+   *   - Đảm bảo useEffect chỉ trigger khi các dependencies (searchQuery, startDate, endDate, currentPage) thay đổi.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchPendingPartners = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const res = await adminApi.getPendingPartners({
         search: searchQuery,
-        status: "PENDING",
+        status: "PENDING", // Cố định trạng thái chờ duyệt
         startDate,
         endDate,
         page: currentPage,
@@ -47,10 +74,16 @@ export default function PendingPartnersPage() {
     }
   }, [searchQuery, startDate, endDate, currentPage]);
 
+  /**
+   * Tự động fetch khi component được mount hoặc khi bộ lọc thay đổi
+   */
   useEffect(() => {
     fetchPendingPartners();
   }, [fetchPendingPartners]);
 
+  /**
+   * Tách và định dạng ngày / giờ hiển thị
+   */
   const formatDateDisplay = (dateStr?: string) => {
     if (!dateStr) return { date: "N/A", time: "" };
     try {
@@ -66,7 +99,7 @@ export default function PendingPartnersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Navigation Bar */}
+      {/* ─── PHẦN 1: Top Navigation Bar ───────────────────────────────────────────── */}
       <div className="border-b border-slate-200 pb-1">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <span>ĐỐI TÁC</span>
@@ -98,10 +131,10 @@ export default function PendingPartnersPage() {
         </div>
       </div>
 
-      {/* Filter Card Section */}
+      {/* ─── PHẦN 2: Filter Card Section ──────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Tên doanh nghiệp Search */}
+          {/* Ô Tìm kiếm với nhãn FormField */}
           <div>
             <FormField label="Tên doanh nghiệp / ĐT / Email">
               <div className="relative">
@@ -112,7 +145,7 @@ export default function PendingPartnersPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setCurrentPage(1);
+                    setCurrentPage(1); // Reset về trang đầu khi thay đổi tìm kiếm
                   }}
                   className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
                 />
@@ -120,7 +153,7 @@ export default function PendingPartnersPage() {
             </FormField>
           </div>
 
-          {/* Ngày đăng ký Filter */}
+          {/* Bộ lọc khoảng ngày đăng ký */}
           <div>
             <DateRangePicker
               startDate={startDate}
@@ -143,7 +176,7 @@ export default function PendingPartnersPage() {
         </div>
       </div>
 
-      {/* Error State */}
+      {/* ─── PHẦN 3: Báo lỗi nếu có ────────────────────────────────────────────────── */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -156,7 +189,7 @@ export default function PendingPartnersPage() {
         </div>
       )}
 
-      {/* Partners Queue Table */}
+      {/* ─── PHẦN 4: Bảng Danh Sách Hồ Sơ Chờ Duyệt ───────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center">
@@ -194,19 +227,26 @@ export default function PendingPartnersPage() {
                         key={partner.user_id}
                         className="hover:bg-slate-50/60 transition"
                       >
+                        {/* Tên Doanh Nghiệp & MST */}
                         <td className="py-4 px-5">
                           <p className="font-bold text-slate-900">{partner.business_name}</p>
                           <p className="text-xs text-slate-400 font-mono">MST: {partner.tax_code}</p>
                         </td>
+
+                        {/* Người Đại Diện & Email */}
                         <td className="py-4 px-5 text-slate-800 font-medium">
                           <p className="font-semibold">{partner.representative_name}</p>
                           <p className="text-xs text-slate-400">{partner.email}</p>
                         </td>
+
+                        {/* Số chi nhánh đăng ký */}
                         <td className="py-4 px-5">
                           <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs inline-block min-w-[28px] text-center">
                             {partner.branches_count ?? 0}
                           </span>
                         </td>
+
+                        {/* Ngày đăng ký */}
                         <td className="py-4 px-5 whitespace-nowrap">
                           <div className="font-bold text-slate-900 text-xs sm:text-sm">
                             {date}
@@ -215,6 +255,8 @@ export default function PendingPartnersPage() {
                             {time}
                           </div>
                         </td>
+
+                        {/* Nút Xem chi tiết */}
                         <td className="py-4 px-5 text-right whitespace-nowrap">
                           <Link
                             href={`/admin/partners/pending/${partner.user_id}`}
@@ -232,7 +274,7 @@ export default function PendingPartnersPage() {
           </div>
         )}
 
-        {/* Footer & Pagination */}
+        {/* ─── PHẦN 5: Phân trang (Pagination) ────────────────────────────────────── */}
         {!isLoading && partners.length > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -248,6 +290,11 @@ export default function PendingPartnersPage() {
   );
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HELPER & COMPONENT PHỤ: DateRangePicker
+ * -----------------------------------------------------------------------------------------
+ */
 const getPresetDates = (preset: string) => {
   const today = new Date();
   const formatDate = (d: Date) => {
@@ -387,87 +434,87 @@ function DateRangePicker({
         </button>
 
         {isOpen && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 lg:left-0 top-full mt-2 z-50 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Lọc nhanh
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: "Tất cả", key: "ALL" },
-                { label: "Hôm nay", key: "TODAY" },
-                { label: "7 ngày qua", key: "7_DAYS" },
-                { label: "30 ngày qua", key: "30_DAYS" },
-                { label: "Tháng này", key: "THIS_MONTH" },
-                { label: "Tháng trước", key: "LAST_MONTH" },
-              ].map((item) => (
-                <Button
-                  key={item.key}
-                  variant="outline"
-                  type="button"
-                  onClick={() => handleApplyPreset(item.key)}
-                  className="px-2.5 py-1 text-xs text-slate-600 bg-slate-50 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-auto"
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t border-slate-100 pt-3">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Tùy chỉnh ngày
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  Từ ngày
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  max={endDate || undefined}
-                  onChange={(e) => onStartDateChange(e.target.value)}
-                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
-                />
+          <div className="absolute left-0 sm:left-auto sm:right-0 lg:left-0 top-full mt-2 z-50 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Lọc nhanh
               </div>
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  Đến ngày
-                </label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={(e) => onEndDateChange(e.target.value)}
-                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
-                />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Tất cả", key: "ALL" },
+                  { label: "Hôm nay", key: "TODAY" },
+                  { label: "7 ngày qua", key: "7_DAYS" },
+                  { label: "30 ngày qua", key: "30_DAYS" },
+                  { label: "Tháng này", key: "THIS_MONTH" },
+                  { label: "Tháng trước", key: "LAST_MONTH" },
+                ].map((item) => (
+                  <Button
+                    key={item.key}
+                    variant="outline"
+                    type="button"
+                    onClick={() => handleApplyPreset(item.key)}
+                    className="px-2.5 py-1 text-xs text-slate-600 bg-slate-50 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-auto"
+                  >
+                    {item.label}
+                  </Button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => {
-                onReset();
-              }}
-              className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto"
-            >
-              Xóa chọn
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs h-auto"
-            >
-              Áp dụng
-            </Button>
+            <div className="border-t border-slate-100 pt-3">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Tùy chỉnh ngày
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    Từ ngày
+                  </label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    max={endDate || undefined}
+                    onChange={(e) => onStartDateChange(e.target.value)}
+                    className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    Đến ngày
+                  </label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => onEndDateChange(e.target.value)}
+                    className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => {
+                  onReset();
+                }}
+                className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto"
+              >
+                Xóa chọn
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs h-auto"
+              >
+                Áp dụng
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  </FormField>
+        )}
+      </div>
+    </FormField>
   );
 }

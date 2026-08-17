@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/employee-pending/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Trang Giao diện Hàng đợi Xét duyệt Nhân viên Đối tác (Admin Queue).
+ *   - Thực hiện chức năng (UC-ADM-04):
+ *       1. Hiển thị danh sách nhân viên do các doanh nghiệp đối tác đăng ký đang chờ Admin phê duyệt.
+ *       2. Tìm kiếm theo từ khóa (tên nhân viên, email, SĐT, CCCD, tên công ty, tên chi nhánh).
+ *       3. Lọc theo khoảng ngày nộp hồ sơ (Presets hoặc DatePicker).
+ *       4. Phân trang dữ liệu và chuyển hướng đến trang chi tiết hồ sơ `[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -10,11 +24,13 @@ import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, AdminPendingEmployeeListItem } from "@/lib/admin-api";
 
 export default function EmployeePendingApprovalsPage() {
+  // ─── 1. State quản lý Bộ lọc & Phân trang ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ─── 2. State quản lý Dữ liệu & Trạng thái tải ─────────────────────────────────────
   const [employees, setEmployees] = useState<AdminPendingEmployeeListItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -23,13 +39,24 @@ export default function EmployeePendingApprovalsPage() {
 
   const itemsPerPage = 10;
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchPendingEmployees
+   * MỤC ĐÍCH: Gọi API lấy danh sách hồ sơ nhân viên đang chờ duyệt (status = 'PENDING').
+   * 
+   * TẠI SAO DÙNG useCallback?
+   *   - Giúp ghi nhớ (memoize) định nghĩa hàm giữa các lần render của component.
+   *   - Hàm chỉ được tạo lại khi một trong các dependencies (searchQuery, startDate, endDate, currentPage) thay đổi.
+   *   - Tránh việc hàm bị tạo mới liên tục làm trigger re-render không cần thiết trong useEffect.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchPendingEmployees = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
       const res = await adminApi.getPendingEmployees({
         search: searchQuery,
-        status: "PENDING",
+        status: "PENDING", // Luôn cố định trạng thái chờ duyệt tại trang này
         startDate,
         endDate,
         page: currentPage,
@@ -47,10 +74,16 @@ export default function EmployeePendingApprovalsPage() {
     }
   }, [searchQuery, startDate, endDate, currentPage]);
 
+  /**
+   * Tự động gọi API tải dữ liệu khi component được mount hoặc khi bộ lọc/trang thay đổi
+   */
   useEffect(() => {
     fetchPendingEmployees();
   }, [fetchPendingEmployees]);
 
+  /**
+   * Định dạng ngày giờ hiển thị theo chuẩn Việt Nam (DD/MM/YYYY HH:mm)
+   */
   const formatDateDisplay = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     try {
@@ -70,7 +103,7 @@ export default function EmployeePendingApprovalsPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Navigation Bar */}
+      {/* ─── PHẦN 1: Top Navigation Tabs (Chuyển đổi phân hệ Đối tác) ─────────────── */}
       <div className="border-b border-slate-200 pb-1">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <span>ĐỐI TÁC</span>
@@ -102,10 +135,10 @@ export default function EmployeePendingApprovalsPage() {
         </div>
       </div>
 
-      {/* Filter Card Section */}
+      {/* ─── PHẦN 2: Card Bộ Lọc Tìm Kiếm & Thời Gian ─────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Search input */}
+          {/* Ô Tìm kiếm với nhãn FormField */}
           <div>
             <FormField label="Tìm kiếm nhân viên / Đối tác / Chi nhánh">
               <div className="relative">
@@ -116,7 +149,7 @@ export default function EmployeePendingApprovalsPage() {
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
-                    setCurrentPage(1);
+                    setCurrentPage(1); // Reset về trang 1 khi đổi từ khóa tìm kiếm
                   }}
                   className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
                 />
@@ -124,7 +157,7 @@ export default function EmployeePendingApprovalsPage() {
             </FormField>
           </div>
 
-          {/* Date Picker */}
+          {/* Bộ chọn khoảng thời gian */}
           <div>
             <DateRangePicker
               startDate={startDate}
@@ -147,7 +180,7 @@ export default function EmployeePendingApprovalsPage() {
         </div>
       </div>
 
-      {/* Error state */}
+      {/* ─── PHẦN 3: Báo lỗi nếu có ────────────────────────────────────────────────── */}
       {error && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -160,7 +193,7 @@ export default function EmployeePendingApprovalsPage() {
         </div>
       )}
 
-      {/* Employees Queue Table */}
+      {/* ─── PHẦN 4: Bảng Danh Sách Hàng Đợi Duyệt (5 cột trực quan) ─────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse min-w-[700px]">
@@ -174,6 +207,7 @@ export default function EmployeePendingApprovalsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
+              {/* Skeleton loading khi đang fetch API */}
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, idx) => (
                   <tr key={idx} className="animate-pulse">
@@ -185,6 +219,7 @@ export default function EmployeePendingApprovalsPage() {
                   </tr>
                 ))
               ) : employees.length === 0 ? (
+                /* Empty state khi không có hồ sơ nào */
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-500">
                     <div className="flex flex-col items-center justify-center gap-2">
@@ -199,6 +234,7 @@ export default function EmployeePendingApprovalsPage() {
                   </td>
                 </tr>
               ) : (
+                /* Render các dòng dữ liệu nhân viên */
                 employees.map((emp) => {
                   return (
                     <tr key={emp.user_id} className="hover:bg-slate-50/80 transition-colors">
@@ -209,14 +245,14 @@ export default function EmployeePendingApprovalsPage() {
                         </span>
                       </td>
 
-                      {/* Doanh nghiệp */}
+                      {/* Doanh nghiệp đối tác */}
                       <td className="py-4 px-5">
                         <span className="font-medium text-slate-800 block">
                           {emp.business_name}
                         </span>
                       </td>
 
-                      {/* Chi nhánh */}
+                      {/* Chi nhánh làm việc */}
                       <td className="py-4 px-5">
                         <span className="text-slate-800 block">
                           {emp.branch_name}
@@ -228,7 +264,7 @@ export default function EmployeePendingApprovalsPage() {
                         {formatDateDisplay(emp.submitted_at || emp.created_at)}
                       </td>
 
-                      {/* Thao tác */}
+                      {/* Nút Xem chi tiết hồ sơ */}
                       <td className="py-4 px-5 text-right">
                         <Link
                           href={`/admin/partners/employee-pending/${emp.user_id}`}
@@ -246,7 +282,7 @@ export default function EmployeePendingApprovalsPage() {
           </table>
         </div>
 
-        {/* Pagination Section */}
+        {/* ─── PHẦN 5: Phân trang (Pagination) ────────────────────────────────────── */}
         {!isLoading && employees.length > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -262,6 +298,13 @@ export default function EmployeePendingApprovalsPage() {
   );
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * COMPONENT PHỤ: DateRangePicker
+ * MỤC ĐÍCH: Hộp thoại popover cho phép chọn nhanh các mốc thời gian (Hôm nay, 7 ngày qua,
+ *          tháng này...) hoặc nhập ngày bắt đầu & ngày kết thúc tùy biến.
+ * -----------------------------------------------------------------------------------------
+ */
 function DateRangePicker({
   startDate,
   endDate,
@@ -278,6 +321,7 @@ function DateRangePicker({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Xử lý đóng popover khi người dùng click ra ngoài (Click Outside)
   useEffect(() => {
     const handleOutsideClick = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -292,6 +336,7 @@ function DateRangePicker({
     };
   }, [isOpen]);
 
+  // Áp dụng các preset thời gian định sẵn
   const handleApplyPreset = (preset: string) => {
     const now = new Date();
     const formatDate = (d: Date) => {

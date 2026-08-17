@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/users/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản lý Người dùng Toàn Hệ Thống (UC-ADM-01: Quản lý người dùng).
+ *   - Các tính năng chính:
+ *       1. Hiển thị danh sách tài khoản người dùng: Khách hàng (CUSTOMER), Đối tác (PARTNER), Nhân viên đối tác (PARTNER_EMPLOYEE).
+ *       2. Tìm kiếm Debounce 250ms (theo tên đăng nhập, email, số điện thoại).
+ *       3. Lọc theo vai trò (Role) và trạng thái hoạt động (ACTIVE / LOCKED).
+ *       4. Tạo Avatar tự động (Initials + Màu sắc theo vai trò), Badge trạng thái chuẩn thiết kế.
+ *       5. Phân trang 10 người dùng/trang và chuyển hướng sang trang chi tiết người dùng `[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -20,6 +35,9 @@ interface UserDisplay {
   status: "Đang hoạt động" | "Đã khóa";
 }
 
+/**
+ * Trích xuất 2 chữ cái đầu của tên để làm Avatar (Ví dụ: "Nguyễn Văn A" -> "NA")
+ */
 const getInitials = (name: string): string => {
   const parts = name.trim().split(" ");
   if (parts.length === 0) return "U";
@@ -27,6 +45,9 @@ const getInitials = (name: string): string => {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 };
 
+/**
+ * Lấy màu nền Avatar theo vai trò hoặc theo index
+ */
 const getAvatarBg = (role: string, index: number): string => {
   if (role === "PARTNER") return "bg-amber-100 text-amber-800";
   if (role === "ADMIN") return "bg-purple-100 text-purple-800";
@@ -39,6 +60,9 @@ const getAvatarBg = (role: string, index: number): string => {
   return colors[index % colors.length];
 };
 
+/**
+ * Ánh xạ Role từ database sang tiếng Việt hiển thị
+ */
 const mapRole = (role: string): UserDisplay["role"] => {
   switch (role) {
     case "PARTNER":
@@ -52,22 +76,33 @@ const mapRole = (role: string): UserDisplay["role"] => {
   }
 };
 
+/**
+ * Ánh xạ Trạng thái sang tiếng Việt hiển thị
+ */
 const mapStatus = (status: string): UserDisplay["status"] => {
   return status === "LOCKED" ? "Đã khóa" : "Đang hoạt động";
 };
 
 export default function UserManagementPage() {
+  // ─── 1. State Bộ lọc & Tìm kiếm ──────────────────────────────────────────────────
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
 
+  // ─── 2. State Dữ liệu Người dùng ─────────────────────────────────────────────────
   const [users, setUsers] = useState<UserDisplay[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [loading, setLoading] = useState(true);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchUsers
+   * MỤC ĐÍCH: Gọi API `adminApi.getUsers` để lấy danh sách tài khoản theo bộ lọc và phân trang.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchUsers = useCallback(async () => {
     try {
       setLoading(true);
@@ -108,6 +143,9 @@ export default function UserManagementPage() {
     }
   }, [search, roleFilter, statusFilter, currentPage]);
 
+  /**
+   * Debounce 250ms khi gõ tìm kiếm
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchUsers();
@@ -124,7 +162,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      {/* Page Header */}
+      {/* ─── PHẦN 1: Tiêu đề trang ──────────────────────────────────────────────── */}
       <div>
         <h1 className="text-2xl font-bold text-slate-900">
           Quản lý người dùng
@@ -134,10 +172,10 @@ export default function UserManagementPage() {
         </p>
       </div>
 
-      {/* Filters & Toolbar */}
+      {/* ─── PHẦN 2: Bộ Lọc & Tìm Kiếm ───────────────────────────────────────────── */}
       <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-slate-200/80">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-          {/* Search Input */}
+          {/* Ô Tìm kiếm */}
           <div className="md:col-span-2">
             <FormField label="Tìm kiếm người dùng">
               <div className="relative">
@@ -156,7 +194,7 @@ export default function UserManagementPage() {
             </FormField>
           </div>
 
-          {/* Vai trò Filter */}
+          {/* Lọc theo Vai trò (Role) */}
           <div>
             <FormField label="Vai trò">
               <div className="relative">
@@ -178,7 +216,7 @@ export default function UserManagementPage() {
             </FormField>
           </div>
 
-          {/* Trạng thái Filter */}
+          {/* Lọc theo Trạng thái (Status) & Nút Đặt lại */}
           <div>
             <FormField label="Trạng thái">
               <div className="flex items-center gap-2">
@@ -213,7 +251,7 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      {/* Data Table */}
+      {/* ─── PHẦN 3: Bảng Danh Sách Người Dùng ────────────────────────────────────── */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -227,6 +265,7 @@ export default function UserManagementPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-sm">
+              {/* Skeleton loading */}
               {loading && users.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
@@ -235,6 +274,7 @@ export default function UserManagementPage() {
                   </td>
                 </tr>
               ) : users.length === 0 ? (
+                /* Empty state */
                 <tr>
                   <td colSpan={5} className="py-12 text-center text-slate-400">
                     <Icon name="search" className="inline-block text-3xl mb-2 text-slate-300" />
@@ -242,11 +282,13 @@ export default function UserManagementPage() {
                   </td>
                 </tr>
               ) : (
+                /* Dữ liệu người dùng */
                 users.map((user) => (
                   <tr
                     key={user.id}
                     className="hover:bg-slate-50/60 transition"
                   >
+                    {/* Người dùng: Avatar + Tên */}
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3.5">
                         <div
@@ -264,12 +306,16 @@ export default function UserManagementPage() {
                         </div>
                       </div>
                     </td>
+
+                    {/* Email & Số điện thoại */}
                     <td className="py-4 px-6 text-slate-500 text-sm hidden md:table-cell">
                       <div>{user.email}</div>
                       {user.phone && user.phone !== "—" && (
                         <div className="text-xs text-slate-400 mt-0.5">{user.phone}</div>
                       )}
                     </td>
+
+                    {/* Vai trò */}
                     <td className="py-4 px-6">
                       <span
                         className={`inline-flex items-center px-3 py-1 rounded-full text-xs ${
@@ -283,6 +329,8 @@ export default function UserManagementPage() {
                         {user.role}
                       </span>
                     </td>
+
+                    {/* Trạng thái (Đang hoạt động / Đã khóa) */}
                     <td className="py-4 px-6">
                       {user.status === "Đang hoạt động" ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100">
@@ -296,6 +344,8 @@ export default function UserManagementPage() {
                         </span>
                       )}
                     </td>
+
+                    {/* Thao tác xem chi tiết */}
                     <td className="py-4 px-6 text-right">
                       <Link
                         href={`/admin/users/${user.id}`}
@@ -311,7 +361,7 @@ export default function UserManagementPage() {
           </table>
         </div>
 
-        {/* Pagination Bar */}
+        {/* ─── PHẦN 4: Phân Trang ──────────────────────────────────────────────────── */}
         {totalItems > 0 && (
           <div className="p-4 border-t border-slate-100">
             <Pagination

@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/vouchers/pending/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Hàng đợi Xét duyệt Voucher (UC-ADM-03: Xét duyệt Voucher).
+ *   - Các tính năng chính:
+ *       1. Hiển thị danh sách các đợt phát hành voucher do đối tác gửi duyệt.
+ *       2. Tìm kiếm Debounce 400ms (theo tên voucher, tên đối tác, MST, mã yêu cầu).
+ *       3. Hiển thị cảnh báo trực quan nếu giá bán >= giá gốc ngay trên từng dòng.
+ *       4. Phân trang dữ liệu và chuyển hướng đến trang chi tiết duyệt voucher `pending/[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,27 +27,36 @@ import {
 } from "@/lib/admin-api";
 
 export default function PendingVouchersPage() {
+  // ─── 1. State Dữ liệu Voucher & Trạng thái tải ────────────────────────────────────
   const [vouchers, setVouchers] = useState<AdminPendingVoucherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Search & Pagination State
+  // ─── 2. State Tìm kiếm (Debounce) & Phân trang ─────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Search debounce
+  /**
+   * Cơ chế Debounce 400ms cho ô tìm kiếm:
+   * Giúp trì hoãn gọi API cho đến khi người dùng ngừng gõ phím 400ms, giảm tải lượng request gửi về backend.
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setCurrentPage(1);
+      setCurrentPage(1); // Reset về trang 1 khi đổi từ khóa
     }, 400);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load vouchers from API
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: loadPendingVouchers
+   * MỤC ĐÍCH: Gọi API `adminApi.getPendingVouchers` để lấy danh sách voucher chờ duyệt.
+   * ---------------------------------------------------------------------------------------
+   */
   const loadPendingVouchers = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -68,10 +91,10 @@ export default function PendingVouchersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Navigation Bar */}
+      {/* ─── PHẦN 1: Top Navigation Tabs (Duyệt voucher / Quản lý kho voucher) ─────── */}
       <VoucherNavTabs pendingCount={totalItems} />
 
-      {/* Filter / Search Bar */}
+      {/* ─── PHẦN 2: Thanh Tìm Kiếm Đầy Đủ & Đếm Tổng Số Lượng ─────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="relative flex-1 w-full">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
@@ -89,7 +112,7 @@ export default function PendingVouchersPage() {
         </div>
       </div>
 
-      {/* Bảng Danh Sách các Voucher CHỜ XÉT DUYỆT */}
+      {/* ─── PHẦN 3: Bảng Danh Sách các Voucher CHỜ XÉT DUYỆT ──────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -104,6 +127,7 @@ export default function PendingVouchersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-base">
+              {/* Skeleton loading */}
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -132,6 +156,7 @@ export default function PendingVouchersPage() {
                   </tr>
                 ))
               ) : vouchers.length === 0 ? (
+                /* Empty state */
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
                     <Icon name="task_alt" className="text-4xl block mb-2 text-slate-300" />
@@ -141,6 +166,7 @@ export default function PendingVouchersPage() {
                   </td>
                 </tr>
               ) : (
+                /* Dữ liệu voucher */
                 vouchers.map((item) => {
                   const originalPriceNum = Number(item.original_price) || 0;
                   const salePriceNum = Number(item.sale_price) || 0;
@@ -149,12 +175,15 @@ export default function PendingVouchersPage() {
 
                   return (
                     <tr key={item.approval_request_id} className="hover:bg-slate-50/60 transition">
+                      {/* Mã yêu cầu & Mã chương trình */}
                       <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs">
                         #{item.approval_request_id}
                         <div className="text-[10px] text-slate-400 font-sans font-normal">
                           VCH-{item.program_id}
                         </div>
                       </td>
+
+                      {/* Tên voucher & Ngành hàng + Cảnh báo vi phạm giá nếu có */}
                       <td className="py-4 px-5 max-w-xs">
                         <div className="font-bold text-slate-900 leading-snug line-clamp-2">
                           {item.program_name}
@@ -170,6 +199,8 @@ export default function PendingVouchersPage() {
                           </span>
                         )}
                       </td>
+
+                      {/* Tên đối tác & Chi nhánh */}
                       <td className="py-4 px-5">
                         <div className="font-bold text-slate-800 text-xs">{item.partner_name}</div>
                         <div className="text-xs text-slate-500 mt-0.5">
@@ -187,15 +218,21 @@ export default function PendingVouchersPage() {
                           )}
                         </div>
                       </td>
+
+                      {/* Giá bán / Giá gốc */}
                       <td className="py-4 px-5">
                         <div className="font-bold text-blue-700">{formatCurrency(salePriceNum)}</div>
                         <div className="text-xs text-slate-400 line-through">
                           {formatCurrency(originalPriceNum)}
                         </div>
                       </td>
+
+                      {/* Số lượng phát hành */}
                       <td className="py-4 px-5 font-semibold text-slate-800 text-xs">
                         {item.issue_quantity.toLocaleString("vi-VN")} lượt
                       </td>
+
+                      {/* Thao tác xem chi tiết */}
                       <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link
                           href={`/admin/vouchers/pending/${item.approval_request_id}`}
@@ -213,7 +250,7 @@ export default function PendingVouchersPage() {
           </table>
         </div>
 
-        {/* Footer & Phân trang */}
+        {/* ─── PHẦN 4: Footer & Phân trang ────────────────────────────────────────── */}
         {!isLoading && totalItems > 0 && (
           <Pagination
             currentPage={currentPage}
