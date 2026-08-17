@@ -130,11 +130,17 @@ export const register = async (input: RegisterInput) => {
       );
       const user = userResult.rows[0];
 
-      // 6. Tạo bản ghi partner (trạng thái PENDING, chờ Admin duyệt)
+      // 6. Tạo bản ghi partner (activity_status INACTIVE) và tạo yêu cầu duyệt PENDING
       await client.query(
-        `INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status)
-         VALUES ($1, $2, $3, 'PENDING', 'ACTIVE')`,
+        `INSERT INTO partners (user_id, business_name, tax_code, activity_status)
+         VALUES ($1, $2, $3, 'INACTIVE')`,
         [user.user_id, business_name, tax_code]
+      );
+
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, approval_status)
+         VALUES ($1, 'PENDING')`,
+        [user.user_id]
       );
 
       await client.query('COMMIT');
@@ -175,9 +181,16 @@ export const login = async (input: LoginInput) => {
   // 1. Tìm user theo email với role PARTNER
   const userResult = await pool.query(
     `SELECT u.user_id, u.full_name, u.email, u.phone, u.password_hash, u.role, u.status,
-            p.business_name, p.approval_status, p.activity_status
+            p.business_name, COALESCE(par.approval_status, 'PENDING') as approval_status, p.activity_status
      FROM users u
      JOIN partners p ON u.user_id = p.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests
+       WHERE partner_id = p.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) par ON TRUE
      WHERE u.email = $1 AND u.role = 'PARTNER'`,
     [email]
   );

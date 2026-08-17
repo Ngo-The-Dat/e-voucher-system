@@ -19,8 +19,7 @@ export default function PendingPartnerDetailPage() {
 
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [revisionModalOpen, setRevisionModalOpen] = useState(false);
-  const [revisionNote, setRevisionNote] = useState("");
+
 
   const fetchPartnerDetail = useCallback(async () => {
     if (!partnerIdStr) return;
@@ -70,20 +69,7 @@ export default function PendingPartnerDetailPage() {
     }
   };
 
-  const handleConfirmRevision = async () => {
-    if (!partnerIdStr || !revisionNote.trim()) return;
-    setActionLoading(true);
-    try {
-      const res = await adminApi.requestRevisionPartner(partnerIdStr, revisionNote.trim());
-      setPartner((prev) => (prev ? { ...prev, approval_status: "REVISION_REQUESTED" } : null));
-      setRevisionModalOpen(false);
-      toast.success(res.message || `Đã gửi yêu cầu bổ sung thông tin đến người đại diện: "${revisionNote}"`);
-    } catch (err: any) {
-      toast.error(`Lỗi gửi yêu cầu bổ sung: ${err?.message || "Không thể thực hiện."}`);
-    } finally {
-      setActionLoading(false);
-    }
-  };
+
 
   const formatDateDisplay = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
@@ -100,8 +86,6 @@ export default function PendingPartnerDetailPage() {
     switch (approvalStatus) {
       case "PENDING":
         return { label: "Chờ duyệt", color: "bg-amber-50 text-amber-600 border-amber-200/70", dot: "bg-amber-500" };
-      case "REVISION_REQUESTED":
-        return { label: "Yêu cầu bổ sung", color: "bg-blue-50 text-blue-600 border-blue-200/70", dot: "bg-blue-500" };
       case "APPROVED":
         return { label: "Đã duyệt", color: "bg-emerald-50 text-emerald-600 border-emerald-200/70", dot: "bg-emerald-500" };
       case "REJECTED":
@@ -177,14 +161,7 @@ export default function PendingPartnerDetailPage() {
           </Link>
           {partner.approval_status === "PENDING" && (
             <>
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setRevisionModalOpen(true)}
-                disabled={actionLoading}
-              >
-                Yêu cầu bổ sung
-              </Button>
+
               <Button
                 variant="outline"
                 type="button"
@@ -269,43 +246,7 @@ export default function PendingPartnerDetailPage() {
             </div>
           </div>
 
-          {/* Giấy phép & Hồ sơ đính kèm */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-              <Icon name="folder_open" className="text-blue-600" />
-              Giấy phép & Hồ sơ nộp kèm
-            </h2>
-            <div className="space-y-2.5">
-              {[
-                { name: "Giấy chứng nhận Đăng ký kinh doanh.pdf", size: "2.4 MB", type: "PDF" },
-                { name: "CCCD Người đại diện pháp luật.png", size: "1.1 MB", type: "Image" },
-                { name: "Giấy chứng nhận An toàn VSTP.pdf", size: "3.8 MB", type: "PDF" },
-              ].map((doc, idx) => (
-                <div
-                  key={idx}
-                  className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200/80 rounded-xl hover:border-blue-200 hover:bg-blue-50/20 transition group"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon name={doc.type === "PDF" ? "picture_as_pdf" : "image"} className="text-blue-500 text-2xl" />
-                    <div>
-                      <div className="font-bold text-xs text-slate-800 group-hover:text-blue-600 transition">
-                        {doc.name}
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-medium">{doc.size}</div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    type="button"
-                    onClick={() => toast.info(`Đang mở tập tin: ${doc.name}`)}
-                    className="px-3 py-1 bg-white border border-slate-200 text-slate-700 font-semibold text-xs h-auto hover:bg-blue-50 hover:text-blue-600"
-                  >
-                    Xem tài liệu
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
+
 
           {/* Danh sách chi nhánh nộp duyệt */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
@@ -481,53 +422,7 @@ export default function PendingPartnerDetailPage() {
         </div>
       )}
 
-      {/* Modal Yêu cầu bổ sung */}
-      {revisionModalOpen && (
-        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
-            <div className="flex items-center justify-between">
-              <h3 className="font-bold text-slate-900 text-lg flex items-center gap-2">
-                <Icon name="edit_note" className="text-amber-500" />
-                Yêu cầu bổ sung hồ sơ
-              </h3>
-              <Button
-                variant="ghost"
-                onClick={() => setRevisionModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1 h-auto"
-              >
-                <Icon name="close" />
-              </Button>
-            </div>
-            <p className="text-xs text-slate-500">
-              Ghi rõ các chứng từ hoặc thông tin doanh nghiệp cần cung cấp thêm.
-            </p>
-            <textarea
-              rows={3}
-              placeholder="Ví dụ: Vui lòng bổ sung bản scan Giấy phép An toàn vệ sinh thực phẩm..."
-              value={revisionNote}
-              onChange={(e) => setRevisionNote(e.target.value)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition"
-            />
-            <div className="flex justify-end gap-3 mt-2">
-              <Button
-                variant="outline"
-                type="button"
-                onClick={() => setRevisionModalOpen(false)}
-              >
-                Hủy bỏ
-              </Button>
-              <Button
-                type="button"
-                onClick={handleConfirmRevision}
-                disabled={!revisionNote.trim()}
-                className="bg-amber-500 hover:bg-amber-600 text-white"
-              >
-                Gửi yêu cầu
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

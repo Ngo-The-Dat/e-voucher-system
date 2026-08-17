@@ -26,11 +26,18 @@ export const getProfile = async (partnerId: number) => {
     `SELECT
        u.user_id, u.full_name, u.email, u.phone, u.gender, u.identity_no,
        u.nationality, u.status, u.created_at, u.last_login_at,
-       p.business_name, p.tax_code, p.approval_status, p.activity_status, p.registered_at,
+       p.business_name, p.tax_code, COALESCE(par.approval_status, 'PENDING') as approval_status, p.activity_status, p.registered_at,
        p.business_license_no, p.license_issue_date, p.license_issue_place,
        p.representative_title, p.brand_logo
      FROM users u
      JOIN partners p ON u.user_id = p.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests
+       WHERE partner_id = p.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) par ON TRUE
      WHERE u.user_id = $1`,
     [partnerId]
   );

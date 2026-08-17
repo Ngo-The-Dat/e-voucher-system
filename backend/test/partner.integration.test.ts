@@ -36,6 +36,12 @@ before(async () => {
   assert.ok(secret, 'JWT_SECRET must be configured');
   partnerToken = jwt.sign({ id: 3, role: 'PARTNER' }, secret, { expiresIn: '5m' });
 
+  await pool.query(
+    `SELECT setval(
+       pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'),
+       COALESCE((SELECT MAX(approval_request_id) FROM partner_approval_requests), 1)
+     )`
+  );
   await pool.query('DELETE FROM partners WHERE user_id IN (SELECT user_id FROM users WHERE email = $1)', [PROFILE_TEST_EMAIL]);
   await pool.query('DELETE FROM users WHERE email = $1', [PROFILE_TEST_EMAIL]);
   const profileUser = await pool.query(
@@ -48,9 +54,14 @@ before(async () => {
   const profileUserId = Number(profileUser.rows[0].user_id);
   await pool.query(
     `INSERT INTO partners
-       (user_id, business_name, tax_code, approval_status, activity_status, representative_title)
-     VALUES ($1, $2, $3, 'APPROVED', 'ACTIVE', $4)`,
+       (user_id, business_name, tax_code, activity_status, representative_title)
+     VALUES ($1, $2, $3, 'ACTIVE', $4)`,
     [profileUserId, 'Profile Test Business', PROFILE_TEST_TAX_CODE, 'Giám đốc']
+  );
+  await pool.query(
+    `INSERT INTO partner_approval_requests (partner_id, approval_status, reviewed_at)
+     VALUES ($1, 'APPROVED', NOW())`,
+    [profileUserId]
   );
   profileToken = jwt.sign({ id: profileUserId, role: 'PARTNER' }, secret, { expiresIn: '5m' });
 
@@ -401,10 +412,18 @@ test('invalid query parameters return 400', async () => {
 });
 
 test('voucher revenue counts paid order items exactly once', async () => {
+  const expectedRes = await pool.query(
+    `SELECT COALESCE(SUM(oi.quantity * oi.unit_price), 0) as expected
+     FROM order_items oi
+     JOIN orders o ON o.order_id = oi.order_id
+     WHERE oi.program_id = 1 AND o.payment_status = 'PAID'`
+  );
+  const expectedRevenue = Number(expectedRes.rows[0]?.expected);
+
   const response = await request('/api/partner/dashboard/vouchers?program_id=1', partnerToken);
   assert.equal(response.status, 200);
   const body = await response.json() as Array<{ revenue: string }>;
-  assert.equal(Number(body[0]?.revenue), 140000);
+  assert.equal(Number(body[0]?.revenue), expectedRevenue);
 });
 
 test('refunded orders do not contribute to revenue', async () => {
