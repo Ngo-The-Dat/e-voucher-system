@@ -42,10 +42,11 @@ const getStoredPartnerToken = (): string | null => {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredPartnerToken();
+  const isFormData = typeof FormData !== "undefined" && init.body instanceof FormData;
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
-      ...(init.body && !(init.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+      ...(init.body && !isFormData ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...init.headers,
     },
@@ -94,8 +95,10 @@ const mapVoucher = (row: any): VoucherItem => ({
   expiredCount: Number(row.expired_count ?? 0), revenue: Number(row.revenue ?? 0),
   thumbnail: row.thumbnail ?? null,
   images: (row.images ?? []).map((image: any): VoucherImage => ({
-    id: String(image.id), url: image.url, isPrimary: Boolean(image.isPrimary),
-    sortOrder: Number(image.sortOrder),
+    id: String(image.id ?? image.image_id),
+    url: image.url ?? image.image_url,
+    isPrimary: Boolean(image.isPrimary ?? image.is_primary),
+    sortOrder: Number(image.sortOrder ?? image.sort_order ?? 0),
   })),
 });
 
@@ -219,23 +222,23 @@ export const partnerApi = {
     formData.append("image", file);
     formData.append("is_primary", String(isPrimary));
     formData.append("sort_order", String(sortOrder));
-    const result = await request<{ image: VoucherImage }>(`/partner/vouchers/${voucherId}/images`, {
+    const result = await request<{ message: string; image: VoucherImage }>(`/partner/vouchers/${voucherId}/images`, {
       method: "POST",
       body: formData,
     });
     return result.image;
   },
   setPrimaryVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
-    (await request<{ images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, {
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, {
       method: "PATCH",
     })).images,
   reorderVoucherImages: async (voucherId: string, imageIds: string[]): Promise<VoucherImage[]> =>
-    (await request<{ images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/order`, {
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/order`, {
       method: "PUT",
       body: JSON.stringify({ image_ids: imageIds.map(Number) }),
     })).images,
   deleteVoucherImage: async (voucherId: string, imageId: string): Promise<VoucherImage[]> =>
-    (await request<{ images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}`, {
+    (await request<{ message: string; images: VoucherImage[] }>(`/partner/vouchers/${voucherId}/images/${imageId}`, {
       method: "DELETE",
     })).images,
   submitVoucher: (id: string) => request(`/partner/vouchers/${id}/submit`, { method: "POST" }),

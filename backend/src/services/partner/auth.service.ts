@@ -130,11 +130,17 @@ export const register = async (input: RegisterInput) => {
       );
       const user = userResult.rows[0];
 
-      // 6. Tạo bản ghi partner (trạng thái PENDING, chờ Admin duyệt)
+      // 6. Tạo bản ghi partner (activity_status INACTIVE) và tạo yêu cầu duyệt PENDING
       await client.query(
-        `INSERT INTO partners (user_id, business_name, tax_code, approval_status, activity_status)
-         VALUES ($1, $2, $3, 'PENDING', 'ACTIVE')`,
+        `INSERT INTO partners (user_id, business_name, tax_code, activity_status)
+         VALUES ($1, $2, $3, 'INACTIVE')`,
         [user.user_id, business_name, tax_code]
+      );
+
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, approval_status)
+         VALUES ($1, 'PENDING')`,
+        [user.user_id]
       );
 
       await client.query('COMMIT');
@@ -176,14 +182,28 @@ export const login = async (input: LoginInput) => {
   const userResult = await pool.query(
     `SELECT u.user_id, u.full_name, u.email, u.phone, u.password_hash, u.role, u.status,
             CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.business_name ELSE p.business_name END AS business_name,
-            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.approval_status ELSE p.approval_status END AS approval_status,
+            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN COALESCE(ep_par.approval_status, 'APPROVED') ELSE COALESCE(par.approval_status, 'PENDING') END AS approval_status,
             CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.activity_status ELSE p.activity_status END AS activity_status,
             b.branch_id, b.branch_name, b.address as branch_address, b.status as branch_status
      FROM users u
      LEFT JOIN partners p ON u.user_id = p.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests
+       WHERE partner_id = p.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) par ON TRUE
      LEFT JOIN partner_employees pe ON u.user_id = pe.user_id
      LEFT JOIN branches b ON pe.branch_id = b.branch_id
      LEFT JOIN partners ep_partner ON b.partner_id = ep_partner.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests
+       WHERE partner_id = ep_partner.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) ep_par ON TRUE
      WHERE u.email = $1 AND u.role IN ('PARTNER', 'PARTNER_EMPLOYEE')`,
     [email]
   );

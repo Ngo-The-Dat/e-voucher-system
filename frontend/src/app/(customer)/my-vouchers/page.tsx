@@ -1,23 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
 import { MyVoucher, Voucher } from "@/data/mockData";
+import { getStoredCustomerUser } from "@/lib/customer-api";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
 export default function MyVouchersPage() {
-  const { myVouchers, vouchers, addReview } = useApp();
+  const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
+
+  useEffect(() => {
+    if (refreshMyVouchers) {
+      refreshMyVouchers();
+    }
+  }, [refreshMyVouchers]);
 
   // Local Page Filters
-  const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "unused" | "used" | "expiring" | "expired" | "cancelled">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
   const [selectedReviewItem, setSelectedReviewItem] = useState<{ myVoucher: MyVoucher; voucher: Voucher } | null>(null);
 
-  const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired") => {
+  const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired" | "cancelled") => {
     setActiveTab(tab);
   };
 
@@ -98,7 +105,8 @@ export default function MyVouchersPage() {
               { id: "unused", label: "Chưa sử dụng", count: getUnusedCount() },
               { id: "used", label: "Đã sử dụng" },
               { id: "expiring", label: "Sắp hết hạn" },
-              { id: "expired", label: "Đã hết hạn" }
+              { id: "expired", label: "Đã hết hạn" },
+              { id: "cancelled", label: "Đã hủy" }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -205,9 +213,10 @@ export default function MyVouchersPage() {
           voucherTitle={selectedReviewItem.voucher.title}
           voucherCode={selectedReviewItem.myVoucher.code}
           onSubmit={(rating, reviewContent, complaintContent) => {
+            const user = getStoredCustomerUser();
             addReview(
               selectedReviewItem.voucher.id,
-              "Khách hàng",
+              user?.full_name || "Khách hàng",
               rating,
               reviewContent,
               complaintContent

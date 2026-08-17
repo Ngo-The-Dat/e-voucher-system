@@ -13,7 +13,7 @@ import EmptyCart from "@/components/customer/cart/EmptyCart";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, updateCartQuantity, removeFromCart, checkout, refreshCart } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, checkout, refreshCart, refreshMyVouchers } = useApp();
 
   // Local page state
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(() => {
@@ -116,6 +116,7 @@ export default function CartPage() {
 
         alert(response.message || "Tạo đơn hàng và phát hành voucher thành công!");
         if (refreshCart) await refreshCart();
+        if (refreshMyVouchers) await refreshMyVouchers();
         router.push("/my-vouchers");
         return;
       } catch (err: any) {

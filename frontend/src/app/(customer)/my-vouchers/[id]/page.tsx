@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useApp } from "@/context/AppContext";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { customerOrderApi, CustomerVoucherItem } from "@/lib/customer-api";
+import { customerOrderApi, CustomerVoucherItem, getStoredCustomerUser } from "@/lib/customer-api";
 
 import {
   AlertTriangle,
@@ -29,7 +29,7 @@ import ReviewModal from "@/components/customer/ReviewModal";
 export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { myVouchers, vouchers, markAsUsed, addReview } = useApp();
+  const { myVouchers, vouchers, markAsUsed, addReview, refreshMyVouchers } = useApp();
 
   const [copied, setCopied] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -37,17 +37,54 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
   useEffect(() => {
     const numericId = Number(id);
-    if (!isNaN(numericId) && numericId > 0) {
-      customerOrderApi
-        .getMyVoucherById(numericId)
-        .then((data) => {
-          if (data) setApiVoucher(data);
-        })
-        .catch((err) => {
-          console.warn("Không lấy được voucher từ API backend:", err);
+    if (isNaN(numericId) || numericId <= 0) return;
+
+    let isMounted = true;
+
+    const fetchVoucher = async () => {
+      try {
+        const data = await customerOrderApi.getMyVoucherById(numericId);
+        if (!isMounted || !data) return;
+
+        setApiVoucher((prev) => {
+          if (prev && prev.usage_status !== data.usage_status) {
+            if (refreshMyVouchers) refreshMyVouchers();
+          }
+          return data;
         });
-    }
-  }, [id]);
+      } catch (err) {
+        console.warn("Không lấy được voucher từ API backend:", err);
+      }
+    };
+
+    // Initial fetch
+    fetchVoucher();
+
+    // Auto-polling every 2.5 seconds while unused
+    const interval = setInterval(() => {
+      if (apiVoucher && apiVoucher.usage_status !== "UNUSED") {
+        clearInterval(interval);
+        return;
+      }
+      fetchVoucher();
+    }, 2500);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        fetchVoucher();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
+  }, [id, apiVoucher?.usage_status, refreshMyVouchers]);
 
   // Find the purchased voucher from context as fallback
   const fallbackMyVoucher = myVouchers.find((mv) => mv.id === id);
@@ -61,7 +98,9 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
         status:
           apiVoucher.usage_status === "USED"
             ? "used"
-            : apiVoucher.usage_status === "EXPIRED" || apiVoucher.usage_status === "CANCELLED"
+            : apiVoucher.usage_status === "CANCELLED"
+            ? "cancelled"
+            : apiVoucher.usage_status === "EXPIRED"
             ? "expired"
             : "unused",
         title: apiVoucher.program_name,
@@ -190,6 +229,12 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   <span className="bg-surface-dim text-on-surface-variant px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
                     <XCircle className="w-4 h-4" />
                     Đã hết hạn
+                  </span>
+                )}
+                {displayVoucher.status === "cancelled" && (
+                  <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1 font-bold">
+                    <XCircle className="w-4 h-4" />
+                    Đã hủy
                   </span>
                 )}
               </div>
@@ -335,15 +380,19 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   size={192}
                   level="H"
                   className={`${
-                    displayVoucher.status === "used" || displayVoucher.status === "expired"
+                    displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
                       ? "opacity-20 blur-[1px]"
                       : ""
                   }`}
                 />
-                {(displayVoucher.status === "used" || displayVoucher.status === "expired") && (
+                {(displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled") && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <span className="bg-inverse-surface/90 text-surface-bright px-4 py-2 rounded-lg font-bold text-sm shadow-md uppercase tracking-wider">
-                      {displayVoucher.status === "used" ? "Đã sử dụng" : "Đã hết hạn"}
+                      {displayVoucher.status === "used"
+                        ? "Đã sử dụng"
+                        : displayVoucher.status === "cancelled"
+                        ? "Đã hủy"
+                        : "Đã hết hạn"}
                     </span>
                   </div>
                 )}
@@ -425,9 +474,10 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
         voucherTitle={displayVoucher.title}
         voucherCode={displayVoucher.code}
         onSubmit={(rating, reviewContent, complaintContent) => {
+          const user = getStoredCustomerUser();
           addReview(
             displayVoucher.id,
-            "Khách hàng",
+            user?.full_name || "Khách hàng",
             rating,
             reviewContent,
             complaintContent

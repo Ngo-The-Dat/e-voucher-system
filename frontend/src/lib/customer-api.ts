@@ -5,6 +5,16 @@ export const getStoredCustomerToken = (): string | null => {
   return localStorage.getItem("customer_access_token") || localStorage.getItem("token");
 };
 
+export const getStoredCustomerUser = (): CustomerUser | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("customer_user");
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+};
+
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = getStoredCustomerToken();
   const headers: Record<string, string> = {

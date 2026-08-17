@@ -265,7 +265,12 @@ export default function OrderHistoryPage() {
                         <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
                           Đơn hàng #{order.order_id}
                         </span>
-                        {isPaid ? (
+                        {order.order_status === "CANCELLED" ? (
+                          <span className="bg-error-container/40 text-error px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Đã hủy
+                          </span>
+                        ) : isPaid ? (
                           <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             Đã thanh toán
@@ -336,7 +341,7 @@ export default function OrderHistoryPage() {
                       <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant relative overflow-hidden">
                         {/* Receipt Stamp */}
                         <div className="absolute top-4 right-4 rotate-12 border-2 border-primary/30 text-primary px-4 py-1 rounded font-bold uppercase tracking-widest text-xs select-none">
-                          {isPaid ? "Đã Thanh Toán" : "Thanh Toán Thất Bại"}
+                          {order.order_status === "CANCELLED" ? "ĐÃ HỦY ĐƠN" : isPaid ? "Đã Thanh Toán" : "Thanh Toán Thất Bại"}
                         </div>
 
                         <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2 mb-4">
