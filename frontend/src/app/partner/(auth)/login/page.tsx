@@ -19,7 +19,13 @@ export default function TemporaryPartnerLoginPage() {
     try {
       const result = await partnerApi.login({ email, password });
       localStorage.setItem("partner_access_token", result.token);
-      router.replace("/partner");
+      localStorage.setItem("partner_user", JSON.stringify(result.user));
+
+      if (result.user.role === "PARTNER_EMPLOYEE") {
+        router.replace("/partner/employee");
+      } else {
+        router.replace("/partner");
+      }
     } catch (loginError) {
       setError(loginError instanceof Error ? loginError.message : "Đăng nhập thất bại.");
     } finally {
