@@ -172,11 +172,11 @@ export default function OrdersPage() {
                   }}
                   className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                 >
-                  <option value="ALL">Tất cả trạng thái ({stats.all})</option>
-                  <option value="PENDING">Chờ xử lý ({stats.pending})</option>
-                  <option value="CONFIRMED">Đã xác nhận ({stats.confirmed})</option>
-                  <option value="COMPLETED">Hoàn thành ({stats.completed})</option>
-                  <option value="CANCELLED">Đã hủy ({stats.cancelled})</option>
+                  <option value="ALL">Tất cả</option>
+                  <option value="PENDING">Chờ xử lý</option>
+                  <option value="CONFIRMED">Đã xác nhận</option>
+                  <option value="COMPLETED">Hoàn thành</option>
+                  <option value="CANCELLED">Đã hủy</option>
                 </select>
                 <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
               </div>
@@ -195,7 +195,7 @@ export default function OrdersPage() {
                   }}
                   className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
                 >
-                  <option value="ALL">Tất cả thanh toán</option>
+                  <option value="ALL">Tất cả</option>
                   <option value="UNPAID">Chưa thanh toán</option>
                   <option value="PAID">Đã thanh toán</option>
                   <option value="FAILED">Thanh toán thất bại</option>

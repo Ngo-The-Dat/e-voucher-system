@@ -4,6 +4,7 @@ import Icon from "@/components/shared/ui/Icon";
 import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, SystemLogItem } from "@/lib/admin-api";
 
@@ -145,85 +146,104 @@ export default function SystemLogsPage() {
       </div>
 
       {/* Multi-filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-border shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
           {/* Keyword Search */}
-          <div className="relative">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
-            <Input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Tìm hành động, người dùng, mã ID..."
-              className="w-full pl-9 pr-3 py-2 text-xs border-slate-200 rounded-xl"
-            />
+          <div>
+            <FormField label="Tìm kiếm nhật ký">
+              <div className="relative">
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+                <Input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm hành động, người dùng, mã ID..."
+                  className="w-full h-[38px] pl-9 pr-3 text-xs border-slate-200 rounded-xl"
+                />
+              </div>
+            </FormField>
           </div>
 
           {/* Object Type Filter */}
           <div>
-            <select
-              value={objectTypeFilter}
-              onChange={(e) => {
-                setObjectTypeFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white font-medium focus:outline-none focus:border-primary"
-            >
-              <option value="ALL">Tất cả loại đối tượng</option>
-              <option value="USER">Người dùng (USER)</option>
-              <option value="PARTNER">Đối tác (PARTNER)</option>
-              <option value="BRANCH">Chi nhánh (BRANCH)</option>
-              <option value="CATEGORY">Danh mục (CATEGORY)</option>
-              <option value="VOUCHER_PROGRAM">Chương trình Voucher (VOUCHER_PROGRAM)</option>
-              <option value="APPROVAL_REQUEST">Yêu cầu duyệt (APPROVAL_REQUEST)</option>
-              <option value="ORDER">Đơn hàng (ORDER)</option>
-              <option value="ORDER_CANCELLATION">Hủy đơn hàng (ORDER_CANCELLATION)</option>
-              <option value="BANNER">Banner & Quảng cáo (BANNER)</option>
-              <option value="POPUP">Popup truyền thông (POPUP)</option>
-              <option value="CONTENT">Nội dung (CONTENT)</option>
-            </select>
+            <FormField label="Loại đối tượng">
+              <div className="relative">
+                <select
+                  value={objectTypeFilter}
+                  onChange={(e) => {
+                    setObjectTypeFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3.5 pr-9 text-xs border border-slate-200 rounded-xl bg-slate-50 font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="USER">Người dùng (USER)</option>
+                  <option value="PARTNER">Đối tác (PARTNER)</option>
+                  <option value="PARTNER_EMPLOYEE">Nhân viên đối tác (PARTNER_EMPLOYEE)</option>
+                  <option value="BRANCH">Chi nhánh (BRANCH)</option>
+                  <option value="CATEGORY">Danh mục (CATEGORY)</option>
+                  <option value="VOUCHER_PROGRAM">Chương trình Voucher (VOUCHER_PROGRAM)</option>
+                  <option value="APPROVAL_REQUEST">Yêu cầu duyệt (APPROVAL_REQUEST)</option>
+                  <option value="ORDER">Đơn hàng (ORDER)</option>
+                  <option value="ORDER_CANCELLATION">Hủy đơn hàng (ORDER_CANCELLATION)</option>
+                  <option value="BANNER">Banner & Quảng cáo (BANNER)</option>
+                  <option value="POPUP">Popup truyền thông (POPUP)</option>
+                  <option value="CONTENT">Nội dung (CONTENT)</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
 
           {/* Result Filter */}
           <div>
-            <select
-              value={resultFilter}
-              onChange={(e) => {
-                setResultFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white font-medium focus:outline-none focus:border-primary"
-            >
-              <option value="ALL">Tất cả kết quả</option>
-              <option value="SUCCESS">Thành công (SUCCESS)</option>
-              <option value="FAILED">Thất bại / Lỗi (FAILED)</option>
-            </select>
+            <FormField label="Kết quả thực hiện">
+              <div className="relative">
+                <select
+                  value={resultFilter}
+                  onChange={(e) => {
+                    setResultFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3.5 pr-9 text-xs border border-slate-200 rounded-xl bg-slate-50 font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="SUCCESS">Thành công (SUCCESS)</option>
+                  <option value="FAILED">Thất bại / Lỗi (FAILED)</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
 
           {/* Date Picker Filter */}
-          <div className="flex items-center gap-1 text-xs bg-slate-50 p-1 border border-slate-200 rounded-xl">
-            <Input
-              type="date"
-              value={startDateFilter}
-              onChange={(e) => {
-                setStartDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
-            />
-            <span className="text-slate-400">&rarr;</span>
-            <Input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => {
-                setEndDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
-            />
+          <div>
+            <FormField label="Khoảng thời gian">
+              <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 border border-slate-200 rounded-xl h-[38px]">
+                <Input
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => {
+                    setStartDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-7 px-1.5 py-0.5 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
+                />
+                <span className="text-slate-400">&rarr;</span>
+                <Input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => {
+                    setEndDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-7 px-1.5 py-0.5 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
+                />
+              </div>
+            </FormField>
           </div>
         </div>
       </div>

@@ -113,60 +113,42 @@ export default function ManageVouchersPage() {
       {/* Top Navigation Bar */}
       <VoucherNavTabs pendingCount={pendingCount} />
 
-      {/* Filter / Search Bar & Status Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col gap-4">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3 overflow-x-auto">
-          {[
-            { key: "ALL", label: "Tất cả", count: stats.all },
-            { key: "PUBLISHED", label: "Đang bán", count: stats.published },
-            { key: "HIDDEN", label: "Tạm ngưng", count: stats.hidden },
-            { key: "ENDED", label: "Ngừng bán", count: stats.ended },
-          ].map((tab) => {
-            const isActive = statusTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => {
-                  setStatusTab(tab.key as StatusTab);
-                  setCurrentPage(1);
-                }}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
-                  isActive
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-slate-100/70 text-slate-600 hover:bg-slate-200/70"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[11px] ${
-                    isActive ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search input */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md w-full">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+      {/* Filter / Search Bar & Status Select */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
+          {/* Search input */}
+          <div className="relative flex-1 w-full">
+            <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
             <Input
               type="text"
               placeholder="Tìm theo tên voucher, đối tác, mã số thuế hoặc mã chương trình..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
+              className="w-full h-[40px] pl-10 pr-4 border-slate-200 rounded-xl"
             />
           </div>
 
-          <div className="text-xs text-slate-500 font-medium self-end sm:self-center">
-            Tổng cộng: <span className="font-bold text-slate-900">{totalItems}</span> chương trình voucher
+          {/* Status Dropdown Filter */}
+          <div className="relative w-full sm:w-auto min-w-[200px] shrink-0">
+            <select
+              value={statusTab}
+              onChange={(e) => {
+                setStatusTab(e.target.value as StatusTab);
+                setCurrentPage(1);
+              }}
+              className="w-full h-[40px] pl-3.5 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer transition shadow-2xs"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="PUBLISHED">Đang bán</option>
+              <option value="HIDDEN">Tạm ngưng</option>
+              <option value="ENDED">Ngừng bán</option>
+            </select>
+            <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
           </div>
+        </div>
+
+        <div className="text-xs text-slate-500 font-medium whitespace-nowrap self-end sm:self-center">
+          Tổng cộng: <span className="font-bold text-slate-900">{totalItems}</span> voucher
         </div>
       </div>
 

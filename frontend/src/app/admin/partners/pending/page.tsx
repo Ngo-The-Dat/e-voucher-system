@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import FormField from "@/components/shared/ui/FormField";
-import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, AdminPartnerListItem } from "@/lib/admin-api";
 
@@ -14,7 +13,6 @@ export default function PendingPartnersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
 
   const [partners, setPartners] = useState<AdminPartnerListItem[]>([]);
@@ -31,7 +29,7 @@ export default function PendingPartnersPage() {
     try {
       const res = await adminApi.getPendingPartners({
         search: searchQuery,
-        status: statusFilter,
+        status: "PENDING",
         startDate,
         endDate,
         page: currentPage,
@@ -47,7 +45,7 @@ export default function PendingPartnersPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [searchQuery, statusFilter, startDate, endDate, currentPage]);
+  }, [searchQuery, startDate, endDate, currentPage]);
 
   useEffect(() => {
     fetchPendingPartners();
@@ -63,19 +61,6 @@ export default function PendingPartnersPage() {
       return { date, time };
     } catch {
       return { date: dateStr, time: "" };
-    }
-  };
-
-  const mapStatusLabel = (status: string) => {
-    switch (status) {
-      case "PENDING":
-        return "Chờ duyệt";
-      case "REJECTED":
-        return "Từ chối";
-      case "APPROVED":
-        return "Đã duyệt";
-      default:
-        return status;
     }
   };
 
@@ -115,7 +100,7 @@ export default function PendingPartnersPage() {
 
       {/* Filter Card Section */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Tên doanh nghiệp Search */}
           <div>
             <FormField label="Tên doanh nghiệp / ĐT / Email">
@@ -155,27 +140,6 @@ export default function PendingPartnersPage() {
               }}
             />
           </div>
-
-          {/* Tình trạng Filter */}
-          <div>
-            <FormField label="Tình trạng">
-              <div className="relative">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => {
-                    setStatusFilter(e.target.value);
-                    setCurrentPage(1);
-                  }}
-                  className="w-full h-[38px] pl-3 pr-8 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition"
-                >
-                  <option value="ALL">Tất cả</option>
-                  <option value="PENDING">Chờ duyệt</option>
-                  <option value="REJECTED">Từ chối</option>
-                </select>
-                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
-              </div>
-            </FormField>
-          </div>
         </div>
       </div>
 
@@ -208,7 +172,6 @@ export default function PendingPartnersPage() {
                   <th className="py-4 px-5">ĐẠI DIỆN</th>
                   <th className="py-4 px-5">CHI NHÁNH</th>
                   <th className="py-4 px-5">NGÀY ĐĂNG KÝ</th>
-                  <th className="py-4 px-5 whitespace-nowrap">TÌNH TRẠNG</th>
                   <th className="py-4 px-5 text-right whitespace-nowrap">THAO TÁC</th>
                 </tr>
               </thead>
@@ -216,11 +179,11 @@ export default function PendingPartnersPage() {
                 {partners.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={5}
                       className="py-12 text-center text-slate-400 font-medium"
                     >
                       <Icon name="search_off" className="text-4xl block mb-2 text-slate-300 mx-auto" />
-                      Không tìm thấy hồ sơ phù hợp với bộ lọc.
+                      Không có hồ sơ đối tác nào đang chờ phê duyệt.
                     </td>
                   </tr>
                 ) : (
@@ -251,9 +214,6 @@ export default function PendingPartnersPage() {
                           <div className="text-xs text-slate-400 mt-0.5 font-mono">
                             {time}
                           </div>
-                        </td>
-                        <td className="py-4 px-5 whitespace-nowrap">
-                          <StatusBadge status={mapStatusLabel(partner.approval_status)} />
                         </td>
                         <td className="py-4 px-5 text-right whitespace-nowrap">
                           <Link

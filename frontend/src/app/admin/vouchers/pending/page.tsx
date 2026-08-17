@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Icon from "@/components/shared/ui/Icon";
 import { Input } from "@/components/shared/ui/Input";
-import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
 import VoucherNavTabs from "@/components/admin/VoucherNavTabs";
 import {
@@ -73,8 +72,8 @@ export default function PendingVouchersPage() {
       <VoucherNavTabs pendingCount={totalItems} />
 
       {/* Filter / Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md w-full">
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="relative flex-1 w-full">
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
           <Input
             type="text"
@@ -85,7 +84,7 @@ export default function PendingVouchersPage() {
           />
         </div>
 
-        <div className="text-xs text-slate-500 font-medium self-end sm:self-center">
+        <div className="text-xs text-slate-500 font-medium whitespace-nowrap self-end sm:self-center">
           Tổng cộng: <span className="font-bold text-slate-900">{totalItems}</span> yêu cầu chờ duyệt
         </div>
       </div>
@@ -101,7 +100,6 @@ export default function PendingVouchersPage() {
                 <th className="py-4 px-5">ĐỐI TÁC & CHI NHÁNH</th>
                 <th className="py-4 px-5">GIÁ BÁN / GIÁ GỐC</th>
                 <th className="py-4 px-5">SỐ LƯỢNG</th>
-                <th className="py-4 px-5">TRẠNG THÁI</th>
                 <th className="py-4 px-5 text-right">THAO TÁC</th>
               </tr>
             </thead>
@@ -128,9 +126,6 @@ export default function PendingVouchersPage() {
                     <td className="py-4 px-5">
                       <div className="h-4 bg-slate-200 rounded w-16" />
                     </td>
-                    <td className="py-4 px-5">
-                      <div className="h-6 bg-slate-200 rounded-full w-24" />
-                    </td>
                     <td className="py-4 px-5 text-right">
                       <div className="h-8 bg-slate-200 rounded-lg w-20 ml-auto" />
                     </td>
@@ -138,7 +133,7 @@ export default function PendingVouchersPage() {
                 ))
               ) : vouchers.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-slate-400 font-medium">
+                  <td colSpan={6} className="py-12 text-center text-slate-400 font-medium">
                     <Icon name="task_alt" className="text-4xl block mb-2 text-slate-300" />
                     {debouncedSearch
                       ? "Không tìm thấy yêu cầu duyệt voucher phù hợp với từ khóa."
@@ -200,9 +195,6 @@ export default function PendingVouchersPage() {
                       </td>
                       <td className="py-4 px-5 font-semibold text-slate-800 text-xs">
                         {item.issue_quantity.toLocaleString("vi-VN")} lượt
-                      </td>
-                      <td className="py-4 px-5">
-                        <StatusBadge status="pending" label="Chờ xét duyệt" />
                       </td>
                       <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link

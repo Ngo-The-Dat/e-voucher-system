@@ -17,9 +17,17 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
   const offset = (page - 1) * limit;
 
-  const conditions: string[] = ["COALESCE(par.approval_status, 'PENDING') IN ('PENDING', 'REJECTED')"];
+  const conditions: string[] = [];
   const params: any[] = [];
   let paramIdx = 1;
+
+  if (filter.status && filter.status !== 'ALL') {
+    conditions.push(`COALESCE(par.approval_status, 'PENDING') = $${paramIdx}`);
+    params.push(filter.status);
+    paramIdx++;
+  } else if (!filter.status) {
+    conditions.push(`COALESCE(par.approval_status, 'PENDING') = 'PENDING'`);
+  }
 
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
@@ -31,12 +39,6 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
       u.phone ILIKE $${paramIdx}
     )`);
     params.push(s);
-    paramIdx++;
-  }
-
-  if (filter.status && filter.status !== 'ALL') {
-    conditions.push(`COALESCE(par.approval_status, 'PENDING') = $${paramIdx}`);
-    params.push(filter.status);
     paramIdx++;
   }
 
