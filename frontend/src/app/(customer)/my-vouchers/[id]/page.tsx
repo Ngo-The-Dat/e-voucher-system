@@ -405,23 +405,27 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 </p>
                 <div className="flex items-center justify-between bg-surface-container-low border border-outline-variant rounded-lg p-3">
                   <span
-                    className={`font-headline-lg text-headline-lg font-bold tracking-widest font-mono select-all ${
+                    className={`font-headline-lg text-headline-lg font-bold tracking-widest font-mono ${
                       displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
-                        ? "text-text-muted/60 line-through"
-                        : "text-primary"
+                        ? "text-text-muted/60 line-through select-none"
+                        : "text-primary select-all"
                     }`}
                   >
                     {displayVoucher.code}
                   </span>
-                  <button
-                    onClick={handleCopyCode}
-                    className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
-                    title="Copy mã"
-                  >
-                    {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
-                  </button>
+                  {displayVoucher.status === "unused" && (
+                    <button
+                      onClick={handleCopyCode}
+                      className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
+                      title="Copy mã"
+                    >
+                      {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  )}
                 </div>
-                {copied && <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>}
+                {copied && displayVoucher.status === "unused" && (
+                  <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>
+                )}
               </div>
 
               <div className="w-full h-px bg-outline-variant border-dashed mb-6" />
