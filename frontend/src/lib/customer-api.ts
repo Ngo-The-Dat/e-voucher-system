@@ -252,6 +252,51 @@ export interface PublicVouchersFilter {
   limit?: number;
 }
 
+export interface CustomerCategory {
+  category_id: number;
+  category_name: string;
+  description?: string;
+  voucher_count?: number;
+}
+
+export interface CustomerBanner {
+  banner_id: number;
+  program_id: number | null;
+  title: string;
+  image_url: string;
+  target_url: string;
+  display_position: string;
+  program_name?: string | null;
+  original_price?: number | null;
+  sale_price?: number | null;
+  brand_name?: string | null;
+}
+
+export interface CustomerPopup {
+  popup_id: number;
+  program_id: number | null;
+  title: string;
+  content: string;
+  target_url: string;
+  image_url: string;
+  program_name?: string | null;
+  original_price?: number | null;
+  sale_price?: number | null;
+  brand_name?: string | null;
+}
+
+export interface CustomerContent {
+  content_id: number;
+  program_id: number | null;
+  title: string;
+  body: string;
+  content_type: 'POLICY' | 'ARTICLE' | 'PROMOTION' | 'GUIDE';
+  created_at: string;
+  updated_at?: string | null;
+  program_name?: string | null;
+  brand_name?: string | null;
+}
+
 export const customerCatalogApi = {
   getVouchers: (filter: PublicVouchersFilter = {}) => {
     const searchParams = new URLSearchParams();
@@ -269,7 +314,25 @@ export const customerCatalogApi = {
   getVoucherById: (programId: number | string) =>
     request<any>(`/customer/vouchers/${programId}`),
   getCategories: () =>
-    request<{ categories: Array<{ category_id: number; category_name: string; description?: string }> }>("/customer/vouchers/categories")
+    request<{ categories: CustomerCategory[] }>("/customer/vouchers/categories")
+};
+
+export const customerContentApi = {
+  getBanners: (position?: string) => {
+    const query = position ? `?position=${encodeURIComponent(position)}` : "";
+    return request<{ banners: CustomerBanner[] }>(`/customer/banners${query}`);
+  },
+  getActivePopups: () =>
+    request<{ popups: CustomerPopup[] }>("/customer/popups/active"),
+  getContents: (type?: string, programId?: number) => {
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
+    if (programId) params.set("program_id", String(programId));
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return request<{ contents: CustomerContent[] }>(`/customer/contents${query}`);
+  },
+  getContentById: (id: number) =>
+    request<CustomerContent>(`/customer/contents/${id}`)
 };
 
 

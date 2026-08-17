@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { getStoredCustomerUser, CustomerUser } from "@/lib/customer-api";
+import { getStoredCustomerUser, CustomerUser, customerContentApi, CustomerContent } from "@/lib/customer-api";
 import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
@@ -25,7 +25,8 @@ import {
   CheckCircle2,
   Clock,
   Info,
-  MapPin
+  MapPin,
+  BookOpen
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -42,6 +43,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [currentUser, setCurrentUser] = useState<CustomerUser | null>(null);
+  const [programContents, setProgramContents] = useState<CustomerContent[]>([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("");
   const [hasComplaint, setHasComplaint] = useState(false);
@@ -52,7 +54,22 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     if (user) {
       setCurrentUser(user);
     }
-  }, []);
+
+    // Fetch related policies and contents for this voucher
+    const programId = Number(id);
+    if (programId && !isNaN(programId)) {
+      customerContentApi
+        .getContents(undefined, programId)
+        .then((res) => {
+          if (res.contents) {
+            setProgramContents(res.contents);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load voucher contents:", err);
+        });
+    }
+  }, [id]);
 
   if (!voucher) {
     return (
@@ -393,6 +410,34 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   </div>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Related Policy / Articles from Database contents */}
+          {programContents.length > 0 && (
+            <div className="flex flex-col gap-4">
+              {programContents.map((content) => (
+                <div
+                  key={content.content_id}
+                  className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
+                      {content.content_type === "POLICY"
+                        ? "Chính sách & Quy định"
+                        : content.content_type === "GUIDE"
+                        ? "Hướng dẫn"
+                        : "Thông tin thêm"}
+                    </span>
+                  </div>
+                  <h3 className="font-title-md text-title-md text-on-surface font-bold mb-3">
+                    {content.title}
+                  </h3>
+                  <div className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-line">
+                    {content.body}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
