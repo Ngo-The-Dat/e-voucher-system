@@ -13,7 +13,7 @@ export default function HeroBanner() {
   useEffect(() => {
     let isMounted = true;
     customerContentApi
-      .getBanners("HOME_TOP")
+      .getBanners()
       .then((res) => {
         if (isMounted && res.banners && res.banners.length > 0) {
           setBanners(res.banners);

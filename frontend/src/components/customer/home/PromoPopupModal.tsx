@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { X, Sparkles, ArrowRight, Tag } from "lucide-react";
+import { X, Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight } from "lucide-react";
 import { customerContentApi, CustomerPopup } from "@/lib/customer-api";
 
 export default function PromoPopupModal() {
-  const [popup, setPopup] = useState<CustomerPopup | null>(null);
+  const [popups, setPopups] = useState<CustomerPopup[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -15,14 +17,13 @@ export default function PromoPopupModal() {
       .getActivePopups()
       .then((res) => {
         if (!isMounted || !res.popups || res.popups.length === 0) return;
-        const firstPopup = res.popups[0];
-        setPopup(firstPopup);
+        setPopups(res.popups);
         setTimeout(() => {
           if (isMounted) setIsOpen(true);
         }, 400);
       })
       .catch((err) => {
-        console.error("Failed to load active popup:", err);
+        console.error("Failed to load active popups:", err);
       });
 
     return () => {
@@ -30,19 +31,43 @@ export default function PromoPopupModal() {
     };
   }, []);
 
+  const handleNext = useCallback(() => {
+    if (popups.length === 0) return;
+    setCurrentIndex((prev) => (prev + 1) % popups.length);
+  }, [popups.length]);
+
+  const handlePrev = useCallback(() => {
+    if (popups.length === 0) return;
+    setCurrentIndex((prev) => (prev - 1 + popups.length) % popups.length);
+  }, [popups.length]);
+
+  // Chuyển popup tự động mỗi 5 giây
+  useEffect(() => {
+    if (popups.length <= 1 || isPaused || !isOpen) return;
+    const timer = setInterval(() => {
+      handleNext();
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [popups.length, isPaused, isOpen, handleNext]);
+
   const handleClose = () => {
     setIsOpen(false);
   };
 
-  if (!isOpen || !popup) return null;
+  if (!isOpen || popups.length === 0) return null;
 
-  const targetLink = popup.target_url || (popup.program_id ? `/vouchers/${popup.program_id}` : "/vouchers");
+  const currentPopup = popups[currentIndex];
+  const targetLink =
+    currentPopup.target_url ||
+    (currentPopup.program_id ? `/vouchers/${currentPopup.program_id}` : "/vouchers");
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div 
-        className="relative w-full max-w-lg overflow-hidden bg-surface rounded-2xl shadow-2xl border border-outline-variant/30 transform transition-all"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+      <div
+        className="relative w-full max-w-lg overflow-hidden bg-surface rounded-2xl shadow-2xl border border-outline-variant/30 transform transition-all group"
         onClick={(e) => e.stopPropagation()}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
       >
         {/* Nút đóng */}
         <button
@@ -53,13 +78,34 @@ export default function PromoPopupModal() {
           <X className="w-5 h-5" />
         </button>
 
+        {/* Nút điều hướng trước / sau khi có nhiều popup */}
+        {popups.length > 1 && (
+          <>
+            <button
+              onClick={handlePrev}
+              className="absolute left-3 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md"
+              aria-label="Popup trước"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={handleNext}
+              className="absolute right-3 top-1/3 -translate-y-1/2 z-20 p-2 rounded-full bg-black/40 hover:bg-black/70 text-white backdrop-blur-md transition-all opacity-0 group-hover:opacity-100 cursor-pointer shadow-md"
+              aria-label="Popup tiếp theo"
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
+          </>
+        )}
+
         {/* Ảnh banner popup */}
-        {popup.image_url ? (
+        {currentPopup.image_url ? (
           <div className="relative w-full h-48 sm:h-56 bg-surface-container-high overflow-hidden">
             <img
-              src={popup.image_url}
-              alt={popup.title}
-              className="w-full h-full object-cover"
+              key={currentPopup.popup_id}
+              src={currentPopup.image_url}
+              alt={currentPopup.title}
+              className="w-full h-full object-cover transition-all duration-500"
               onError={(e) => {
                 (e.target as HTMLImageElement).src =
                   "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80";
@@ -67,7 +113,7 @@ export default function PromoPopupModal() {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-surface via-surface/20 to-transparent" />
             <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary text-on-primary text-xs font-bold tracking-wide uppercase shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" /> Ưu Đãi Độc Quyền
+              <Sparkles className="w-3.5 h-3.5" /> Ưu Đãi Độc Quyền ({currentIndex + 1}/{popups.length})
             </div>
           </div>
         ) : (
@@ -76,31 +122,47 @@ export default function PromoPopupModal() {
 
         {/* Nội dung popup */}
         <div className="p-6 sm:p-7 text-center">
-          {popup.brand_name && (
+          {currentPopup.brand_name && (
             <span className="inline-block text-xs font-semibold text-primary uppercase tracking-wider mb-1">
-              {popup.brand_name}
+              {currentPopup.brand_name}
             </span>
           )}
           <h3 className="text-xl sm:text-2xl font-bold text-on-surface mb-2 leading-tight">
-            {popup.title}
+            {currentPopup.title}
           </h3>
           <p className="text-sm text-on-surface-variant mb-5 line-clamp-3 leading-relaxed">
-            {popup.content}
+            {currentPopup.content}
           </p>
 
           {/* Nếu có giá ưu đãi */}
-          {popup.sale_price && (
-            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-xl bg-surface-container-low border border-outline-variant/40">
+          {currentPopup.sale_price && (
+            <div className="inline-flex items-center gap-2 px-4 py-2 mb-5 rounded-xl bg-surface-container-low border border-outline-variant/40">
               <Tag className="w-4 h-4 text-primary" />
               <span className="text-xs text-on-surface-variant">Chỉ từ:</span>
               <span className="text-lg font-bold text-primary">
-                {Number(popup.sale_price).toLocaleString("vi-VN")} đ
+                {Number(currentPopup.sale_price).toLocaleString("vi-VN")} đ
               </span>
-              {popup.original_price && popup.original_price > popup.sale_price && (
+              {currentPopup.original_price && currentPopup.original_price > currentPopup.sale_price && (
                 <span className="text-xs text-on-surface-variant/60 line-through">
-                  {Number(popup.original_price).toLocaleString("vi-VN")} đ
+                  {Number(currentPopup.original_price).toLocaleString("vi-VN")} đ
                 </span>
               )}
+            </div>
+          )}
+
+          {/* Dot Indicators */}
+          {popups.length > 1 && (
+            <div className="flex items-center justify-center gap-1.5 mb-5">
+              {popups.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentIndex(idx)}
+                  className={`h-2 rounded-full transition-all cursor-pointer ${
+                    currentIndex === idx ? "w-6 bg-primary" : "w-2 bg-outline-variant hover:bg-outline"
+                  }`}
+                  aria-label={`Popup ${idx + 1}`}
+                />
+              ))}
             </div>
           )}
 
