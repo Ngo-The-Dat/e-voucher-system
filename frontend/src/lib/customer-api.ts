@@ -1,8 +1,4 @@
-let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://")) {
-  envUrl = `http://${envUrl}`;
-}
-const API_BASE = envUrl;
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
 
 export const getStoredCustomerToken = (): string | null => {
   if (typeof window === "undefined") return null;

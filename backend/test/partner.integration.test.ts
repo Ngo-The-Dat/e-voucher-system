@@ -519,3 +519,65 @@ test('voucher cannot be redeemed before its use period starts', async () => {
   );
   assert.equal(result.rows[0]?.usage_status, 'UNUSED');
 });
+
+test('partner employee management and employee portal flow', async () => {
+  const newEmail = `employee_test_${Date.now()}@voucher.vn`;
+  const newPhone = `09${Math.floor(10000000 + Math.random() * 90000000)}`;
+  
+  // 1. Partner creates employee
+  const createRes = await request('/api/partner/employees', partnerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      full_name: 'Test Nhân Viên Mới',
+      email: newEmail,
+      phone: newPhone,
+      password: 'password1234',
+      branch_id: 1,
+    }),
+  });
+  assert.equal(createRes.status, 201);
+  const createdEmp = await createRes.json();
+  assert.equal(createdEmp.email, newEmail);
+  assert.equal(createdEmp.branch.id, 1);
+
+  // 2. Partner gets employees list
+  const listRes = await request('/api/partner/employees', partnerToken);
+  assert.equal(listRes.status, 200);
+  const empList = await listRes.json();
+  assert.ok(Array.isArray(empList));
+  assert.ok(empList.some((e: any) => e.email === newEmail));
+
+  // 3. Employee logs in via /api/partner/auth/login
+  const loginRes = await request('/api/partner/auth/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: newEmail, password: 'password1234' }),
+  });
+  assert.equal(loginRes.status, 200);
+  const loginData = await loginRes.json();
+  assert.equal(loginData.user.role, 'PARTNER_EMPLOYEE');
+  assert.equal(loginData.user.branch?.id, 1);
+  const empToken = loginData.token;
+
+  // 4. Employee views profile
+  const profileRes = await request('/api/partner/employee/profile', empToken);
+  assert.equal(profileRes.status, 200);
+  const profileData = await profileRes.json();
+  assert.equal(profileData.email, newEmail);
+  assert.equal(profileData.branch.id, 1);
+  assert.ok(profileData.partner.business_name);
+
+  // 5. Employee changes password
+  const changePwdRes = await request('/api/partner/employee/change-password', empToken, {
+    method: 'PUT',
+    body: JSON.stringify({ old_password: 'password1234', new_password: 'newpassword1234' }),
+  });
+  assert.equal(changePwdRes.status, 200);
+
+  // 6. Employee logs in with new password
+  const newLoginRes = await request('/api/partner/auth/login', null, {
+    method: 'POST',
+    body: JSON.stringify({ email: newEmail, password: 'newpassword1234' }),
+  });
+  assert.equal(newLoginRes.status, 200);
+});
+

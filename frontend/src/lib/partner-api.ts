@@ -1,7 +1,8 @@
 import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
+import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class ApiError extends Error {
   constructor(
@@ -103,7 +104,17 @@ const mapVoucher = (row: any): VoucherItem => ({
 
 export const partnerApi = {
   login: (payload: { email: string; password: string }) =>
-    request<{ token: string; user: { full_name: string; email: string } }>("/partner/auth/login", {
+    request<{
+      token: string;
+      user: {
+        id: number;
+        full_name: string;
+        email: string;
+        role: string;
+        business_name?: string;
+        branch?: { id: number; name: string; address: string };
+      };
+    }>("/partner/auth/login", {
       method: "POST",
       body: JSON.stringify(payload),
     }),
@@ -235,7 +246,33 @@ export const partnerApi = {
   lookupVoucherByQr: (qrValue: string) => request<any>("/partner/redeem/lookup-qr", {
     method: "POST", body: JSON.stringify({ qr_value: qrValue }),
   }),
-  redeemVoucher: (code: string, branchId: string) => request<any>("/partner/redeem", {
+  redeemVoucher: (code: string, branchId: string | number) => request<any>("/partner/redeem", {
     method: "POST", body: JSON.stringify({ voucher_code: code, branch_id: Number(branchId) }),
   }),
+
+  // Employee Portal API
+  getEmployeeProfile: () => request<EmployeeProfile>("/partner/employee/profile"),
+  updateEmployeeProfile: (payload: { full_name?: string; phone?: string; gender?: string; nationality?: string }) =>
+    request<EmployeeProfile>("/partner/employee/profile", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  changeEmployeePassword: (payload: { old_password: string; new_password: string }) =>
+    request<{ message: string }>("/partner/employee/change-password", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+
+  // Partner Employee Management API (For Partner Owner)
+  getEmployees: () => request<PartnerEmployeeItem[]>("/partner/employees"),
+  createEmployee: (payload: CreateEmployeePayload) =>
+    request<PartnerEmployeeItem>("/partner/employees", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateEmployee: (id: number | string, payload: Partial<CreateEmployeePayload>) =>
+    request<{ message: string }>(`/partner/employees/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
 };

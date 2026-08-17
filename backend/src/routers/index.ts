@@ -9,6 +9,8 @@ import partnerBranchRouter from './partner/branch.router.js';
 import partnerVoucherRouter from './partner/voucher.router.js';
 import partnerRedeemRouter from './partner/redeem.router.js';
 import partnerDashboardRouter from './partner/dashboard.router.js';
+import partnerEmployeeRouter from './partner/employee.router.js';
+import partnerEmployeeMgmtRouter from './partner/partner-employee-mgmt.router.js';
 
 // Admin sub-routers
 import adminUserRouter from './admin/user.router.js';
@@ -76,6 +78,20 @@ router.use('/partner/dashboard',
   authenticate,
   requireRole('PARTNER'),
   partnerDashboardRouter
+);
+
+// Quản lý nhân viên chi nhánh dành cho Đối tác (Partner)
+router.use('/partner/employees',
+  authenticate,
+  requireRole('PARTNER'),
+  partnerEmployeeMgmtRouter
+);
+
+// Cổng chức năng dành riêng cho Nhân viên đối tác (Partner Employee)
+router.use('/partner/employee',
+  authenticate,
+  requireRole('PARTNER_EMPLOYEE'),
+  partnerEmployeeRouter
 );
 
 // ─── Admin Protected Routes ───────────────────────────────────────────────────

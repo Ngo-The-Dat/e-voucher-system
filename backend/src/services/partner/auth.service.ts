@@ -178,12 +178,15 @@ export const login = async (input: LoginInput) => {
   const email = input.email.trim().toLowerCase();
   const { password } = input;
 
-  // 1. Tìm user theo email với role PARTNER
+  // 1. Tìm user theo email với role PARTNER hoặc PARTNER_EMPLOYEE
   const userResult = await pool.query(
     `SELECT u.user_id, u.full_name, u.email, u.phone, u.password_hash, u.role, u.status,
-            p.business_name, COALESCE(par.approval_status, 'PENDING') as approval_status, p.activity_status
+            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.business_name ELSE p.business_name END AS business_name,
+            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN COALESCE(ep_par.approval_status, 'APPROVED') ELSE COALESCE(par.approval_status, 'PENDING') END AS approval_status,
+            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.activity_status ELSE p.activity_status END AS activity_status,
+            b.branch_id, b.branch_name, b.address as branch_address, b.status as branch_status
      FROM users u
-     JOIN partners p ON u.user_id = p.user_id
+     LEFT JOIN partners p ON u.user_id = p.user_id
      LEFT JOIN LATERAL (
        SELECT approval_status
        FROM partner_approval_requests
@@ -191,7 +194,17 @@ export const login = async (input: LoginInput) => {
        ORDER BY submitted_at DESC, approval_request_id DESC
        LIMIT 1
      ) par ON TRUE
-     WHERE u.email = $1 AND u.role = 'PARTNER'`,
+     LEFT JOIN partner_employees pe ON u.user_id = pe.user_id
+     LEFT JOIN branches b ON pe.branch_id = b.branch_id
+     LEFT JOIN partners ep_partner ON b.partner_id = ep_partner.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_approval_requests
+       WHERE partner_id = ep_partner.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) ep_par ON TRUE
+     WHERE u.email = $1 AND u.role IN ('PARTNER', 'PARTNER_EMPLOYEE')`,
     [email]
   );
 
@@ -207,7 +220,16 @@ export const login = async (input: LoginInput) => {
     throw { status: 401, message: 'Email hoặc mật khẩu không đúng.' };
   }
 
-  // 3. Kiểm tra tài khoản đã được duyệt chưa
+  // 3. Kiểm tra trạng thái tài khoản
+  if (user.role === 'PARTNER_EMPLOYEE') {
+    if (!user.branch_id) {
+      throw { status: 403, message: 'Nhân viên chưa được gán vào chi nhánh nào.' };
+    }
+    if (user.branch_status !== 'ACTIVE') {
+      throw { status: 403, message: 'Chi nhánh được phân công đã bị vô hiệu hóa.' };
+    }
+  }
+
   if (user.approval_status === 'PENDING') {
     throw { status: 403, message: 'Tài khoản đang chờ được Admin phê duyệt.' };
   }
@@ -247,6 +269,11 @@ export const login = async (input: LoginInput) => {
       role: user.role,
       business_name: user.business_name,
       approval_status: user.approval_status,
+      branch: user.branch_id ? {
+        id: Number(user.branch_id),
+        name: user.branch_name,
+        address: user.branch_address,
+      } : undefined,
     },
   };
 };
