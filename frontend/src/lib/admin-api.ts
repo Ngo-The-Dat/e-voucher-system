@@ -161,6 +161,13 @@ export interface AdminVoucherBranch {
   status?: string;
 }
 
+export interface AdminVoucherImage {
+  image_id: number;
+  image_url: string;
+  is_primary: boolean;
+  sort_order?: number;
+}
+
 export interface AdminPendingVoucherItem {
   approval_request_id: number;
   program_id: number;
@@ -186,6 +193,7 @@ export interface AdminPendingVoucherItem {
   partner_email: string;
   partner_phone: string | null;
   branches?: AdminVoucherBranch[];
+  images?: AdminVoucherImage[];
 }
 
 export interface AdminPendingVoucherDetail extends AdminPendingVoucherItem {
@@ -224,6 +232,16 @@ export interface AdminManagedVoucherItem {
   branch_name: string;
   sold_count: number;
   stock: number;
+  images?: AdminVoucherImage[];
+}
+
+export interface AdminManagedVoucherDetail extends AdminManagedVoucherItem {
+  partner_representative?: string;
+  partner_email?: string;
+  partner_phone?: string | null;
+  business_license_no?: string | null;
+  branches?: AdminVoucherBranch[];
+  used_count?: number;
 }
 
 export interface ManagedVouchersResponse {
@@ -578,6 +596,10 @@ export const adminApi = {
 
     const qs = query.toString() ? `?${query.toString()}` : "";
     return adminRequest<ManagedVouchersResponse>(`/admin/vouchers/manage${qs}`);
+  },
+
+  getManagedVoucher: async (programId: string | number): Promise<AdminManagedVoucherDetail> => {
+    return adminRequest<AdminManagedVoucherDetail>(`/admin/vouchers/manage/${programId}`);
   },
 
   updateVoucherStatus: async (

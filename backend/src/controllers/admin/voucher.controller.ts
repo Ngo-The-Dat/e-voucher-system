@@ -101,6 +101,24 @@ export async function getManagedVouchers(req: AuthRequest, res: Response, next: 
   }
 }
 
+export async function getManagedVoucherById(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const programId = Number(req.params.id);
+    if (!Number.isSafeInteger(programId) || programId <= 0) {
+      res.status(400).json({ message: 'Mã chương trình voucher không hợp lệ.' });
+      return;
+    }
+    const result = await voucherService.getManagedVoucherById(programId);
+    res.json(result);
+  } catch (error: any) {
+    if (error.status) {
+      res.status(error.status).json({ message: error.message });
+      return;
+    }
+    next(error);
+  }
+}
+
 export async function updateVoucherStatus(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const programId = Number(req.params.id);

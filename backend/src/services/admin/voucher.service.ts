@@ -102,7 +102,17 @@ export async function getPendingVouchers(filter: GetPendingVouchersFilter = {}) 
         FROM voucher_program_branches vpb
         JOIN branches b ON b.branch_id = vpb.branch_id
         WHERE vpb.program_id = vp.program_id
-      ) as branches
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_approval_requests var
     JOIN voucher_programs vp ON vp.program_id = var.program_id
     JOIN partners p ON p.user_id = vp.partner_id
@@ -168,7 +178,17 @@ export async function getPendingVoucherById(requestId: number) {
         FROM voucher_program_branches vpb
         JOIN branches b ON b.branch_id = vpb.branch_id
         WHERE vpb.program_id = vp.program_id
-      ) as branches
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_approval_requests var
     JOIN voucher_programs vp ON vp.program_id = var.program_id
     JOIN partners p ON p.user_id = vp.partner_id
@@ -466,7 +486,17 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
         SELECT COUNT(iv.issued_voucher_id) 
         FROM issued_vouchers iv 
         WHERE iv.program_id = vp.program_id
-      ), 0)) as stock
+      ), 0)) as stock,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_programs vp
     JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN categories c ON c.category_id = vp.category_id
@@ -493,6 +523,84 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
   };
 }
 
+// ─── 5b. Chi tiết Voucher Đã Quản lý ──────────────────────────────────────────
+
+export async function getManagedVoucherById(programId: number) {
+  const query = `
+    SELECT 
+      vp.program_id,
+      vp.program_name,
+      vp.category_id,
+      c.category_name,
+      vp.original_price,
+      vp.sale_price,
+      vp.discount_amount,
+      vp.issue_quantity,
+      vp.sale_start_at,
+      vp.sale_end_at,
+      vp.use_start_at,
+      vp.use_end_at,
+      vp.display_status,
+      p.user_id as partner_id,
+      p.business_name as partner_name,
+      p.tax_code,
+      p.business_license_no,
+      u.full_name as partner_representative,
+      u.email as partner_email,
+      u.phone as partner_phone,
+      COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id
+      ), 0) as sold_count,
+      (vp.issue_quantity - COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id
+      ), 0)) as stock,
+      COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id AND iv.usage_status = 'USED'
+      ), 0) as used_count,
+      (
+        SELECT json_agg(json_build_object(
+          'branch_id', b.branch_id,
+          'branch_name', b.branch_name,
+          'address', b.address,
+          'region', b.region,
+          'phone', b.phone,
+          'status', b.status
+        ))
+        FROM voucher_program_branches vpb
+        JOIN branches b ON b.branch_id = vpb.branch_id
+        WHERE vpb.program_id = vp.program_id
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
+    FROM voucher_programs vp
+    JOIN partners p ON p.user_id = vp.partner_id
+    JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN categories c ON c.category_id = vp.category_id
+    WHERE vp.program_id = $1
+  `;
+  const result = await pool.query(query, [programId]);
+
+  if (result.rows.length === 0) {
+    throw { status: 404, message: 'Không tìm thấy chương trình voucher.' };
+  }
+
+  return result.rows[0];
+}
+
 // ─── 6. Cập nhật Trạng thái Hiển thị Voucher (Ẩn / Hiện / Ngừng bán) ───────────
 
 export async function updateVoucherDisplayStatus(
@@ -515,6 +623,11 @@ export async function updateVoucherDisplayStatus(
   }
 
   const voucher = vpRes.rows[0];
+
+  // Không cho phép khôi phục khi voucher đã ở trạng thái ENDED
+  if (voucher.display_status === 'ENDED' && newStatus !== 'ENDED') {
+    throw { status: 400, message: 'Chương trình voucher đã ngừng bán vĩnh viễn, không thể khôi phục lại trạng thái.' };
+  }
 
   // Nếu muốn khôi phục về PUBLISHED, kiểm tra xem đã hết hạn hoặc hết số lượng chưa
   if (newStatus === 'PUBLISHED') {

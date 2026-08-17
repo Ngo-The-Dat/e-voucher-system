@@ -1,15 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import Icon from "@/components/shared/ui/Icon";
-import { toast } from "sonner";
-import { Button } from "@/components/shared/ui/Button";
 import { Input } from "@/components/shared/ui/Input";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
-import VoucherNavTabs from "../_components/VoucherNavTabs";
-import VoucherDetailModal from "../_components/VoucherDetailModal";
-import VoucherRejectModal from "../_components/VoucherRejectModal";
+import VoucherNavTabs from "@/components/admin/VoucherNavTabs";
 import {
   adminApi,
   AdminPendingVoucherItem,
@@ -27,12 +24,6 @@ export default function PendingVouchersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
-
-  // Modals & Action State
-  const [selectedVoucher, setSelectedVoucher] = useState<AdminPendingVoucherItem | null>(null);
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
-  const [rejectReason, setRejectReason] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Search debounce
   useEffect(() => {
@@ -74,44 +65,6 @@ export default function PendingVouchersPage() {
   const formatCurrency = (val: number | string) => {
     const num = Number(val) || 0;
     return num.toLocaleString("vi-VN") + " ₫";
-  };
-
-  // Phê duyệt Voucher
-  const handleApprove = async (voucher: AdminPendingVoucherItem) => {
-    try {
-      setIsSubmitting(true);
-      await adminApi.approveVoucher(voucher.approval_request_id);
-      toast.success(`Đã phê duyệt thành công voucher [${voucher.program_name}].`);
-      setSelectedVoucher(null);
-      await loadPendingVouchers();
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi khi phê duyệt voucher.");
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  // Từ chối Voucher
-  const handleConfirmReject = async () => {
-    if (!selectedVoucher) return;
-    if (!rejectReason.trim()) {
-      toast.error("Vui lòng nhập lý do từ chối duyệt voucher!");
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      await adminApi.rejectVoucher(selectedVoucher.approval_request_id, rejectReason.trim());
-      toast.success(`Đã từ chối duyệt voucher [${selectedVoucher.program_name}] và gửi phản hồi.`);
-      setIsRejectModalOpen(false);
-      setSelectedVoucher(null);
-      setRejectReason("");
-      await loadPendingVouchers();
-    } catch (err: any) {
-      toast.error(err.message || "Lỗi khi từ chối duyệt voucher.");
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   return (
@@ -251,14 +204,14 @@ export default function PendingVouchersPage() {
                       <td className="py-4 px-5">
                         <StatusBadge status="pending" label="Chờ xét duyệt" />
                       </td>
-                      <td className="py-4 px-5 text-right">
-                        <Button
-                          variant="outline"
-                          onClick={() => setSelectedVoucher(item)}
-                          className="px-3.5 py-1.5 bg-blue-50 border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white text-xs h-auto"
+                      <td className="py-4 px-5 text-right whitespace-nowrap">
+                        <Link
+                          href={`/admin/vouchers/pending/${item.approval_request_id}`}
+                          className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-flex items-center gap-1.5"
                         >
-                          Xem & Duyệt
-                        </Button>
+                          <span>Xem chi tiết</span>
+                          <Icon name="arrow_forward" className="text-xs" />
+                        </Link>
                       </td>
                     </tr>
                   );
@@ -280,29 +233,6 @@ export default function PendingVouchersPage() {
           />
         )}
       </div>
-
-      {/* Modal Chi Tiết & Duyệt Voucher */}
-      <VoucherDetailModal
-        voucher={selectedVoucher}
-        onClose={() => setSelectedVoucher(null)}
-        onApprove={handleApprove}
-        onOpenReject={(v) => {
-          setSelectedVoucher(v);
-          setIsRejectModalOpen(true);
-        }}
-        isSubmitting={isSubmitting}
-      />
-
-      {/* Modal Từ chối Voucher */}
-      <VoucherRejectModal
-        isOpen={isRejectModalOpen}
-        voucher={selectedVoucher}
-        reason={rejectReason}
-        onReasonChange={setRejectReason}
-        onClose={() => setIsRejectModalOpen(false)}
-        onConfirm={handleConfirmReject}
-        isSubmitting={isSubmitting}
-      />
     </div>
   );
 }
