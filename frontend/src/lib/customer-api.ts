@@ -44,7 +44,7 @@ export interface CustomerUser {
 
 export const customerAuthApi = {
   login: (payload: { email: string; password: string }) =>
-    request<{ token: string; user: CustomerUser }>("/customer/auth/login", {
+    request<{ token: string; user: CustomerUser }>("/auth/login", {
       method: "POST",
       body: JSON.stringify(payload)
     }),
@@ -57,6 +57,7 @@ export const customerAuthApi = {
   logout: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("customer_access_token");
+      localStorage.removeItem("customer_user");
       localStorage.removeItem("token");
     }
   }

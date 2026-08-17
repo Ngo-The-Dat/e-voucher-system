@@ -1,7 +1,11 @@
 import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherItem } from "./types/voucher";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "/api";
+let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://") && !envUrl.startsWith("/")) {
+  envUrl = `http://${envUrl}`;
+}
+const API_URL = envUrl;
 
 export class ApiError extends Error {
   constructor(
@@ -91,6 +95,8 @@ const mapVoucher = (row: any): VoucherItem => ({
   adminFeedback: row.admin_feedback ?? undefined,
   soldCount: Number(row.sold_count ?? 0), usedCount: Number(row.used_count ?? 0),
   expiredCount: Number(row.expired_count ?? 0), revenue: Number(row.revenue ?? 0),
+  thumbnail: row.thumbnail ?? null,
+  images: row.images ?? [],
 });
 
 export const partnerApi = {
@@ -175,7 +181,7 @@ export const partnerApi = {
     return list.data.map((row) => mapVoucher({ ...row, ...statMap.get(String(row.program_id)) }));
   },
   getVoucher: async (id: string) => mapVoucher(await request<any>(`/partner/vouchers/${id}`)),
-  createVoucher: (voucher: CreateVoucherInput) => request("/partner/vouchers", {
+  createVoucher: (voucher: CreateVoucherInput) => request<{ program: { program_id: number | string } }>("/partner/vouchers", {
     method: "POST", body: JSON.stringify({
       program_name: voucher.title, category_id: Number(voucher.categoryId),
       original_price: voucher.originalPrice, sale_price: voucher.sellingPrice,
@@ -193,6 +199,25 @@ export const partnerApi = {
       use_end_at: voucher.useEndDate, branch_ids: voucher.branchIds.map(Number),
     }),
   }),
+  uploadVoucherImage: async (id: string, file: File, isPrimary: boolean, sortOrder: number): Promise<any> => {
+    const formData = new FormData();
+    formData.append("image", file);
+    formData.append("is_primary", String(isPrimary));
+    formData.append("sort_order", String(sortOrder));
+    return request<any>(`/partner/vouchers/${id}/images`, {
+      method: "POST",
+      body: formData,
+    });
+  },
+  deleteVoucherImage: (voucherId: string, imageId: string): Promise<any[]> =>
+    request<any[]>(`/partner/vouchers/${voucherId}/images/${imageId}`, { method: "DELETE" }),
+  setPrimaryVoucherImage: (voucherId: string, imageId: string): Promise<any[]> =>
+    request<any[]>(`/partner/vouchers/${voucherId}/images/${imageId}/primary`, { method: "PUT" }),
+  reorderVoucherImages: (voucherId: string, imageIds: string[]): Promise<any[]> =>
+    request<any[]>(`/partner/vouchers/${voucherId}/images/reorder`, {
+      method: "PUT",
+      body: JSON.stringify({ image_ids: imageIds }),
+    }),
   submitVoucher: (id: string) => request(`/partner/vouchers/${id}/submit`, { method: "POST" }),
   lookupVoucher: (code: string) => request<any>(`/partner/redeem/lookup?code=${encodeURIComponent(code)}`),
   lookupVoucherByQr: (qrValue: string) => request<any>("/partner/redeem/lookup-qr", {

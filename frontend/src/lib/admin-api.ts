@@ -36,14 +36,25 @@ export interface UsersResponse {
   };
 }
 
-const DEFAULT_DEV_ADMIN_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiZW1haWwiOiJhZG1pbjFAdm91Y2hlci52biIsImlhdCI6MTc4NjQyMzcyMCwiZXhwIjoxNzg5MDE1NzIwfQ.XsTBJRntIyXgZJXSxG6c0OrosYN_PrrJsHYi5df9pV8";
+let isAdminRedirecting = false;
+
+const redirectToLogin = () => {
+  if (typeof window === "undefined" || isAdminRedirecting) return;
+
+  const isProtectedAdminRoute = window.location.pathname.startsWith("/admin")
+    && !window.location.pathname.startsWith("/admin/login");
+  if (!isProtectedAdminRoute) return;
+
+  isAdminRedirecting = true;
+  window.location.replace("/admin/login");
+};
 
 const getStoredAdminToken = (): string | null => {
-  if (typeof window === "undefined") return DEFAULT_DEV_ADMIN_TOKEN;
-  let token = localStorage.getItem("admin_access_token") || localStorage.getItem("token");
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("admin_access_token");
   if (!token || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
-    token = DEFAULT_DEV_ADMIN_TOKEN;
-    localStorage.setItem("admin_access_token", token);
+    localStorage.removeItem("admin_access_token");
+    return null;
   }
   return token;
 };
@@ -62,7 +73,8 @@ async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T>
   const body = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
-      localStorage.setItem("admin_access_token", DEFAULT_DEV_ADMIN_TOKEN);
+      localStorage.removeItem("admin_access_token");
+      redirectToLogin();
     }
     throw new AdminApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
   }

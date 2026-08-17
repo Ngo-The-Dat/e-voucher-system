@@ -32,7 +32,11 @@ import customerOrderRouter from './customer/order.router.js';
 import customerVoucherRouter from './customer/voucher.router.js';
 import customerCatalogRouter from './customer/catalog.router.js';
 
+import commonAuthRouter from './common/auth.router.js';
 const router = Router();
+
+// ─── Common Auth ─────────────────────────────────────────────────────────────
+router.use('/auth', commonAuthRouter);
 
 // ─── Customer Routes ─────────────────────────────────────────────────────────
 router.use('/customer/auth', customerAuthRouter);

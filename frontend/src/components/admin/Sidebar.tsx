@@ -156,9 +156,9 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
             type="button"
             onClick={() => {
               if (confirm("Bạn có chắc chắn muốn đăng xuất khỏi hệ thống?")) {
-                // Keep the existing full-page logout navigation behavior.
-                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
-                window.location.href = "/";
+                localStorage.removeItem("admin_access_token");
+                localStorage.removeItem("admin_user");
+                window.location.href = "/login";
               }
             }}
             className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/70 transition-all duration-150 shadow-2xs group"
