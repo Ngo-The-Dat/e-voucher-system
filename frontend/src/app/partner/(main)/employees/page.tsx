@@ -6,14 +6,13 @@ import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import CreateEmployeeModal from "@/components/partner/employee/CreateEmployeeModal";
-import { PartnerEmployeeItem } from "@/lib/types/employee";
 import { Branch } from "@/lib/types/profile";
 import { partnerApi } from "@/lib/partner-api";
+import { useEmployees } from "@/hooks/useEmployees";
 
 export default function PartnerEmployeesPage() {
-  const [employees, setEmployees] = useState<PartnerEmployeeItem[]>([]);
+  const { employees, isLoading, reload } = useEmployees();
   const [branches, setBranches] = useState<Branch[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>("ALL");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -26,24 +25,10 @@ export default function PartnerEmployeesPage() {
     setTimeout(() => setToastMessage(null), 4000);
   };
 
-  const loadData = async () => {
-    setIsLoading(true);
-    try {
-      const [empList, branchList] = await Promise.all([
-        partnerApi.getEmployees(),
-        partnerApi.getBranches(),
-      ]);
-      setEmployees(empList);
-      setBranches(branchList);
-    } catch (err) {
-      showToast(err instanceof Error ? err.message : "Không thể tải danh sách nhân viên.", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadData();
+    partnerApi.getBranches().then(setBranches).catch((err) => {
+      console.error("Failed to load branches", err);
+    });
   }, []);
 
   // Filter employees
@@ -201,7 +186,10 @@ export default function PartnerEmployeesPage() {
                         </td>
 
                         <td className="py-4 px-4">
-                          <StatusBadge status={emp.status === "ACTIVE" ? "approved" : "rejected"} />
+                          <StatusBadge
+                            status={emp.approval_status === "APPROVED" ? "active" : "pending"}
+                            label={emp.approval_status === "APPROVED" ? "Đang hoạt động" : "Chưa duyệt"}
+                          />
                         </td>
 
                         <td className="py-4 px-6 text-right text-xs text-on-surface-variant font-medium">
@@ -223,7 +211,7 @@ export default function PartnerEmployeesPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={() => {
           showToast("Tạo tài khoản nhân viên thành công!");
-          loadData();
+          reload();
         }}
         branches={branches}
       />
