@@ -404,7 +404,13 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   Mã Voucher
                 </p>
                 <div className="flex items-center justify-between bg-surface-container-low border border-outline-variant rounded-lg p-3">
-                  <span className="font-headline-lg text-headline-lg font-bold text-primary tracking-widest font-mono select-all">
+                  <span
+                    className={`font-headline-lg text-headline-lg font-bold tracking-widest font-mono select-all ${
+                      displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
+                        ? "text-text-muted/60 line-through"
+                        : "text-primary"
+                    }`}
+                  >
                     {displayVoucher.code}
                   </span>
                   <button
