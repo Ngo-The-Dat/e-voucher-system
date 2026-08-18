@@ -2,14 +2,14 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
+import { PartnerEmployeeProvider, usePartnerEmployee } from "@/context/PartnerEmployeeContext";
 import EmployeeTopAppBar from "@/components/partner/employee/EmployeeTopAppBar";
 import EmployeeSideNavBar from "@/components/partner/employee/EmployeeSideNavBar";
 import Icon from "@/components/shared/ui/Icon";
 import AccountRestrictedNotice from "@/components/shared/ui/AccountRestrictedNotice";
 
 function EmployeeLayoutContent({ children }: { children: React.ReactNode }) {
-  const { profile, error, reloadProfile } = useEmployee();
+  const { profile, error, reloadProfile } = usePartnerEmployee();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
@@ -97,8 +97,8 @@ export default function EmployeeLayout({ children }: { children: React.ReactNode
   }
 
   return (
-    <EmployeeProvider>
+    <PartnerEmployeeProvider>
       <EmployeeLayoutContent>{children}</EmployeeLayoutContent>
-    </EmployeeProvider>
+    </PartnerEmployeeProvider>
   );
 }

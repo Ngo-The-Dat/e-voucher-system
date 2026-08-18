@@ -5,11 +5,11 @@ import Link from "next/link";
 import Icon from "@/components/shared/ui/Icon";
 import Toast from "@/components/shared/ui/Toast";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
-import { useEmployee } from "@/context/EmployeeContext";
+import { usePartnerEmployee } from "@/context/PartnerEmployeeContext";
 import { partnerApi, ApiError } from "@/lib/partner-api";
 
 export default function EmployeeProfilePage() {
-  const { profile, reloadProfile } = useEmployee();
+  const { profile, reloadProfile } = usePartnerEmployee();
 
   // Change password state
   const [oldPassword, setOldPassword] = useState("");

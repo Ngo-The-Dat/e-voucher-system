@@ -11,9 +11,9 @@
  * Tự động gắn Bearer JWT token và xử lý điều hướng khi hết hạn phiên đăng nhập (401 Unauthorized).
  */
 
-import { Branch, PartnerProfile } from "./types/profile";
-import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
-import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
+import { Branch, PartnerProfile } from "./types/partner-profile";
+import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/partner-voucher";
+import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/partner-employee";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 

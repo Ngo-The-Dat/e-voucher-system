@@ -1,5 +1,5 @@
 import Icon from "@/components/shared/ui/Icon";
-import { VoucherItem } from "@/lib/types/voucher";
+import { VoucherItem } from "@/lib/types/partner-voucher";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { useEffect, useRef } from "react";
 

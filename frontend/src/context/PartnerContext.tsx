@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { PartnerProfile } from "@/lib/types/profile";
+import { PartnerProfile } from "@/lib/types/partner-profile";
 
 export interface PartnerContextValue {
   partner: PartnerProfile | null;

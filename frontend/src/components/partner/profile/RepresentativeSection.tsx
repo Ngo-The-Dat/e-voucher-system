@@ -1,6 +1,6 @@
 import Icon from "@/components/shared/ui/Icon";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
-import { PartnerProfile, ProfileFormErrors } from "@/lib/types/profile";
+import { PartnerProfile, ProfileFormErrors } from "@/lib/types/partner-profile";
 
 interface RepresentativeSectionProps {
   repInfo: PartnerProfile["representativeInfo"];

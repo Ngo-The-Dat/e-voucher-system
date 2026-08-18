@@ -1,20 +1,20 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Pagination from "@/components/shared/ui/Pagination";
 import Toast from "@/components/shared/ui/Toast";
 import CreateEmployeeModal from "@/components/partner/employee/CreateEmployeeModal";
-import { Branch } from "@/lib/types/profile";
+import { Branch } from "@/lib/types/partner-profile";
 import { partnerApi } from "@/lib/partner-api";
-import { useEmployees } from "@/hooks/useEmployees";
+import { usePartnerEmployees } from "@/hooks/usePartnerEmployees";
 
 const ITEMS_PER_PAGE = 5;
 
 export default function PartnerEmployeesPage() {
-  const { employees, isLoading, reload } = useEmployees();
+  const { employees, isLoading, reload } = usePartnerEmployees();
   const [branches, setBranches] = useState<Branch[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedBranchFilter, setSelectedBranchFilter] = useState<string>("ALL");
@@ -77,7 +77,7 @@ export default function PartnerEmployeesPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen pb-16 w-full">
-      <TopAppBar title="Quản lý nhân viên chi nhánh" />
+      <PartnerTopAppBar title="Quản lý nhân viên chi nhánh" />
 
       {toastMessage && (
         <Toast

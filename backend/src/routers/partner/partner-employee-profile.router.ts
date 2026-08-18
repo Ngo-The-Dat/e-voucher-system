@@ -5,7 +5,7 @@
  */
 
 import { Router } from 'express';
-import * as employeeController from '../../controllers/partner/employee.controller.js';
+import * as employeeController from '../../controllers/partner/partner-employee-profile.controller.js';
 
 const router = Router();
 

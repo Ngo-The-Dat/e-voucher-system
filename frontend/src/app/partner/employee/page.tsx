@@ -12,8 +12,8 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "@/components/shared/ui/Icon";
 import { ApiError, partnerApi } from "@/lib/partner-api";
-import { VoucherItem } from "@/lib/types/voucher";
-import { useEmployee } from "@/context/EmployeeContext";
+import { VoucherItem } from "@/lib/types/partner-voucher";
+import { usePartnerEmployee } from "@/context/PartnerEmployeeContext";
 import {
   CheckResultIdleCode,
   CheckResultIdleQr,
@@ -21,7 +21,7 @@ import {
   CheckResultValid,
   CheckResultRedeemed,
   CheckResultRequestError,
-} from "@/components/partner/voucher/CheckResultStates";
+} from "@/components/partner/voucher/EmployeeCheckResultStates";
 
 /** Phương thức kiểm tra: 'code' (nhập tay) hoặc 'qr' (quét camera) */
 type CheckType = "code" | "qr";
@@ -63,7 +63,7 @@ const mapLookupVoucher = (row: any): VoucherItem => ({
 });
 
 export default function EmployeeCheckVoucherPage() {
-  const { profile } = useEmployee();
+  const { profile } = usePartnerEmployee();
   const [checkType, setCheckType] = useState<CheckType>("code");
   const [inputCode, setInputCode] = useState("");
   const [resultState, setResultState] = useState<CheckResultState>({ type: "idle" });

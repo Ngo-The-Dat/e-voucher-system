@@ -5,7 +5,7 @@
  */
 
 import { Router } from 'express';
-import * as profileController from '../../controllers/partner/profile.controller.js';
+import * as profileController from '../../controllers/partner/partner-profile.controller.js';
 import { voucherImageUpload } from '../../middlewares/voucher-image-upload.middleware.js';
 
 const router = Router();

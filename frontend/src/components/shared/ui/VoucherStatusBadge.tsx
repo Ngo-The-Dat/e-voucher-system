@@ -1,4 +1,4 @@
-import { VoucherApprovalStatus } from "@/lib/types/voucher";
+import { VoucherApprovalStatus } from "@/lib/types/partner-voucher";
 
 interface StatusConfig {
   label: string;

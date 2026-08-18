@@ -1,13 +1,13 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Pagination from "@/components/shared/ui/Pagination";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useState } from "react";
-import { useVouchers } from "@/hooks/useVouchers";
-import { VoucherApprovalStatus } from "@/lib/types/voucher";
+import { usePartnerVouchers } from "@/hooks/usePartnerVouchers";
+import { VoucherApprovalStatus } from "@/lib/types/partner-voucher";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,7 +20,7 @@ const TABS: { id: string; label: string }[] = [
 ];
 
 export default function VouchersPage() {
-  const { vouchers, isLoading } = useVouchers();
+  const { vouchers, isLoading } = usePartnerVouchers();
   const [activeTab, setActiveTab] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,7 +62,7 @@ export default function VouchersPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
-      <TopAppBar title="Quản lý voucher" />
+      <PartnerTopAppBar title="Quản lý voucher" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-6">
         {/* Header Tabs & Actions */}

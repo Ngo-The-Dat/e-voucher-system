@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Branch } from "@/lib/types/profile";
+import { Branch } from "@/lib/types/partner-profile";
 import Icon from "@/components/shared/ui/Icon";
 import AccessibleDialog from "@/components/shared/ui/AccessibleDialog";
 

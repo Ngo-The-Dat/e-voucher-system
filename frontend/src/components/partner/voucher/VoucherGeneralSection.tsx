@@ -1,8 +1,8 @@
 import Icon from "@/components/shared/ui/Icon";
 import { Input } from "@/components/shared/ui/Input";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
-import { Branch } from "@/lib/types/profile";
-import { CategoryOption, VoucherFormErrors } from "@/lib/types/voucher";
+import { Branch } from "@/lib/types/partner-profile";
+import { CategoryOption, VoucherFormErrors } from "@/lib/types/partner-voucher";
 
 interface VoucherGeneralSectionProps {
   code: string;
