@@ -178,3 +178,52 @@ test('Customer Order API: create gift order', async () => {
   assert.equal(data.success, true);
   assert.equal(data.order.is_gift, true);
 });
+
+test('Customer Review API: rejects review when user has not purchased voucher', async () => {
+  // Check eligibility for unpurchased program (e.g. program 9999 or unbought program)
+  const unpurchasedProgramId = 99999;
+  const checkRes = await request(`/api/customer/reviews/eligibility/${unpurchasedProgramId}`, customerToken);
+  assert.equal(checkRes.status, 200);
+  const checkData = (await checkRes.json()) as any;
+  assert.equal(checkData.hasPurchased, false);
+  assert.equal(checkData.canReview, false);
+
+  // Attempt to submit review for unpurchased program
+  const reviewRes = await request('/api/customer/reviews', customerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      programId: unpurchasedProgramId,
+      rating: 5,
+      reviewContent: 'Đánh giá thử nghiệm khi chưa mua',
+    }),
+  });
+
+  assert.equal(reviewRes.status, 403);
+  const reviewData = (await reviewRes.json()) as any;
+  assert.match(reviewData.message, /chưa mua/i);
+});
+
+test('Customer Review API: allows review when user has purchased voucher', async () => {
+  const programId = 1;
+  const checkRes = await request(`/api/customer/reviews/eligibility/${programId}`, customerToken);
+  assert.equal(checkRes.status, 200);
+  const checkData = (await checkRes.json()) as any;
+  assert.equal(checkData.hasPurchased, true);
+  assert.equal(checkData.canReview, true);
+
+  // Submit valid review
+  const reviewRes = await request('/api/customer/reviews', customerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      programId,
+      rating: 5,
+      reviewContent: 'Sản phẩm rất tốt và dịch vụ chu đáo!',
+    }),
+  });
+
+  assert.equal(reviewRes.status, 201);
+  const reviewData = (await reviewRes.json()) as any;
+  assert.ok(reviewData.review);
+  assert.equal(reviewData.review.rating, 5);
+});
+

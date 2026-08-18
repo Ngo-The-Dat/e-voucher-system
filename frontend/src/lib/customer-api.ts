@@ -348,4 +348,40 @@ export const customerContentApi = {
     request<CustomerContent>(`/customer/contents/${id}`)
 };
 
+export interface CheckReviewEligibilityResponse {
+  canReview: boolean;
+  hasPurchased: boolean;
+  hasReviewed: boolean;
+  issuedVoucherId?: number;
+  voucherCode?: string;
+  existingReview?: {
+    review_id: number;
+    rating: number;
+    review_content?: string | null;
+    complaint_content?: string | null;
+    submitted_at: string;
+  } | null;
+  message?: string;
+}
 
+export interface CreateReviewPayload {
+  programId?: number | string;
+  issuedVoucherId?: number | string;
+  rating: number;
+  reviewContent?: string;
+  complaintContent?: string;
+}
+
+export const customerReviewApi = {
+  checkEligibility: (programId: number | string) =>
+    request<CheckReviewEligibilityResponse>(`/customer/reviews/eligibility/${programId}`),
+  createReview: (payload: CreateReviewPayload) =>
+    request<{ message: string; review: any }>("/customer/reviews", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getProgramReviews: (programId: number | string) =>
+    request<{ reviews: any[]; summary: any }>(`/customer/reviews/program/${programId}`),
+  getMyReviews: () =>
+    request<any[]>("/customer/reviews/my"),
+};
