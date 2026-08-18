@@ -15,11 +15,7 @@ import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
 import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
 
-let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
-if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://") && !envUrl.startsWith("/")) {
-  envUrl = `http://${envUrl}`;
-}
-const API_URL = envUrl;
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 /**
  * Lớp lỗi chuẩn hóa cho các API call đối tác.
@@ -90,7 +86,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("partner_access_token");
       redirectToPartnerLogin();
-      return new Promise(() => {}) as Promise<T>;
+      return new Promise(() => { }) as Promise<T>;
     }
     throw new ApiError(
       response.status,
