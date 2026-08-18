@@ -15,6 +15,14 @@ export function useProfile() {
   const [isLoading, setIsLoading] = useState(true);
 
   const reload = useCallback(async () => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("partner_access_token");
+      if (!token) {
+        setIsLoading(false);
+        setProfile(null);
+        return;
+      }
+    }
     setIsLoading(true);
     try { setProfile(await partnerApi.getProfile()); }
     catch (error) { console.error("Failed to load partner profile", error); setProfile(null); }

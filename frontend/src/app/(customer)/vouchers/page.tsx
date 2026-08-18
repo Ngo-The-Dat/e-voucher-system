@@ -124,7 +124,8 @@ function VoucherCatalogContent() {
       const bVal = b.bestSeller ? 1 : 0;
       if (aVal !== bVal) return bVal - aVal;
 
-      const parseSold = (soldStr: string) => {
+      const parseSold = (soldStr?: string) => {
+        if (!soldStr) return 0;
         if (soldStr.includes("k+")) return parseFloat(soldStr) * 1000;
         if (soldStr.includes("+")) return parseInt(soldStr);
         return parseInt(soldStr) || 0;

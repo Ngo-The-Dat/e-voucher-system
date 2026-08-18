@@ -278,7 +278,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 {(displayVoucher.termsConditions ? displayVoucher.termsConditions.split("\n") : [
                   "Áp dụng cho mọi chi nhánh.",
                   "Không có giá trị quy đổi thành tiền mặt."
-                ]).map((cond, i) => (
+                ]).map((cond: string, i: number) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <span>{cond}</span>
