@@ -296,7 +296,7 @@ export default function ManagePartnersPage() {
                             href={`/admin/partners/manage/${partner.user_id}`}
                             className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-block whitespace-nowrap"
                           >
-                            Quản lý
+                            Xem chi tiết
                           </Link>
                         </td>
                       </tr>
@@ -433,18 +433,16 @@ function DateRangePicker({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-[38px] px-3 bg-white border rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-all gap-2 shadow-2xs ${
-            hasFilter
+          className={`w-full h-[38px] px-3 bg-white border rounded-xl text-xs sm:text-sm font-medium flex items-center justify-between transition-all gap-2 shadow-2xs ${hasFilter
               ? "border-blue-500 bg-blue-50/40 text-blue-900 ring-2 ring-blue-500/10"
               : "border-slate-200 text-slate-700 hover:border-slate-300"
-          }`}
+            }`}
         >
           <div className="flex items-center gap-2 truncate">
             <Icon name="calendar_today" className={`text-lg ${hasFilter ? "text-blue-600" : "text-slate-400"}`} />
             <span
-              className={`truncate ${
-                hasFilter ? "font-semibold text-slate-900" : "text-slate-400"
-              }`}
+              className={`truncate ${hasFilter ? "font-semibold text-slate-900" : "text-slate-400"
+                }`}
             >
               {hasFilter ? labelText : "Tất cả thời gian"}
             </span>
