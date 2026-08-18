@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
 import EmployeeTopAppBar from "@/components/partner/employee/EmployeeTopAppBar";
 import EmployeeSideNavBar from "@/components/partner/employee/EmployeeSideNavBar";
@@ -55,6 +56,31 @@ function EmployeeLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("partner_access_token");
+    const isJwt = token !== null && token.split('.').length === 3;
+    if (!isJwt) {
+      localStorage.removeItem("partner_access_token");
+      router.replace("/login");
+      return;
+    }
+    setIsAuthed(true);
+  }, [router]);
+
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 text-on-surface-variant font-medium text-base">
+          <Icon name="progress_activity" className="animate-spin text-primary text-xl" />
+          <span>Đang xác thực quyền truy cập...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <EmployeeProvider>
       <EmployeeLayoutContent>{children}</EmployeeLayoutContent>
