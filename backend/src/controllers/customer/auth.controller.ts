@@ -30,3 +30,33 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
     sendHttpError(res, err);
   }
 };
+
+export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const result = await authService.requestPasswordReset(email);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};
+
+export const verifyResetOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, challenge_id, code } = req.body;
+    const result = await authService.verifyPasswordResetOtp(email, challenge_id, code);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};
+
+export const resetPassword = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, challenge_id, new_password } = req.body;
+    const result = await authService.resetPassword(email, challenge_id, new_password);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};

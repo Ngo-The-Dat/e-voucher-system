@@ -143,7 +143,7 @@ export default function CustomerLoginPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="block text-sm font-semibold text-gray-700">Mật khẩu</label>
-                <Link href="#" className="text-sm font-medium text-[#0f2c59] hover:underline">
+                <Link href="/forgot-password" className="text-sm font-medium text-[#0f2c59] hover:underline">
                   Quên mật khẩu?
                 </Link>
               </div>

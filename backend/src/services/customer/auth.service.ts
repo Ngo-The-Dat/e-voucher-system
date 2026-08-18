@@ -167,3 +167,81 @@ export const getMe = async (userId: number) => {
     created_at: user.created_at,
   };
 };
+
+import {
+  requestResetOtp,
+  verifyResetOtp,
+  beginOtpConsumption,
+  releaseOtpConsumption,
+  completeOtpConsumption
+} from '../common/password-reset-otp.service.js';
+
+export const requestPasswordReset = async (email: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) {
+    throw { status: 400, message: 'Vui lòng cung cấp email.' };
+  }
+
+  // 1. Kiểm tra email có tồn tại và thuộc về CUSTOMER hay không
+  const userResult = await pool.query(
+    `SELECT user_id, status FROM users WHERE email = $1 AND role = 'CUSTOMER'`,
+    [normalizedEmail]
+  );
+
+  if (userResult.rows.length === 0) {
+    // Để bảo mật, không nên trả về lỗi 404 cho email không tồn tại trong flow reset password, 
+    // nhưng ở đây ta cứ báo chung chung hoặc báo rõ tùy yêu cầu. Chọn báo rõ để UX tốt.
+    throw { status: 404, message: 'Email này không được đăng ký tài khoản Khách hàng.' };
+  }
+
+  const user = userResult.rows[0];
+  if (user.status !== 'ACTIVE') {
+    throw { status: 403, message: 'Tài khoản của bạn hiện đã bị khóa, không thể khôi phục mật khẩu.' };
+  }
+
+  // 2. Yêu cầu gửi OTP
+  return await requestResetOtp(normalizedEmail);
+};
+
+export const verifyPasswordResetOtp = async (email: string, challengeId: string, code: string) => {
+  if (!email || !challengeId || !code) {
+    throw { status: 400, message: 'Thiếu thông tin xác thực OTP.' };
+  }
+  return await verifyResetOtp(email, challengeId, code);
+};
+
+export const resetPassword = async (email: string, challengeId: string, newPassword: string) => {
+  const normalizedEmail = email.trim().toLowerCase();
+  
+  if (!newPassword || newPassword.length < 6) {
+    throw { status: 400, message: 'Mật khẩu mới phải chứa ít nhất 6 ký tự.' };
+  }
+
+  // 1. Bắt đầu tiêu thụ OTP (Lock logic)
+  beginOtpConsumption(normalizedEmail, challengeId);
+
+  try {
+    // 2. Hash mật khẩu mới
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+
+    // 3. Cập nhật DB
+    const updateResult = await pool.query(
+      `UPDATE users SET password_hash = $1 WHERE email = $2 AND role = 'CUSTOMER' RETURNING user_id`,
+      [passwordHash, normalizedEmail]
+    );
+
+    if (updateResult.rows.length === 0) {
+      throw { status: 404, message: 'Không tìm thấy tài khoản Khách hàng.' };
+    }
+
+    // 4. Hoàn tất tiêu thụ OTP (Xóa khỏi bộ nhớ)
+    completeOtpConsumption(normalizedEmail, challengeId);
+
+    return { message: 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.' };
+  } catch (error) {
+    // Nếu có lỗi trong quá trình update, release để có thể thử lại
+    releaseOtpConsumption(normalizedEmail, challengeId);
+    throw error;
+  }
+};
+

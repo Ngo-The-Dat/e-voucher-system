@@ -59,6 +59,21 @@ export const customerAuthApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  requestPasswordReset: (email: string) =>
+    request<{ challenge_id: string; expires_in: number; resend_after: number }>("/customer/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email })
+    }),
+  verifyPasswordResetOtp: (payload: { email: string; challenge_id: string; code: string }) =>
+    request<{ verified: boolean; challenge_id: string }>("/customer/auth/verify-reset-otp", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  resetPassword: (payload: { email: string; challenge_id: string; new_password: string }) =>
+    request<{ message: string }>("/customer/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
   getMe: () => request<CustomerUser>("/customer/auth/me"),
   logout: () => {
     if (typeof window !== "undefined") {
