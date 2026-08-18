@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/admin/Sidebar";
 import Header from "@/components/admin/Header";
 
@@ -9,7 +10,28 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("admin_access_token");
+    const isJwt = token !== null && token.split('.').length === 3;
+    if (!isJwt) {
+      localStorage.removeItem("admin_access_token");
+      router.replace("/login");
+      return;
+    }
+    setIsAuthed(true);
+  }, [router]);
+
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0f2c59]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-background text-text-main min-h-screen flex flex-col">
@@ -23,3 +45,4 @@ export default function AdminLayout({
     </div>
   );
 }
+

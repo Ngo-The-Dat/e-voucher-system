@@ -15,7 +15,11 @@ import { Branch, PartnerProfile } from "./types/profile";
 import { CategoryOption, CreateVoucherInput, VoucherImage, VoucherItem } from "./types/voucher";
 import { EmployeeProfile, PartnerEmployeeItem, CreateEmployeePayload } from "./types/employee";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+let envUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+if (envUrl && !envUrl.startsWith("http://") && !envUrl.startsWith("https://") && !envUrl.startsWith("/")) {
+  envUrl = `http://${envUrl}`;
+}
+const API_URL = envUrl;
 
 /**
  * Lớp lỗi chuẩn hóa cho các API call đối tác.
@@ -38,12 +42,12 @@ const redirectToPartnerLogin = () => {
   if (typeof window === "undefined" || isRedirectingToLogin) return;
 
   const isProtectedPartnerRoute = window.location.pathname.startsWith("/partner")
-    && !window.location.pathname.startsWith("/partner/login")
-    && !window.location.pathname.startsWith("/partner/register");
+    && !window.location.pathname.startsWith("/login")
+    && !window.location.pathname.startsWith("/register");
   if (!isProtectedPartnerRoute) return;
 
   isRedirectingToLogin = true;
-  window.location.replace("/partner/login");
+  window.location.replace("/login");
 };
 
 /**
@@ -53,7 +57,7 @@ const getStoredPartnerToken = (): string | null => {
   if (typeof window === "undefined") return null;
 
   const token = localStorage.getItem("partner_access_token");
-  const isJwt = token !== null && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token);
+  const isJwt = token !== null && token.split('.').length === 3;
   if (!isJwt) {
     localStorage.removeItem("partner_access_token");
     return null;
@@ -86,6 +90,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("partner_access_token");
       redirectToPartnerLogin();
+      return new Promise(() => {}) as Promise<T>;
     }
     throw new ApiError(
       response.status,

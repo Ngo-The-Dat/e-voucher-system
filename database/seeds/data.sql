@@ -10,7 +10,7 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
 
 -- 1. Insert users (36 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
-(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
+(1, 'Ngô Thế Đạt', 'admin@voucher.vn', '0901000001', '$2b$10$JITaepX2GQH3.6T2KhDIiuh4OcJulzeW80vyNF4jfdjV3JpJ5prNq', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
 (2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
 (3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001088000003', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
 (4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001185000004', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
@@ -398,23 +398,22 @@ INSERT INTO contents (content_id, program_id, title, body, content_type, created
 (2, 3, 'Trải nghiệm liệu trình Spa Hương Sen', 'Bài viết đánh giá chi tiết về quy trình chăm sóc da mặt...', 'ARTICLE', '2026-01-06 09:00:00', NULL, 'ACTIVE'),
 (3, 5, 'Hướng dẫn đặt phòng tại Biển Bạc Hotel', 'Quy trình đặt phòng và xác nhận mã voucher khi nhận phòng...', 'ARTICLE', '2026-01-07 10:00:00', NULL, 'ACTIVE');
 
--- 18. Insert system_logs (15 rows)
+-- 18. Insert system_logs (14 rows)
 INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_value, new_value, performed_at, result) VALUES
-(1, 1, 'CREATE_USER', '1', 'USER', NULL, '{"role": "ADMIN", "email": "admin1@voucher.vn"}'::jsonb, '2026-01-01 08:00:00', 'SUCCESS'),
-(2, 3, 'REGISTER_PARTNER', '3', 'PARTNER', NULL, '{"business_name": "Công ty TNHH Ẩm Thực Việt"}'::jsonb, '2026-01-02 09:05:00', 'SUCCESS'),
-(3, 3, 'CREATE_VOUCHER_PROGRAM', '1', 'VOUCHER_PROGRAM', NULL, '{"program_name": "Buffet Lẩu Nướng Cao Cấp Giảm 30%"}'::jsonb, '2026-01-04 09:50:00', 'SUCCESS'),
-(4, 1, 'APPROVE_VOUCHER_PROGRAM', '1', 'APPROVAL_REQUEST', '{"status": "PENDING"}'::jsonb, '{"status": "APPROVED"}'::jsonb, '2026-01-04 11:00:00', 'SUCCESS'),
-(5, 8, 'ADD_TO_CART', '1', 'CART_ITEM', NULL, '{"program_id": 3, "quantity": 1}'::jsonb, '2026-01-09 15:00:00', 'SUCCESS'),
-(6, 8, 'CREATE_ORDER', '1', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-01-10 10:00:00', 'SUCCESS'),
-(7, 8, 'ISSUE_VOUCHER', '1', 'ISSUED_VOUCHER', NULL, '{"voucher_code": "VCH-FB-0001"}'::jsonb, '2026-01-10 10:01:00', 'SUCCESS'),
-(8, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
-(9, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
-(10, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS'),
-(11, 28, 'CREATE_ORDER', '20', 'ORDER', NULL, '{"total_amount": 158000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 02:30:00', 'SUCCESS'),
-(12, 28, 'CREATE_ORDER', '21', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-08-12 07:45:00', 'SUCCESS'),
-(13, 29, 'CREATE_ORDER', '22', 'ORDER', NULL, '{"total_amount": 578000.00, "payment_method": "CREDIT_CARD"}'::jsonb, '2026-08-12 10:15:00', 'SUCCESS'),
-(14, 29, 'USE_VOUCHER', '45', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-08-12 12:30:00', 'SUCCESS'),
-(15, 30, 'CREATE_ORDER', '24', 'ORDER', NULL, '{"total_amount": 108000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 16:30:00', 'SUCCESS');
+(1, 3, 'REGISTER_PARTNER', '3', 'PARTNER', NULL, '{"business_name": "Công ty TNHH Ẩm Thực Việt"}'::jsonb, '2026-01-02 09:05:00', 'SUCCESS'),
+(2, 3, 'CREATE_VOUCHER_PROGRAM', '1', 'VOUCHER_PROGRAM', NULL, '{"program_name": "Buffet Lẩu Nướng Cao Cấp Giảm 30%"}'::jsonb, '2026-01-04 09:50:00', 'SUCCESS'),
+(3, 1, 'APPROVE_VOUCHER_PROGRAM', '1', 'APPROVAL_REQUEST', '{"status": "PENDING"}'::jsonb, '{"status": "APPROVED"}'::jsonb, '2026-01-04 11:00:00', 'SUCCESS'),
+(4, 8, 'ADD_TO_CART', '1', 'CART_ITEM', NULL, '{"program_id": 3, "quantity": 1}'::jsonb, '2026-01-09 15:00:00', 'SUCCESS'),
+(5, 8, 'CREATE_ORDER', '1', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-01-10 10:00:00', 'SUCCESS'),
+(6, 8, 'ISSUE_VOUCHER', '1', 'ISSUED_VOUCHER', NULL, '{"voucher_code": "VCH-FB-0001"}'::jsonb, '2026-01-10 10:01:00', 'SUCCESS'),
+(7, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
+(8, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
+(9, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS'),
+(10, 28, 'CREATE_ORDER', '20', 'ORDER', NULL, '{"total_amount": 158000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 02:30:00', 'SUCCESS'),
+(11, 28, 'CREATE_ORDER', '21', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-08-12 07:45:00', 'SUCCESS'),
+(12, 29, 'CREATE_ORDER', '22', 'ORDER', NULL, '{"total_amount": 578000.00, "payment_method": "CREDIT_CARD"}'::jsonb, '2026-08-12 10:15:00', 'SUCCESS'),
+(13, 29, 'USE_VOUCHER', '45', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-08-12 12:30:00', 'SUCCESS'),
+(14, 30, 'CREATE_ORDER', '24', 'ORDER', NULL, '{"total_amount": 108000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 16:30:00', 'SUCCESS');
 
 -- Reset IDENTITY sequences sau khi seed data tường minh
 SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT COALESCE(MAX(user_id), 1) FROM users));
