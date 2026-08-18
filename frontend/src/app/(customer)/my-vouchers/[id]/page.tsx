@@ -105,7 +105,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
             : "unused",
         title: apiVoucher.program_name,
         brand: apiVoucher.business_name || "Thương hiệu đối tác",
-        brandLogo: apiVoucher.partner_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+        brandLogo: apiVoucher.partner_logo || "",
         category: apiVoucher.category_name || "Ưu đãi",
         datePurchased: apiVoucher.purchase_date ? new Date(apiVoucher.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
         expiryDate: apiVoucher.expires_at ? new Date(apiVoucher.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
@@ -197,13 +197,22 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
             {/* Brand Logo */}
             <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-lowest border border-outline-variant flex items-center justify-center p-4 shadow-sm">
-              <Image
-                width={128}
-                height={128}
-                className="w-full h-full object-contain"
-                src={displayVoucher.brandLogo}
-                alt={displayVoucher.brand}
-              />
+              {displayVoucher.brandLogo ? (
+                <img
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-contain"
+                  src={displayVoucher.brandLogo}
+                  alt={displayVoucher.brand}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-3xl font-extrabold text-primary">
+                  {(displayVoucher.brand || "V").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
 
             {/* Details Content */}
@@ -404,18 +413,28 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   Mã Voucher
                 </p>
                 <div className="flex items-center justify-between bg-surface-container-low border border-outline-variant rounded-lg p-3">
-                  <span className="font-headline-lg text-headline-lg font-bold text-primary tracking-widest font-mono select-all">
+                  <span
+                    className={`font-headline-lg text-headline-lg font-bold tracking-widest font-mono ${
+                      displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
+                        ? "text-text-muted/60 line-through select-none"
+                        : "text-primary select-all"
+                    }`}
+                  >
                     {displayVoucher.code}
                   </span>
-                  <button
-                    onClick={handleCopyCode}
-                    className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
-                    title="Copy mã"
-                  >
-                    {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
-                  </button>
+                  {displayVoucher.status === "unused" && (
+                    <button
+                      onClick={handleCopyCode}
+                      className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
+                      title="Copy mã"
+                    >
+                      {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  )}
                 </div>
-                {copied && <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>}
+                {copied && displayVoucher.status === "unused" && (
+                  <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>
+                )}
               </div>
 
               <div className="w-full h-px bg-outline-variant border-dashed mb-6" />

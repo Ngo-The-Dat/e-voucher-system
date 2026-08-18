@@ -18,6 +18,7 @@ export interface CreateOrderPayload {
   is_gift?: boolean;
   recipient_info?: RecipientInfoInput;
   payment_method?: string;
+  auto_pay?: boolean;
 }
 
 export interface GetCustomerOrdersFilter {
@@ -54,16 +55,16 @@ function normalizePaymentMethod(method?: string): string {
 }
 
 /**
- * 1. Tạo đơn hàng và phát hành voucher cho khách hàng
+ * 1. Tạo đơn hàng (mặc định UNPAID + PENDING, hoặc PAID + COMPLETED nếu auto_pay = true)
  */
 export async function createCustomerOrder(buyerUserId: number, payload: CreateOrderPayload) {
-  const { items, is_gift, recipient_info, payment_method } = payload;
+  const { items, is_gift, recipient_info, payment_method, auto_pay } = payload;
   const dbPaymentMethod = normalizePaymentMethod(payment_method);
+  const isPaidNow = Boolean(auto_pay);
 
   if (!items || !Array.isArray(items) || items.length === 0) {
     throw { status: 400, message: 'Danh sách sản phẩm tạo đơn hàng không được để trống.' };
   }
-
 
   const client = await pool.connect();
   try {
@@ -194,6 +195,9 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
     }
 
     // 3. Tạo Đơn hàng (`orders`)
+    const initialPaymentStatus = isPaidNow ? 'PAID' : 'UNPAID';
+    const initialOrderStatus = isPaidNow ? 'COMPLETED' : 'PENDING';
+
     const orderRes = await client.query(
       `INSERT INTO orders (
          buyer_user_id,
@@ -203,15 +207,16 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
          payment_status,
          order_status,
          created_at
-       ) VALUES ($1, $2, $3, $4, 'PAID', 'CONFIRMED', CURRENT_TIMESTAMP)
+       ) VALUES ($1, $2, $3, $4, 'PAID', 'COMPLETED', CURRENT_TIMESTAMP)
+       ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
        RETURNING order_id, created_at, total_amount, payment_method, payment_status, order_status`,
-      [buyerUserId, recipientUserId, totalAmount, dbPaymentMethod]
+      [buyerUserId, recipientUserId, totalAmount, dbPaymentMethod, initialPaymentStatus, initialOrderStatus]
     );
 
     const order = orderRes.rows[0];
     const orderId = Number(order.order_id);
 
-    // 4. Tạo `order_items` và phát hành `issued_vouchers`
+    // 4. Tạo `order_items` và phát hành `issued_vouchers` (nếu đã thanh toán)
     const issuedVouchersList: any[] = [];
 
     for (const item of validatedItems) {
@@ -223,7 +228,182 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
       );
       const orderItemId = Number(orderItemRes.rows[0].order_item_id);
 
-      for (let i = 0; i < item.quantity; i++) {
+      if (isPaidNow) {
+        for (let i = 0; i < item.quantity; i++) {
+          let code = generateVoucherCode();
+          let isUnique = false;
+          let attempts = 0;
+          while (!isUnique && attempts < 5) {
+            const codeCheck = await client.query(
+              `SELECT 1 FROM issued_vouchers WHERE voucher_code = $1`,
+              [code]
+            );
+            if (codeCheck.rows.length === 0) {
+              isUnique = true;
+            } else {
+              code = generateVoucherCode();
+              attempts++;
+            }
+          }
+
+          const voucherRes = await client.query(
+            `INSERT INTO issued_vouchers (
+               program_id,
+               order_item_id,
+               owner_user_id,
+               voucher_code,
+               qr_code,
+               usage_status,
+               issued_at,
+               expires_at,
+               discount_amount
+             ) VALUES ($1, $2, $3, $4, $5, 'UNUSED', CURRENT_TIMESTAMP, $6, $7)
+             RETURNING issued_voucher_id, voucher_code, qr_code, usage_status, issued_at, expires_at`,
+            [
+              item.program_id,
+              orderItemId,
+              recipientUserId,
+              code,
+              code,
+              item.use_end_at,
+              item.discount_amount,
+            ]
+          );
+
+          issuedVouchersList.push({
+            ...voucherRes.rows[0],
+            program_name: item.program_name,
+          });
+        }
+      }
+
+      if (item.cart_item_id) {
+        await client.query(
+          `DELETE FROM cart_items WHERE cart_item_id = $1 AND customer_id = $2`,
+          [item.cart_item_id, buyerUserId]
+        );
+      } else {
+        await client.query(
+          `DELETE FROM cart_items WHERE customer_id = $1 AND program_id = $2`,
+          [buyerUserId, item.program_id]
+        );
+      }
+    }
+
+    await client.query('COMMIT');
+
+    const nowIso = new Date().toISOString();
+
+    return {
+      success: true,
+      message: isPaidNow
+        ? 'Tạo đơn hàng và phát hành voucher thành công.'
+        : 'Tạo đơn hàng thành công. Vui lòng tiến hành thanh toán.',
+      order: {
+        order_id: orderId,
+        created_at: nowIso,
+        elapsed_seconds: 0,
+        total_amount: Number(order.total_amount),
+        payment_method: order.payment_method,
+        payment_status: order.payment_status,
+        order_status: order.order_status,
+        is_gift: Boolean(is_gift),
+        recipient_user_id: recipientUserId,
+        vouchers: issuedVouchersList,
+      },
+    };
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * 2. Thanh toán đơn hàng (Chuyển UNPAID / PENDING sang PAID / COMPLETED và phát hành voucher)
+ */
+export async function payCustomerOrder(customerId: number, orderId: number, paymentMethod?: string) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // Khóa đơn hàng để xử lý thanh toán
+    const orderRes = await client.query(
+      `SELECT 
+         *, 
+         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))::int AS elapsed_seconds 
+       FROM orders 
+       WHERE order_id = $1 AND buyer_user_id = $2 
+       FOR UPDATE`,
+      [orderId, customerId]
+    );
+
+    if (orderRes.rows.length === 0) {
+      throw { status: 404, message: 'Không tìm thấy đơn hàng hoặc bạn không có quyền thanh toán đơn hàng này.' };
+    }
+
+    const order = orderRes.rows[0];
+
+    if (order.order_status === 'CANCELLED') {
+      throw { status: 400, message: 'Không thể thanh toán đơn hàng đã bị hủy.' };
+    }
+
+    // Kiểm tra thời hạn thanh toán 5 phút (300 giây)
+    const elapsedSeconds = Number(order.elapsed_seconds || 0);
+    if (elapsedSeconds > 300) {
+      // Đơn hàng quá 5 phút chưa thanh toán -> Hủy đơn
+      await client.query(
+        `UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = $1`,
+        [orderId]
+      );
+      await client.query('COMMIT');
+      throw {
+        status: 400,
+        message: 'Đơn hàng đã hết hạn thời gian thanh toán (5 phút). Vui lòng tạo lại đơn hàng mới.',
+      };
+    }
+
+    if (order.order_status === 'COMPLETED' && order.payment_status === 'PAID') {
+      await client.query('COMMIT');
+      return {
+        success: true,
+        message: 'Đơn hàng đã được thanh toán hoàn tất trước đó.',
+        order: {
+          order_id: orderId,
+          created_at: order.created_at,
+          total_amount: Number(order.total_amount),
+          payment_method: order.payment_method,
+          payment_status: order.payment_status,
+          order_status: order.order_status,
+          recipient_user_id: order.recipient_user_id,
+        },
+      };
+    }
+
+    // Lấy các order_items và thông tin voucher program tương ứng
+    const itemsRes = await client.query(
+      `SELECT 
+         oi.order_item_id,
+         oi.program_id,
+         oi.quantity,
+         oi.unit_price,
+         vp.program_name,
+         vp.discount_amount,
+         vp.use_end_at
+       FROM order_items oi
+       JOIN voucher_programs vp ON vp.program_id = oi.program_id
+       WHERE oi.order_id = $1`,
+      [orderId]
+    );
+
+    const recipientUserId = order.recipient_user_id || order.buyer_user_id;
+    const dbPaymentMethod = paymentMethod ? normalizePaymentMethod(paymentMethod) : order.payment_method;
+    const issuedVouchersList: any[] = [];
+
+    for (const item of itemsRes.rows) {
+      const quantity = Number(item.quantity);
+      for (let i = 0; i < quantity; i++) {
         let code = generateVoucherCode();
         let isUnique = false;
         let attempts = 0;
@@ -255,7 +435,7 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
            RETURNING issued_voucher_id, voucher_code, qr_code, usage_status, issued_at, expires_at`,
           [
             item.program_id,
-            orderItemId,
+            item.order_item_id,
             recipientUserId,
             code,
             code,
@@ -269,33 +449,30 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
           program_name: item.program_name,
         });
       }
-
-      if (item.cart_item_id) {
-        await client.query(
-          `DELETE FROM cart_items WHERE cart_item_id = $1 AND customer_id = $2`,
-          [item.cart_item_id, buyerUserId]
-        );
-      } else {
-        await client.query(
-          `DELETE FROM cart_items WHERE customer_id = $1 AND program_id = $2`,
-          [buyerUserId, item.program_id]
-        );
-      }
     }
+
+    // Cập nhật trạng thái đơn hàng thành PAID / COMPLETED
+    await client.query(
+      `UPDATE orders 
+       SET payment_status = 'PAID', 
+           order_status = 'COMPLETED',
+           payment_method = $1
+       WHERE order_id = $2`,
+      [dbPaymentMethod, orderId]
+    );
 
     await client.query('COMMIT');
 
     return {
       success: true,
-      message: 'Tạo đơn hàng và phát hành voucher thành công.',
+      message: 'Thanh toán đơn hàng và phát hành voucher thành công.',
       order: {
         order_id: orderId,
         created_at: order.created_at,
         total_amount: Number(order.total_amount),
-        payment_method: order.payment_method,
-        payment_status: order.payment_status,
-        order_status: order.order_status,
-        is_gift: Boolean(is_gift),
+        payment_method: dbPaymentMethod,
+        payment_status: 'PAID',
+        order_status: 'COMPLETED',
         recipient_user_id: recipientUserId,
         vouchers: issuedVouchersList,
       },
@@ -309,7 +486,7 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
 }
 
 /**
- * 2. Lấy danh sách Đơn hàng của Khách hàng
+ * 3. Lấy danh sách Đơn hàng của Khách hàng
  */
 export async function getCustomerOrders(customerId: number, filter: GetCustomerOrdersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
@@ -326,6 +503,7 @@ export async function getCustomerOrders(customerId: number, filter: GetCustomerO
     SELECT 
       o.order_id,
       o.created_at,
+      EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at))::int as elapsed_seconds,
       o.total_amount,
       o.payment_method,
       o.payment_status,
@@ -360,6 +538,7 @@ export async function getCustomerOrders(customerId: number, filter: GetCustomerO
   return {
     orders: dataRes.rows.map((row) => ({
       ...row,
+      elapsed_seconds: Math.max(0, Number(row.elapsed_seconds || 0)),
       total_amount: Number(row.total_amount),
       items: row.items || [],
     })),
@@ -373,13 +552,14 @@ export async function getCustomerOrders(customerId: number, filter: GetCustomerO
 }
 
 /**
- * 3. Chi tiết 1 đơn hàng của Khách hàng
+ * 4. Chi tiết 1 đơn hàng của Khách hàng
  */
 export async function getCustomerOrderById(customerId: number, orderId: number) {
   const orderQuery = `
     SELECT 
       o.order_id,
       o.created_at,
+      EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at))::int as elapsed_seconds,
       o.total_amount,
       o.payment_method,
       o.payment_status,
@@ -435,6 +615,7 @@ export async function getCustomerOrderById(customerId: number, orderId: number) 
 
   return {
     ...order,
+    elapsed_seconds: Math.max(0, Number(order.elapsed_seconds || 0)),
     total_amount: Number(order.total_amount),
     items: itemsRes.rows.map((item) => ({
       ...item,
@@ -444,5 +625,3 @@ export async function getCustomerOrderById(customerId: number, orderId: number) 
     })),
   };
 }
-
-

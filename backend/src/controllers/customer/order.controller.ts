@@ -13,6 +13,22 @@ export async function createOrder(req: AuthRequest, res: Response): Promise<void
   }
 }
 
+export async function payOrder(req: AuthRequest, res: Response): Promise<void> {
+  try {
+    const customerId = req.user!.id;
+    const orderId = Number(req.params.orderId);
+    if (!orderId) {
+      res.status(400).json({ message: 'Mã đơn hàng không hợp lệ.' });
+      return;
+    }
+    const { payment_method } = req.body || {};
+    const result = await orderService.payCustomerOrder(customerId, orderId, payment_method);
+    res.status(200).json(result);
+  } catch (error) {
+    sendHttpError(res, error);
+  }
+}
+
 export async function getOrders(req: AuthRequest, res: Response): Promise<void> {
   try {
     const customerId = req.user!.id;
@@ -37,4 +53,3 @@ export async function getOrderById(req: AuthRequest, res: Response): Promise<voi
     sendHttpError(res, error);
   }
 }
-
