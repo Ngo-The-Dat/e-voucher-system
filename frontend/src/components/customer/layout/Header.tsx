@@ -46,7 +46,10 @@ export default function Header() {
     }
   };
 
+  const [isMounted, setIsMounted] = useState(false);
+
   useEffect(() => {
+    setIsMounted(true);
     checkAuth();
     const handleAuthChange = () => checkAuth();
     window.addEventListener("customer-auth-changed", handleAuthChange);
@@ -147,7 +150,7 @@ export default function Header() {
               className="text-white hover:text-white/80 transition-colors p-2 rounded-full hover:bg-white/10 relative flex items-center justify-center"
             >
               <ShoppingCart className="w-6 h-6" />
-              {cartItemsCount > 0 && (
+              {isMounted && cartItemsCount > 0 && (
                 <span className="absolute top-0.5 right-0.5 bg-error text-white text-[10px] font-bold rounded-full h-4 w-4 flex items-center justify-center">
                   {cartItemsCount}
                 </span>
@@ -402,7 +405,7 @@ export default function Header() {
                 pathname === "/cart" ? "bg-[#0f2c59]/5 text-[#0f2c59] font-bold" : "text-gray-700"
               }`}
             >
-              Giỏ hàng ({cartItemsCount})
+              Giỏ hàng {isMounted ? `(${cartItemsCount})` : ''}
             </Link>
           </nav>
 
