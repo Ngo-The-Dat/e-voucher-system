@@ -1,7 +1,26 @@
+/**
+ * =========================================================================================
+ * FILE: user.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận và xử lý các yêu cầu Quản trị Người dùng (UC-ADM-01).
+ *   - Các Endpoint chính:
+ *       1. GET /api/admin/users: Lấy danh sách người dùng toàn hệ thống có phân trang và bộ lọc.
+ *       2. GET /api/admin/users/:id: Lấy chi tiết hồ sơ 1 người dùng.
+ *       3. POST /api/admin/users/:id/lock: Khóa tài khoản người dùng kèm lý do.
+ *       4. POST /api/admin/users/:id/unlock: Mở khóa tài khoản người dùng.
+ *       5. PATCH /api/admin/users/:id/role: Phân quyền / Thay đổi vai trò người dùng.
+ * =========================================================================================
+ */
+
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as userService from '../../services/admin/user.service.js';
 
+/**
+ * GET /api/admin/users
+ * Lấy danh sách người dùng (hỗ trợ tìm kiếm theo tên/email/phone, lọc theo role, status và phân trang)
+ */
 export async function getUsers(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const { search, role, status, page, limit } = req.query;
@@ -18,6 +37,10 @@ export async function getUsers(req: AuthRequest, res: Response, next: NextFuncti
   }
 }
 
+/**
+ * GET /api/admin/users/:id
+ * Lấy chi tiết hồ sơ 1 người dùng theo ID
+ */
 export async function getUserById(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.id);
@@ -38,6 +61,10 @@ export async function getUserById(req: AuthRequest, res: Response, next: NextFun
   }
 }
 
+/**
+ * POST /api/admin/users/:id/lock
+ * Khóa tài khoản người dùng kèm lý do
+ */
 export async function lockUser(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.id);
@@ -65,6 +92,10 @@ export async function lockUser(req: AuthRequest, res: Response, next: NextFuncti
   }
 }
 
+/**
+ * POST /api/admin/users/:id/unlock
+ * Mở khóa tài khoản người dùng
+ */
 export async function unlockUser(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.id);
@@ -86,6 +117,10 @@ export async function unlockUser(req: AuthRequest, res: Response, next: NextFunc
   }
 }
 
+/**
+ * PATCH /api/admin/users/:id/role
+ * Thay đổi vai trò người dùng (CUSTOMER / PARTNER / ADMIN / PARTNER_EMPLOYEE)
+ */
 export async function changeUserRole(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.id);

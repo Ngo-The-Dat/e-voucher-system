@@ -1,6 +1,16 @@
+/**
+ * @file employee.service.ts
+ * @description Service xử lý nghiệp vụ thông tin cá nhân của Nhân viên chi nhánh đối tác (Partner Employee):
+ * tra cứu hồ sơ kèm thông tin chi nhánh và đối tác chủ quản, cập nhật thông tin cá nhân,
+ * và thay đổi mật khẩu đăng nhập với bcrypt.
+ */
+
 import pool from '../../config/db.js';
 import bcrypt from 'bcrypt';
 
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
+
+/** Dữ liệu đầu vào khi nhân viên tự cập nhật thông tin cá nhân */
 export interface UpdateEmployeeProfileInput {
   full_name?: string;
   phone?: string;
@@ -8,6 +18,19 @@ export interface UpdateEmployeeProfileInput {
   nationality?: string;
 }
 
+// ─── Service Methods ──────────────────────────────────────────────────────────
+
+/**
+ * Lấy toàn bộ thông tin chi tiết hồ sơ của nhân viên chi nhánh.
+ * 
+ * @description
+ * Thực hiện phép JOIN qua 4 bảng:
+ * `users` (u) -> `partner_employees` (pe) -> `branches` (b) -> `partners` (p).
+ * 
+ * @param userId User ID của nhân viên (role = 'PARTNER_EMPLOYEE')
+ * @returns Đối tượng thông tin hồ sơ kèm branch và partner
+ * @throws {Object} Lỗi HTTP 404 nếu không tìm thấy nhân viên
+ */
 export const getEmployeeProfile = async (userId: number) => {
   const result = await pool.query(
     `SELECT
@@ -56,6 +79,13 @@ export const getEmployeeProfile = async (userId: number) => {
   };
 };
 
+/**
+ * Cập nhật thông tin cá nhân của nhân viên đối tác (có Transaction).
+ * 
+ * @param userId User ID nhân viên
+ * @param input Các thông tin cần thay đổi (họ tên, SĐT, giới tính, quốc tịch)
+ * @returns Hồ sơ nhân viên sau cập nhật
+ */
 export const updateEmployeeProfile = async (userId: number, input: UpdateEmployeeProfileInput) => {
   const client = await pool.connect();
   try {
@@ -90,6 +120,13 @@ export const updateEmployeeProfile = async (userId: number, input: UpdateEmploye
   }
 };
 
+/**
+ * Đổi mật khẩu tài khoản cho Nhân viên đối tác.
+ * 
+ * @param userId User ID nhân viên
+ * @param old_password Mật khẩu cũ
+ * @param new_password Mật khẩu mới (8-128 ký tự)
+ */
 export const changeEmployeePassword = async (
   userId: number,
   old_password: string,

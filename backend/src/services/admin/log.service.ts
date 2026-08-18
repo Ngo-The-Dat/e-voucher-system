@@ -1,15 +1,34 @@
+/**
+ * =========================================================================================
+ * FILE: log.service.ts
+ * VỊ TRÍ: backend/src/services/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Dịch vụ Nghiệp vụ (Business Logic Layer) truy vấn Nhật ký Hệ thống (UC-ADM-08: Xem Nhật ký Hệ thống).
+ *   - Phục vụ tính năng Audit Log / Giám sát hoạt động quản trị:
+ *       1. `getSystemLogs`: Truy vấn lịch sử thao tác hệ thống, hỗ trợ tìm kiếm (tên admin, action, object_id, log_id),
+ *          lọc theo loại đối tượng (objectType: USER, VOUCHER, ORDER...), kết quả (SUCCESS / FAILED), khoảng ngày và phân trang.
+ *       2. `getSystemLogById`: Xem chi tiết 1 bản ghi log (bao gồm JSON oldValue và newValue để so sánh trước/sau khi sửa).
+ * =========================================================================================
+ */
+
 import pool from '../../config/db.js';
 
 export interface GetSystemLogsFilter {
-  search?: string;
-  objectType?: string;
-  result?: string;
-  startDate?: string;
-  endDate?: string;
-  page?: number;
-  limit?: number;
+  search?: string;      // Tìm kiếm (Tên người thực hiện, Action, Object ID, Log ID)
+  objectType?: string;  // Loại đối tượng (USER, PARTNER, VOUCHER, ORDER, APPROVAL_REQUEST...)
+  result?: string;      // Kết quả (SUCCESS / FAILED hoặc ALL)
+  startDate?: string;   // Ngày thực hiện từ
+  endDate?: string;     // Ngày thực hiện đến
+  page?: number;        // Trang hiện tại
+  limit?: number;       // Số dòng trên 1 trang
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getSystemLogs
+ * MỤC ĐÍCH: Lấy danh sách nhật ký kiểm toán hệ thống có phân trang và bộ lọc linh hoạt.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -19,6 +38,7 @@ export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
   const params: any[] = [];
   let paramIdx = 1;
 
+  // Lọc theo từ khóa tìm kiếm
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
@@ -31,18 +51,21 @@ export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
     paramIdx++;
   }
 
+  // Lọc theo loại đối tượng tác động (object_type)
   if (filter.objectType && filter.objectType !== 'ALL') {
     conditions.push(`sl.object_type = $${paramIdx}`);
     params.push(filter.objectType);
     paramIdx++;
   }
 
+  // Lọc theo kết quả thực hiện (SUCCESS / FAILED)
   if (filter.result && filter.result !== 'ALL') {
     conditions.push(`sl.result = $${paramIdx}`);
     params.push(filter.result);
     paramIdx++;
   }
 
+  // Lọc theo khoảng ngày thực hiện
   if (filter.startDate) {
     conditions.push(`sl.performed_at >= $${paramIdx}::date`);
     params.push(filter.startDate);
@@ -57,6 +80,7 @@ export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
+  // 1. Đếm tổng số bản ghi log
   const countQuery = `
     SELECT COUNT(*) as total
     FROM system_logs sl
@@ -66,6 +90,7 @@ export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
   const countRes = await pool.query(countQuery, params);
   const total = parseInt(countRes.rows[0]?.total ?? '0', 10);
 
+  // 2. Lấy danh sách log sắp xếp theo thời gian mới nhất (performed_at DESC)
   const dataQuery = `
     SELECT 
       sl.log_id,
@@ -98,6 +123,12 @@ export async function getSystemLogs(filter: GetSystemLogsFilter = {}) {
   };
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getSystemLogById
+ * MỤC ĐÍCH: Lấy chi tiết 1 bản ghi nhật ký hệ thống theo ID.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getSystemLogById(id: string | number) {
   const query = `
     SELECT 

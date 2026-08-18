@@ -1,8 +1,23 @@
+/**
+ * @file profile.controller.ts
+ * @description Controller quản lý hồ sơ doanh nghiệp Đối tác (Partner Profile):
+ * xem thông tin chi tiết, cập nhật thông tin pháp lý / đại diện, upload ảnh logo thương hiệu lên R2 storage,
+ * và đổi mật khẩu tài khoản đối tác.
+ */
+
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as profileService from '../../services/partner/profile.service.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
+/**
+ * [GET] /api/partner/profile
+ * Lấy toàn bộ thông tin hồ sơ của Đối tác đang đăng nhập.
+ * Bao gồm thông tin đại diện pháp luật, thông tin pháp lý doanh nghiệp, danh sách chi nhánh và trạng thái phê duyệt.
+ * 
+ * @param req AuthRequest chứa user token đã xác thực
+ * @param res Express Response trả về JSON thông tin hồ sơ
+ */
 export const getProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -13,6 +28,17 @@ export const getProfile = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
+/**
+ * [PUT] /api/partner/profile
+ * Cập nhật thông tin hồ sơ đối tác (họ tên đại diện, SĐT, CCCD, quốc tịch, tên doanh nghiệp, số GPKD, chức vụ, logo).
+ * 
+ * @description
+ * - Kiểm tra danh sách trường hợp lệ và độ dài tối đa cho từng trường.
+ * - Kiểm tra định dạng giới tính (`MALE`, `FEMALE`, `OTHER`) và ngày cấp GPKD.
+ * 
+ * @param req AuthRequest chứa dữ liệu cần cập nhật
+ * @param res Express Response trả về hồ sơ đối tác sau khi cập nhật
+ */
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -21,6 +47,7 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       return;
     }
 
+    // Danh sách các trường chuỗi: [tên trường, độ dài tối đa, cho phép rỗng]
     const stringFields: Array<[string, number, boolean]> = [
       ['full_name', 150, false],
       ['phone', 20, false],
@@ -68,6 +95,13 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
   }
 };
 
+/**
+ * [POST] /api/partner/profile/logo
+ * Tải lên ảnh logo thương hiệu của đối tác (lưu trữ trên Cloudflare R2).
+ * 
+ * @param req AuthRequest dạng multipart/form-data chứa file ảnh
+ * @param res Express Response trả về URL ảnh logo sau khi upload thành công
+ */
 export const uploadLogo = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -90,6 +124,13 @@ export const uploadLogo = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
+/**
+ * [POST] /api/partner/profile/change-password
+ * Đổi mật khẩu đăng nhập cho tài khoản Đối tác.
+ * 
+ * @param req AuthRequest chứa { old_password, new_password }
+ * @param res Express Response thông báo đổi mật khẩu thành công
+ */
 export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;

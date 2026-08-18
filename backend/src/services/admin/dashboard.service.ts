@@ -1,3 +1,23 @@
+/**
+ * =========================================================================================
+ * FILE: dashboard.service.ts
+ * VỊ TRÍ: backend/src/services/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Dịch vụ Nghiệp vụ (Business Logic Layer) tổng hợp Dữ liệu Thống kê & Báo cáo Tổng quan (UC-ADM-06, UC-ADM-07).
+ *   - Phục vụ Màn hình Dashboard Tổng quan Quản trị:
+ *       1. TÍNH TOÁN KHOẢNG THỜI GIAN (Date Ranges):
+ *          - Hỗ trợ 'today' (hôm nay vs hôm qua), 'week' (tuần này vs tuần trước), 'month' (tháng này vs tháng trước), 'custom' (tùy chọn).
+ *       2. 5 THẺ CHỈ SỐ KPI CHÍNH (Key Performance Indicators):
+ *          - Tổng doanh thu (Tổng tiền các đơn PAID), Đơn hàng hoàn tất, Voucher đã quy đổi (Redeem Rate),
+ *            Tổng số khách hàng & Khách hàng mới, Đối tác đang hoạt động & Đối tác chờ duyệt.
+ *       3. 4 CHỈ SỐ HIỆU QUẢ VẬN HÀNH (Operational Efficiency Metrics):
+ *          - Tỷ lệ quy đổi voucher (Redeem Rate = USED / ISSUED), Tỷ lệ hoàn tất đơn hàng (COMPLETED / TOTAL),
+ *            Giá trị đơn hàng trung bình (AOV = Total Revenue / Orders), Doanh thu TB trên mỗi đối tác (Rev / Partner).
+ *       4. PHÂN TÍCH HIỆU QUẢ THEO DANH MỤC NGÀNH HÀNG (Category Performance Breakdown):
+ *          - Doanh thu, số lượng voucher đã bán, số lượng voucher đã sử dụng, và tỷ lệ quy đổi của từng danh mục.
+ * =========================================================================================
+ */
+
 import pool from '../../config/db.js';
 
 export interface DashboardParams {
@@ -32,7 +52,7 @@ export interface CategoryPerformanceItem {
   name: string;
   soldCount: number;
   redeemedCount: number;
-  rate: number; // percentage
+  rate: number; // Tỷ lệ % quy đổi
   revenue: number;
 }
 
@@ -50,6 +70,12 @@ function formatNumber(num: number): string {
   return new Intl.NumberFormat('vi-VN').format(num);
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getDateRange
+ * MỤC ĐÍCH: Tính toán mốc thời gian bắt đầu và kết thúc của kỳ hiện tại và kỳ liền kề trước đó.
+ * -----------------------------------------------------------------------------------------
+ */
 function getDateRange(params: DashboardParams): {
   currentStart: Date;
   currentEnd: Date;
@@ -84,7 +110,7 @@ function getDateRange(params: DashboardParams): {
     prevEnd = new Date(currentStart.getTime() - 1);
     prevStart = new Date(prevEnd.getTime() - diffMs);
   } else {
-    // default: 'week' (Monday to Sunday or last 7 days)
+    // Mặc định: 'week' (Thứ 2 đến Chủ nhật)
     const day = now.getDay();
     const diffToMonday = (day === 0 ? -6 : 1) - day;
     currentStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() + diffToMonday, 0, 0, 0, 0);
@@ -101,6 +127,9 @@ function getDateRange(params: DashboardParams): {
   return { currentStart, currentEnd, prevStart, prevEnd, timeframe };
 }
 
+/**
+ * Tính toán tỷ lệ % tăng trưởng (Change Percentage & Trend Direction)
+ */
 function calculateChange(current: number, previous: number): { change: string; trend: 'up' | 'down' | 'neutral' } {
   if (previous === 0) {
     if (current === 0) return { change: '0%', trend: 'neutral' };
@@ -116,6 +145,12 @@ function calculateChange(current: number, previous: number): { change: string; t
   return { change: '0%', trend: 'neutral' };
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getDashboardOverview
+ * MỤC ĐÍCH: Tính toán tổng hợp toàn bộ các chỉ số KPI, Hiệu quả vận hành và Phân tích danh mục cho Dashboard.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getDashboardOverview(params: DashboardParams): Promise<DashboardOverviewResponse> {
   const { currentStart, currentEnd, prevStart, prevEnd, timeframe } = getDateRange(params);
 
@@ -196,7 +231,7 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
     comparisonPeriod = `khoảng trước (${params.startDate} - ${params.endDate})`;
   }
 
-  // 5 Thẻ KPI
+  // 5 Thẻ chỉ số KPI chính
   const stats: KpiStatItem[] = [
     {
       title: 'Tổng doanh thu',
@@ -305,7 +340,7 @@ export async function getDashboardOverview(params: DashboardParams): Promise<Das
     },
   ];
 
-  // 3. Hiệu quả theo danh mục ngành hàng (Category Performance Breakdown)
+  // 3. Phân tích hiệu quả theo danh mục ngành hàng (Category Performance Breakdown)
   const categoryRes = await pool.query(
     `SELECT
        c.category_id,

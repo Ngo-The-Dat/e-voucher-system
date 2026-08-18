@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/employee-pending/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chi tiết Xét duyệt Hồ sơ Nhân viên Đối tác (Admin Review Detail).
+ *   - Thực hiện chức năng:
+ *       1. Hiển thị toàn bộ thông tin cá nhân và định danh của nhân viên (Họ tên, Email, SĐT, CCCD...).
+ *       2. Hiển thị thông tin doanh nghiệp chủ quản và chi nhánh phân công làm việc.
+ *       3. Thực hiện thao tác Phê duyệt hồ sơ (Kích hoạt tài khoản nhân viên).
+ *       4. Thực hiện thao tác Từ chối hồ sơ kèm Modal nhập lý do phản hồi cho doanh nghiệp.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -9,18 +23,27 @@ import { Button } from "@/components/shared/ui/Button";
 import { adminApi, AdminPendingEmployeeDetail } from "@/lib/admin-api";
 
 export default function EmployeePendingDetailPage() {
+  // ─── 1. Hooks điều hướng và lấy tham số URL ────────────────────────────────────────
   const params = useParams();
   const router = useRouter();
   const employeeIdStr = (params?.id as string) || "";
 
+  // ─── 2. State quản lý dữ liệu & Modal ─────────────────────────────────────────────
   const [employee, setEmployee] = useState<AdminPendingEmployeeDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // State quản lý Modal từ chối & Lý do từ chối
   const [rejectModalOpen, setRejectModalOpen] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchEmployeeDetail
+   * MỤC ĐÍCH: Gọi API lấy thông tin chi tiết của nhân viên đối tác theo ID từ URL.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchEmployeeDetail = useCallback(async () => {
     if (!employeeIdStr) return;
     setIsLoading(true);
@@ -40,11 +63,24 @@ export default function EmployeePendingDetailPage() {
     fetchEmployeeDetail();
   }, [fetchEmployeeDetail]);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleApprove
+   * MỤC ĐÍCH: Xử lý khi Admin nhấn nút "Phê duyệt hồ sơ".
+   * 
+   * LUỒNG XỬ LÝ:
+   *   1. Bật cờ `actionLoading = true` để vô hiệu hóa nút, chống click đúp.
+   *   2. Gọi API `adminApi.approveEmployee(employeeIdStr)`.
+   *   3. Cập nhật state cục bộ sang trạng thái `APPROVED` & `ACTIVE`.
+   *   4. Hiển thị thông báo Toast thành công.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleApprove = async () => {
     if (!employeeIdStr) return;
     setActionLoading(true);
     try {
       await adminApi.approveEmployee(employeeIdStr);
+      // Cập nhật State trực tiếp trên giao diện
       setEmployee((prev) =>
         prev
           ? {
@@ -63,6 +99,18 @@ export default function EmployeePendingDetailPage() {
     }
   };
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmReject
+   * MỤC ĐÍCH: Xử lý khi Admin xác nhận từ chối hồ sơ trong Modal kèm lý do.
+   * 
+   * LUỒNG XỬ LÝ:
+   *   1. Kiểm tra lý do từ chối không được để trống.
+   *   2. Gọi API `adminApi.rejectEmployee(employeeIdStr, rejectionReason)`.
+   *   3. Cập nhật state cục bộ sang trạng thái `REJECTED`.
+   *   4. Đóng Modal và hiển thị Toast thông báo.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmReject = async () => {
     if (!employeeIdStr || !rejectionReason.trim()) return;
     setActionLoading(true);
@@ -87,6 +135,9 @@ export default function EmployeePendingDetailPage() {
     }
   };
 
+  /**
+   * Định dạng ngày giờ hiển thị
+   */
   const formatDateDisplay = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     try {
@@ -104,6 +155,9 @@ export default function EmployeePendingDetailPage() {
     }
   };
 
+  /**
+   * Cấu hình màu sắc và badge cho trạng thái duyệt
+   */
   const getStatusDisplay = (approvalStatus?: string) => {
     switch (approvalStatus) {
       case "PENDING":
@@ -124,6 +178,7 @@ export default function EmployeePendingDetailPage() {
     return "Chưa cập nhật";
   };
 
+  // ─── Loading State ─────────────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="p-12 text-center max-w-5xl mx-auto">
@@ -135,6 +190,7 @@ export default function EmployeePendingDetailPage() {
     );
   }
 
+  // ─── Error State ───────────────────────────────────────────────────────────────────
   if (error || !employee) {
     return (
       <div className="max-w-4xl mx-auto p-6">
@@ -160,7 +216,7 @@ export default function EmployeePendingDetailPage() {
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
-      {/* Breadcrumb Header */}
+      {/* ─── PHẦN 1: Breadcrumb & Header Action ───────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
@@ -192,7 +248,7 @@ export default function EmployeePendingDetailPage() {
           </div>
         </div>
 
-        {/* Header Action Buttons */}
+        {/* Các nút bấm thao tác Phê duyệt / Từ chối (chỉ hiện khi đang PENDING) */}
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/partners/employee-pending"
@@ -202,6 +258,7 @@ export default function EmployeePendingDetailPage() {
           </Link>
           {employee.approval_status === "PENDING" && (
             <>
+              {/* Nút Từ chối -> Mở Modal nhập lý do */}
               <Button
                 variant="outline"
                 onClick={() => {
@@ -214,6 +271,8 @@ export default function EmployeePendingDetailPage() {
                 <Icon name="close" className="text-base mr-1" />
                 <span>Từ chối</span>
               </Button>
+
+              {/* Nút Phê duyệt -> Kích hoạt tài khoản */}
               <Button
                 onClick={handleApprove}
                 disabled={actionLoading}
@@ -231,9 +290,9 @@ export default function EmployeePendingDetailPage() {
         </div>
       </div>
 
-      {/* Main Content Cards */}
+      {/* ─── PHẦN 2: Thẻ hiển thị thông tin chi tiết (2 Cards Layout) ─────────────── */}
       <div className="space-y-6">
-        {/* Card 1: Thông tin nhân viên */}
+        {/* CARD 1: Thông tin cá nhân nhân viên */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
@@ -281,7 +340,7 @@ export default function EmployeePendingDetailPage() {
           </div>
         </div>
 
-        {/* Card 2: Thông tin Đơn vị công tác & Chi nhánh */}
+        {/* CARD 2: Thông tin Đơn vị công tác & Chi nhánh */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide flex items-center gap-2">
@@ -362,7 +421,7 @@ export default function EmployeePendingDetailPage() {
         </div>
       </div>
 
-      {/* Reject Modal */}
+      {/* ─── PHẦN 3: Modal Nhập Lý Do Từ Chối Hồ Sơ ───────────────────────────────── */}
       {rejectModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-100 space-y-4">

@@ -1,3 +1,21 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/users/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Chi tiết Người dùng & Phân quyền (UC-ADM-01: Quản lý người dùng).
+ *   - Các tính năng chính:
+ *       1. Xem chi tiết hồ sơ cá nhân: Họ tên, Email, SĐT, CCCD/CMND, Giới tính, Quốc tịch, Doanh nghiệp đối tác.
+ *       2. Quản lý Khóa / Mở khóa tài khoản:
+ *          - Modal nhập lý do khóa bắt buộc (Lưu vào bảng user_locks và ghi System Log).
+ *          - Mở khóa khôi phục trạng thái ACTIVE.
+ *       3. Tab Phân quyền (Permissions):
+ *          - Chuyển đổi vai trò người dùng (CUSTOMER <-> PARTNER <-> PARTNER_EMPLOYEE).
+ *          - Bảo vệ tài khoản ADMIN (không cho phép thay đổi vai trò qua giao diện).
+ *          - Modal xác nhận thay đổi vai trò để tránh thao tác nhầm.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -73,10 +91,12 @@ const mapGender = (gender?: string | null): string => {
 };
 
 export default function UserDetailPage() {
+  // ─── 1. Lấy userId từ URL Params ──────────────────────────────────────────────────
   const params = useParams();
   const rawId = (params?.id as string) || "1";
   const userId = rawId.replace("USR-", "");
 
+  // ─── 2. State Dữ liệu Người dùng & Trạng thái tải ─────────────────────────────────
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [userData, setUserData] = useState<UserDetailState>({
@@ -97,14 +117,22 @@ export default function UserDetailPage() {
     lockReason: null,
   });
 
+  // State Tabs và Phân quyền
   type ActiveTab = "info" | "permissions";
   const [activeTab, setActiveTab] = useState<ActiveTab>("info");
   const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "PARTNER" | "PARTNER_EMPLOYEE">("CUSTOMER");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // State Modal Khóa / Mở khóa
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReasonInput, setLockReasonInput] = useState("");
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchUserDetail
+   * MỤC ĐÍCH: Gọi API `adminApi.getUser` để lấy thông tin chi tiết tài khoản người dùng.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchUserDetail = useCallback(async () => {
     try {
       setLoading(true);
@@ -147,7 +175,7 @@ export default function UserDetailPage() {
         );
       }
     } catch {
-      // Fallback display if mock ID or offline
+      // Dự phòng nếu lỗi kết nối
       setUserData((prev) => ({
         ...prev,
         id: rawId,
@@ -167,6 +195,12 @@ export default function UserDetailPage() {
     fetchUserDetail();
   }, [fetchUserDetail]);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmRoleChange
+   * MỤC ĐÍCH: Gọi API `adminApi.changeUserRole` để cập nhật vai trò mới cho người dùng.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmRoleChange = async () => {
     try {
       setActionLoading(true);
@@ -182,6 +216,12 @@ export default function UserDetailPage() {
     }
   };
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmLockToggle
+   * MỤC ĐÍCH: Thực hiện Khóa (kèm lý do) hoặc Mở khóa tài khoản người dùng.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmLockToggle = async () => {
     try {
       setActionLoading(true);
@@ -228,7 +268,7 @@ export default function UserDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* Top Breadcrumbs */}
+      {/* ─── PHẦN 1: Breadcrumbs & Header Card ───────────────────────────────────── */}
       <div className="flex items-center gap-2 text-slate-500 text-sm font-medium">
         <Link href="/admin/users" className="hover:text-primary transition-colors">
           Quản lý người dùng
@@ -237,7 +277,7 @@ export default function UserDetailPage() {
         <span className="text-slate-900 font-semibold">Chi tiết người dùng</span>
       </div>
 
-      {/* User Header Card */}
+      {/* Header Card với Avatar Initials & Nút hành động */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-blue-100 via-indigo-50 to-blue-50" />
         <div className="relative z-10 flex flex-col md:flex-row gap-6 items-start md:items-end mt-8">
@@ -248,7 +288,7 @@ export default function UserDetailPage() {
             {userData.avatarInitials}
           </div>
 
-          {/* Name & Badges */}
+          {/* Tên & Vai trò */}
           <div className="flex-1 space-y-1.5">
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-slate-900">
@@ -269,7 +309,7 @@ export default function UserDetailPage() {
             <p className="text-sm text-slate-500">{userData.email}</p>
           </div>
 
-          {/* Header Action Buttons */}
+          {/* Nút Khóa / Mở khóa & Quay lại */}
           <div className="flex flex-wrap gap-3 mt-4 md:mt-0 w-full md:w-auto">
             <button
               type="button"
@@ -297,7 +337,7 @@ export default function UserDetailPage() {
         </div>
       </div>
 
-      {/* Tab Navigation Bar */}
+      {/* ─── PHẦN 2: Navigation Tabs (Thông tin cá nhân / Phân quyền) ─────────────── */}
       <div className="border-b border-slate-200">
         <nav className="flex gap-6 -mb-px">
           <button
@@ -324,10 +364,10 @@ export default function UserDetailPage() {
         </nav>
       </div>
 
-      {/* Tab Content: Thông tin cá nhân */}
+      {/* ─── PHẦN 3: Tab Content 1 - Thông tin cá nhân ────────────────────────────── */}
       {activeTab === "info" && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Info Card */}
+          {/* Cột trái (2/3): Chi tiết hồ sơ */}
           <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
               <Icon name="person" className="text-primary" />
@@ -410,7 +450,7 @@ export default function UserDetailPage() {
               )}
             </div>
 
-            {/* Lock Reason Banner */}
+            {/* Banner hiển thị lý do khóa nếu tài khoản đang bị khóa */}
             {userData.status === "Đã khóa" && userData.lockReason && (
               <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl">
                 <div className="flex items-center gap-2 text-rose-800 font-bold text-xs uppercase tracking-wider mb-1">
@@ -424,7 +464,7 @@ export default function UserDetailPage() {
             )}
           </div>
 
-          {/* System Info Card */}
+          {/* Cột phải (1/3): Thông tin hệ thống */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-6">
             <h3 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="settings" className="text-primary" />
@@ -489,7 +529,7 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      {/* Tab Content: Phân quyền */}
+      {/* ─── PHẦN 4: Tab Content 2 - Phân quyền (Permissions) ─────────────────────── */}
       {activeTab === "permissions" && (
         <section className="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
           <div className="p-5 border-b border-slate-100 bg-slate-50/50">
@@ -502,7 +542,7 @@ export default function UserDetailPage() {
           </div>
 
           <div className="p-6 space-y-6">
-            {/* Current Role Display */}
+            {/* Vai trò hiện tại */}
             <div>
               <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                 Vai trò hiện tại
@@ -513,7 +553,7 @@ export default function UserDetailPage() {
               </div>
             </div>
 
-            {/* If user is an ADMIN, show protection info */}
+            {/* Nếu là ADMIN -> Hiển thị cảnh báo bảo vệ */}
             {userData.rawRole === "ADMIN" ? (
               <div className="p-6 bg-slate-50 rounded-2xl border border-slate-200 text-center space-y-2.5">
                 <div className="w-12 h-12 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center mx-auto">
@@ -527,7 +567,7 @@ export default function UserDetailPage() {
                 </p>
               </div>
             ) : (
-              /* Select New Role Form */
+              /* Lựa chọn vai trò mới */
               <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Chọn vai trò mới
@@ -616,7 +656,7 @@ export default function UserDetailPage() {
                   </label>
                 </div>
 
-                {/* Warning Alert Box */}
+                {/* Box cảnh báo khi phân quyền */}
                 <div className="mt-4 flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
                   <Icon name="warning" className="text-amber-600 text-lg shrink-0 mt-0.5" />
                   <div className="space-y-0.5 text-xs">
@@ -627,7 +667,7 @@ export default function UserDetailPage() {
                   </div>
                 </div>
 
-                {/* Action Submit */}
+                {/* Nút Lưu vai trò */}
                 <div className="pt-4 border-t border-slate-100 mt-5 flex justify-end">
                   <Button
                     type="button"
@@ -645,7 +685,7 @@ export default function UserDetailPage() {
         </section>
       )}
 
-      {/* Role Update Confirmation Modal */}
+      {/* ─── PHẦN 5: Modal Xác Nhận Đổi Vai Trò ────────────────────────────────────── */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">
@@ -683,7 +723,7 @@ export default function UserDetailPage() {
         </div>
       )}
 
-      {/* Modal Khóa / Mở khóa Tài khoản */}
+      {/* ─── PHẦN 6: Modal Khóa / Mở khóa Tài khoản ───────────────────────────────── */}
       {lockModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4 animate-in fade-in zoom-in-95">

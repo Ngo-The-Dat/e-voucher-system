@@ -1,3 +1,12 @@
+/**
+ * @file CreateEmployeeModal.tsx
+ * @description Modal form hỗ trợ Đối tác chủ quản tạo mới tài khoản Nhân viên chi nhánh:
+ * - Thu thập thông tin cá nhân (họ tên, email, SĐT, CCCD, giới tính, quốc tịch).
+ * - Chọn chi nhánh làm việc (chỉ hiển thị các chi nhánh `status === 'active'`).
+ * - Nhập mật khẩu khởi tạo (tối thiểu 8 ký tự).
+ * - Gọi API `partnerApi.createEmployee`, xử lý hiển thị lỗi và kích hoạt callback `onSuccess` khi tạo thành công.
+ */
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -5,11 +14,12 @@ import Icon from "@/components/shared/ui/Icon";
 import { Branch } from "@/lib/types/profile";
 import { partnerApi } from "@/lib/partner-api";
 
+/** Props truyền vào modal tạo nhân viên */
 interface CreateEmployeeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  branches: Branch[];
+  isOpen: boolean;           // Trạng thái mở/đóng modal
+  onClose: () => void;       // Hàm đóng modal
+  onSuccess: () => void;     // Callback sau khi tạo thành công (để tải lại danh sách)
+  branches: Branch[];        // Danh sách các chi nhánh của đối tác
 }
 
 export default function CreateEmployeeModal({
@@ -29,8 +39,10 @@ export default function CreateEmployeeModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
 
+  // Chỉ cho phép gán nhân viên vào các chi nhánh đang hoạt động
   const activeBranches = branches.filter((b) => b.status === "active");
 
+  // Reset form về trạng thái ban đầu mỗi khi mở modal
   useEffect(() => {
     if (isOpen) {
       setFullName("");
@@ -47,6 +59,9 @@ export default function CreateEmployeeModal({
 
   if (!isOpen) return null;
 
+  /**
+   * Xử lý submit form tạo nhân viên
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -85,7 +100,7 @@ export default function CreateEmployeeModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-fadeIn">
       <div className="bg-surface border border-outline-variant rounded-2xl w-full max-w-lg shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-        {/* Modal Header */}
+        {/* Header Modal */}
         <div className="px-6 py-4 border-b border-outline-variant/50 flex items-center justify-between bg-surface-bright">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold">
@@ -101,7 +116,7 @@ export default function CreateEmployeeModal({
           </button>
         </div>
 
-        {/* Modal Body */}
+        {/* Thân Form nhập thông tin */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 rounded-xl bg-error/10 border border-error/20 text-error text-xs font-medium flex items-center gap-2">
@@ -222,7 +237,7 @@ export default function CreateEmployeeModal({
             />
           </div>
 
-          {/* Modal Actions */}
+          {/* Nút hành động */}
           <div className="pt-4 border-t border-outline-variant/40 flex items-center justify-end gap-3">
             <button
               type="button"

@@ -1,3 +1,24 @@
+/**
+ * =========================================================================================
+ * FILE: admin-api.ts
+ * VỊ TRÍ: frontend/src/lib/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Lớp Data Access / API Client tập trung dành riêng cho phân hệ Quản trị (Admin Portal).
+ *   - Chịu trách nhiệm:
+ *       1. Quản lý xác thực Bearer Token (Lấy từ localStorage hoặc Dev Token dự phòng).
+ *       2. Định nghĩa hàm trung tâm `adminRequest`: Tự động đính kèm Headers, Authorization và xử lý lỗi đồng nhất (AdminApiError).
+ *       3. Định nghĩa toàn bộ TypeScript Interfaces và các phương thức gọi API cho:
+ *          - Người dùng (Users): getUsers, getUser, lockUser, unlockUser, changeUserRole.
+ *          - Nhật ký hệ thống (Logs): getLogs, getLog.
+ *          - Duyệt đối tác & nhân viên: getPendingPartners, getPendingPartnerDetail, approvePartner, rejectPartner, getPendingEmployees, approveEmployee, rejectEmployee.
+ *          - Quản lý đối tác & chi nhánh: getPartners, getPartnerDetail, lockPartner, unlockPartner, createBranch, updateBranch, deleteBranch.
+ *          - Duyệt & Quản lý Voucher: getPendingVouchers, getPendingVoucherDetail, approveVoucher, rejectVoucher, getManagedVouchers, getManagedVoucherDetail, updateVoucherStatus.
+ *          - Quản lý đơn hàng: getOrders, getOrderDetail, cancelOrder.
+ *          - Dashboard & Báo cáo: getDashboardOverview.
+ *          - Quản lý truyền thông & nội dung: Banners, Popups, Content, Categories.
+ * =========================================================================================
+ */
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class AdminApiError extends Error {
@@ -36,18 +57,39 @@ export interface UsersResponse {
   };
 }
 
-const DEFAULT_DEV_ADMIN_TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwicm9sZSI6IkFETUlOIiwiZW1haWwiOiJhZG1pbjFAdm91Y2hlci52biIsImlhdCI6MTc4NjQyMzcyMCwiZXhwIjoxNzg5MDE1NzIwfQ.XsTBJRntIyXgZJXSxG6c0OrosYN_PrrJsHYi5df9pV8";
+let isAdminRedirecting = false;
 
+const redirectToLogin = () => {
+  if (typeof window === "undefined" || isAdminRedirecting) return;
+
+  const isProtectedAdminRoute = window.location.pathname.startsWith("/admin")
+    && !window.location.pathname.startsWith("/admin/login");
+  if (!isProtectedAdminRoute) return;
+
+  isAdminRedirecting = true;
+  window.location.replace("/admin/login");
+};
+
+/**
+ * Lấy Bearer JWT Token của Admin từ LocalStorage
+ */
 const getStoredAdminToken = (): string | null => {
-  if (typeof window === "undefined") return DEFAULT_DEV_ADMIN_TOKEN;
-  let token = localStorage.getItem("admin_access_token") || localStorage.getItem("token");
-  if (!token || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
-    token = DEFAULT_DEV_ADMIN_TOKEN;
-    localStorage.setItem("admin_access_token", token);
+  if (typeof window === "undefined") return null;
+  const token = localStorage.getItem("admin_access_token");
+  const isJwt = token !== null && token.split('.').length === 3;
+  if (!isJwt) {
+    localStorage.removeItem("admin_access_token");
+    return null;
   }
   return token;
 };
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: adminRequest
+ * MỤC ĐÍCH: Hàm gọi HTTP Request dùng chung cho toàn bộ phân hệ Admin, tự động đính kèm Token và xử lý lỗi.
+ * -----------------------------------------------------------------------------------------
+ */
 async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredAdminToken();
   const response = await fetch(`${API_URL}${path}`, {
@@ -62,7 +104,9 @@ async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T>
   const body = (await response.json().catch(() => ({}))) as { message?: string };
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
-      localStorage.setItem("admin_access_token", DEFAULT_DEV_ADMIN_TOKEN);
+      localStorage.removeItem("admin_access_token");
+      redirectToLogin();
+      return new Promise(() => {}) as Promise<T>;
     }
     throw new AdminApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
   }

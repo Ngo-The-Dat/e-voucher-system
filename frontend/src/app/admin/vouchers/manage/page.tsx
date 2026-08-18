@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/vouchers/manage/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Kho Voucher Toàn Sàn (E-Voucher Inventory Management).
+ *   - Các tính năng chính:
+ *       1. Hiển thị danh sách toàn bộ chương trình voucher (Đang bán - PUBLISHED, Tạm ngưng - HIDDEN, Ngừng bán - ENDED).
+ *       2. Bộ lọc kết hợp: Tìm kiếm Debounce 400ms và Dropdown chọn trạng thái hoạt động.
+ *       3. Tự động tính toán & hiển thị tỷ lệ Tồn kho / Tổng phát hành và Số lượng đã bán (sold_count).
+ *       4. Tự động cảnh báo thông minh nếu voucher hết hàng hoặc hết hạn mở bán để đề xuất Admin ngừng bán.
+ *       5. Phân trang dữ liệu và điều hướng đến màn hình chi tiết quản trị voucher `manage/[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -16,6 +31,7 @@ import {
 type StatusTab = "ALL" | "PUBLISHED" | "HIDDEN" | "ENDED";
 
 export default function ManageVouchersPage() {
+  // ─── 1. State Dữ liệu Voucher & Thống kê ──────────────────────────────────────────
   const [vouchers, setVouchers] = useState<AdminManagedVoucherItem[]>([]);
   const [stats, setStats] = useState({
     all: 0,
@@ -27,7 +43,7 @@ export default function ManageVouchersPage() {
   const [error, setError] = useState<string | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
 
-  // Search & Filter State
+  // ─── 2. State Bộ lọc & Phân trang ────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [statusTab, setStatusTab] = useState<StatusTab>("ALL");
@@ -35,7 +51,9 @@ export default function ManageVouchersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
 
-  // Search debounce
+  /**
+   * Debounce 400ms khi gõ tìm kiếm để giảm tải request về backend
+   */
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
@@ -44,7 +62,12 @@ export default function ManageVouchersPage() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Load vouchers from API
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: loadManagedVouchers
+   * MỤC ĐÍCH: Gọi API `adminApi.getManagedVouchers` để lấy danh sách voucher theo từ khóa & trạng thái.
+   * ---------------------------------------------------------------------------------------
+   */
   const loadManagedVouchers = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -70,13 +93,15 @@ export default function ManageVouchersPage() {
     }
   }, [debouncedSearch, statusTab, currentPage]);
 
-  // Load pending count for NavTabs badge
+  /**
+   * Tải số lượng voucher chờ duyệt để hiển thị badge đếm trên tab điều hướng
+   */
   const loadPendingCount = useCallback(async () => {
     try {
       const res = await adminApi.getPendingVouchers({ limit: 1 });
       setPendingCount(res.pagination.total);
     } catch {
-      // silent fallback
+      // Bỏ qua lỗi nhẹ ở badge
     }
   }, []);
 
@@ -110,67 +135,49 @@ export default function ManageVouchersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Navigation Bar */}
+      {/* ─── PHẦN 1: Top Navigation Tabs ─────────────────────────────────────────── */}
       <VoucherNavTabs pendingCount={pendingCount} />
 
-      {/* Filter / Search Bar & Status Tabs */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col gap-4">
-        {/* Status Filter Tabs */}
-        <div className="flex items-center gap-2 border-b border-slate-100 pb-3 overflow-x-auto">
-          {[
-            { key: "ALL", label: "Tất cả", count: stats.all },
-            { key: "PUBLISHED", label: "Đang bán", count: stats.published },
-            { key: "HIDDEN", label: "Tạm ngưng", count: stats.hidden },
-            { key: "ENDED", label: "Ngừng bán", count: stats.ended },
-          ].map((tab) => {
-            const isActive = statusTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => {
-                  setStatusTab(tab.key as StatusTab);
-                  setCurrentPage(1);
-                }}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 flex items-center gap-2 cursor-pointer ${
-                  isActive
-                    ? "bg-slate-900 text-white shadow-xs"
-                    : "bg-slate-100/70 text-slate-600 hover:bg-slate-200/70"
-                }`}
-              >
-                <span>{tab.label}</span>
-                <span
-                  className={`px-1.5 py-0.2 rounded-full text-[11px] ${
-                    isActive ? "bg-slate-800 text-white" : "bg-slate-200 text-slate-700"
-                  }`}
-                >
-                  {tab.count}
-                </span>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Search input */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div className="relative flex-1 max-w-md w-full">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+      {/* ─── PHẦN 2: Thanh Tìm Kiếm & Dropdown Trạng Thái ───────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="flex flex-1 flex-col sm:flex-row items-center gap-3 w-full">
+          {/* Ô Tìm kiếm voucher */}
+          <div className="relative flex-1 w-full">
+            <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
             <Input
               type="text"
               placeholder="Tìm theo tên voucher, đối tác, mã số thuế hoặc mã chương trình..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
+              className="w-full h-[40px] pl-10 pr-4 border-slate-200 rounded-xl"
             />
           </div>
 
-          <div className="text-xs text-slate-500 font-medium self-end sm:self-center">
-            Tổng cộng: <span className="font-bold text-slate-900">{totalItems}</span> chương trình voucher
+          {/* Dropdown Lọc trạng thái (Tất cả, Đang bán, Tạm ngưng, Ngừng bán) */}
+          <div className="relative w-full sm:w-auto min-w-[200px] shrink-0">
+            <select
+              value={statusTab}
+              onChange={(e) => {
+                setStatusTab(e.target.value as StatusTab);
+                setCurrentPage(1);
+              }}
+              className="w-full h-[40px] pl-3.5 pr-9 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 appearance-none focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer transition shadow-2xs"
+            >
+              <option value="ALL">Tất cả trạng thái</option>
+              <option value="PUBLISHED">Đang bán</option>
+              <option value="HIDDEN">Tạm ngưng</option>
+              <option value="ENDED">Ngừng bán</option>
+            </select>
+            <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
           </div>
+        </div>
+
+        <div className="text-xs text-slate-500 font-medium whitespace-nowrap self-end sm:self-center">
+          Tổng cộng: <span className="font-bold text-slate-900">{totalItems}</span> voucher
         </div>
       </div>
 
-      {/* Bảng Danh Sách VOUCHER ĐÃ QUẢN LÝ */}
+      {/* ─── PHẦN 3: Bảng Danh Sách VOUCHER ĐÃ QUẢN LÝ ───────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -187,6 +194,7 @@ export default function ManageVouchersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-base">
+              {/* Skeleton loading */}
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -221,6 +229,7 @@ export default function ManageVouchersPage() {
                   </tr>
                 ))
               ) : vouchers.length === 0 ? (
+                /* Empty State */
                 <tr>
                   <td colSpan={8} className="py-12 text-center text-slate-400 font-medium">
                     <Icon name="inventory_2" className="text-4xl block mb-2 text-slate-300" />
@@ -230,6 +239,7 @@ export default function ManageVouchersPage() {
                   </td>
                 </tr>
               ) : (
+                /* Dữ liệu các voucher */
                 vouchers.map((item) => {
                   const originalPriceNum = Number(item.original_price) || 0;
                   const salePriceNum = Number(item.sale_price) || 0;
@@ -240,9 +250,12 @@ export default function ManageVouchersPage() {
 
                   return (
                     <tr key={item.program_id} className="hover:bg-slate-50/60 transition">
+                      {/* Mã chương trình */}
                       <td className="py-4 px-5 font-mono font-bold text-slate-800 text-xs">
                         VCH-{item.program_id}
                       </td>
+
+                      {/* Tên chương trình & Cảnh báo thông minh nếu hết hạn/hết hàng */}
                       <td className="py-4 px-5 max-w-xs">
                         <Link
                           href={`/admin/vouchers/manage/${item.program_id}`}
@@ -261,6 +274,8 @@ export default function ManageVouchersPage() {
                           </div>
                         )}
                       </td>
+
+                      {/* Đối tác & Chi nhánh */}
                       <td className="py-4 px-5">
                         <div className="font-bold text-slate-800 text-xs">{item.partner_name}</div>
                         {item.branch_name && (
@@ -269,12 +284,16 @@ export default function ManageVouchersPage() {
                           </div>
                         )}
                       </td>
+
+                      {/* Giá bán / Giá gốc */}
                       <td className="py-4 px-5">
                         <div className="font-bold text-emerald-700">{formatCurrency(salePriceNum)}</div>
                         <div className="text-xs text-slate-400 line-through">
                           {formatCurrency(originalPriceNum)}
                         </div>
                       </td>
+
+                      {/* Tồn kho / Số lượng phát hành */}
                       <td className="py-4 px-5">
                         <span
                           className={`font-bold text-xs ${
@@ -291,12 +310,16 @@ export default function ManageVouchersPage() {
                           </span>
                         )}
                       </td>
+
+                      {/* Thời hạn mở bán */}
                       <td className="py-4 px-5 text-xs text-slate-700">
                         <div className={`font-semibold ${isExpired ? "text-rose-600" : ""}`}>
                           {formatDate(item.sale_end_at)}
                         </div>
                         <div className="text-[11px] text-slate-400">Từ {formatDate(item.sale_start_at)}</div>
                       </td>
+
+                      {/* Badge trạng thái (Đang bán, Tạm ngưng, Ngừng bán) */}
                       <td className="py-4 px-5">
                         <StatusBadge
                           status={
@@ -315,6 +338,8 @@ export default function ManageVouchersPage() {
                           }
                         />
                       </td>
+
+                      {/* Thao tác xem chi tiết */}
                       <td className="py-4 px-5 text-right whitespace-nowrap">
                         <Link
                           href={`/admin/vouchers/manage/${item.program_id}`}
@@ -332,7 +357,7 @@ export default function ManageVouchersPage() {
           </table>
         </div>
 
-        {/* Footer & Phân trang */}
+        {/* ─── PHẦN 4: Footer & Phân trang ────────────────────────────────────────── */}
         {!isLoading && totalItems > 0 && (
           <Pagination
             currentPage={currentPage}

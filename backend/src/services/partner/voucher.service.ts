@@ -1,30 +1,44 @@
+/**
+ * @file voucher.service.ts
+ * @description Service xử lý nghiệp vụ quản lý các chương trình / chiến dịch Voucher của Đối tác:
+ * - Tạo chiến dịch voucher kèm liên kết chi nhánh áp dụng (`voucher_program_branches`).
+ * - Kiểm tra tính hợp lệ về logic giá (sale_price < original_price), số lượng phát hành, khoảng thời gian bán & sử dụng.
+ * - Quản lý trạng thái vòng đời voucher: DRAFT -> PENDING_APPROVAL -> PUBLISHED / REJECTED / HIDDEN.
+ * - Gửi yêu cầu phê duyệt chương trình voucher lên Admin.
+ * - Chỉnh sửa thông tin voucher khi ở trạng thái DRAFT.
+ */
+
 import pool from '../../config/db.js';
 import { getVoucherImages } from './voucher-image.service.js';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
 
+/** Dữ liệu đầu vào khi tạo mới chương trình voucher */
 interface CreateVoucherInput {
-  program_name: string;
-  category_id: number;
-  original_price: number;
-  sale_price: number;
-  issue_quantity: number;
-  sale_start_at: string;
-  sale_end_at: string;
-  use_start_at: string;
-  use_end_at: string;
-  branch_ids: number[];
+  program_name: string;      // Tên chương trình voucher
+  category_id: number;       // ID danh mục ngành hàng
+  original_price: number;    // Giá gốc (VNĐ)
+  sale_price: number;        // Giá bán khuyến mãi (VNĐ)
+  issue_quantity: number;    // Số lượng phát hành tối đa
+  sale_start_at: string;     // Thời điểm bắt đầu mở bán
+  sale_end_at: string;       // Thời điểm kết thúc bán
+  use_start_at: string;      // Thời điểm bắt đầu cho phép sử dụng/đổi voucher
+  use_end_at: string;        // Thời điểm hết hạn sử dụng voucher
+  branch_ids: number[];      // Danh sách ID các chi nhánh áp dụng
 }
 
+/** Dữ liệu cập nhật chương trình voucher */
 interface UpdateVoucherInput extends Partial<CreateVoucherInput> {}
 
+/** Tham số tìm kiếm và phân trang danh sách voucher */
 interface GetVouchersQuery {
   status?: string;   // 'draft' | 'pending' | 'approved' | 'rejected'
-  search?: string;
-  page?: number;
-  limit?: number;
+  search?: string;   // Từ khóa tìm theo tên voucher hoặc tên danh mục
+  page?: number;     // Trang hiện tại (1-indexed)
+  limit?: number;    // Số lượng bản ghi mỗi trang
 }
 
+/** Kiểu dữ liệu kiểm tra ràng buộc số và ngày tháng của voucher */
 type VoucherValues = {
   original_price: number;
   sale_price: number;
@@ -37,46 +51,72 @@ type VoucherValues = {
 
 // ─── Status Mapping ───────────────────────────────────────────────────────────
 //
+// Bảng quy đổi trạng thái hiển thị cho Frontend ↔ Cơ sở dữ liệu:
 // Frontend        ↔  DB display_status        / DB approval_status
-// "draft"         ↔  DRAFT                    / (không có approval record)
+// "draft"         ↔  DRAFT                    / (chưa gửi duyệt hoặc không có approval record)
 // "pending"       ↔  PENDING_APPROVAL         / PENDING
 // "approved"      ↔  PUBLISHED                / APPROVED
-// "rejected"      ↔  DRAFT (quay về)          / REJECTED
+// "rejected"      ↔  DRAFT (bị từ chối)       / REJECTED
 //
-// Partner chỉ thấy 4 trạng thái trên. HIDDEN và ENDED do Admin quản lý.
+// Partner chỉ nhìn thấy 4 trạng thái trên. HIDDEN và ENDED do Admin hoặc đối tác quản lý bật/tắt hiển thị.
 
 const FRONTEND_STATUS_TO_DB: Record<string, string[]> = {
   draft:    ['DRAFT'],
   pending:  ['PENDING_APPROVAL'],
   approved: ['PUBLISHED'],
-  rejected: ['DRAFT'],  // DRAFT nhưng có approval record REJECTED
+  rejected: ['DRAFT'],  // DRAFT nhưng có approval record là REJECTED
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helper Functions ─────────────────────────────────────────────────────────
 
+/**
+ * Kiểm tra tính hợp lệ của các giá trị số và các mốc thời gian của voucher.
+ * 
+ * @param input Các thông số giá, số lượng và các mốc thời gian
+ * @throws {Object} Lỗi HTTP 400 nếu vi phạm logic nghiệp vụ
+ */
 const validateVoucherValues = (input: VoucherValues) => {
-  if (!Number.isFinite(input.original_price) || input.original_price < 0 ||
-      !Number.isFinite(input.sale_price) || input.sale_price < 0) {
-    throw { status: 400, message: 'Giá voucher phải là số không âm.' };
+  if (!Number.isFinite(input.original_price) || input.original_price <= 0) {
+    throw { status: 400, message: 'Giá gốc voucher phải là số lớn hơn 0.' };
   }
-  if (input.sale_price > input.original_price) {
-    throw { status: 400, message: 'Giá bán không thể lớn hơn giá gốc.' };
+  if (!Number.isFinite(input.sale_price) || input.sale_price < 0) {
+    throw { status: 400, message: 'Giá bán voucher không hợp lệ (không thể âm).' };
+  }
+  if (input.sale_price >= input.original_price) {
+    throw { status: 400, message: 'Giá bán phải nhỏ hơn giá gốc (Voucher phải có mức giảm giá > 0).' };
   }
   if (!Number.isSafeInteger(input.issue_quantity) || input.issue_quantity <= 0) {
     throw { status: 400, message: 'Số lượng phát hành phải là số nguyên dương.' };
   }
 
-  const dates = [input.sale_start_at, input.sale_end_at, input.use_start_at, input.use_end_at]
-    .map((value) => new Date(value));
-  if (dates.some((date) => Number.isNaN(date.getTime()))) {
+  const saleStart = new Date(input.sale_start_at);
+  const saleEnd = new Date(input.sale_end_at);
+  const useStart = new Date(input.use_start_at);
+  const useEnd = new Date(input.use_end_at);
+
+  if ([saleStart, saleEnd, useStart, useEnd].some((date) => Number.isNaN(date.getTime()))) {
     throw { status: 400, message: 'Ngày bắt đầu hoặc kết thúc không hợp lệ.' };
   }
-  if (dates[1] <= dates[0] || dates[3] <= dates[2]) {
-    throw { status: 400, message: 'Ngày kết thúc phải sau ngày bắt đầu.' };
+  if (saleEnd <= saleStart) {
+    throw { status: 400, message: 'Thời gian kết thúc bán phải sau ngày bắt đầu bán.' };
+  }
+  if (useStart < saleStart) {
+    throw { status: 400, message: 'Thời gian bắt đầu sử dụng không thể trước ngày bắt đầu bán.' };
+  }
+  if (useEnd <= useStart) {
+    throw { status: 400, message: 'Thời gian kết thúc sử dụng phải sau ngày bắt đầu sử dụng.' };
+  }
+  if (useEnd < saleEnd) {
+    throw { status: 400, message: 'Hạn chót sử dụng voucher phải sau hoặc bằng ngày kết thúc bán.' };
   }
 };
 
-/** Kiểm tra voucher program thuộc về partner */
+/**
+ * Kiểm tra xem chương trình voucher có tồn tại và thuộc về đối tác đang đăng nhập hay không.
+ * 
+ * @param programId ID chương trình voucher
+ * @param partnerId User ID của đối tác
+ */
 const assertVoucherOwnership = async (programId: number, partnerId: number) => {
   const result = await pool.query(
     'SELECT program_id FROM voucher_programs WHERE program_id = $1 AND partner_id = $2',
@@ -87,7 +127,12 @@ const assertVoucherOwnership = async (programId: number, partnerId: number) => {
   }
 };
 
-/** Kiểm tra các branch_ids thuộc về partner */
+/**
+ * Kiểm tra danh sách chi nhánh truyền vào có hợp lệ và thuộc sở hữu của đối tác hay không.
+ * 
+ * @param branchIds Mảng ID các chi nhánh
+ * @param partnerId User ID của đối tác
+ */
 const assertBranchesOwnership = async (branchIds: number[], partnerId: number) => {
   const uniqueBranchIds = [...new Set(branchIds)];
   if (uniqueBranchIds.length !== branchIds.length ||
@@ -104,6 +149,11 @@ const assertBranchesOwnership = async (branchIds: number[], partnerId: number) =
   }
 };
 
+/**
+ * Kiểm tra danh mục ngành hàng có đang ở trạng thái hoạt động ACTIVE hay không.
+ * 
+ * @param categoryId ID danh mục
+ */
 const assertActiveCategory = async (categoryId: number) => {
   const result = await pool.query(
     `SELECT category_id FROM categories
@@ -115,7 +165,12 @@ const assertActiveCategory = async (categoryId: number) => {
   }
 };
 
-// Lấy approval status mới nhất của voucher
+/**
+ * Lấy thông tin bản ghi phê duyệt gần nhất của chương trình voucher từ Admin.
+ * 
+ * @param programId ID chương trình voucher
+ * @returns Bản ghi phê duyệt gồm approval_status, admin_feedback, submitted_at, reviewed_at
+ */
 const getLatestApproval = async (programId: number) => {
   const result = await pool.query(
     `SELECT approval_status, admin_feedback, submitted_at, reviewed_at
@@ -128,7 +183,13 @@ const getLatestApproval = async (programId: number) => {
   return result.rows[0] || null;
 };
 
-// Map DB trạng thái sang frontend status
+/**
+ * Ánh xạ trạng thái từ database sang trạng thái thân thiện hiển thị trên giao diện người dùng.
+ * 
+ * @param display_status Trạng thái hiển thị trong bảng voucher_programs (DRAFT, PENDING_APPROVAL, PUBLISHED, HIDDEN)
+ * @param approval_status Trạng thái duyệt trong voucher_approval_requests (PENDING, APPROVED, REJECTED)
+ * @returns 'draft' | 'pending' | 'approved' | 'rejected'
+ */
 const mapToFrontendStatus = (
   display_status: string,
   approval_status: string | null
@@ -139,13 +200,28 @@ const mapToFrontendStatus = (
     if (approval_status === 'REJECTED') return 'rejected';
     return 'draft';
   }
-  // HIDDEN, ENDED không do partner manage nhưng vẫn map hiển thị
   if (display_status === 'HIDDEN') return 'approved';
   return 'draft';
 };
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service Methods ──────────────────────────────────────────────────────────
 
+/**
+ * Tạo mới một chương trình voucher (với trạng thái ban đầu là DRAFT).
+ * 
+ * @description
+ * Quy trình thực hiện:
+ * 1. Kiểm tra quyền sở hữu các chi nhánh và trạng thái danh mục.
+ * 2. Validate giá bán < giá gốc, số lượng > 0, các mốc thời gian hợp lý.
+ * 3. Mở Transaction:
+ *    - Tạo bản ghi trong `voucher_programs`.
+ *    - Gán các chi nhánh áp dụng vào bảng liên kết `voucher_program_branches`.
+ * 4. Commit transaction và trả về bản ghi voucher vừa tạo.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param input Thông tin tạo chương trình voucher
+ * @returns Bản ghi voucher vừa tạo
+ */
 export const createVoucherProgram = async (
   partnerId: number,
   input: CreateVoucherInput
@@ -181,7 +257,7 @@ export const createVoucherProgram = async (
     );
     const program = programResult.rows[0];
 
-    // Gắn các chi nhánh
+    // Gắn các chi nhánh áp dụng
     for (const branchId of branch_ids) {
       await client.query(
         'INSERT INTO voucher_program_branches (program_id, branch_id) VALUES ($1, $2)',
@@ -199,6 +275,13 @@ export const createVoucherProgram = async (
   }
 };
 
+/**
+ * Lấy danh sách các chương trình voucher của đối tác theo bộ lọc và phân trang.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param query Bộ lọc status, search, page, limit
+ * @returns Danh sách voucher và thông tin phân trang
+ */
 export const getVoucherPrograms = async (
   partnerId: number,
   query: GetVouchersQuery
@@ -210,14 +293,14 @@ export const getVoucherPrograms = async (
   const params: unknown[] = [partnerId];
   let paramIdx = 2;
 
-  // Filter theo status
+  // Lọc theo trạng thái
   if (status && FRONTEND_STATUS_TO_DB[status]) {
     const dbStatuses = FRONTEND_STATUS_TO_DB[status];
     whereClause += ` AND vp.display_status = ANY($${paramIdx}::text[])`;
     params.push(dbStatuses);
     paramIdx++;
 
-    // Với "rejected", thêm điều kiện approval_status = 'REJECTED'
+    // Với "rejected", bắt buộc phải có bản ghi approval_status = 'REJECTED'
     if (status === 'rejected') {
       whereClause += ` AND (
         SELECT approval_status FROM voucher_approval_requests var2
@@ -225,7 +308,7 @@ export const getVoucherPrograms = async (
         ORDER BY submitted_at DESC LIMIT 1
       ) = 'REJECTED'`;
     }
-    // Với "draft", loại bỏ những cái có approval REJECTED
+    // Với "draft", loại bỏ những chương trình đã bị từ chối
     if (status === 'draft') {
       whereClause += ` AND NOT EXISTS (
         SELECT 1 FROM voucher_approval_requests var3
@@ -233,7 +316,8 @@ export const getVoucherPrograms = async (
       )`;
     }
   }
-  // Filter search
+
+  // Lọc theo từ khóa tìm kiếm
   if (search) {
     whereClause += ` AND (vp.program_name ILIKE $${paramIdx} OR c.category_name ILIKE $${paramIdx})`;
     params.push(`%${search}%`);
@@ -293,6 +377,9 @@ export const getVoucherPrograms = async (
   };
 };
 
+/**
+ * Lấy toàn bộ danh mục ngành hàng đang hoạt động.
+ */
 export const getActiveCategories = async () => {
   const result = await pool.query(
     `SELECT category_id, category_name, description
@@ -301,6 +388,13 @@ export const getActiveCategories = async () => {
   return result.rows;
 };
 
+/**
+ * Lấy thông tin chi tiết một chương trình voucher (kèm danh sách chi nhánh và bộ sưu tập ảnh).
+ * 
+ * @param programId ID chương trình
+ * @param partnerId User ID của đối tác
+ * @returns Chi tiết voucher kèm trạng thái duyệt, phản hồi từ Admin và ảnh
+ */
 export const getVoucherProgramById = async (programId: number, partnerId: number) => {
   await assertVoucherOwnership(programId, partnerId);
 
@@ -338,6 +432,14 @@ export const getVoucherProgramById = async (programId: number, partnerId: number
   };
 };
 
+/**
+ * Chỉnh sửa chương trình voucher (chỉ cho phép khi voucher đang ở trạng thái DRAFT).
+ * 
+ * @param programId ID chương trình cần sửa
+ * @param partnerId User ID của đối tác
+ * @param input Các thông tin cần cập nhật
+ * @returns Chương trình voucher sau khi cập nhật
+ */
 export const updateVoucherProgram = async (
   programId: number,
   partnerId: number,
@@ -359,6 +461,7 @@ export const updateVoucherProgram = async (
   try {
     await client.query('BEGIN');
 
+    // Khóa dòng FOR UPDATE để kiểm tra trạng thái an toàn
     const currentResult = await client.query(
       `SELECT display_status, original_price, sale_price, issue_quantity,
               sale_start_at, sale_end_at, use_start_at, use_end_at
@@ -410,7 +513,7 @@ export const updateVoucherProgram = async (
       ]
     );
 
-    // Nếu có cập nhật branch_ids → sync lại
+    // Nếu có cập nhật lại danh sách chi nhánh áp dụng: xóa cũ và thêm mới
     if (input.branch_ids !== undefined) {
       await assertBranchesOwnership(input.branch_ids, partnerId);
       await client.query(
@@ -435,6 +538,13 @@ export const updateVoucherProgram = async (
   }
 };
 
+/**
+ * Gửi chương trình voucher lên Admin để xin duyệt phát hành.
+ * Chuyển trạng thái `display_status` từ DRAFT sang PENDING_APPROVAL và tạo bản ghi trong `voucher_approval_requests`.
+ * 
+ * @param programId ID chương trình
+ * @param partnerId User ID của đối tác
+ */
 export const submitForApproval = async (programId: number, partnerId: number) => {
   await assertVoucherOwnership(programId, partnerId);
 
@@ -442,7 +552,7 @@ export const submitForApproval = async (programId: number, partnerId: number) =>
   try {
     await client.query('BEGIN');
 
-    // Atomic transition prevents duplicate approval requests under concurrency.
+    // Cập nhật nguyên tử chuyển trạng thái DRAFT -> PENDING_APPROVAL
     const updateResult = await client.query(
       `UPDATE voucher_programs
        SET display_status = 'PENDING_APPROVAL'
@@ -454,7 +564,7 @@ export const submitForApproval = async (programId: number, partnerId: number) =>
       throw { status: 400, message: 'Chỉ có thể gửi duyệt khi chương trình ở trạng thái DRAFT.' };
     }
 
-    // Tạo yêu cầu duyệt mới
+    // Tạo yêu cầu phê duyệt mới ở trạng thái PENDING
     await client.query(
       `INSERT INTO voucher_approval_requests (program_id, approval_status)
        VALUES ($1, 'PENDING')`,
@@ -470,6 +580,12 @@ export const submitForApproval = async (programId: number, partnerId: number) =>
   }
 };
 
+/**
+ * Lấy lịch sử và kết quả phê duyệt gần nhất của voucher từ Admin.
+ * 
+ * @param programId ID chương trình
+ * @param partnerId User ID của đối tác
+ */
 export const getApprovalStatus = async (programId: number, partnerId: number) => {
   await assertVoucherOwnership(programId, partnerId);
 
@@ -489,6 +605,14 @@ export const getApprovalStatus = async (programId: number, partnerId: number) =>
   return result.rows[0];
 };
 
+/**
+ * Cập nhật trạng thái hiển thị (Bật / Tắt bán): PUBLISHED ↔ HIDDEN.
+ * Chỉ áp dụng cho các voucher đã được Admin duyệt thành công.
+ * 
+ * @param programId ID chương trình
+ * @param partnerId User ID của đối tác
+ * @param display_status 'PUBLISHED' hoặc 'HIDDEN'
+ */
 export const updateVisibility = async (
   programId: number,
   partnerId: number,
@@ -496,7 +620,7 @@ export const updateVisibility = async (
 ) => {
   await assertVoucherOwnership(programId, partnerId);
 
-  // Chỉ cho phép toggle PUBLISHED ↔ HIDDEN
+  // Chỉ cho phép chuyển đổi giữa PUBLISHED và HIDDEN
   const statusCheck = await pool.query(
     'SELECT display_status FROM voucher_programs WHERE program_id = $1',
     [programId]

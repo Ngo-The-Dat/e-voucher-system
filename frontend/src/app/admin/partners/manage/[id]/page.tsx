@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/manage/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Chi tiết Doanh nghiệp Đối tác (UC-ADM-02: Quản lý đối tác).
+ *   - Các tính năng chính:
+ *       1. Xem toàn diện hồ sơ đối tác (Thông tin pháp lý, Người đại diện, Thống kê số lượng).
+ *       2. Quản lý Khóa / Mở khóa tài khoản (LOCK / UNLOCK) kèm lưu lý do vào CSDL.
+ *       3. Quản lý chi nhánh đối tác (Branch Management CRUD): Thêm mới, Sửa, Xóa chi nhánh.
+ *       4. Xem danh sách các chương trình Voucher do đối tác này phát hành.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -11,19 +25,22 @@ import FormField from "@/components/shared/ui/FormField";
 import { adminApi, AdminPartnerDetail, AdminBranchItem } from "@/lib/admin-api";
 
 export default function ManagePartnerDetailPage() {
+  // ─── 1. Lấy partnerId từ URL Route ─────────────────────────────────────────────────
   const params = useParams();
   const partnerIdStr = (params?.id as string) || "";
 
+  // ─── 2. State dữ liệu đối tác & Chi nhánh ──────────────────────────────────────────
   const [partner, setPartner] = useState<AdminPartnerDetail | null>(null);
   const [branches, setBranches] = useState<AdminBranchItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // ─── 3. State Modal Khóa / Mở khóa tài khoản ───────────────────────────────────────
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReason, setLockReason] = useState("");
 
-  // Branch Modal States
+  // ─── 4. State Modal Quản lý Chi nhánh (Thêm / Sửa / Xóa) ───────────────────────────
   const [branchModalOpen, setBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<AdminBranchItem | null>(null);
   const [branchForm, setBranchForm] = useState<{
@@ -41,6 +58,12 @@ export default function ManagePartnerDetailPage() {
   });
   const [deleteBranchId, setDeleteBranchId] = useState<number | null>(null);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchPartnerDetail
+   * MỤC ĐÍCH: Gọi API `adminApi.getManagedPartner` lấy toàn bộ thông tin đối tác, chi nhánh, voucher.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchPartnerDetail = useCallback(async () => {
     if (!partnerIdStr) return;
     setIsLoading(true);
@@ -61,6 +84,12 @@ export default function ManagePartnerDetailPage() {
     fetchPartnerDetail();
   }, [fetchPartnerDetail]);
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleConfirmLockToggle
+   * MỤC ĐÍCH: Thực hiện Khóa (nếu đang ACTIVE) hoặc Mở khóa (nếu đang LOCKED) tài khoản đối tác.
+   * ---------------------------------------------------------------------------------------
+   */
   const handleConfirmLockToggle = async () => {
     if (!partner || !partnerIdStr) return;
     setActionLoading(true);
@@ -87,7 +116,9 @@ export default function ManagePartnerDetailPage() {
     }
   };
 
-  // Branch Modal Handlers
+  /**
+   * Mở modal thêm chi nhánh mới
+   */
   const handleOpenAddBranch = () => {
     setEditingBranch(null);
     setBranchForm({
@@ -100,6 +131,9 @@ export default function ManagePartnerDetailPage() {
     setBranchModalOpen(true);
   };
 
+  /**
+   * Mở modal sửa thông tin chi nhánh
+   */
   const handleOpenEditBranch = (branch: AdminBranchItem) => {
     setEditingBranch(branch);
     setBranchForm({
@@ -112,6 +146,9 @@ export default function ManagePartnerDetailPage() {
     setBranchModalOpen(true);
   };
 
+  /**
+   * Lưu thông tin chi nhánh (Tạo mới hoặc Cập nhật)
+   */
   const handleSaveBranch = async () => {
     if (!branchForm.branch_name.trim() || !branchForm.address.trim()) return;
     setActionLoading(true);
@@ -132,6 +169,9 @@ export default function ManagePartnerDetailPage() {
     }
   };
 
+  /**
+   * Xác nhận xóa chi nhánh
+   */
   const handleConfirmDeleteBranch = async () => {
     if (!deleteBranchId) return;
     setActionLoading(true);
@@ -187,7 +227,7 @@ export default function ManagePartnerDetailPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header & Breadcrumb */}
+      {/* ─── PHẦN 1: Header & Nút Khóa / Mở Khóa Tài Khoản ──────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
@@ -222,7 +262,7 @@ export default function ManagePartnerDetailPage() {
           </div>
         </div>
 
-        {/* Lock / Unlock Admin Button */}
+        {/* Nút Khóa / Mở khóa */}
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/partners/manage"
@@ -243,7 +283,7 @@ export default function ManagePartnerDetailPage() {
         </div>
       </div>
 
-      {/* Lock Reason Warning Banner */}
+      {/* Banner cảnh báo khi tài khoản bị khóa */}
       {isLocked && partner.lock_reason && (
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 space-y-1">
           <div className="font-bold flex items-center gap-1.5 text-rose-700">
@@ -254,11 +294,11 @@ export default function ManagePartnerDetailPage() {
         </div>
       )}
 
-      {/* Grid Content */}
+      {/* ─── PHẦN 2: Nội dung chính ──────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (2 Cols): Business Info & Branch Management */}
+        {/* CỘT TRÁI (2/3): Thông tin doanh nghiệp, Quản lý Chi nhánh, Chương trình Voucher */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Business Info */}
+          {/* Card Thông tin chung doanh nghiệp */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
               <Icon name="domain" className="text-blue-600" />
@@ -319,7 +359,7 @@ export default function ManagePartnerDetailPage() {
             </div>
           </div>
 
-          {/* Section: Danh sách chi nhánh */}
+          {/* Card Quản lý Chi nhánh (CRUD) */}
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
@@ -341,7 +381,7 @@ export default function ManagePartnerDetailPage() {
               </Button>
             </div>
 
-            {/* Branches Table */}
+            {/* Bảng Chi nhánh */}
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
@@ -412,7 +452,7 @@ export default function ManagePartnerDetailPage() {
             </div>
           </div>
 
-          {/* Section: Danh sách chương trình Voucher */}
+          {/* Card Danh sách chương trình Voucher do đối tác phát hành */}
           {partner.voucher_programs && partner.voucher_programs.length > 0 && (
             <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
               <div className="border-b border-slate-100 pb-3">
@@ -457,7 +497,7 @@ export default function ManagePartnerDetailPage() {
           )}
         </div>
 
-        {/* Right Column (1 Col): Representative Info */}
+        {/* CỘT PHẢI (1/3): Người đại diện quản lý */}
         <div className="space-y-6">
           <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6 space-y-4">
             <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
@@ -523,7 +563,7 @@ export default function ManagePartnerDetailPage() {
         </div>
       </div>
 
-      {/* Modal Khóa / Mở khóa Đối tác */}
+      {/* ─── PHẦN 3: Modal Khóa / Mở khóa Đối tác ─────────────────────────────────── */}
       {lockModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -577,7 +617,7 @@ export default function ManagePartnerDetailPage() {
         </div>
       )}
 
-      {/* Modal Thêm / Sửa Chi nhánh */}
+      {/* ─── PHẦN 4: Modal Thêm / Sửa Chi nhánh ────────────────────────────────────── */}
       {branchModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">
@@ -599,7 +639,7 @@ export default function ManagePartnerDetailPage() {
               <FormField label="Tên chi nhánh *">
                 <Input
                   type="text"
-                  placeholder="e.g. Golden Gate - Vincom Ba Triệu..."
+                  placeholder="e.g. Golden Gate - Vincom Bà Triệu..."
                   value={branchForm.branch_name}
                   onChange={(e) => setBranchForm({ ...branchForm, branch_name: e.target.value })}
                 />
@@ -680,7 +720,7 @@ export default function ManagePartnerDetailPage() {
         </div>
       )}
 
-      {/* Modal Xóa Chi nhánh */}
+      {/* ─── PHẦN 5: Modal Xóa Chi nhánh ─────────────────────────────────────────── */}
       {deleteBranchId && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 animate-in zoom-in-95">

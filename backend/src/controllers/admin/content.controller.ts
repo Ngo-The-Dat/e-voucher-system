@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: content.controller.ts
+ * VỊ TRÍ: backend/src/controllers/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Điều khiển (Controller Layer) tiếp nhận và điều phối các yêu cầu Quản lý Truyền thông & Nội dung (UC-ADM-04, UC-ADM-05).
+ *   - Bao gồm 4 cụm Controller:
+ *       1. Categories: getCategories, getCategoryById, createCategory, updateCategory, deleteCategory.
+ *       2. Banners: getBanners, getBannerById, createBanner, updateBanner, deleteBanner, toggleBannerStatus.
+ *       3. Popups: getPopups, getPopupById, createPopup, updatePopup, deletePopup, togglePopupStatus.
+ *       4. Content & Articles: getContents, getContentById, createContent, updateContent, deleteContent.
+ * =========================================================================================
+ */
+
 import { type Response, type NextFunction } from 'express';
 import { type AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as contentService from '../../services/admin/content.service.js';
