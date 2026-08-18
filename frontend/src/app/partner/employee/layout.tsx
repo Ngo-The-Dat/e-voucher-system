@@ -6,11 +6,26 @@ import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
 import EmployeeTopAppBar from "@/components/partner/employee/EmployeeTopAppBar";
 import EmployeeSideNavBar from "@/components/partner/employee/EmployeeSideNavBar";
 import Icon from "@/components/shared/ui/Icon";
+import AccountRestrictedNotice from "@/components/shared/ui/AccountRestrictedNotice";
 
 function EmployeeLayoutContent({ children }: { children: React.ReactNode }) {
-  const { profile } = useEmployee();
+  const { profile, error, reloadProfile } = useEmployee();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Nếu có lỗi xác thực / phê duyệt / khóa tài khoản, hiển thị màn hình thông báo và chặn hiển thị giao diện làm việc
+  if (error || !profile) {
+    return (
+      <AccountRestrictedNotice
+        type={error?.type ?? "forbidden"}
+        title={error?.type === "pending" ? "Tài khoản nhân viên đang chờ duyệt" : undefined}
+        message={error?.message}
+        feedback={error?.feedback}
+        roleName="nhân viên đối tác"
+        onRetry={reloadProfile}
+      />
+    );
+  }
 
   return (
     <div

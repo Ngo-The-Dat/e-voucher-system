@@ -192,6 +192,9 @@ export const partnerApi = {
     return {
       businessName: row.business_name ?? "Đối tác",
       brandLogo: row.brand_logo ?? null,
+      activityStatus: row.activity_status ?? "ACTIVE",
+      approvalStatus: row.approval_status ?? "PENDING",
+      adminFeedback: row.admin_feedback ?? null,
       legalInfo: {
         taxId: row.tax_code, businessLicenseNo: row.business_license_no ?? "",
         issueDate: row.license_issue_date?.slice(0, 10) ?? "", issuePlace: row.license_issue_place ?? "",
