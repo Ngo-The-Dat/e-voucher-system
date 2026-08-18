@@ -16,39 +16,89 @@ import {
   CreditCard,
   Search,
   Filter,
-  RotateCcw
+  RotateCcw,
+  QrCode,
+  AlertTriangle,
 } from "lucide-react";
+import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
 export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
+  const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  // Payment simulator modal state
+  const [selectedPayOrder, setSelectedPayOrder] = useState<PaymentSimulatorOrder | null>(null);
+  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
 
   // Filter States
-  const [statusTab, setStatusTab] = useState<"all" | "paid" | "failed">("all");
+  const [statusTab, setStatusTab] = useState<"all" | "pending" | "paid" | "failed">("all");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   const [timeRangeFilter, setTimeRangeFilter] = useState<string>("all");
 
-  useEffect(() => {
-    async function loadOrders() {
-      try {
-        setIsLoading(true);
-        const res = await customerOrderApi.getOrders({ page: 1, limit: 50 });
-        if (res && res.orders) {
-          setOrders(res.orders);
-        }
-      } catch (err) {
-        console.warn("Không kết nối được API đơn hàng backend:", err);
-      } finally {
-        setIsLoading(false);
+  const loadOrders = async () => {
+    try {
+      const res = await customerOrderApi.getOrders({ page: 1, limit: 50 });
+      if (res && res.orders) {
+        setOrders(res.orders);
       }
+    } catch (err) {
+      console.warn("Không kết nối được API đơn hàng backend:", err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    // Initial fetch
     loadOrders();
+
+    // Auto-polling and live tick every 1s for accurate 5-minute countdowns
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+
+    const pollInterval = setInterval(() => {
+      loadOrders();
+    }, 3000);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        loadOrders();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      clearInterval(interval);
+      clearInterval(pollInterval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
   }, []);
 
   const toggleExpand = (orderId: number) => {
     setExpandedOrderId((prev) => (prev === orderId ? null : orderId));
+  };
+
+  const handleOpenPayment = (order: CustomerOrder) => {
+    setSelectedPayOrder({
+      orderId: order.order_id,
+      totalAmount: order.total_amount,
+      paymentMethod: order.payment_method,
+      createdAt: order.created_at,
+      elapsedSeconds: order.elapsed_seconds,
+      items: order.items?.map((item) => ({
+        program_name: item.program_name,
+        quantity: item.quantity,
+        unit_price: item.unit_price,
+      })),
+    });
+    setIsPayModalOpen(true);
   };
 
   const handleResetFilters = () => {
@@ -58,14 +108,51 @@ export default function OrderHistoryPage() {
     setTimeRangeFilter("all");
   };
 
+  // Helper tính toán trạng thái đơn hàng & thời gian đếm ngược chính xác
+  const getOrderState = (order: CustomerOrder) => {
+    const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
+    const isCancelled = order.order_status === "CANCELLED" || order.payment_status === "FAILED";
+
+    let elapsedSecs = 0;
+    if (typeof order.elapsed_seconds === "number" && !isNaN(order.elapsed_seconds)) {
+      elapsedSecs = order.elapsed_seconds;
+    } else {
+      const createdMs = new Date(order.created_at).getTime();
+      if (!isNaN(createdMs)) {
+        elapsedSecs = Math.max(0, Math.floor((currentTime - createdMs) / 1000));
+      }
+    }
+
+    const remainingSecs = Math.max(0, 300 - elapsedSecs);
+    const isExpired = !isPaid && !isCancelled && remainingSecs <= 0;
+    const isPendingActive = !isPaid && !isCancelled && !isExpired;
+    const isFailedOrExpired = isCancelled || isExpired;
+
+    const minutesLeft = Math.floor(remainingSecs / 60);
+    const secondsLeft = remainingSecs % 60;
+    const formattedRemaining = `${minutesLeft.toString().padStart(2, "0")}:${secondsLeft.toString().padStart(2, "0")}`;
+
+    return {
+      isPaid,
+      isCancelled,
+      isExpired,
+      isPendingActive,
+      isFailedOrExpired,
+      remainingSecs,
+      formattedRemaining,
+    };
+  };
+
   // Filter logic
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
+      const state = getOrderState(order);
 
       // 1. Status tab filter
-      if (statusTab === "paid" && !isPaid) return false;
-      if (statusTab === "failed" && isPaid) return false;
+      if (statusTab === "pending" && !state.isPendingActive) return false;
+      if (statusTab === "paid" && !state.isPaid) return false;
+      if (statusTab === "failed" && !state.isFailedOrExpired) return false;
 
       // 2. Search term (by Order ID, or Item Program Name)
       if (searchTerm.trim()) {
@@ -100,15 +187,21 @@ export default function OrderHistoryPage() {
 
       return true;
     });
-  }, [orders, statusTab, searchTerm, paymentMethodFilter, timeRangeFilter]);
+  }, [orders, statusTab, searchTerm, paymentMethodFilter, timeRangeFilter, currentTime]);
 
+  const pendingCount = useMemo(
+    () => orders.filter((o) => getOrderState(o).isPendingActive).length,
+    [orders, currentTime]
+  );
   const paidCount = useMemo(
     () => orders.filter((o) => o.payment_status === "PAID" || o.order_status === "COMPLETED").length,
     [orders]
+    () => orders.filter((o) => getOrderState(o).isPaid).length,
+    [orders, currentTime]
   );
   const failedCount = useMemo(
-    () => orders.filter((o) => o.payment_status === "FAILED" || o.order_status === "CANCELLED").length,
-    [orders]
+    () => orders.filter((o) => getOrderState(o).isFailedOrExpired).length,
+    [orders, currentTime]
   );
 
   return (
@@ -145,8 +238,9 @@ export default function OrderHistoryPage() {
         <div className="flex overflow-x-auto border-b border-outline-variant/60 no-scrollbar gap-2 pb-2">
           {[
             { id: "all", label: "Tất cả đơn hàng", count: orders.length },
+            { id: "pending", label: "Chờ thanh toán", count: pendingCount },
             { id: "paid", label: "Đã thanh toán", count: paidCount },
-            { id: "failed", label: "Thanh toán thất bại", count: failedCount }
+            { id: "failed", label: "Đã hủy / Thất bại", count: failedCount }
           ].map((tab) => (
             <button
               key={tab.id}
@@ -248,6 +342,7 @@ export default function OrderHistoryPage() {
           {filteredOrders.map((order) => {
             const isExpanded = expandedOrderId === order.order_id;
             const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
+            const state = getOrderState(order);
 
             return (
               <div
@@ -255,9 +350,15 @@ export default function OrderHistoryPage() {
                 className="bg-surface rounded-xl border border-outline-variant shadow-sm overflow-hidden transition-all"
               >
                 {/* Order Header Bar */}
-                <div className="bg-surface-container-low p-4 md:p-6 border-b border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="bg-surface-container-low p-4 md:p-6 border-b border-outline-variant flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${
+                      state.isPaid
+                        ? "bg-secondary/10 text-secondary"
+                        : state.isPendingActive
+                        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                        : "bg-surface-container-high text-on-surface-variant"
+                    }`}>
                       <ShoppingBag className="w-6 h-6" />
                     </div>
                     <div>
@@ -265,15 +366,25 @@ export default function OrderHistoryPage() {
                         <span className="font-headline-sm text-headline-sm font-bold text-on-surface">
                           Đơn hàng #{order.order_id}
                         </span>
-                        {order.order_status === "CANCELLED" ? (
+                        {state.isExpired ? (
+                          <span className="bg-error-container/40 text-error px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
+                            <XCircle className="w-3.5 h-3.5" />
+                            Hết hạn thanh toán (Quá 5 phút)
+                          </span>
+                        ) : state.isCancelled ? (
                           <span className="bg-error-container/40 text-error px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
                             <XCircle className="w-3.5 h-3.5" />
                             Đã hủy
                           </span>
-                        ) : isPaid ? (
+                        ) : state.isPaid ? (
                           <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            Đã thanh toán
+                            Hoàn thành
+                          </span>
+                        ) : state.isPendingActive ? (
+                          <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1 border border-amber-300/40">
+                            <Clock className="w-3.5 h-3.5 animate-pulse" />
+                            Chờ thanh toán (Còn {state.formattedRemaining})
                           </span>
                         ) : (
                           <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
@@ -289,7 +400,19 @@ export default function OrderHistoryPage() {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between sm:justify-end gap-6">
+                  <div className="flex flex-wrap items-center justify-between lg:justify-end gap-4">
+                    {/* Continue payment button for pending orders within 5-minute window */}
+                    {state.isPendingActive && (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenPayment(order)}
+                        className="px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
+                      >
+                        <QrCode className="w-4 h-4" />
+                        <span>Tiếp tục thanh toán</span>
+                      </button>
+                    )}
+
                     <div className="text-right">
                       <p className="font-label-sm text-label-sm text-text-muted uppercase tracking-wider font-bold">
                         Tổng tiền
@@ -341,7 +464,15 @@ export default function OrderHistoryPage() {
                       <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant relative overflow-hidden">
                         {/* Receipt Stamp */}
                         <div className="absolute top-4 right-4 rotate-12 border-2 border-primary/30 text-primary px-4 py-1 rounded font-bold uppercase tracking-widest text-xs select-none">
-                          {order.order_status === "CANCELLED" ? "ĐÃ HỦY ĐƠN" : isPaid ? "Đã Thanh Toán" : "Thanh Toán Thất Bại"}
+                          {state.isExpired
+                            ? "HẾT HẠN THANH TOÁN"
+                            : state.isCancelled
+                            ? "ĐÃ HỦY ĐƠN"
+                            : state.isPaid
+                            ? "ĐÃ THANH TOÁN"
+                            : state.isPendingActive
+                            ? "CHỜ THANH TOÁN"
+                            : "THANH TOÁN THẤT BÀI"}
                         </div>
 
                         <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2 mb-4">
@@ -374,22 +505,34 @@ export default function OrderHistoryPage() {
                         </div>
 
                         <div className="mt-6 pt-4 border-t border-outline-variant flex justify-between items-center">
-                          <span className="font-bold text-on-surface">Tổng tiền đã thanh toán:</span>
+                          <span className="font-bold text-on-surface">Tổng tiền:</span>
                           <span className="font-headline-sm text-headline-sm font-bold text-primary">
                             {order.total_amount.toLocaleString("vi-VN")} đ
                           </span>
                         </div>
                       </div>
 
-                      {/* Link to My Vouchers */}
-                      <div className="flex justify-end">
-                        <Link
-                          href="/my-vouchers"
-                          className="bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md font-bold hover:opacity-95 transition-all shadow-sm inline-flex items-center gap-2"
-                        >
-                          <Ticket className="w-4 h-4" />
-                          Xem danh sách mã voucher đã cấp
-                        </Link>
+                      {/* Action Links based on Status */}
+                      <div className="flex justify-end gap-3 flex-wrap">
+                        {state.isPaid && (
+                          <Link
+                            href="/my-vouchers"
+                            className="bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md font-bold hover:opacity-95 transition-all shadow-sm inline-flex items-center gap-2"
+                          >
+                            <Ticket className="w-4 h-4" />
+                            Xem danh sách mã voucher đã cấp
+                          </Link>
+                        )}
+                        {state.isPendingActive && (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPayment(order)}
+                            className="bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md font-bold hover:opacity-95 transition-all shadow-sm inline-flex items-center gap-2 cursor-pointer"
+                          >
+                            <QrCode className="w-4 h-4" />
+                            Tiếp tục quét mã thanh toán
+                          </button>
+                        )}
                       </div>
                     </div>
                   )}
@@ -416,6 +559,16 @@ export default function OrderHistoryPage() {
           </button>
         </div>
       )}
+
+      {/* Payment Simulator Modal */}
+      <PaymentSimulatorModal
+        isOpen={isPayModalOpen}
+        onClose={() => setIsPayModalOpen(false)}
+        order={selectedPayOrder}
+        onPaymentSuccess={() => {
+          loadOrders();
+        }}
+      />
     </main>
   );
 }

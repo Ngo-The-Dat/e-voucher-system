@@ -1,10 +1,17 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
-import { getStoredCustomerUser, CustomerUser } from "@/lib/customer-api";
+import {
+  getStoredCustomerUser,
+  CustomerUser,
+  customerContentApi,
+  CustomerContent,
+  customerReviewApi,
+  CheckReviewEligibilityResponse,
+} from "@/lib/customer-api";
 import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
@@ -25,7 +32,12 @@ import {
   CheckCircle2,
   Clock,
   Info,
-  MapPin
+  MapPin,
+  BookOpen,
+  Lock,
+  ShieldAlert,
+  RefreshCw,
+  MessageSquarePlus,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
@@ -42,17 +54,91 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [currentUser, setCurrentUser] = useState<CustomerUser | null>(null);
+  const [programContents, setProgramContents] = useState<CustomerContent[]>([]);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("");
   const [hasComplaint, setHasComplaint] = useState(false);
   const [complaintContent, setComplaintContent] = useState("");
 
+  // Review eligibility states
+  const [reviewEligibility, setReviewEligibility] = useState<CheckReviewEligibilityResponse | null>(null);
+  const [isLoadingEligibility, setIsLoadingEligibility] = useState<boolean>(true);
+  const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
+  const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState<boolean>(false);
+
+  // Reviews from database
+  const [reviewsList, setReviewsList] = useState<any[]>([]);
+  const [reviewsSummary, setReviewsSummary] = useState<{ total_reviews: number; average_rating: number } | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+
+  const fetchReviews = useCallback(async () => {
+    const programId = Number(id);
+    if (!programId || isNaN(programId)) return;
+    try {
+      setIsLoadingReviews(true);
+      const res = await customerReviewApi.getProgramReviews(programId);
+      if (res && Array.isArray(res.reviews)) {
+        const mapped = res.reviews.map((r: any) => ({
+          review_id: r.review_id,
+          author: r.customer_name || "Khách hàng",
+          avatarLetter: (r.customer_name || "K").charAt(0).toUpperCase(),
+          avatarBg: "bg-primary-container text-on-primary-container",
+          rating: Number(r.rating) || 5,
+          timeAgo: r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("vi-VN") : "Gần đây",
+          content: r.review_content || "Khách hàng không để lại nhận xét.",
+          complaint: r.complaint_content || undefined,
+        }));
+        setReviewsList(mapped);
+        if (res.summary) {
+          setReviewsSummary({
+            total_reviews: Number(res.summary.total_reviews) || mapped.length,
+            average_rating: res.summary.average_rating ? parseFloat(Number(res.summary.average_rating).toFixed(1)) : 5.0,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Không tải được danh sách đánh giá từ API:", err);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     const user = getStoredCustomerUser();
     if (user) {
       setCurrentUser(user);
+      customerReviewApi
+        .checkEligibility(id)
+        .then((res) => {
+          setReviewEligibility(res);
+        })
+        .catch((err) => {
+          console.warn("Could not check review eligibility:", err);
+        })
+        .finally(() => {
+          setIsLoadingEligibility(false);
+        });
+    } else {
+      setIsLoadingEligibility(false);
     }
-  }, []);
+
+    fetchReviews();
+
+    // Fetch related policies and contents for this voucher
+    const programId = Number(id);
+    if (programId && !isNaN(programId)) {
+      customerContentApi
+        .getContents(undefined, programId)
+        .then((res) => {
+          if (res.contents) {
+            setProgramContents(res.contents);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to load voucher contents:", err);
+        });
+    }
+  }, [id, fetchReviews]);
 
   if (!voucher) {
     return (
@@ -99,20 +185,53 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     router.push("/cart");
   };
 
-  const handleAddReviewSubmit = (e: React.FormEvent) => {
+  const handleAddReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const authorName = currentUser?.full_name || "Khách hàng";
-    addReview(
-      voucher.id,
-      authorName,
-      reviewRating,
-      reviewContent.trim(),
-      hasComplaint ? complaintContent.trim() : undefined
-    );
-    setReviewContent("");
-    setReviewRating(5);
-    setHasComplaint(false);
-    setComplaintContent("");
+
+    if (!currentUser) {
+      alert("Vui lòng đăng nhập để gửi đánh giá.");
+      router.push(`/login?redirect=/vouchers/${id}`);
+      return;
+    }
+
+    if (reviewEligibility && !reviewEligibility.hasPurchased) {
+      alert("Bạn chưa mua sản phẩm này nên không thể gửi đánh giá.");
+      return;
+    }
+
+    try {
+      setIsSubmittingReview(true);
+      await customerReviewApi.createReview({
+        programId: Number(id),
+        rating: reviewRating,
+        reviewContent: reviewContent.trim(),
+        complaintContent: hasComplaint ? complaintContent.trim() : undefined,
+      });
+
+      setReviewSubmitSuccess(true);
+      const authorName = currentUser?.full_name || "Khách hàng";
+      addReview(
+        voucher.id,
+        authorName,
+        reviewRating,
+        reviewContent.trim(),
+        hasComplaint ? complaintContent.trim() : undefined
+      );
+
+      setReviewContent("");
+      setReviewRating(5);
+      setHasComplaint(false);
+      setComplaintContent("");
+
+      // Reload reviews and recheck eligibility
+      await fetchReviews();
+      const updated = await customerReviewApi.checkEligibility(id);
+      setReviewEligibility(updated);
+    } catch (err: any) {
+      alert(err.message || "Lỗi khi gửi đánh giá. Vui lòng thử lại.");
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   return (
@@ -395,6 +514,34 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               </div>
             </div>
           )}
+
+          {/* Related Policy / Articles from Database contents */}
+          {programContents.length > 0 && (
+            <div className="flex flex-col gap-4">
+              {programContents.map((content) => (
+                <div
+                  key={content.content_id}
+                  className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
+                      {content.content_type === "POLICY"
+                        ? "Chính sách & Quy định"
+                        : content.content_type === "GUIDE"
+                        ? "Hướng dẫn"
+                        : "Thông tin thêm"}
+                    </span>
+                  </div>
+                  <h3 className="font-title-md text-title-md text-on-surface font-bold mb-3">
+                    {content.title}
+                  </h3>
+                  <div className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-line">
+                    {content.body}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right Content (Narrower) */}
@@ -466,107 +613,241 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center text-tertiary">
                 <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
                 <span className="font-title-md text-title-md font-bold text-on-surface ml-1">
-                  {voucher.rating}
+                  {reviewsSummary?.average_rating !== undefined ? reviewsSummary.average_rating : voucher.rating}
                 </span>
               </div>
               <div className="w-px h-6 bg-outline-variant" />
               <span className="text-on-surface-variant font-label-md text-label-md">
-                {voucher.reviewsCount} đánh giá
+                {reviewsSummary?.total_reviews !== undefined ? reviewsSummary.total_reviews : reviewsList.length} đánh giá
               </span>
             </div>
           </div>
 
-          {/* Add Review Form */}
-          <div className="bg-surface-container-lowest/50 p-6 rounded-xl border border-outline-variant/50 shadow-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
-              <h3 className="font-title-md text-title-md font-bold text-on-surface">
-                Viết đánh giá của bạn
-              </h3>
-              {currentUser?.full_name && (
-                <span className="text-xs text-on-surface-variant bg-surface-container-high px-3 py-1 rounded-full font-medium self-start sm:self-auto">
-                  Đánh giá với tên: <strong className="text-on-surface font-semibold">{currentUser.full_name}</strong>
-                </span>
-              )}
-            </div>
-            <form onSubmit={handleAddReviewSubmit} className="flex flex-col gap-4">
-              <div className="max-w-xs">
-                <label className="block text-label-md text-on-surface font-semibold mb-1">
-                  Đánh giá sao
-                </label>
-                <select
-                  value={reviewRating}
-                  onChange={(e) => setReviewRating(parseInt(e.target.value))}
-                  className="w-full bg-surface-bright border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary outline-none cursor-pointer"
-                >
-                  <option value="5">⭐⭐⭐⭐⭐ 5 Sao (Rất tốt)</option>
-                  <option value="4">⭐⭐⭐⭐ 4 Sao (Tốt)</option>
-                  <option value="3">⭐⭐⭐ 3 Sao (Bình thường)</option>
-                  <option value="2">⭐⭐ 2 Sao (Tệ)</option>
-                  <option value="1">⭐ 1 Sao (Rất tệ)</option>
-                </select>
-              </div>
-              <div>
-                <div className="flex justify-between items-center mb-1">
-                  <label className="block text-label-md text-on-surface font-semibold">
-                    Nội dung đánh giá
-                  </label>
-                  <span className="text-xs text-on-surface-variant font-medium">(Không bắt buộc)</span>
+          {/* Review Input Section - Checked by Purchase Eligibility */}
+          {!currentUser ? (
+            /* 1. Unauthenticated Case */
+            <div className="bg-surface-container-lowest/70 p-6 rounded-2xl border border-outline-variant/60 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Lock className="w-6 h-6" />
                 </div>
-                <textarea
-                  rows={3}
-                  value={reviewContent}
-                  onChange={(e) => setReviewContent(e.target.value)}
-                  className="w-full bg-surface-bright border border-outline-variant rounded-lg p-3 text-body-md focus:border-primary outline-none"
-                  placeholder="Chia sẻ trải nghiệm của bạn về voucher..."
-                />
+                <div>
+                  <h3 className="font-title-md text-title-md font-bold text-on-surface">
+                    Viết đánh giá của bạn
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5">
+                    Vui lòng đăng nhập với tài khoản đã mua sản phẩm để viết đánh giá và phản hồi dịch vụ.
+                  </p>
+                </div>
               </div>
-
-              {/* Checkbox khiếu nại */}
-              <div className="pt-1">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={hasComplaint}
-                    onChange={(e) => setHasComplaint(e.target.checked)}
-                    className="w-4 h-4 accent-error rounded cursor-pointer"
-                  />
-                  <span className="font-label-md text-label-md font-bold text-error">
-                    Tôi có phản ánh / khiếu nại
-                  </span>
-                </label>
-
-                {hasComplaint && (
-                  <div className="mt-2 space-y-1">
-                    <label className="block text-label-md text-on-surface font-semibold">
-                      Nội dung khiếu nại
-                    </label>
-                    <textarea
-                      rows={3}
-                      required={hasComplaint}
-                      value={complaintContent}
-                      onChange={(e) => setComplaintContent(e.target.value)}
-                      className="w-full bg-error-container/20 border border-error/40 rounded-lg p-3 text-body-md focus:border-error outline-none"
-                      placeholder="Mô tả chi tiết sự cố hoặc phản ánh của bạn..."
-                    />
+              <Link
+                href={`/login?redirect=/vouchers/${id}`}
+                className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all shrink-0 flex items-center gap-2 shadow-sm"
+              >
+                <Lock className="w-4 h-4" />
+                Đăng nhập để đánh giá
+              </Link>
+            </div>
+          ) : !isLoadingEligibility && reviewEligibility && !reviewEligibility.hasPurchased ? (
+            /* 2. Logged In but Not Purchased Case */
+            <div className="bg-amber-500/10 border border-amber-500/25 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                  <ShieldAlert className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2">
+                    <span>Chỉ dành cho khách hàng đã mua sản phẩm</span>
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5 max-w-lg">
+                    Bạn chưa mua hoặc chưa sở hữu voucher này. Để đảm bảo tính trung thực và khách quan, hệ thống chỉ cho phép khách hàng đã mua và thanh toán đơn hàng thành công viết đánh giá.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm vào giỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Mua ngay để đánh giá
+                </button>
+              </div>
+            </div>
+          ) : reviewEligibility?.hasPurchased && reviewEligibility?.hasReviewed && !reviewEligibility?.canReview ? (
+            /* 3. Logged In and Already Reviewed This Voucher Code */
+            <div className="bg-emerald-500/10 border border-emerald-500/25 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2">
+                    <span>Bạn đã đánh giá voucher này rồi</span>
+                    <span className="text-[11px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-semibold">
+                      1 lần / 1 mã voucher
+                    </span>
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5 max-w-lg">
+                    Mỗi mã voucher chỉ được gửi đánh giá 1 lần duy nhất. Bạn đã hoàn tất đánh giá cho mã <strong className="font-mono text-primary">{reviewEligibility.voucherCode}</strong>. Để tiếp tục gửi đánh giá mới, vui lòng mua thêm voucher.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm vào giỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Mua để đánh giá
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* 4. Logged In and Eligible to Review (Has Unreviewed Voucher) */
+            <div className="bg-surface-container-lowest/80 p-6 rounded-2xl border border-outline-variant/60 shadow-sm space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/40 pb-4">
+                <div>
+                  <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2">
+                    <MessageSquarePlus className="w-5 h-5 text-primary" />
+                    Viết đánh giá của bạn
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Đã mua hàng (1 đánh giá / mã)
+                    </span>
+                    {reviewEligibility?.voucherCode && (
+                      <span className="text-xs text-on-surface-variant font-mono">
+                        Mã voucher: <strong>{reviewEligibility.voucherCode}</strong>
+                      </span>
+                    )}
                   </div>
+                </div>
+
+                {currentUser?.full_name && (
+                  <span className="text-xs text-on-surface-variant bg-surface-container-high px-3 py-1.5 rounded-full font-medium self-start sm:self-auto">
+                    Đánh giá với tên: <strong className="text-on-surface font-semibold">{currentUser.full_name}</strong>
+                  </span>
                 )}
               </div>
 
-              <button
-                type="submit"
-                className="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:opacity-90 self-end transition-all shadow-sm cursor-pointer font-bold"
-              >
-                Gửi phiếu đánh giá
-              </button>
-            </form>
-          </div>
+              {reviewSubmitSuccess && (
+                <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 flex items-center gap-2 animate-fadeIn">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>Cảm ơn bạn! Đánh giá và phản hồi của bạn đã được ghi nhận thành công trên hệ thống.</span>
+                </div>
+              )}
+
+              <form onSubmit={handleAddReviewSubmit} className="flex flex-col gap-4 pt-1">
+                <div className="max-w-xs">
+                  <label className="block text-label-md text-on-surface font-semibold mb-1">
+                    Đánh giá sao
+                  </label>
+                  <select
+                    value={reviewRating}
+                    onChange={(e) => setReviewRating(parseInt(e.target.value))}
+                    className="w-full bg-surface-bright border border-outline-variant rounded-lg p-2.5 text-body-md focus:border-primary outline-none cursor-pointer"
+                  >
+                    <option value="5">⭐⭐⭐⭐⭐ 5 Sao (Rất tốt)</option>
+                    <option value="4">⭐⭐⭐⭐ 4 Sao (Tốt)</option>
+                    <option value="3">⭐⭐⭐ 3 Sao (Bình thường)</option>
+                    <option value="2">⭐⭐ 2 Sao (Tệ)</option>
+                    <option value="1">⭐ 1 Sao (Rất tệ)</option>
+                  </select>
+                </div>
+                <div>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-label-md text-on-surface font-semibold">
+                      Nội dung đánh giá
+                    </label>
+                    <span className="text-xs text-on-surface-variant font-medium">(Không bắt buộc)</span>
+                  </div>
+                  <textarea
+                    rows={3}
+                    value={reviewContent}
+                    onChange={(e) => setReviewContent(e.target.value)}
+                    className="w-full bg-surface-bright border border-outline-variant rounded-lg p-3 text-body-md focus:border-primary outline-none"
+                    placeholder="Chia sẻ trải nghiệm sử dụng voucher của bạn..."
+                  />
+                </div>
+
+                {/* Checkbox khiếu nại */}
+                <div className="pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={hasComplaint}
+                      onChange={(e) => setHasComplaint(e.target.checked)}
+                      className="w-4 h-4 accent-error rounded cursor-pointer"
+                    />
+                    <span className="font-label-md text-label-md font-bold text-error">
+                      Tôi có phản ánh / khiếu nại
+                    </span>
+                  </label>
+
+                  {hasComplaint && (
+                    <div className="mt-2 space-y-1">
+                      <label className="block text-label-md text-on-surface font-semibold">
+                        Nội dung khiếu nại
+                      </label>
+                      <textarea
+                        rows={3}
+                        required={hasComplaint}
+                        value={complaintContent}
+                        onChange={(e) => setComplaintContent(e.target.value)}
+                        className="w-full bg-error-container/20 border border-error/40 rounded-lg p-3 text-body-md focus:border-error outline-none"
+                        placeholder="Mô tả chi tiết sự cố hoặc phản ánh của bạn..."
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmittingReview}
+                  className="bg-primary text-on-primary font-label-md text-label-md px-6 py-2.5 rounded-lg hover:opacity-90 self-end transition-all shadow-sm cursor-pointer font-bold flex items-center gap-2"
+                >
+                  {isSubmittingReview ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" /> Đang gửi đánh giá...
+                    </>
+                  ) : (
+                    <>Gửi phiếu đánh giá</>
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
 
           {/* Review List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {voucher.reviews && voucher.reviews.length > 0 ? (
-              voucher.reviews.map((rev, index) => (
+            {isLoadingReviews ? (
+              <div className="col-span-2 text-center py-8 text-on-surface-variant flex items-center justify-center gap-2">
+                <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+                <span>Đang tải danh sách đánh giá...</span>
+              </div>
+            ) : reviewsList && reviewsList.length > 0 ? (
+              reviewsList.map((rev, index) => (
                 <div
-                  key={index}
+                  key={rev.review_id || index}
                   className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/50 shadow-sm flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between">

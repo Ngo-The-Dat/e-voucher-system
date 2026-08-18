@@ -54,3 +54,12 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
+
+@keyframes timerBar {
+  0% {
+    width: 0%;
+  }
+  100% {
+    width: 100%;
+  }
+}

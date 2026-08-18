@@ -84,6 +84,7 @@ export interface BackendCartItem {
   display_status: string;
   category_name?: string;
   business_name?: string;
+  brand_logo?: string | null;
   available_stock: number;
   line_total: number;
 }
@@ -139,6 +140,7 @@ export interface CreateOrderPayload {
   is_gift?: boolean;
   recipient_info?: RecipientInfoInput;
   payment_method?: string;
+  auto_pay?: boolean;
 }
 
 export interface CustomerVoucherItem {
@@ -166,7 +168,7 @@ export interface CustomerVoucherItem {
   purchase_date?: string;
   payment_method?: string;
   payment_status?: string;
-  order_status?: string;
+  order_status?: "PENDING" | "COMPLETED" | "CANCELLED" | string;
 }
 
 export interface CreateOrderResponse {
@@ -175,13 +177,14 @@ export interface CreateOrderResponse {
   order: {
     order_id: number;
     created_at: string;
+    elapsed_seconds?: number;
     total_amount: number;
     payment_method: string;
-    payment_status: string;
-    order_status: string;
-    is_gift: boolean;
-    recipient_user_id: number;
-    vouchers: Array<{
+    payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;
+    order_status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
+    is_gift?: boolean;
+    recipient_user_id?: number;
+    vouchers?: Array<{
       issued_voucher_id: number;
       voucher_code: string;
       qr_code: string;
@@ -196,10 +199,11 @@ export interface CreateOrderResponse {
 export interface CustomerOrder {
   order_id: number;
   created_at: string;
+  elapsed_seconds?: number;
   total_amount: number;
   payment_method: string;
-  payment_status: string;
-  order_status: string;
+  payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;
+  order_status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
   buyer_user_id: number;
   recipient_user_id: number;
   buyer_name?: string;
@@ -229,6 +233,11 @@ export const customerOrderApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  payOrder: (orderId: number, paymentMethod?: string) =>
+    request<CreateOrderResponse>(`/customer/orders/${orderId}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ payment_method: paymentMethod })
+    }),
   getOrders: (params?: { page?: number; limit?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set("page", String(params.page));
@@ -239,7 +248,7 @@ export const customerOrderApi = {
   getOrderById: (orderId: number) =>
     request<CustomerOrder>(`/customer/orders/${orderId}`),
   getMyVouchers: (status?: string) => customerVoucherApi.getMyVouchers(status),
-  getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId)
+  getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId),
 };
 
 export interface PublicVouchersFilter {
@@ -251,6 +260,54 @@ export interface PublicVouchersFilter {
   sort?: string;
   page?: number;
   limit?: number;
+}
+
+export interface CustomerCategory {
+  category_id: number;
+  category_name: string;
+  description?: string;
+  voucher_count?: number;
+}
+
+export interface CustomerBanner {
+  banner_id: number;
+  program_id: number | null;
+  title: string;
+  image_url: string;
+  target_url: string;
+  display_position: string;
+  program_name?: string | null;
+  original_price?: number | null;
+  sale_price?: number | null;
+  brand_name?: string | null;
+  brand_logo?: string | null;
+}
+
+export interface CustomerPopup {
+  popup_id: number;
+  program_id: number | null;
+  title: string;
+  content: string;
+  target_url: string;
+  image_url: string;
+  program_name?: string | null;
+  original_price?: number | null;
+  sale_price?: number | null;
+  brand_name?: string | null;
+  brand_logo?: string | null;
+}
+
+export interface CustomerContent {
+  content_id: number;
+  program_id: number | null;
+  title: string;
+  body: string;
+  content_type: 'POLICY' | 'ARTICLE' | 'PROMOTION' | 'GUIDE';
+  created_at: string;
+  updated_at?: string | null;
+  program_name?: string | null;
+  brand_name?: string | null;
+  brand_logo?: string | null;
 }
 
 export const customerCatalogApi = {
@@ -270,7 +327,61 @@ export const customerCatalogApi = {
   getVoucherById: (programId: number | string) =>
     request<any>(`/customer/vouchers/${programId}`),
   getCategories: () =>
-    request<{ categories: Array<{ category_id: number; category_name: string; description?: string }> }>("/customer/vouchers/categories")
+    request<{ categories: CustomerCategory[] }>("/customer/vouchers/categories")
 };
 
+export const customerContentApi = {
+  getBanners: (position?: string) => {
+    const query = position ? `?position=${encodeURIComponent(position)}` : "";
+    return request<{ banners: CustomerBanner[] }>(`/customer/banners${query}`);
+  },
+  getActivePopups: () =>
+    request<{ popups: CustomerPopup[] }>("/customer/popups/active"),
+  getContents: (type?: string, programId?: number) => {
+    const params = new URLSearchParams();
+    if (type) params.set("type", type);
+    if (programId) params.set("program_id", String(programId));
+    const query = params.toString() ? `?${params.toString()}` : "";
+    return request<{ contents: CustomerContent[] }>(`/customer/contents${query}`);
+  },
+  getContentById: (id: number) =>
+    request<CustomerContent>(`/customer/contents/${id}`)
+};
 
+export interface CheckReviewEligibilityResponse {
+  canReview: boolean;
+  hasPurchased: boolean;
+  hasReviewed: boolean;
+  issuedVoucherId?: number;
+  voucherCode?: string;
+  existingReview?: {
+    review_id: number;
+    rating: number;
+    review_content?: string | null;
+    complaint_content?: string | null;
+    submitted_at: string;
+  } | null;
+  message?: string;
+}
+
+export interface CreateReviewPayload {
+  programId?: number | string;
+  issuedVoucherId?: number | string;
+  rating: number;
+  reviewContent?: string;
+  complaintContent?: string;
+}
+
+export const customerReviewApi = {
+  checkEligibility: (programId: number | string) =>
+    request<CheckReviewEligibilityResponse>(`/customer/reviews/eligibility/${programId}`),
+  createReview: (payload: CreateReviewPayload) =>
+    request<{ message: string; review: any }>("/customer/reviews", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getProgramReviews: (programId: number | string) =>
+    request<{ reviews: any[]; summary: any }>(`/customer/reviews/program/${programId}`),
+  getMyReviews: () =>
+    request<any[]>("/customer/reviews/my"),
+};

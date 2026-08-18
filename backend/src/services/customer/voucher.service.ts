@@ -29,6 +29,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
       vp.use_end_at,
       c.category_name,
       p.business_name,
+      p.brand_logo as partner_logo,
       o.order_id,
       o.created_at as purchase_date,
       o.payment_method
@@ -38,7 +39,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
     LEFT JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN order_items oi ON oi.order_item_id = iv.order_item_id
     LEFT JOIN orders o ON o.order_id = oi.order_id
-    WHERE ${conditions.join(' AND ')}
+    WHERE ${conditions.join(' AND ')} AND (o.payment_status = 'PAID' OR o.payment_status IS NULL)
     ORDER BY iv.issued_at DESC
   `;
 
@@ -60,7 +61,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
     use_end_at: row.use_end_at,
     category_name: row.category_name,
     business_name: row.business_name,
-    partner_logo: row.partner_logo,
+    partner_logo: row.partner_logo || null,
     order_id: row.order_id ? Number(row.order_id) : null,
     purchase_date: row.purchase_date,
     payment_method: row.payment_method,
@@ -89,6 +90,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
       vp.use_end_at,
       c.category_name,
       p.business_name,
+      p.brand_logo as partner_logo,
       ARRAY(
         SELECT b.branch_name 
         FROM voucher_program_branches vpb 
@@ -112,7 +114,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
     LEFT JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN order_items oi ON oi.order_item_id = iv.order_item_id
     LEFT JOIN orders o ON o.order_id = oi.order_id
-    WHERE iv.issued_voucher_id = $1 AND iv.owner_user_id = $2
+    WHERE iv.issued_voucher_id = $1 AND iv.owner_user_id = $2 AND (o.payment_status = 'PAID' OR o.payment_status IS NULL)
   `;
 
   const res = await pool.query(query, [issuedVoucherId, customerId]);
