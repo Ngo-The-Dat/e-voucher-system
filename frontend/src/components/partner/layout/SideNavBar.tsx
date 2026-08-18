@@ -99,7 +99,7 @@ export default function SideNavBar({ isCollapsed, onToggleCollapse, isMobileOpen
           onClick={() => {
             if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
               localStorage.removeItem("partner_access_token");
-              router.push("/partner/login");
+              router.push("/login");
             }
           }}
           title={isCollapsed ? "Đăng xuất" : undefined}

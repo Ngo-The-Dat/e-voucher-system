@@ -34,7 +34,7 @@ export default function EmployeeSideNavBar({
     if (confirm("Bạn có chắc chắn muốn đăng xuất?")) {
       localStorage.removeItem("partner_access_token");
       localStorage.removeItem("partner_user");
-      router.push("/partner/login");
+      router.push("/login");
     }
   };
 
