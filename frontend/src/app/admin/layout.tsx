@@ -16,7 +16,8 @@ export default function AdminLayout({
 
   useEffect(() => {
     const token = localStorage.getItem("admin_access_token");
-    if (!token || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
+    const isJwt = token !== null && token.split('.').length === 3;
+    if (!isJwt) {
       localStorage.removeItem("admin_access_token");
       router.replace("/login");
       return;

@@ -52,7 +52,8 @@ const redirectToLogin = () => {
 const getStoredAdminToken = (): string | null => {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("admin_access_token");
-  if (!token || !/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)) {
+  const isJwt = token !== null && token.split('.').length === 3;
+  if (!isJwt) {
     localStorage.removeItem("admin_access_token");
     return null;
   }
@@ -75,6 +76,7 @@ async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T>
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("admin_access_token");
       redirectToLogin();
+      return new Promise(() => {}) as Promise<T>;
     }
     throw new AdminApiError(response.status, body.message ?? "Không thể kết nối đến máy chủ.");
   }
