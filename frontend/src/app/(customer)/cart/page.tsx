@@ -25,9 +25,6 @@ export default function CartPage() {
     return initial;
   });
 
-  const [promoCode, setPromoCode] = useState("");
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [promoApplied, setPromoApplied] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Ví VNPay");
 
   const [isGift, setIsGift] = useState(false);
@@ -63,15 +60,6 @@ export default function CartPage() {
         removeFromCart(item.voucher.id);
       }
     });
-  };
-
-  const applyPromo = () => {
-    if (promoCode.trim().toUpperCase() === "LUMINA10") {
-      setDiscountPercent(10);
-      setPromoApplied(true);
-    } else {
-      alert("Mã ưu đãi không hợp lệ. Hãy thử: LUMINA10");
-    }
   };
 
   const handleCheckout = async () => {
@@ -147,9 +135,7 @@ export default function CartPage() {
 
   // Calculations
   const activeCartItems = cart.filter((item) => selectedItems[item.voucher.id]);
-  const subtotal = activeCartItems.reduce((sum, item) => sum + item.voucher.price * item.quantity, 0);
-  const discountAmount = (subtotal * discountPercent) / 100;
-  const total = subtotal - discountAmount;
+  const total = activeCartItems.reduce((sum, item) => sum + item.voucher.price * item.quantity, 0);
 
   return (
     <main className="flex-grow pt-8 pb-16 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full">
@@ -185,13 +171,8 @@ export default function CartPage() {
           />
           <CartSummary 
             activeCartItemsLength={activeCartItems.length}
-            subtotal={subtotal}
-            discountAmount={discountAmount}
+            subtotal={total}
             total={total}
-            promoCode={promoCode}
-            setPromoCode={setPromoCode}
-            promoApplied={promoApplied}
-            applyPromo={applyPromo}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
             isGift={isGift}
