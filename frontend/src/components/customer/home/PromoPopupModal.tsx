@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { X, Sparkles, ArrowRight, Tag, ChevronLeft, ChevronRight, Building2 } from "lucide-react";
 import { customerContentApi, CustomerPopup } from "@/lib/customer-api";
+import { resolveTargetLink } from "@/lib/utils";
 
 export default function PromoPopupModal() {
   const [popups, setPopups] = useState<CustomerPopup[]>([]);
@@ -95,9 +96,7 @@ export default function PromoPopupModal() {
   if (!isOpen || popups.length === 0) return null;
 
   const currentPopup = popups[currentIndex] || popups[0];
-  const targetLink =
-    currentPopup.target_url ||
-    (currentPopup.program_id ? `/vouchers/${currentPopup.program_id}` : "/vouchers");
+  const targetLink = resolveTargetLink(currentPopup);
 
   return (
     <div

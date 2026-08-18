@@ -321,6 +321,21 @@ export async function getPublicCategories() {
   }));
 }
 
+function normalizeTargetUrl(programId?: number | null, rawTargetUrl?: string | null): string {
+  if (programId) {
+    return `/vouchers/${programId}`;
+  }
+  if (rawTargetUrl) {
+    const trimmed = rawTargetUrl.trim();
+    const match = trimmed.match(/\/(?:programs|vouchers)\/(\d+)/i);
+    if (match && match[1]) {
+      return `/vouchers/${match[1]}`;
+    }
+    return trimmed;
+  }
+  return '/vouchers';
+}
+
 export async function getPublicBanners(position?: string) {
   const conditions = [
     "b.status = 'ACTIVE'",
@@ -359,7 +374,7 @@ export async function getPublicBanners(position?: string) {
     program_id: row.program_id ? Number(row.program_id) : null,
     title: row.title,
     image_url: row.image_url,
-    target_url: row.target_url || (row.program_id ? `/vouchers/${row.program_id}` : '/vouchers'),
+    target_url: normalizeTargetUrl(row.program_id ? Number(row.program_id) : null, row.target_url),
     display_position: row.display_position,
     program_name: row.program_name || null,
     original_price: row.original_price ? Number(row.original_price) : null,
@@ -400,7 +415,7 @@ export async function getPublicActivePopups() {
     program_id: row.program_id ? Number(row.program_id) : null,
     title: row.title,
     content: row.content || '',
-    target_url: row.target_url || (row.program_id ? `/vouchers/${row.program_id}` : '/vouchers'),
+    target_url: normalizeTargetUrl(row.program_id ? Number(row.program_id) : null, row.target_url),
     image_url: row.image_url || '',
     program_name: row.program_name || null,
     original_price: row.original_price ? Number(row.original_price) : null,

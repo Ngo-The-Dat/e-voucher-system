@@ -624,14 +624,24 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all shrink-0 flex items-center gap-2 cursor-pointer shadow-sm"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                Mua voucher ngay
-              </button>
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm vào giỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Mua ngay để đánh giá
+                </button>
+              </div>
             </div>
           ) : (
             /* 3. Logged In and Purchased Case */

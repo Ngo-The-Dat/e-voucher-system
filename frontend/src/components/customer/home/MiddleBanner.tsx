@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Sparkles, Tag } from "lucide-react";
 import { customerContentApi, CustomerBanner } from "@/lib/customer-api";
+import { resolveTargetLink } from "@/lib/utils";
 
 export default function MiddleBanner() {
   const [banner, setBanner] = useState<CustomerBanner | null>(null);
@@ -28,9 +29,7 @@ export default function MiddleBanner() {
 
   if (!banner) return null;
 
-  const targetLink =
-    banner.target_url ||
-    (banner.program_id ? `/vouchers/${banner.program_id}` : "/vouchers");
+  const targetLink = resolveTargetLink(banner);
 
   return (
     <section className="py-12 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">

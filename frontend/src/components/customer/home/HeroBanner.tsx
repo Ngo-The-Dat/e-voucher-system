@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Sparkles, ArrowRight, Tag } from "lucide-react";
 import { customerContentApi, CustomerBanner } from "@/lib/customer-api";
+import { resolveTargetLink } from "@/lib/utils";
 
 export default function HeroBanner() {
   const [banners, setBanners] = useState<CustomerBanner[]>([]);
@@ -85,9 +86,7 @@ export default function HeroBanner() {
   }
 
   const currentBanner = banners[currentIndex];
-  const targetLink =
-    currentBanner.target_url ||
-    (currentBanner.program_id ? `/vouchers/${currentBanner.program_id}` : "/vouchers");
+  const targetLink = resolveTargetLink(currentBanner);
 
   return (
     <section

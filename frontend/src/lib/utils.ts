@@ -69,3 +69,34 @@ export function truncate(str: string, maxLen: number): string {
   if (str.length <= maxLen) return str;
   return str.slice(0, maxLen) + "…";
 }
+
+/**
+ * Chuẩn hóa link điều hướng cho Banner & Promo Popup
+ * Ưu tiên:
+ * 1. program_id -> /vouchers/:id
+ * 2. target_url -> nếu chứa /programs/:id hoặc /vouchers/:id -> /vouchers/:id
+ * 3. target_url bắt đầu bằng "/" -> giữ nguyên
+ * 4. Fallback -> /vouchers
+ */
+export function resolveTargetLink(item?: { program_id?: number | null; target_url?: string | null } | null): string {
+  if (!item) return "/vouchers";
+  if (item.program_id) {
+    return `/vouchers/${item.program_id}`;
+  }
+  if (item.target_url) {
+    const trimmed = item.target_url.trim();
+    const match = trimmed.match(/\/(?:programs|vouchers)\/(\d+)/i);
+    if (match && match[1]) {
+      return `/vouchers/${match[1]}`;
+    }
+    if (trimmed.startsWith("/")) {
+      return trimmed;
+    }
+    if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+      return trimmed;
+    }
+    return `/${trimmed}`;
+  }
+  return "/vouchers";
+}
+
