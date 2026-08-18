@@ -207,7 +207,6 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
          payment_status,
          order_status,
          created_at
-       ) VALUES ($1, $2, $3, $4, 'PAID', 'COMPLETED', CURRENT_TIMESTAMP)
        ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
        RETURNING order_id, created_at, total_amount, payment_method, payment_status, order_status`,
       [buyerUserId, recipientUserId, totalAmount, dbPaymentMethod, initialPaymentStatus, initialOrderStatus]
