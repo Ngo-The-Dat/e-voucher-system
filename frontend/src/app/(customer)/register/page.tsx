@@ -198,11 +198,17 @@ export default function CustomerRegisterPage() {
             </button>
           </form>
 
-          <div className="mt-8 pt-6 text-center border-t border-gray-100">
-            <p className="text-gray-600">
+          <div className="mt-8 pt-6 text-center border-t border-gray-100 space-y-2">
+            <p className="text-gray-600 text-sm">
               Đã có tài khoản?{" "}
               <Link href="/login" className="font-semibold text-[#0f2c59] hover:underline ml-1">
                 Đăng nhập ngay
+              </Link>
+            </p>
+            <p className="text-gray-500 text-xs">
+              Bạn là chủ doanh nghiệp / thương hiệu?{" "}
+              <Link href="/partner/register" className="font-semibold text-[#0f2c59] hover:underline ml-1">
+                Đăng ký đối tác
               </Link>
             </p>
           </div>
