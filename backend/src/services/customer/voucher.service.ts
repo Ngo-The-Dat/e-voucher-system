@@ -29,6 +29,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
       vp.use_end_at,
       c.category_name,
       p.business_name,
+      p.brand_logo as partner_logo,
       o.order_id,
       o.created_at as purchase_date,
       o.payment_method
@@ -60,7 +61,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
     use_end_at: row.use_end_at,
     category_name: row.category_name,
     business_name: row.business_name,
-    partner_logo: row.partner_logo,
+    partner_logo: row.partner_logo || null,
     order_id: row.order_id ? Number(row.order_id) : null,
     purchase_date: row.purchase_date,
     payment_method: row.payment_method,
@@ -89,6 +90,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
       vp.use_end_at,
       c.category_name,
       p.business_name,
+      p.brand_logo as partner_logo,
       ARRAY(
         SELECT b.branch_name 
         FROM voucher_program_branches vpb 

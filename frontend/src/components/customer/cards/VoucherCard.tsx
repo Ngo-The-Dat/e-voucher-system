@@ -82,14 +82,23 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
           </div>
         )}
         {/* Merchant Logo */}
-        <div className="absolute -bottom-6 right-4 w-12 h-12 bg-surface-container-lowest rounded-full border border-outline-variant shadow-sm flex items-center justify-center p-1 z-10">
-          <Image
-            width={48}
-            height={48}
-            className="w-full h-full object-contain rounded-full"
-            src={voucher.brandLogo}
-            alt={voucher.brand}
-          />
+        <div className="absolute -bottom-6 right-4 w-12 h-12 bg-surface-container-lowest rounded-full border border-outline-variant shadow-sm flex items-center justify-center p-1 z-10 overflow-hidden">
+          {voucher.brandLogo ? (
+            <img
+              width={48}
+              height={48}
+              className="w-full h-full object-cover rounded-full"
+              src={voucher.brandLogo}
+              alt={voucher.brand || "Brand logo"}
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = "none";
+              }}
+            />
+          ) : (
+            <span className="text-xs font-bold text-primary">
+              {(voucher.brand || "V").charAt(0).toUpperCase()}
+            </span>
+          )}
         </div>
       </div>
       <div className="p-5 flex-grow flex flex-col">

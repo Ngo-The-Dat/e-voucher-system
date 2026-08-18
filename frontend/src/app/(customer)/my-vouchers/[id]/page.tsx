@@ -105,7 +105,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
             : "unused",
         title: apiVoucher.program_name,
         brand: apiVoucher.business_name || "Thương hiệu đối tác",
-        brandLogo: apiVoucher.partner_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+        brandLogo: apiVoucher.partner_logo || "",
         category: apiVoucher.category_name || "Ưu đãi",
         datePurchased: apiVoucher.purchase_date ? new Date(apiVoucher.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
         expiryDate: apiVoucher.expires_at ? new Date(apiVoucher.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
@@ -197,13 +197,22 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
             {/* Brand Logo */}
             <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-lowest border border-outline-variant flex items-center justify-center p-4 shadow-sm">
-              <Image
-                width={128}
-                height={128}
-                className="w-full h-full object-contain"
-                src={displayVoucher.brandLogo}
-                alt={displayVoucher.brand}
-              />
+              {displayVoucher.brandLogo ? (
+                <img
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-contain"
+                  src={displayVoucher.brandLogo}
+                  alt={displayVoucher.brand}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-3xl font-extrabold text-primary">
+                  {(displayVoucher.brand || "V").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
 
             {/* Details Content */}

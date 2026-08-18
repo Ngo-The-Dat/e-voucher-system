@@ -94,6 +94,7 @@ export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
       c.category_name,
       p.user_id as partner_id,
       p.business_name as brand_name,
+      p.brand_logo as brand_logo,
       (
         SELECT COALESCE(COUNT(iv.issued_voucher_id), 0)::int
         FROM issued_vouchers iv
@@ -142,7 +143,7 @@ export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
       program_id: Number(row.program_id),
       title: row.program_name,
       brand: row.brand_name || "Thương hiệu đối tác",
-      brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      brandLogo: row.brand_logo || null,
       category: row.category_name || "Khác",
       merchant: row.brand_name || "Thương hiệu đối tác",
       thumbnail: imagesList[0],
@@ -189,6 +190,7 @@ export async function getPublicVoucherById(programId: number) {
       c.category_name,
       p.user_id as partner_id,
       p.business_name as brand_name,
+      p.brand_logo as brand_logo,
       (
         SELECT COALESCE(COUNT(iv.issued_voucher_id), 0)::int
         FROM issued_vouchers iv
@@ -268,7 +270,7 @@ export async function getPublicVoucherById(programId: number) {
     program_id: Number(row.program_id),
     title: row.program_name,
     brand: row.brand_name || "Thương hiệu đối tác",
-    brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+    brandLogo: row.brand_logo || null,
     category: row.category_name || "Khác",
     merchant: row.brand_name || "Thương hiệu đối tác",
     thumbnail: imagesList[0],
@@ -342,7 +344,8 @@ export async function getPublicBanners(position?: string) {
       vp.program_name,
       vp.original_price,
       vp.sale_price,
-      p.business_name as brand_name
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
     FROM banners b
     LEFT JOIN voucher_programs vp ON vp.program_id = b.program_id
     LEFT JOIN partners p ON p.user_id = vp.partner_id
@@ -362,6 +365,7 @@ export async function getPublicBanners(position?: string) {
     original_price: row.original_price ? Number(row.original_price) : null,
     sale_price: row.sale_price ? Number(row.sale_price) : null,
     brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
   }));
 }
 
@@ -379,7 +383,8 @@ export async function getPublicActivePopups() {
       vp.program_name,
       vp.original_price,
       vp.sale_price,
-      pt.business_name as brand_name
+      pt.business_name as brand_name,
+      pt.brand_logo as brand_logo
     FROM popups p
     LEFT JOIN voucher_programs vp ON vp.program_id = p.program_id
     LEFT JOIN partners pt ON pt.user_id = vp.partner_id
@@ -401,6 +406,7 @@ export async function getPublicActivePopups() {
     original_price: row.original_price ? Number(row.original_price) : null,
     sale_price: row.sale_price ? Number(row.sale_price) : null,
     brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
   }));
 }
 
@@ -427,7 +433,8 @@ export async function getPublicContents(filter: { type?: string; program_id?: nu
       c.content_type,
       c.created_at,
       vp.program_name,
-      p.business_name as brand_name
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
     FROM contents c
     LEFT JOIN voucher_programs vp ON vp.program_id = c.program_id
     LEFT JOIN partners p ON p.user_id = vp.partner_id
@@ -444,6 +451,7 @@ export async function getPublicContents(filter: { type?: string; program_id?: nu
     created_at: row.created_at,
     program_name: row.program_name || null,
     brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
   }));
 }
 
@@ -458,7 +466,8 @@ export async function getPublicContentById(id: number) {
       c.created_at,
       c.updated_at,
       vp.program_name,
-      p.business_name as brand_name
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
     FROM contents c
     LEFT JOIN voucher_programs vp ON vp.program_id = c.program_id
     LEFT JOIN partners p ON p.user_id = vp.partner_id
@@ -479,5 +488,6 @@ export async function getPublicContentById(id: number) {
     updated_at: row.updated_at,
     program_name: row.program_name || null,
     brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
   };
 }

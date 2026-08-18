@@ -84,6 +84,7 @@ export interface BackendCartItem {
   display_status: string;
   category_name?: string;
   business_name?: string;
+  brand_logo?: string | null;
   available_stock: number;
   line_total: number;
 }
@@ -277,6 +278,7 @@ export interface CustomerBanner {
   original_price?: number | null;
   sale_price?: number | null;
   brand_name?: string | null;
+  brand_logo?: string | null;
 }
 
 export interface CustomerPopup {
@@ -290,6 +292,7 @@ export interface CustomerPopup {
   original_price?: number | null;
   sale_price?: number | null;
   brand_name?: string | null;
+  brand_logo?: string | null;
 }
 
 export interface CustomerContent {
@@ -302,6 +305,7 @@ export interface CustomerContent {
   updated_at?: string | null;
   program_name?: string | null;
   brand_name?: string | null;
+  brand_logo?: string | null;
 }
 
 export const customerCatalogApi = {
