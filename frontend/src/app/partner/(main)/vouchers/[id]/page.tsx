@@ -125,6 +125,10 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const editSellingPrice = parseFloat(editSellingPriceStr) || 0;
   const editIssuedQuantity = Number(editIssuedQuantityStr);
   const editDiscountAmount = editOriginalPrice > editSellingPrice ? editOriginalPrice - editSellingPrice : 0;
+  const editDiscountPercent =
+    editOriginalPrice > 0 && editDiscountAmount > 0
+      ? Math.round((editDiscountAmount / editOriginalPrice) * 100)
+      : 0;
 
   const applyImages = (images: VoucherImage[]) => {
     const mapped = toGalleryItems(images);
@@ -234,17 +238,32 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     if (!editTitle.trim()) newErrors.title = "Vui lòng nhập tên chương trình.";
     if (!editCategoryId) newErrors.category = "Vui lòng chọn danh mục sản phẩm.";
     if (editSelectedBranchIds.length === 0) newErrors.branches = "Vui lòng chọn ít nhất 1 chi nhánh.";
-    if (!editOriginalPriceStr.trim() || editOriginalPrice <= 0) newErrors.originalPrice = "Giá gốc phải lớn hơn 0.";
-    if (!editSellingPriceStr.trim() || editSellingPrice < 0) newErrors.sellingPrice = "Giá bán không hợp lệ.";
-    else if (editSellingPrice > editOriginalPrice) newErrors.sellingPrice = "Giá bán không thể lớn hơn Giá gốc.";
+    if (!editOriginalPriceStr.trim() || editOriginalPrice <= 0) newErrors.originalPrice = "Giá gốc phải lớn hơn 0₫.";
+    if (!editSellingPriceStr.trim() || editSellingPrice < 0) {
+      newErrors.sellingPrice = "Giá bán không hợp lệ (không thể âm).";
+    } else if (editOriginalPrice > 0 && editSellingPrice >= editOriginalPrice) {
+      newErrors.sellingPrice = "Giá bán phải nhỏ hơn Giá gốc (Voucher phải có mức giảm giá > 0₫).";
+    }
     if (!Number.isSafeInteger(editIssuedQuantity) || editIssuedQuantity <= 0) newErrors.issuedQuantity = "Số lượng phát hành phải là số nguyên dương.";
 
     if (!editSellStartDate.trim()) newErrors.sellStartDate = "Chọn thời gian bắt đầu bán.";
-    if (!editSellEndDate.trim()) newErrors.sellEndDate = "Chọn thời gian kết thúc bán.";
-    else if (editSellStartDate && new Date(editSellEndDate) <= new Date(editSellStartDate)) newErrors.sellEndDate = "Thời gian kết thúc bán phải sau thời gian bắt đầu bán.";
-    if (!editUseStartDate.trim()) newErrors.useStartDate = "Chọn thời gian bắt đầu sử dụng.";
-    if (!editUseEndDate.trim()) newErrors.useEndDate = "Chọn thời gian kết thúc sử dụng.";
-    else if (editUseStartDate && new Date(editUseEndDate) <= new Date(editUseStartDate)) newErrors.useEndDate = "Thời gian kết thúc sử dụng phải sau thời gian bắt đầu sử dụng.";
+    if (!editSellEndDate.trim()) {
+      newErrors.sellEndDate = "Chọn thời gian kết thúc bán.";
+    } else if (editSellStartDate && new Date(editSellEndDate) <= new Date(editSellStartDate)) {
+      newErrors.sellEndDate = "Thời gian kết thúc bán phải sau thời gian bắt đầu bán.";
+    }
+    if (!editUseStartDate.trim()) {
+      newErrors.useStartDate = "Chọn thời gian bắt đầu sử dụng.";
+    } else if (editSellStartDate && new Date(editUseStartDate) < new Date(editSellStartDate)) {
+      newErrors.useStartDate = "Thời gian bắt đầu sử dụng không thể trước thời gian bắt đầu bán.";
+    }
+    if (!editUseEndDate.trim()) {
+      newErrors.useEndDate = "Chọn thời gian kết thúc sử dụng.";
+    } else if (editUseStartDate && new Date(editUseEndDate) <= new Date(editUseStartDate)) {
+      newErrors.useEndDate = "Thời gian kết thúc sử dụng phải sau thời gian bắt đầu sử dụng.";
+    } else if (editSellEndDate && new Date(editUseEndDate) < new Date(editSellEndDate)) {
+      newErrors.useEndDate = "Hạn chót sử dụng voucher phải sau hoặc bằng thời gian kết thúc bán.";
+    }
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
@@ -519,94 +538,117 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
               {/* Giá gốc, Giá bán, Mức giảm */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Giá gốc (VNĐ) *</label>
-                  <input
-                    type="number"
-                    value={editOriginalPriceStr}
-                    onChange={(e) => setEditOriginalPriceStr(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.originalPrice && <p className="text-sm text-error mt-1">{errors.originalPrice}</p>}
-                </div>
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Giá gốc (VNĐ) *</label>
+                   <input
+                     type="number"
+                     min="0"
+                     step="1"
+                     value={editOriginalPriceStr}
+                     onChange={(e) => setEditOriginalPriceStr(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.originalPrice && <p className="text-sm text-error mt-1">{errors.originalPrice}</p>}
+                 </div>
 
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Giá bán (VNĐ) *</label>
-                  <input
-                    type="number"
-                    value={editSellingPriceStr}
-                    onChange={(e) => setEditSellingPriceStr(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.sellingPrice && <p className="text-sm text-error mt-1">{errors.sellingPrice}</p>}
-                </div>
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Giá bán (VNĐ) *</label>
+                   <input
+                     type="number"
+                     min="0"
+                     step="1"
+                     value={editSellingPriceStr}
+                     onChange={(e) => setEditSellingPriceStr(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.sellingPrice && <p className="text-sm text-error mt-1">{errors.sellingPrice}</p>}
+                 </div>
 
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1 text-primary">[Mức giảm tính toán]</label>
-                  <div className="w-full border border-primary/40 bg-primary-container/20 rounded-lg px-4 py-3 text-lg font-bold text-primary">
-                    {editDiscountAmount > 0 ? `${editDiscountAmount.toLocaleString()} VNĐ` : "0 VNĐ"}
-                  </div>
-                </div>
-              </div>
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1 text-primary">[Mức giảm tính toán]</label>
+                   <div className="w-full border border-primary/40 bg-primary-container/20 rounded-lg px-4 py-3 text-lg font-bold text-primary flex items-center justify-between">
+                     <div className="flex items-center gap-2 flex-wrap">
+                       <span>{editDiscountAmount > 0 ? `${editDiscountAmount.toLocaleString()} VNĐ` : "0 VNĐ"}</span>
+                       {editDiscountPercent > 0 && (
+                         <span className="text-xs font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                           -{editDiscountPercent}%
+                         </span>
+                       )}
+                     </div>
+                     <span className="text-xs text-on-surface-variant font-normal">(Giá gốc − Giá bán)</span>
+                   </div>
+                 </div>
+               </div>
 
-              {/* Số lượng phát hành */}
-              <div>
-                <label className="block font-semibold text-on-surface mb-1">Số lượng phát hành *</label>
-                <input
-                  type="number"
-                  value={editIssuedQuantityStr}
-                  onChange={(e) => setEditIssuedQuantityStr(e.target.value)}
-                  className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                />
-                {errors.issuedQuantity && <p className="text-sm text-error mt-1">{errors.issuedQuantity}</p>}
-              </div>
+               {/* Số lượng phát hành */}
+               <div>
+                 <label className="block font-semibold text-on-surface mb-1">Số lượng phát hành *</label>
+                 <input
+                   type="number"
+                   min="1"
+                   step="1"
+                   value={editIssuedQuantityStr}
+                   onChange={(e) => setEditIssuedQuantityStr(e.target.value)}
+                   className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                 />
+                 {errors.issuedQuantity && <p className="text-sm text-error mt-1">{errors.issuedQuantity}</p>}
+               </div>
 
-              {/* Thời gian bán & Thời gian sử dụng */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu bán *</label>
-                  <input
-                    type="datetime-local"
-                    value={editSellStartDate}
-                    onChange={(e) => setEditSellStartDate(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.sellStartDate && <p className="text-sm text-error mt-1">{errors.sellStartDate}</p>}
-                </div>
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc bán *</label>
-                  <input
-                    type="datetime-local"
-                    value={editSellEndDate}
-                    onChange={(e) => setEditSellEndDate(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.sellEndDate && <p className="text-sm text-error mt-1">{errors.sellEndDate}</p>}
-                </div>
-              </div>
+               {/* Thời gian bán & Thời gian sử dụng */}
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu bán *</label>
+                   <input
+                     type="datetime-local"
+                     value={editSellStartDate}
+                     onChange={(e) => setEditSellStartDate(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.sellStartDate && <p className="text-sm text-error mt-1">{errors.sellStartDate}</p>}
+                 </div>
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc bán *</label>
+                   <input
+                     type="datetime-local"
+                     value={editSellEndDate}
+                     min={editSellStartDate || undefined}
+                     onChange={(e) => setEditSellEndDate(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.sellEndDate && <p className="text-sm text-error mt-1">{errors.sellEndDate}</p>}
+                 </div>
+               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu sử dụng *</label>
-                  <input
-                    type="datetime-local"
-                    value={editUseStartDate}
-                    onChange={(e) => setEditUseStartDate(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.useStartDate && <p className="text-sm text-error mt-1">{errors.useStartDate}</p>}
-                </div>
-                <div>
-                  <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc sử dụng *</label>
-                  <input
-                    type="datetime-local"
-                    value={editUseEndDate}
-                    onChange={(e) => setEditUseEndDate(e.target.value)}
-                    className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
-                  />
-                  {errors.useEndDate && <p className="text-sm text-error mt-1">{errors.useEndDate}</p>}
-                </div>
-              </div>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Thời gian bắt đầu sử dụng *</label>
+                   <input
+                     type="datetime-local"
+                     value={editUseStartDate}
+                     min={editSellStartDate || undefined}
+                     onChange={(e) => setEditUseStartDate(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.useStartDate && <p className="text-sm text-error mt-1">{errors.useStartDate}</p>}
+                 </div>
+                 <div>
+                   <label className="block font-semibold text-on-surface mb-1">Thời gian kết thúc sử dụng *</label>
+                   <input
+                     type="datetime-local"
+                     value={editUseEndDate}
+                     min={
+                       editUseStartDate && editSellEndDate
+                         ? editUseStartDate > editSellEndDate
+                           ? editUseStartDate
+                           : editSellEndDate
+                         : editSellEndDate || editUseStartDate || undefined
+                     }
+                     onChange={(e) => setEditUseEndDate(e.target.value)}
+                     className="w-full border border-outline-variant rounded-lg px-4 py-3 text-on-surface outline-none"
+                   />
+                   {errors.useEndDate && <p className="text-sm text-error mt-1">{errors.useEndDate}</p>}
+                 </div>
+               </div>
 
               <VoucherImageGallery
                 items={galleryImages}

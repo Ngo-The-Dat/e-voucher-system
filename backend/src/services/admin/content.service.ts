@@ -1,3 +1,22 @@
+/**
+ * =========================================================================================
+ * FILE: content.service.ts
+ * VỊ TRÍ: backend/src/services/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Dịch vụ Nghiệp vụ (Business Logic Layer) quản lý Truyền thông & Nội dung Sàn (UC-ADM-04, UC-ADM-05).
+ *   - Quản lý 4 phân hệ nội dung chính:
+ *       1. DANH MỤC NGÀNH HÀNG (Categories):
+ *          - CRUD Danh mục (Ẩm thực, Thời trang, Du lịch...), đếm số lượng voucher thuộc danh mục,
+ *            ngăn chặn xóa cứng nếu danh mục đang có voucher hoạt động (Soft delete -> INACTIVE).
+ *       2. BANNER QUẢNG CÁO (Banners):
+ *          - CRUD Banner trang chủ/danh mục, quản lý thứ tự hiển thị (display_order), thời hạn kích hoạt.
+ *       3. POPUP KHUYẾN MÃI (Popups):
+ *          - CRUD Popup marketing, cấu hình trigger hiển thị (trên trang chủ/sản phẩm), ngày bắt đầu/kết thúc.
+ *       4. BÀI VIẾT NỘI DUNG & ĐIỀU KHOẢN (Content & Articles):
+ *          - CRUD bài viết cẩm nang mua sắm, chính sách bảo mật, điều khoản sử dụng và FAQ.
+ * =========================================================================================
+ */
+
 import pool from '../../config/db.js';
 import { logAdminAction } from './system-log.service.js';
 
@@ -33,7 +52,7 @@ export interface ContentFilter {
   limit?: number;
 }
 
-// ─── 1. Categories (Danh mục) ────────────────────────────────────────────────
+// ─── 1. Categories (Danh mục ngành hàng) ────────────────────────────────────
 
 export async function getCategories(filter: CategoryFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);

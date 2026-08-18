@@ -227,7 +227,10 @@ export default function EmployeeProfilePage() {
             <div>
               <span className="text-xs font-medium text-on-surface-variant block mb-1">Trạng thái tài khoản</span>
               <div className="mt-0.5">
-                <StatusBadge status={profile?.status === "ACTIVE" ? "approved" : "rejected"} />
+                <StatusBadge
+                  status={profile?.status === "ACTIVE" ? "active" : "pending"}
+                  label={profile?.status === "ACTIVE" ? "Đang hoạt động" : "Chưa duyệt"}
+                />
               </div>
             </div>
 

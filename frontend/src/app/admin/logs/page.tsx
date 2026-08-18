@@ -1,36 +1,56 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/logs/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Tra cứu & Kiểm toán Nhật ký Hệ thống (UC-ADM-08, UC-ADM-13: Xem và tra cứu Nhật ký Hệ thống).
+ *   - Các tính năng chính:
+ *       1. Tìm kiếm và lọc đa chiều: Theo từ khóa, Loại đối tượng (USER, PARTNER, VOUCHER, ORDER...),
+ *          Kết quả thực hiện (SUCCESS / FAILED), và khoảng thời gian (Từ ngày -> Đến ngày).
+ *       2. Bảng hiển thị thông tin kiểm toán: Mã Log, Thời gian, Người thực hiện, Hành động, Đối tượng tác động, Trạng thái.
+ *       3. Modal xem chi tiết bản ghi kiểm toán: Hiển thị so sánh trực quan Biến động dữ liệu (old_value vs new_value)
+ *          dưới dạng JSON có định dạng màu sắc rõ ràng (Đỏ cho giá trị cũ, Xanh cho giá trị mới).
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
 import { useState, useEffect, useCallback } from "react";
 import { Input } from "@/components/shared/ui/Input";
 import { Button } from "@/components/shared/ui/Button";
+import FormField from "@/components/shared/ui/FormField";
 import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, SystemLogItem } from "@/lib/admin-api";
 
 export default function SystemLogsPage() {
-  // Search & Filters State (UC-ADM-13)
+  // ─── 1. State Bộ lọc & Tìm kiếm ──────────────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
   const [objectTypeFilter, setObjectTypeFilter] = useState("ALL");
   const [resultFilter, setResultFilter] = useState("ALL");
   const [startDateFilter, setStartDateFilter] = useState("");
   const [endDateFilter, setEndDateFilter] = useState("");
 
-  // Data & Loading State
+  // ─── 2. State Dữ liệu Log & Phân trang ───────────────────────────────────────────
   const [logs, setLogs] = useState<SystemLogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const itemsPerPage = 10;
 
-  // Selected Log for Detail Modal
+  // ─── 3. State Modal Chi tiết Log (Diff old_value vs new_value) ─────────────────────
   const [selectedLog, setSelectedLog] = useState<SystemLogItem | null>(null);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
 
-  // Fetch logs from API
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchLogs
+   * MỤC ĐÍCH: Gọi API `adminApi.getLogs` với toàn bộ bộ lọc và phân trang hiện tại.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchLogs = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -60,7 +80,12 @@ export default function SystemLogsPage() {
     fetchLogs();
   }, [fetchLogs]);
 
-  // Open Log Detail Modal
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleOpenDetail
+   * MỤC ĐÍCH: Mở modal xem chi tiết 1 bản ghi log (gọi API để lấy đủ old_value và new_value).
+   * ---------------------------------------------------------------------------------------
+   */
   const handleOpenDetail = async (logId: string) => {
     setIsLoadingDetail(true);
     try {
@@ -68,7 +93,6 @@ export default function SystemLogsPage() {
       setSelectedLog(detail);
     } catch (err: any) {
       console.error("Lỗi khi tải chi tiết nhật ký:", err);
-      // Fallback to local item if API detail fetch fails
       const fallback = logs.find((l) => String(l.log_id) === String(logId));
       if (fallback) setSelectedLog(fallback);
     } finally {
@@ -76,7 +100,6 @@ export default function SystemLogsPage() {
     }
   };
 
-  // Helper to format Date string
   const formatDate = (dateStr?: string | null) => {
     if (!dateStr) return "N/A";
     try {
@@ -95,7 +118,6 @@ export default function SystemLogsPage() {
     }
   };
 
-  // Helper to stringify JSON nicely
   const formatJson = (val: any): string | null => {
     if (val === null || val === undefined) return null;
     if (typeof val === "string") {
@@ -120,7 +142,7 @@ export default function SystemLogsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ─── PHẦN 1: Tiêu đề trang & Nút Đặt lại ──────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-border">
         <div>
           <div className="flex items-center gap-3">
@@ -144,91 +166,110 @@ export default function SystemLogsPage() {
         </div>
       </div>
 
-      {/* Multi-filter Bar */}
-      <div className="bg-white p-4 rounded-2xl border border-border shadow-sm space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-          {/* Keyword Search */}
-          <div className="relative">
-            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
-            <Input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              placeholder="Tìm hành động, người dùng, mã ID..."
-              className="w-full pl-9 pr-3 py-2 text-xs border-slate-200 rounded-xl"
-            />
-          </div>
-
-          {/* Object Type Filter */}
+      {/* ─── PHẦN 2: Thanh Bộ Lọc Đa Chiều (UC-ADM-13) ────────────────────────────── */}
+      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-end">
+          {/* Ô Tìm kiếm */}
           <div>
-            <select
-              value={objectTypeFilter}
-              onChange={(e) => {
-                setObjectTypeFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white font-medium focus:outline-none focus:border-primary"
-            >
-              <option value="ALL">Tất cả loại đối tượng</option>
-              <option value="USER">Người dùng (USER)</option>
-              <option value="PARTNER">Đối tác (PARTNER)</option>
-              <option value="BRANCH">Chi nhánh (BRANCH)</option>
-              <option value="CATEGORY">Danh mục (CATEGORY)</option>
-              <option value="VOUCHER_PROGRAM">Chương trình Voucher (VOUCHER_PROGRAM)</option>
-              <option value="APPROVAL_REQUEST">Yêu cầu duyệt (APPROVAL_REQUEST)</option>
-              <option value="ORDER">Đơn hàng (ORDER)</option>
-              <option value="ORDER_CANCELLATION">Hủy đơn hàng (ORDER_CANCELLATION)</option>
-              <option value="BANNER">Banner & Quảng cáo (BANNER)</option>
-              <option value="POPUP">Popup truyền thông (POPUP)</option>
-              <option value="CONTENT">Nội dung (CONTENT)</option>
-            </select>
+            <FormField label="Tìm kiếm nhật ký">
+              <div className="relative">
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+                <Input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  placeholder="Tìm hành động, người dùng, mã ID..."
+                  className="w-full h-[38px] pl-9 pr-3 text-xs border-slate-200 rounded-xl"
+                />
+              </div>
+            </FormField>
           </div>
 
-          {/* Result Filter */}
+          {/* Lọc theo Loại đối tượng (object_type) */}
           <div>
-            <select
-              value={resultFilter}
-              onChange={(e) => {
-                setResultFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white font-medium focus:outline-none focus:border-primary"
-            >
-              <option value="ALL">Tất cả kết quả</option>
-              <option value="SUCCESS">Thành công (SUCCESS)</option>
-              <option value="FAILED">Thất bại / Lỗi (FAILED)</option>
-            </select>
+            <FormField label="Loại đối tượng">
+              <div className="relative">
+                <select
+                  value={objectTypeFilter}
+                  onChange={(e) => {
+                    setObjectTypeFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3.5 pr-9 text-xs border border-slate-200 rounded-xl bg-slate-50 font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="USER">Người dùng (USER)</option>
+                  <option value="PARTNER">Đối tác (PARTNER)</option>
+                  <option value="PARTNER_EMPLOYEE">Nhân viên đối tác (PARTNER_EMPLOYEE)</option>
+                  <option value="BRANCH">Chi nhánh (BRANCH)</option>
+                  <option value="CATEGORY">Danh mục (CATEGORY)</option>
+                  <option value="VOUCHER_PROGRAM">Chương trình Voucher (VOUCHER_PROGRAM)</option>
+                  <option value="APPROVAL_REQUEST">Yêu cầu duyệt (APPROVAL_REQUEST)</option>
+                  <option value="ORDER">Đơn hàng (ORDER)</option>
+                  <option value="ORDER_CANCELLATION">Hủy đơn hàng (ORDER_CANCELLATION)</option>
+                  <option value="BANNER">Banner & Quảng cáo (BANNER)</option>
+                  <option value="POPUP">Popup truyền thông (POPUP)</option>
+                  <option value="CONTENT">Nội dung (CONTENT)</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
 
-          {/* Date Picker Filter */}
-          <div className="flex items-center gap-1 text-xs bg-slate-50 p-1 border border-slate-200 rounded-xl">
-            <Input
-              type="date"
-              value={startDateFilter}
-              onChange={(e) => {
-                setStartDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
-            />
-            <span className="text-slate-400">&rarr;</span>
-            <Input
-              type="date"
-              value={endDateFilter}
-              onChange={(e) => {
-                setEndDateFilter(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full h-8 px-2 py-1 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
-            />
+          {/* Lọc theo Kết quả thực hiện (SUCCESS / FAILED) */}
+          <div>
+            <FormField label="Kết quả thực hiện">
+              <div className="relative">
+                <select
+                  value={resultFilter}
+                  onChange={(e) => {
+                    setResultFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3.5 pr-9 text-xs border border-slate-200 rounded-xl bg-slate-50 font-medium focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="SUCCESS">Thành công (SUCCESS)</option>
+                  <option value="FAILED">Thất bại / Lỗi (FAILED)</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
+          </div>
+
+          {/* Lọc theo Khoảng thời gian */}
+          <div>
+            <FormField label="Khoảng thời gian">
+              <div className="flex items-center gap-1.5 bg-slate-50 px-2 py-1 border border-slate-200 rounded-xl h-[38px]">
+                <Input
+                  type="date"
+                  value={startDateFilter}
+                  onChange={(e) => {
+                    setStartDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-7 px-1.5 py-0.5 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
+                />
+                <span className="text-slate-400">&rarr;</span>
+                <Input
+                  type="date"
+                  value={endDateFilter}
+                  onChange={(e) => {
+                    setEndDateFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-7 px-1.5 py-0.5 bg-white border-slate-200 rounded-lg text-slate-700 text-[11px]"
+                />
+              </div>
+            </FormField>
           </div>
         </div>
       </div>
 
-      {/* Error Banner */}
+      {/* Thông báo lỗi nếu có */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -241,7 +282,7 @@ export default function SystemLogsPage() {
         </div>
       )}
 
-      {/* Logs Table Area */}
+      {/* ─── PHẦN 3: Bảng Dữ Liệu Nhật Ký Hệ Thống ─────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center">
@@ -288,12 +329,17 @@ export default function SystemLogsPage() {
                     className="hover:bg-slate-50/60 transition cursor-pointer"
                     onClick={() => handleOpenDetail(String(log.log_id))}
                   >
+                    {/* Mã Log */}
                     <td className="py-4 px-5 font-mono font-bold text-slate-900">
                       LOG-{log.log_id}
                     </td>
+
+                    {/* Thời gian thực hiện */}
                     <td className="py-4 px-5 text-slate-500 text-[11px] font-mono">
                       {formatDate(log.performed_at)}
                     </td>
+
+                    {/* Người thực hiện */}
                     <td className="py-4 px-5">
                       <p className="font-semibold text-slate-900 text-xs">
                         {log.user_name || `User #${log.user_id}`}
@@ -302,9 +348,13 @@ export default function SystemLogsPage() {
                         ID: {log.user_id} {log.user_role ? `(${log.user_role})` : ""}
                       </p>
                     </td>
+
+                    {/* Hành động */}
                     <td className="py-4 px-5 font-medium text-slate-800 text-xs">
                       {log.action}
                     </td>
+
+                    {/* Loại đối tượng & Object ID */}
                     <td className="py-4 px-5">
                       {log.object_type ? (
                         <span className="px-2.5 py-1 text-[11px] font-bold rounded-md bg-slate-100 text-slate-700 whitespace-nowrap font-mono">
@@ -314,6 +364,8 @@ export default function SystemLogsPage() {
                         <span className="text-slate-400 italic text-[11px]">-</span>
                       )}
                     </td>
+
+                    {/* Kết quả (SUCCESS / FAILED) */}
                     <td className="py-4 px-5">
                       <span
                         className={`px-2.5 py-0.5 text-[11px] font-bold rounded-md whitespace-nowrap ${
@@ -325,6 +377,8 @@ export default function SystemLogsPage() {
                         {log.result === "SUCCESS" ? "Thành công" : "Thất bại"}
                       </span>
                     </td>
+
+                    {/* Thao tác xem chi tiết */}
                     <td className="py-4 px-5 text-right">
                       <Button
                         variant="outline"
@@ -345,7 +399,7 @@ export default function SystemLogsPage() {
           </div>
         )}
 
-        {/* Pagination Bar */}
+        {/* ─── PHẦN 4: Phân Trang ──────────────────────────────────────────────────── */}
         {!isLoading && logs.length > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -358,7 +412,7 @@ export default function SystemLogsPage() {
         )}
       </div>
 
-      {/* Log Detail Modal */}
+      {/* ─── PHẦN 5: Modal Chi Tiết Log & So Sánh Biến Động Dữ Liệu (old vs new) ───── */}
       {selectedLog && (
         <div
           className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4"
@@ -368,7 +422,7 @@ export default function SystemLogsPage() {
             className="bg-white w-full max-w-2xl rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-in zoom-in-95 duration-150"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Modal Header */}
+            {/* Header Modal */}
             <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
               <div>
                 <div className="flex items-center gap-2">
@@ -397,7 +451,7 @@ export default function SystemLogsPage() {
               </button>
             </div>
 
-            {/* Modal Body */}
+            {/* Thân Modal */}
             <div className="p-6 space-y-5 max-h-[75vh] overflow-y-auto text-xs">
               {isLoadingDetail ? (
                 <div className="p-8 text-center">
@@ -406,7 +460,7 @@ export default function SystemLogsPage() {
                 </div>
               ) : (
                 <>
-                  {/* Metadata Grid */}
+                  {/* Grid thông tin chung */}
                   <div className="grid grid-cols-2 gap-4 p-4 bg-slate-50 rounded-xl border border-slate-200">
                     <div>
                       <span className="text-slate-400 font-medium">Người thực hiện:</span>
@@ -439,13 +493,13 @@ export default function SystemLogsPage() {
                     </div>
                   </div>
 
-                  {/* Data Change Diff: old_value vs new_value */}
+                  {/* So sánh biến động dữ liệu: old_value vs new_value */}
                   <div className="space-y-3">
                     <h4 className="font-bold text-slate-800 text-xs uppercase tracking-wider">
                       Biến động dữ liệu (old_value vs new_value)
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Old Value */}
+                      {/* Dữ liệu cũ (old_value) */}
                       <div className="p-3 bg-rose-50/50 border border-rose-200/70 rounded-xl">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-rose-700 text-[11px]">
@@ -463,7 +517,7 @@ export default function SystemLogsPage() {
                         )}
                       </div>
 
-                      {/* New Value */}
+                      {/* Dữ liệu mới (new_value) */}
                       <div className="p-3 bg-emerald-50/50 border border-emerald-200/70 rounded-xl">
                         <div className="flex items-center justify-between mb-2">
                           <span className="font-bold text-emerald-700 text-[11px]">
@@ -486,7 +540,7 @@ export default function SystemLogsPage() {
               )}
             </div>
 
-            {/* Modal Footer */}
+            {/* Footer Modal */}
             <div className="p-4 border-t border-slate-100 flex justify-end bg-slate-50">
               <Button
                 variant="outline"

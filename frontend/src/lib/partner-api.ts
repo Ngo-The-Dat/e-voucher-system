@@ -76,7 +76,12 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return body as T;
 }
 
-const dateInput = (value?: string | null) => value ? value.slice(0, 16) : "";
+const dateInput = (value?: string | null) => {
+  if (!value) return "";
+  if (value.includes("T")) return value.split("T")[0];
+  if (value.includes(" ")) return value.split(" ")[0];
+  return value.slice(0, 10);
+};
 const mapBranch = (row: any): Branch => ({
   id: String(row.branch_id), name: row.branch_name, address: row.address,
   region: row.region ?? "", phone: row.phone ?? "",

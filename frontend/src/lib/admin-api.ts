@@ -1,3 +1,24 @@
+/**
+ * =========================================================================================
+ * FILE: admin-api.ts
+ * VỊ TRÍ: frontend/src/lib/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Lớp Data Access / API Client tập trung dành riêng cho phân hệ Quản trị (Admin Portal).
+ *   - Chịu trách nhiệm:
+ *       1. Quản lý xác thực Bearer Token (Lấy từ localStorage hoặc Dev Token dự phòng).
+ *       2. Định nghĩa hàm trung tâm `adminRequest`: Tự động đính kèm Headers, Authorization và xử lý lỗi đồng nhất (AdminApiError).
+ *       3. Định nghĩa toàn bộ TypeScript Interfaces và các phương thức gọi API cho:
+ *          - Người dùng (Users): getUsers, getUser, lockUser, unlockUser, changeUserRole.
+ *          - Nhật ký hệ thống (Logs): getLogs, getLog.
+ *          - Duyệt đối tác & nhân viên: getPendingPartners, getPendingPartnerDetail, approvePartner, rejectPartner, getPendingEmployees, approveEmployee, rejectEmployee.
+ *          - Quản lý đối tác & chi nhánh: getPartners, getPartnerDetail, lockPartner, unlockPartner, createBranch, updateBranch, deleteBranch.
+ *          - Duyệt & Quản lý Voucher: getPendingVouchers, getPendingVoucherDetail, approveVoucher, rejectVoucher, getManagedVouchers, getManagedVoucherDetail, updateVoucherStatus.
+ *          - Quản lý đơn hàng: getOrders, getOrderDetail, cancelOrder.
+ *          - Dashboard & Báo cáo: getDashboardOverview.
+ *          - Quản lý truyền thông & nội dung: Banners, Popups, Content, Categories.
+ * =========================================================================================
+ */
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export class AdminApiError extends Error {
@@ -49,6 +70,9 @@ const redirectToLogin = () => {
   window.location.replace("/admin/login");
 };
 
+/**
+ * Lấy Bearer JWT Token của Admin từ LocalStorage
+ */
 const getStoredAdminToken = (): string | null => {
   if (typeof window === "undefined") return null;
   const token = localStorage.getItem("admin_access_token");
@@ -60,6 +84,12 @@ const getStoredAdminToken = (): string | null => {
   return token;
 };
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: adminRequest
+ * MỤC ĐÍCH: Hàm gọi HTTP Request dùng chung cho toàn bộ phân hệ Admin, tự động đính kèm Token và xử lý lỗi.
+ * -----------------------------------------------------------------------------------------
+ */
 async function adminRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getStoredAdminToken();
   const response = await fetch(`${API_URL}${path}`, {
@@ -166,6 +196,50 @@ export interface PartnersResponse {
   };
 }
 
+export interface AdminPendingEmployeeListItem {
+  user_id: number;
+  full_name: string;
+  email: string;
+  phone?: string | null;
+  identity_no?: string | null;
+  gender?: string | null;
+  nationality?: string | null;
+  account_status: string;
+  created_at: string;
+  approval_request_id?: number | null;
+  approval_status: "PENDING" | "APPROVED" | "REJECTED";
+  submitted_at: string;
+  reviewed_at?: string | null;
+  admin_feedback?: string | null;
+  branch_id: number;
+  branch_name: string;
+  branch_address: string;
+  branch_phone?: string | null;
+  partner_id: number;
+  business_name: string;
+  tax_code: string;
+}
+
+export interface AdminPendingEmployeeDetail extends AdminPendingEmployeeListItem {
+  last_login_at?: string | null;
+  reviewer_name?: string | null;
+  branch_region?: string | null;
+  branch_status?: string;
+  brand_logo?: string | null;
+  partner_activity_status?: string;
+  business_license_no?: string | null;
+}
+
+export interface EmployeesResponse {
+  employees: AdminPendingEmployeeListItem[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
 export interface AdminVoucherBranch {
   branch_id: number;
   branch_name: string;
@@ -173,6 +247,13 @@ export interface AdminVoucherBranch {
   region?: string | null;
   phone?: string | null;
   status?: string;
+}
+
+export interface AdminVoucherImage {
+  image_id: number;
+  image_url: string;
+  is_primary: boolean;
+  sort_order?: number;
 }
 
 export interface AdminPendingVoucherItem {
@@ -200,6 +281,7 @@ export interface AdminPendingVoucherItem {
   partner_email: string;
   partner_phone: string | null;
   branches?: AdminVoucherBranch[];
+  images?: AdminVoucherImage[];
 }
 
 export interface AdminPendingVoucherDetail extends AdminPendingVoucherItem {
@@ -238,6 +320,16 @@ export interface AdminManagedVoucherItem {
   branch_name: string;
   sold_count: number;
   stock: number;
+  images?: AdminVoucherImage[];
+}
+
+export interface AdminManagedVoucherDetail extends AdminManagedVoucherItem {
+  partner_representative?: string;
+  partner_email?: string;
+  partner_phone?: string | null;
+  business_license_no?: string | null;
+  branches?: AdminVoucherBranch[];
+  used_count?: number;
 }
 
 export interface ManagedVouchersResponse {
@@ -409,6 +501,47 @@ export const adminApi = {
 
   getLog: async (id: string | number): Promise<SystemLogDetail> => {
     return adminRequest<SystemLogDetail>(`/admin/logs/${id}`);
+  },
+
+  // Employee Approvals
+  getPendingEmployees: async (params?: {
+    search?: string;
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }): Promise<EmployeesResponse> => {
+    const query = new URLSearchParams();
+    if (params?.search) query.set("search", params.search);
+    if (params?.status && params.status !== "ALL") query.set("status", params.status);
+    if (params?.startDate) query.set("start_date", params.startDate);
+    if (params?.endDate) query.set("end_date", params.endDate);
+    if (params?.page) query.set("page", String(params.page));
+    if (params?.limit) query.set("limit", String(params.limit));
+
+    const qs = query.toString() ? `?${query.toString()}` : "";
+    return adminRequest<EmployeesResponse>(`/admin/partners/employee-approvals/pending${qs}`);
+  },
+
+  getPendingEmployee: async (id: string | number): Promise<AdminPendingEmployeeDetail> => {
+    return adminRequest<AdminPendingEmployeeDetail>(`/admin/partners/employee-approvals/pending/${id}`);
+  },
+
+  approveEmployee: async (id: string | number): Promise<{ message: string; employee_id: number }> => {
+    return adminRequest(`/admin/partners/employee-approvals/${id}/approve`, {
+      method: "POST",
+    });
+  },
+
+  rejectEmployee: async (
+    id: string | number,
+    reason?: string
+  ): Promise<{ message: string; employee_id: number; reason?: string }> => {
+    return adminRequest(`/admin/partners/employee-approvals/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ reason: reason || "" }),
+    });
   },
 
   // Partners - Pending
@@ -592,6 +725,10 @@ export const adminApi = {
 
     const qs = query.toString() ? `?${query.toString()}` : "";
     return adminRequest<ManagedVouchersResponse>(`/admin/vouchers/manage${qs}`);
+  },
+
+  getManagedVoucher: async (programId: string | number): Promise<AdminManagedVoucherDetail> => {
+    return adminRequest<AdminManagedVoucherDetail>(`/admin/vouchers/manage/${programId}`);
   },
 
   updateVoucherStatus: async (

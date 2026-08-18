@@ -1,3 +1,21 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Dashboard Quản trị Tổng quan Toàn Sàn (UC-ADM-06: Thống kê tổng quan, UC-ADM-07: Báo cáo hiệu suất).
+ *   - Các tính năng chính:
+ *       1. Bộ chọn khoảng thời gian toàn cục (Global Timeframe Filter):
+ *          - Hôm nay (today), Tuần này (week), Tháng này (month), hoặc Tùy chọn ngày (custom date picker).
+ *       2. 5 Thẻ chỉ số KPI cốt lõi (Lưới KpiCard):
+ *          - Tổng doanh thu, Đơn hàng hoàn tất, Voucher đã quy đổi (Redeem Rate), Tổng số khách hàng, Đối tác đang hoạt động.
+ *       3. Khối Chỉ số Hiệu quả Vận hành (Operational Efficiency Metrics):
+ *          - Tỷ lệ quy đổi voucher, Tỷ lệ hoàn tất đơn hàng, Giá trị đơn hàng trung bình (AOV), Doanh thu TB / Đối tác.
+ *       4. Bảng Phân tích Hiệu quả theo Danh mục Ngành hàng (Category Performance Breakdown):
+ *          - Thống kê chi tiết doanh thu, số lượng bán, số lượng quy đổi và thanh tiến độ % quy đổi cho từng nhóm ngành.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -8,7 +26,7 @@ import { Button } from "@/components/shared/ui/Button";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function DashboardOverview() {
-  // Global Timeframe State
+  // ─── 1. State Khoảng thời gian toàn cục (Global Timeframe) ─────────────────────────
   type Timeframe = "today" | "week" | "month" | "custom";
   const [timeframe, setTimeframe] = useState<Timeframe>("week");
 
@@ -31,6 +49,7 @@ export default function DashboardOverview() {
 
   const isInvalidDateRange = Boolean(timeframe === "custom" && startDate && endDate && startDate > endDate);
 
+  // ─── 2. Custom Hook Tải Dữ liệu Dashboard ──────────────────────────────────────────
   const {
     isLoading,
     error,
@@ -46,7 +65,7 @@ export default function DashboardOverview() {
 
   return (
     <div className="space-y-8">
-      {/* Page Header with Global Timeframe Filter */}
+      {/* ─── PHẦN 1: Tiêu đề Dashboard & Bộ Chọn Khoảng Thời Gian ─────────────────── */}
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 pb-4 border-b border-border">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">
@@ -57,9 +76,9 @@ export default function DashboardOverview() {
           </p>
         </div>
 
-        {/* Global Timeframe Selector & Custom Date Range */}
+        {/* Bộ nút chọn nhanh thời gian & Ô chọn ngày tùy chọn */}
         <div className="flex flex-col items-start xl:items-end gap-2 self-start xl:self-auto">
-          {/* Timeframe Buttons */}
+          {/* Nút bấm chuyển đổi: Hôm nay / Tuần này / Tháng này / Tùy chọn */}
           <div className="bg-slate-100 p-1 rounded-xl flex items-center gap-1 text-xs font-medium border border-slate-200">
             {(["today", "week", "month", "custom"] as const).map((tf) => (
               <button
@@ -81,7 +100,7 @@ export default function DashboardOverview() {
             ))}
           </div>
 
-          {/* Custom Date Range Picker (hiển thị ở dưới bên phải khi chọn Tùy chọn) */}
+          {/* Ô Chọn ngày bắt đầu - ngày kết thúc khi ở chế độ Tùy chọn */}
           {timeframe === "custom" && (
             <div className="flex items-center gap-2 bg-white px-3 py-1.5 border border-slate-200 hover:border-slate-300 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 rounded-xl shadow-sm transition-all animate-in fade-in slide-in-from-top-1 duration-200">
               <div className="flex items-center gap-1.5">
@@ -110,7 +129,7 @@ export default function DashboardOverview() {
         </div>
       </div>
 
-      {/* Loading Skeleton */}
+      {/* ─── PHẦN 2: Skeleton Loading ────────────────────────────────────────────── */}
       {isLoading && (
         <div className="space-y-6 animate-pulse">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
@@ -128,7 +147,7 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      {/* Error / Invalid State */}
+      {/* ─── PHẦN 3: Trạng thái Lỗi hoặc Khoảng thời gian không hợp lệ ─────────────── */}
       {!isLoading && error && (
         <div className="bg-white border-2 border-dashed border-amber-200 rounded-2xl p-12 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
@@ -166,10 +185,10 @@ export default function DashboardOverview() {
         </div>
       )}
 
-      {/* Main Dashboard Content */}
+      {/* ─── PHẦN 4: Nội Dung Chính Của Dashboard ─────────────────────────────────── */}
       {!isLoading && !error && (
         <div className="space-y-8 animate-in fade-in duration-200">
-          {/* 1. Lưới 5 Thẻ KPI Tổng quan */}
+          {/* Khối 1: Lưới 5 Thẻ KPI cốt lõi */}
           <div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
               {stats.map((stat, i) => {
@@ -192,7 +211,7 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          {/* 2. Khối Chỉ số Hiệu quả Vận hành (Operational Efficiency Metrics) */}
+          {/* Khối 2: 4 Chỉ số Hiệu quả Vận hành (Operational Efficiency Metrics) */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>
@@ -249,7 +268,7 @@ export default function DashboardOverview() {
                     </div>
                   </div>
 
-                  {/* Progress bar if applicable */}
+                  {/* Thanh tiến độ % quy đổi nếu có */}
                   {item.rate !== undefined && (
                     <div className="mt-3 space-y-1.5">
                       <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
@@ -274,7 +293,7 @@ export default function DashboardOverview() {
             </div>
           </div>
 
-          {/* 3. Bảng Phân tích Hiệu quả theo Danh mục Ngành hàng */}
+          {/* Khối 3: Bảng Phân tích Hiệu quả theo Danh mục Ngành hàng */}
           <div className="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
               <div>

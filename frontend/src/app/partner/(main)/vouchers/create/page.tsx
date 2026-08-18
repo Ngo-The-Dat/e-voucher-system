@@ -147,11 +147,11 @@ export default function CreateVoucherPage() {
     if (!title.trim()) newErrors.title = "Vui lòng nhập Tên chương trình.";
     if (!categoryId) newErrors.category = "Vui lòng chọn Danh mục sản phẩm.";
     if (selectedBranchIds.length === 0) newErrors.branches = "Vui lòng chọn ít nhất 1 chi nhánh áp dụng.";
-    if (!originalPriceStr.trim() || originalPrice <= 0) newErrors.originalPrice = "Vui lòng nhập Giá gốc hợp lệ (lớn hơn 0).";
+    if (!originalPriceStr.trim() || originalPrice <= 0) newErrors.originalPrice = "Vui lòng nhập Giá gốc hợp lệ (lớn hơn 0₫).";
     if (!sellingPriceStr.trim() || sellingPrice < 0) {
-      newErrors.sellingPrice = "Vui lòng nhập Giá bán hợp lệ.";
-    } else if (sellingPrice > originalPrice) {
-      newErrors.sellingPrice = "Giá bán không thể lớn hơn Giá gốc.";
+      newErrors.sellingPrice = "Vui lòng nhập Giá bán hợp lệ (không thể âm).";
+    } else if (originalPrice > 0 && sellingPrice >= originalPrice) {
+      newErrors.sellingPrice = "Giá bán phải nhỏ hơn Giá gốc (Voucher phải có mức giảm giá > 0₫).";
     }
     if (!Number.isSafeInteger(issuedQuantity) || issuedQuantity <= 0) newErrors.issuedQuantity = "Số lượng phát hành phải là số nguyên dương.";
     if (!sellStartDate.trim()) newErrors.sellStartDate = "Vui lòng chọn Thời gian bắt đầu bán.";
@@ -160,11 +160,17 @@ export default function CreateVoucherPage() {
     } else if (sellStartDate && new Date(sellEndDate) <= new Date(sellStartDate)) {
       newErrors.sellEndDate = "Thời gian kết thúc bán phải sau Thời gian bắt đầu bán.";
     }
-    if (!useStartDate.trim()) newErrors.useStartDate = "Vui lòng chọn Thời gian bắt đầu sử dụng.";
+    if (!useStartDate.trim()) {
+      newErrors.useStartDate = "Vui lòng chọn Thời gian bắt đầu sử dụng.";
+    } else if (sellStartDate && new Date(useStartDate) < new Date(sellStartDate)) {
+      newErrors.useStartDate = "Thời gian bắt đầu sử dụng không thể trước Thời gian bắt đầu bán.";
+    }
     if (!useEndDate.trim()) {
       newErrors.useEndDate = "Vui lòng chọn Thời gian kết thúc sử dụng.";
     } else if (useStartDate && new Date(useEndDate) <= new Date(useStartDate)) {
       newErrors.useEndDate = "Thời gian kết thúc sử dụng phải sau Thời gian bắt đầu sử dụng.";
+    } else if (sellEndDate && new Date(useEndDate) < new Date(sellEndDate)) {
+      newErrors.useEndDate = "Hạn chót sử dụng voucher phải sau hoặc bằng Thời gian kết thúc bán.";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -329,7 +335,14 @@ export default function CreateVoucherPage() {
               useStartDate={useStartDate}
               useEndDate={useEndDate}
               errors={errors}
-              onSellStartChange={(v) => { setSellStartDate(v); if (errors.sellStartDate) setErrors((p) => ({ ...p, sellStartDate: "" })); }}
+              onSellStartChange={(v) => {
+                setSellStartDate(v);
+                if (errors.sellStartDate) setErrors((p) => ({ ...p, sellStartDate: "" }));
+                if (!useStartDate) {
+                  setUseStartDate(v);
+                  if (errors.useStartDate) setErrors((p) => ({ ...p, useStartDate: "" }));
+                }
+              }}
               onSellEndChange={(v) => { setSellEndDate(v); if (errors.sellEndDate) setErrors((p) => ({ ...p, sellEndDate: "" })); }}
               onUseStartChange={(v) => { setUseStartDate(v); if (errors.useStartDate) setErrors((p) => ({ ...p, useStartDate: "" })); }}
               onUseEndChange={(v) => { setUseEndDate(v); if (errors.useEndDate) setErrors((p) => ({ ...p, useEndDate: "" })); }}

@@ -152,34 +152,41 @@ export default function CategoriesPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="relative flex-1">
-          <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
-          <Input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Tìm theo tên danh mục hoặc mã danh mục..."
-            className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
-          />
-        </div>
+      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs p-4 sm:p-5">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+          <div className="md:col-span-2">
+            <FormField label="Tìm kiếm danh mục">
+              <div className="relative">
+                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
+                <Input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Tìm theo tên danh mục hoặc mã danh mục..."
+                  className="w-full h-[38px] pl-9 pr-4 text-xs sm:text-sm border-slate-200 rounded-xl"
+                />
+              </div>
+            </FormField>
+          </div>
 
-        <div className="flex items-center gap-3">
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="h-[38px] px-3 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500"
-          >
-            <option value="ALL">Tất cả trạng thái</option>
-            <option value="ACTIVE">Đang hoạt động</option>
-            <option value="INACTIVE">Tạm ẩn</option>
-          </select>
-
-          <div className="text-xs text-slate-500 font-semibold whitespace-nowrap">
-            Tổng số: <strong className="text-slate-800">{totalItems}</strong> danh mục
+          <div>
+            <FormField label="Trạng thái">
+              <div className="relative">
+                <select
+                  value={statusFilter}
+                  onChange={(e) => {
+                    setStatusFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full h-[38px] pl-3 pr-8 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+                >
+                  <option value="ALL">Tất cả</option>
+                  <option value="ACTIVE">Đang hoạt động</option>
+                  <option value="INACTIVE">Tạm ẩn</option>
+                </select>
+                <Icon name="expand_more" className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg pointer-events-none" />
+              </div>
+            </FormField>
           </div>
         </div>
       </div>

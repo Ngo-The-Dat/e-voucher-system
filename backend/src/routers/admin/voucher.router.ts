@@ -13,6 +13,7 @@ router.post('/pending/:id/reject', voucherController.rejectVoucher);
 
 // Quản lý voucher đã qua xử lý
 router.get('/manage', voucherController.getManagedVouchers);
+router.get('/manage/:id', voucherController.getManagedVoucherById);
 router.put('/:id/status', voucherController.updateVoucherStatus);
 
 export default router;

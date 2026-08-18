@@ -1,7 +1,22 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx
+ * VỊ TRÍ: frontend/src/app/admin/partners/manage/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Danh sách Doanh nghiệp Đối tác đang hoạt động (UC-ADM-02).
+ *   - Các tính năng:
+ *       1. Hiển thị danh sách các đối tác đã được duyệt (Approved Partners).
+ *       2. Tìm kiếm đa trường (Tên công ty, MST, Người đại diện, Email, SĐT).
+ *       3. Lọc theo trạng thái hoạt động (ACTIVE: Đang hoạt động, LOCKED: Tạm khóa, INACTIVE: Ngưng hoạt động).
+ *       4. Lọc theo khoảng ngày đăng ký.
+ *       5. Xem số chi nhánh trực thuộc của từng đối tác.
+ *       6. Điều hướng đến màn hình chi tiết quản trị đối tác `manage/[id]/page.tsx`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { Input } from "@/components/shared/ui/Input";
@@ -12,12 +27,14 @@ import Pagination from "@/components/shared/ui/Pagination";
 import { adminApi, AdminPartnerListItem } from "@/lib/admin-api";
 
 export default function ManagePartnersPage() {
+  // ─── 1. State quản lý Bộ lọc & Phân trang ─────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
 
+  // ─── 2. State dữ liệu danh sách đối tác ───────────────────────────────────────────
   const [partners, setPartners] = useState<AdminPartnerListItem[]>([]);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
@@ -26,6 +43,12 @@ export default function ManagePartnersPage() {
 
   const itemsPerPage = 10;
 
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchManagedPartners
+   * MỤC ĐÍCH: Gọi API `adminApi.getManagedPartners` để lấy danh sách đối tác theo bộ lọc.
+   * ---------------------------------------------------------------------------------------
+   */
   const fetchManagedPartners = useCallback(async () => {
     setIsLoading(true);
     setError(null);
@@ -82,7 +105,7 @@ export default function ManagePartnersPage() {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Top Navigation Bar */}
+      {/* ─── PHẦN 1: Top Navigation Bar ───────────────────────────────────────────── */}
       <div className="border-b border-slate-200 pb-1">
         <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
           <span>ĐỐI TÁC</span>
@@ -97,6 +120,12 @@ export default function ManagePartnersPage() {
             <span>Duyệt hồ sơ đối tác</span>
           </Link>
           <Link
+            href="/admin/partners/employee-pending"
+            className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-400 hover:text-slate-700"
+          >
+            <span>Duyệt nhân viên đối tác</span>
+          </Link>
+          <Link
             href="/admin/partners/manage"
             className="pb-3 text-lg font-bold transition-all relative flex items-center gap-2.5 text-slate-900 border-b-2 border-blue-600"
           >
@@ -108,10 +137,10 @@ export default function ManagePartnersPage() {
         </div>
       </div>
 
-      {/* Filter Card Section */}
+      {/* ─── PHẦN 2: Card Bộ Lọc (3 cột) ──────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {/* Tên doanh nghiệp Search */}
+          {/* Ô Tìm kiếm đối tác */}
           <div>
             <FormField label="Tên doanh nghiệp / ĐT / Email">
               <div className="relative">
@@ -130,7 +159,7 @@ export default function ManagePartnersPage() {
             </FormField>
           </div>
 
-          {/* Ngày đăng ký Filter */}
+          {/* Bộ lọc ngày đăng ký */}
           <div>
             <DateRangePicker
               startDate={startDate}
@@ -151,7 +180,7 @@ export default function ManagePartnersPage() {
             />
           </div>
 
-          {/* Trạng thái hoạt động Filter */}
+          {/* Dropdown lọc trạng thái hoạt động */}
           <div>
             <FormField label="Trạng thái hoạt động">
               <div className="relative">
@@ -175,7 +204,7 @@ export default function ManagePartnersPage() {
         </div>
       </div>
 
-      {/* Error State */}
+      {/* ─── PHẦN 3: Báo lỗi nếu có ────────────────────────────────────────────────── */}
       {error && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-xs text-rose-700 flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -188,7 +217,7 @@ export default function ManagePartnersPage() {
         </div>
       )}
 
-      {/* Managed Partners Table */}
+      {/* ─── PHẦN 4: Bảng Đối Tác Đang Quản Lý (6 Cột) ────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
         {isLoading ? (
           <div className="p-12 text-center">
@@ -227,19 +256,26 @@ export default function ManagePartnersPage() {
                         key={partner.user_id}
                         className="hover:bg-slate-50/60 transition"
                       >
+                        {/* Tên Doanh Nghiệp & MST */}
                         <td className="py-4 px-5">
                           <p className="font-bold text-slate-900">{partner.business_name}</p>
                           <p className="text-xs text-slate-400 font-mono">MST: {partner.tax_code}</p>
                         </td>
+
+                        {/* Người Đại Diện & Email */}
                         <td className="py-4 px-5 text-slate-800 font-medium">
                           <p className="font-semibold">{partner.representative_name}</p>
                           <p className="text-xs text-slate-400">{partner.email}</p>
                         </td>
+
+                        {/* Số chi nhánh */}
                         <td className="py-4 px-5 whitespace-nowrap">
                           <span className="px-2.5 py-1 bg-slate-100 text-slate-700 font-bold rounded-lg text-xs inline-block min-w-[28px] text-center">
                             {partner.branches_count ?? 0} chi nhánh
                           </span>
                         </td>
+
+                        {/* Ngày đăng ký */}
                         <td className="py-4 px-5 whitespace-nowrap">
                           <div className="font-bold text-slate-900 text-xs sm:text-sm">
                             {date}
@@ -248,9 +284,13 @@ export default function ManagePartnersPage() {
                             {time}
                           </div>
                         </td>
+
+                        {/* Badge Trạng thái hoạt động */}
                         <td className="py-4 px-5 whitespace-nowrap">
                           <StatusBadge status={mapStatusLabel(partner.activity_status)} />
                         </td>
+
+                        {/* Nút Quản lý chi tiết */}
                         <td className="py-4 px-5 text-right whitespace-nowrap">
                           <Link
                             href={`/admin/partners/manage/${partner.user_id}`}
@@ -268,7 +308,7 @@ export default function ManagePartnersPage() {
           </div>
         )}
 
-        {/* Footer & Pagination */}
+        {/* ─── PHẦN 5: Phân trang (Pagination) ────────────────────────────────────── */}
         {!isLoading && partners.length > 0 && (
           <Pagination
             currentPage={currentPage}
@@ -284,6 +324,11 @@ export default function ManagePartnersPage() {
   );
 }
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HELPER & COMPONENT PHỤ: DateRangePicker
+ * -----------------------------------------------------------------------------------------
+ */
 const getPresetDates = (preset: string) => {
   const today = new Date();
   const formatDate = (d: Date) => {
@@ -423,87 +468,87 @@ function DateRangePicker({
         </button>
 
         {isOpen && (
-        <div className="absolute left-0 sm:left-auto sm:right-0 lg:left-0 top-full mt-2 z-50 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
-          <div>
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Lọc nhanh
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                { label: "Tất cả", key: "ALL" },
-                { label: "Hôm nay", key: "TODAY" },
-                { label: "7 ngày qua", key: "7_DAYS" },
-                { label: "30 ngày qua", key: "30_DAYS" },
-                { label: "Tháng này", key: "THIS_MONTH" },
-                { label: "Tháng trước", key: "LAST_MONTH" },
-              ].map((item) => (
-                <Button
-                  key={item.key}
-                  variant="outline"
-                  type="button"
-                  onClick={() => handleApplyPreset(item.key)}
-                  className="px-2.5 py-1 text-xs text-slate-600 bg-slate-50 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-auto"
-                >
-                  {item.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-
-          <div className="border-t border-slate-100 pt-3">
-            <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
-              Tùy chỉnh ngày
-            </div>
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  Từ ngày
-                </label>
-                <Input
-                  type="date"
-                  value={startDate}
-                  max={endDate || undefined}
-                  onChange={(e) => onStartDateChange(e.target.value)}
-                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
-                />
+          <div className="absolute left-0 sm:left-auto sm:right-0 lg:left-0 top-full mt-2 z-50 w-72 sm:w-80 bg-white rounded-2xl border border-slate-200 shadow-xl p-4 space-y-3.5 animate-in fade-in duration-150">
+            <div>
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Lọc nhanh
               </div>
-              <div>
-                <label className="block text-[11px] font-medium text-slate-500 mb-1">
-                  Đến ngày
-                </label>
-                <Input
-                  type="date"
-                  value={endDate}
-                  min={startDate || undefined}
-                  onChange={(e) => onEndDateChange(e.target.value)}
-                  className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
-                />
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Tất cả", key: "ALL" },
+                  { label: "Hôm nay", key: "TODAY" },
+                  { label: "7 ngày qua", key: "7_DAYS" },
+                  { label: "30 ngày qua", key: "30_DAYS" },
+                  { label: "Tháng này", key: "THIS_MONTH" },
+                  { label: "Tháng trước", key: "LAST_MONTH" },
+                ].map((item) => (
+                  <Button
+                    key={item.key}
+                    variant="outline"
+                    type="button"
+                    onClick={() => handleApplyPreset(item.key)}
+                    className="px-2.5 py-1 text-xs text-slate-600 bg-slate-50 border-slate-200 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-200 h-auto"
+                  >
+                    {item.label}
+                  </Button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
-            <Button
-              variant="ghost"
-              type="button"
-              onClick={() => {
-                onReset();
-              }}
-              className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto"
-            >
-              Xóa chọn
-            </Button>
-            <Button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs h-auto"
-            >
-              Áp dụng
-            </Button>
+            <div className="border-t border-slate-100 pt-3">
+              <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">
+                Tùy chỉnh ngày
+              </div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    Từ ngày
+                  </label>
+                  <Input
+                    type="date"
+                    value={startDate}
+                    max={endDate || undefined}
+                    onChange={(e) => onStartDateChange(e.target.value)}
+                    className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-medium text-slate-500 mb-1">
+                    Đến ngày
+                  </label>
+                  <Input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => onEndDateChange(e.target.value)}
+                    className="w-full h-[32px] px-2.5 py-1.5 bg-slate-50 border-slate-200 rounded-lg text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="border-t border-slate-100 pt-3 flex items-center justify-between">
+              <Button
+                variant="ghost"
+                type="button"
+                onClick={() => {
+                  onReset();
+                }}
+                className="text-xs text-slate-400 hover:text-rose-500 p-0 h-auto"
+              >
+                Xóa chọn
+              </Button>
+              <Button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs h-auto"
+              >
+                Áp dụng
+              </Button>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
-  </FormField>
+        )}
+      </div>
+    </FormField>
   );
 }

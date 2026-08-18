@@ -1,24 +1,57 @@
+/**
+ * =========================================================================================
+ * FILE: voucher.service.ts
+ * VỊ TRÍ: backend/src/services/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Tầng Dịch vụ Nghiệp vụ (Business Logic Layer) quản lý toàn diện Vòng đời Chương trình Voucher (E-Voucher Lifecycle).
+ *   - Phụ trách 2 phân hệ lớn:
+ *       1. HÀNG ĐỢI XÉT DUYỆT VOUCHER (Pending Vouchers):
+ *          - Lấy danh sách voucher đối tác gửi duyệt, xem chi tiết đợt phát hành, chi nhánh & hình ảnh.
+ *          - Kiểm tra quy tắc nghiệp vụ (Giá bán < Giá gốc, thời gian bán & sử dụng hợp lệ, số lượng > 0).
+ *          - Duyệt voucher (chuyển sang PUBLISHED) hoặc Từ chối kèm lý do (chuyển về DRAFT).
+ *       2. QUẢN LÝ KHO VOUCHER TOÀN SÀN (Managed Vouchers):
+ *          - Lấy danh sách voucher đang lưu hành, tính toán số lượng đã bán (sold_count) và tồn kho (stock).
+ *          - Thay đổi trạng thái hiển thị (PUBLISHED / HIDDEN / ENDED) với các ràng buộc kiểm tra hạn dùng & tồn kho.
+ * =========================================================================================
+ */
+
 import pool from '../../config/db.js';
 import { logAdminAction } from './system-log.service.js';
 
 export interface GetPendingVouchersFilter {
-  search?: string;
-  startDate?: string;
-  endDate?: string;
-  page?: number;
-  limit?: number;
+  search?: string;      // Tìm kiếm (Tên chương trình, Tên đối tác, MST, Đại diện, Mã yêu cầu, Mã voucher)
+  startDate?: string;   // Ngày gửi duyệt bắt đầu
+  endDate?: string;     // Ngày gửi duyệt kết thúc
+  page?: number;        // Trang hiện tại
+  limit?: number;       // Số dòng trên 1 trang
 }
 
 export interface GetManagedVouchersFilter {
-  search?: string;
-  status?: string;
-  categoryId?: number;
-  page?: number;
-  limit?: number;
+  search?: string;      // Tìm kiếm (Tên chương trình, Tên đối tác, MST, Mã voucher)
+  status?: string;      // Trạng thái hiển thị (PUBLISHED, HIDDEN, ENDED hoặc ALL)
+  categoryId?: number;  // Lọc theo danh mục ngành hàng
+  page?: number;        // Trang hiện tại
+  limit?: number;       // Số dòng trên 1 trang
 }
 
-// ─── 1. Danh sách Voucher chờ duyệt ──────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// PHẦN 1: HÀNG ĐỢI XÉT DUYỆT VOUCHER (PENDING VOUCHERS)
+// ─────────────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getPendingVouchers
+ * MỤC ĐÍCH: 
+ *   Lấy danh sách các yêu cầu phát hành voucher do đối tác gửi lên đang chờ Quản trị viên duyệt.
+ * 
+ * LUỒNG XỬ LÝ (Step-by-step):
+ *   1. Tính toán phân trang `offset = (page - 1) * limit`.
+ *   2. Tạo điều kiện lọc bắt buộc: `var.approval_status = 'PENDING'`.
+ *   3. Lọc theo từ khóa `search` và khoảng ngày nộp hồ sơ (`startDate`, `endDate`).
+ *   4. Sử dụng Subquery `json_agg` để gom nhóm danh sách chi nhánh và danh sách hình ảnh voucher thành mảng JSON.
+ *   5. Chạy truy vấn đếm tổng (`countQuery`) và lấy dữ liệu trang hiện tại (`dataQuery`).
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getPendingVouchers(filter: GetPendingVouchersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -102,7 +135,17 @@ export async function getPendingVouchers(filter: GetPendingVouchersFilter = {}) 
         FROM voucher_program_branches vpb
         JOIN branches b ON b.branch_id = vpb.branch_id
         WHERE vpb.program_id = vp.program_id
-      ) as branches
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_approval_requests var
     JOIN voucher_programs vp ON vp.program_id = var.program_id
     JOIN partners p ON p.user_id = vp.partner_id
@@ -125,8 +168,12 @@ export async function getPendingVouchers(filter: GetPendingVouchersFilter = {}) 
   };
 }
 
-// ─── 2. Chi tiết Yêu cầu duyệt Voucher ────────────────────────────────────────
-
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getPendingVoucherById
+ * MỤC ĐÍCH: Lấy chi tiết hồ sơ yêu cầu duyệt voucher kèm toàn bộ thông tin giá, thời hạn, chi nhánh & hình ảnh.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getPendingVoucherById(requestId: number) {
   const query = `
     SELECT 
@@ -168,7 +215,17 @@ export async function getPendingVoucherById(requestId: number) {
         FROM voucher_program_branches vpb
         JOIN branches b ON b.branch_id = vpb.branch_id
         WHERE vpb.program_id = vp.program_id
-      ) as branches
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_approval_requests var
     JOIN voucher_programs vp ON vp.program_id = var.program_id
     JOIN partners p ON p.user_id = vp.partner_id
@@ -185,8 +242,24 @@ export async function getPendingVoucherById(requestId: number) {
   return result.rows[0];
 }
 
-// ─── 3. Duyệt Voucher ────────────────────────────────────────────────────────
-
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: approveVoucher
+ * MỤC ĐÍCH: 
+ *   Phê duyệt phát hành voucher, chuyển trạng thái hiển thị sang `PUBLISHED` (Đang bán) để khách hàng có thể mua.
+ * 
+ * CÁC QUY TẮC NGHIỆP VỤ BẮT BUỘC KIỂM TRA (Business Validation Rules):
+ *   1. Yêu cầu duyệt phải đang ở trạng thái `PENDING`.
+ *   2. Giá bán (`sale_price`) phải nhỏ hơn giá gốc (`original_price`).
+ *   3. Thời gian kết thúc mở bán (`sale_end_at`) phải sau thời gian bắt đầu (`sale_start_at`).
+ *   4. Thời gian kết thúc sử dụng (`use_end_at`) phải sau thời gian bắt đầu (`use_start_at`).
+ *   5. Số lượng phát hành (`issue_quantity`) phải lớn hơn 0.
+ * 
+ * SỬ DỤNG DATABASE TRANSACTION:
+ *   - Cập nhật đồng thời `voucher_approval_requests` (APPROVED) và `voucher_programs` (PUBLISHED).
+ *   - Đảm bảo tính nhất quán (ACID), ghi nhật ký hệ thống `logAdminAction`.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function approveVoucher(requestId: number, adminId: number) {
   const reqRes = await pool.query(
     `SELECT var.*, vp.program_name, vp.display_status, vp.original_price, vp.sale_price, vp.issue_quantity, vp.sale_start_at, vp.sale_end_at, vp.use_start_at, vp.use_end_at
@@ -205,7 +278,7 @@ export async function approveVoucher(requestId: number, adminId: number) {
     throw { status: 400, message: `Yêu cầu duyệt này đã ở trạng thái ${approvalReq.approval_status}.` };
   }
 
-  // Kiểm tra quy tắc nghiệp vụ
+  // Bước 1: Kiểm tra các quy tắc nghiệp vụ
   const origPrice = Number(approvalReq.original_price) || 0;
   const salePrice = Number(approvalReq.sale_price) || 0;
   if (salePrice >= origPrice) {
@@ -224,10 +297,12 @@ export async function approveVoucher(requestId: number, adminId: number) {
     throw { status: 400, message: 'Không thể duyệt voucher: Số lượng phát hành phải lớn hơn 0.' };
   }
 
+  // Bước 2: Thực hiện Transaction
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
+    // Cập nhật yêu cầu duyệt sang APPROVED
     await client.query(
       `UPDATE voucher_approval_requests
        SET approval_status = 'APPROVED',
@@ -237,6 +312,7 @@ export async function approveVoucher(requestId: number, adminId: number) {
       [adminId, requestId]
     );
 
+    // Xuất bản voucher lên sàn (PUBLISHED)
     await client.query(
       `UPDATE voucher_programs
        SET display_status = 'PUBLISHED'
@@ -244,6 +320,7 @@ export async function approveVoucher(requestId: number, adminId: number) {
       [approvalReq.program_id]
     );
 
+    // Ghi System Log
     await logAdminAction({
       userId: adminId,
       action: 'APPROVE_VOUCHER',
@@ -284,8 +361,12 @@ export async function approveVoucher(requestId: number, adminId: number) {
   }
 }
 
-// ─── 4. Từ chối Voucher ──────────────────────────────────────────────────────
-
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: rejectVoucher
+ * MỤC ĐÍCH: Từ chối yêu cầu duyệt voucher, chuyển về bản nháp (DRAFT) và lưu lý do từ chối.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function rejectVoucher(requestId: number, adminId: number, reason: string) {
   if (!reason || !reason.trim()) {
     throw { status: 400, message: 'Vui lòng cung cấp lý do từ chối duyệt voucher.' };
@@ -312,6 +393,7 @@ export async function rejectVoucher(requestId: number, adminId: number, reason: 
   try {
     await client.query('BEGIN');
 
+    // Chuyển trạng thái sang REJECTED và lưu lý do vào admin_feedback
     await client.query(
       `UPDATE voucher_approval_requests
        SET approval_status = 'REJECTED',
@@ -322,6 +404,7 @@ export async function rejectVoucher(requestId: number, adminId: number, reason: 
       [adminId, reason.trim(), requestId]
     );
 
+    // Đưa voucher về trạng thái bản nháp (DRAFT) để đối tác có thể sửa lại
     await client.query(
       `UPDATE voucher_programs
        SET display_status = 'DRAFT'
@@ -370,8 +453,18 @@ export async function rejectVoucher(requestId: number, adminId: number, reason: 
   }
 }
 
-// ─── 5. Quản lý Voucher đã duyệt ─────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────────────────
+// PHẦN 2: QUẢN LÝ KHO VOUCHER TOÀN SÀN (MANAGED VOUCHERS)
+// ─────────────────────────────────────────────────────────────────────────────────────────
 
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getManagedVouchers
+ * MỤC ĐÍCH: 
+ *   Lấy danh sách các voucher đang quản lý trên sàn (PUBLISHED, HIDDEN, ENDED), 
+ *   tính số lượng đã bán (sold_count), số lượng tồn kho (stock) và đếm số lượng thống kê theo từng tab.
+ * -----------------------------------------------------------------------------------------
+ */
 export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
@@ -399,7 +492,7 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
     paramIdx++;
   }
 
-  // Lấy counts thống kê trạng thái cho tabs
+  // Lấy counts thống kê trạng thái cho các Tab giao diện
   const statsQuery = `
     SELECT 
       COUNT(*) as total_all,
@@ -413,7 +506,7 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
   const statsRes = await pool.query(statsQuery, params);
   const stats = statsRes.rows[0] || { total_all: '0', count_published: '0', count_hidden: '0', count_ended: '0' };
 
-  // Filter theo status tab nếu có
+  // Lọc theo trạng thái cụ thể nếu người dùng chọn
   const filterConditions = [...baseConditions];
   if (filter.status && filter.status !== 'ALL') {
     filterConditions.push(`vp.display_status = $${paramIdx}`);
@@ -432,6 +525,7 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
   const countRes = await pool.query(countQuery, params);
   const total = parseInt(countRes.rows[0]?.total ?? '0', 10);
 
+  // Truy vấn dữ liệu kèm tính toán sold_count và stock
   const dataQuery = `
     SELECT 
       vp.program_id,
@@ -466,7 +560,17 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
         SELECT COUNT(iv.issued_voucher_id) 
         FROM issued_vouchers iv 
         WHERE iv.program_id = vp.program_id
-      ), 0)) as stock
+      ), 0)) as stock,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
     FROM voucher_programs vp
     JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN categories c ON c.category_id = vp.category_id
@@ -493,8 +597,101 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
   };
 }
 
-// ─── 6. Cập nhật Trạng thái Hiển thị Voucher (Ẩn / Hiện / Ngừng bán) ───────────
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getManagedVoucherById
+ * MỤC ĐÍCH: Lấy chi tiết voucher quản lý kèm thống kê đã bán, đã sử dụng (used_count), tồn kho.
+ * -----------------------------------------------------------------------------------------
+ */
+export async function getManagedVoucherById(programId: number) {
+  const query = `
+    SELECT 
+      vp.program_id,
+      vp.program_name,
+      vp.category_id,
+      c.category_name,
+      vp.original_price,
+      vp.sale_price,
+      vp.discount_amount,
+      vp.issue_quantity,
+      vp.sale_start_at,
+      vp.sale_end_at,
+      vp.use_start_at,
+      vp.use_end_at,
+      vp.display_status,
+      p.user_id as partner_id,
+      p.business_name as partner_name,
+      p.tax_code,
+      p.business_license_no,
+      u.full_name as partner_representative,
+      u.email as partner_email,
+      u.phone as partner_phone,
+      COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id
+      ), 0) as sold_count,
+      (vp.issue_quantity - COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id
+      ), 0)) as stock,
+      COALESCE((
+        SELECT COUNT(iv.issued_voucher_id) 
+        FROM issued_vouchers iv 
+        WHERE iv.program_id = vp.program_id AND iv.usage_status = 'USED'
+      ), 0) as used_count,
+      (
+        SELECT json_agg(json_build_object(
+          'branch_id', b.branch_id,
+          'branch_name', b.branch_name,
+          'address', b.address,
+          'region', b.region,
+          'phone', b.phone,
+          'status', b.status
+        ))
+        FROM voucher_program_branches vpb
+        JOIN branches b ON b.branch_id = vpb.branch_id
+        WHERE vpb.program_id = vp.program_id
+      ) as branches,
+      (
+        SELECT json_agg(json_build_object(
+          'image_id', vpi.image_id,
+          'image_url', vpi.image_url,
+          'is_primary', vpi.is_primary,
+          'sort_order', vpi.sort_order
+        ) ORDER BY vpi.is_primary DESC, vpi.sort_order ASC, vpi.image_id ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images
+    FROM voucher_programs vp
+    JOIN partners p ON p.user_id = vp.partner_id
+    JOIN users u ON u.user_id = p.user_id
+    LEFT JOIN categories c ON c.category_id = vp.category_id
+    WHERE vp.program_id = $1
+  `;
+  const result = await pool.query(query, [programId]);
 
+  if (result.rows.length === 0) {
+    throw { status: 404, message: 'Không tìm thấy chương trình voucher.' };
+  }
+
+  return result.rows[0];
+}
+
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: updateVoucherDisplayStatus
+ * MỤC ĐÍCH: 
+ *   Thay đổi trạng thái hiển thị của voucher: Ẩn (`HIDDEN`), Hiện (`PUBLISHED`), hoặc Ngừng bán (`ENDED`).
+ * 
+ * QUY TẮC NGHIỆP VỤ:
+ *   1. Nếu voucher đã ở trạng thái `ENDED` (Ngừng bán vĩnh viễn), không cho phép khôi phục.
+ *   2. Nếu muốn chuyển sang `PUBLISHED` (Đang bán), kiểm tra:
+ *      - Phải chưa quá hạn mở bán (`sale_end_at > now`).
+ *      - Phải còn số lượng tồn kho (`sold_count < issue_quantity`).
+ * -----------------------------------------------------------------------------------------
+ */
 export async function updateVoucherDisplayStatus(
   programId: number,
   adminId: number,
@@ -515,6 +712,11 @@ export async function updateVoucherDisplayStatus(
   }
 
   const voucher = vpRes.rows[0];
+
+  // Không cho phép khôi phục khi voucher đã ở trạng thái ENDED
+  if (voucher.display_status === 'ENDED' && newStatus !== 'ENDED') {
+    throw { status: 400, message: 'Chương trình voucher đã ngừng bán vĩnh viễn, không thể khôi phục lại trạng thái.' };
+  }
 
   // Nếu muốn khôi phục về PUBLISHED, kiểm tra xem đã hết hạn hoặc hết số lượng chưa
   if (newStatus === 'PUBLISHED') {

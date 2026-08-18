@@ -6,9 +6,9 @@
 TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                reviews_feedback, issued_vouchers, order_items, orders, cart_items,
                voucher_approval_requests, voucher_program_images, voucher_program_branches, voucher_programs,
-               partner_employees, branches, categories, partner_approval_requests, partners, user_locks, users RESTART IDENTITY CASCADE;
+               partner_employee_approval_requests, partner_employees, branches, categories, partner_approval_requests, partners, user_locks, users RESTART IDENTITY CASCADE;
 
--- 1. Insert users (33 rows, exactly 1 ADMIN with user_id = 1)
+-- 1. Insert users (36 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
 (1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
 (2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
@@ -44,7 +44,11 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender
 -- Đối tác bổ sung mới
 (31, 'Lâm Thị Mỹ Hạnh', 'partner_phuclong@tea.vn', '0908000031', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001198000031', 'Việt Nam', 'ACTIVE', '2026-08-05 09:15:00'),
 (32, 'Trần Gia Bảo', 'partner_shopeefood@food.vn', '0908000032', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000032', 'Việt Nam', 'ACTIVE', '2026-08-06 10:30:00'),
-(33, 'Vũ Hải Nam', 'partner_uniqlo@fashion.vn', '0908000033', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000033', 'Việt Nam', 'ACTIVE', '2026-08-07 14:00:00');
+(33, 'Vũ Hải Nam', 'partner_uniqlo@fashion.vn', '0908000033', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001098000033', 'Việt Nam', 'ACTIVE', '2026-08-07 14:00:00'),
+-- Nhân viên đối tác mới chờ duyệt (PENDING)
+(34, 'Phạm Minh Quân', 'employee_quan@voucher.vn', '0903000034', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'MALE', '001095000034', 'Việt Nam', 'ACTIVE', '2026-08-14 09:30:00'),
+(35, 'Trần Ngọc Linh', 'employee_linh@voucher.vn', '0903000035', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'FEMALE', '001196000035', 'Việt Nam', 'ACTIVE', '2026-08-15 14:15:00'),
+(36, 'Lê Quốc Bảo', 'employee_bao@voucher.vn', '0903000036', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER_EMPLOYEE', 'MALE', '001097000036', 'Việt Nam', 'ACTIVE', '2026-08-16 10:00:00');
 
 -- 2. Insert partners (17 rows: 12 ACTIVE, 5 INACTIVE)
 INSERT INTO partners (user_id, business_name, tax_code, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place, brand_logo) VALUES
@@ -126,10 +130,21 @@ INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone
 (24, 33, 'Uniqlo Đồng Khởi', 'Vincom Center Đồng Khởi, 72 Lê Thánh Tôn, Quận 1, TP.HCM', 'Miền Nam', '02838279999', 'ACTIVE'),
 (25, 33, 'Uniqlo Vincom Phạm Ngọc Thạch', '02 Phạm Ngọc Thạch, Trung Tự, Đống Đa, Hà Nội', 'Miền Bắc', '02438278888', 'ACTIVE');
 
--- 5. Insert partner_employees (2 rows)
+-- 5. Insert partner_employees (5 rows)
 INSERT INTO partner_employees (user_id, branch_id) VALUES
 (6, 1),
-(7, 3);
+(7, 3),
+(34, 1),
+(35, 3),
+(36, 5);
+
+-- 5a. Insert partner_employee_approval_requests (5 rows)
+INSERT INTO partner_employee_approval_requests (approval_request_id, user_id, admin_id, submitted_at, reviewed_at, approval_status, admin_feedback) VALUES
+(1, 6, 1, '2026-01-03 10:30:00', '2026-01-03 11:00:00', 'APPROVED', NULL),
+(2, 7, 1, '2026-01-03 11:00:00', '2026-01-03 11:30:00', 'APPROVED', NULL),
+(3, 34, NULL, '2026-08-14 09:30:00', NULL, 'PENDING', NULL),
+(4, 35, NULL, '2026-08-15 14:15:00', NULL, 'PENDING', NULL),
+(5, 36, NULL, '2026-08-16 10:00:00', NULL, 'PENDING', NULL);
 
 -- 6. Insert voucher_programs (18 rows đa dạng danh mục)
 INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status) VALUES
@@ -156,6 +171,33 @@ INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name,
 (12, 14, 4, 'Vé Xem Phim Bom Tấn IMAX Suất Chiếu Đặc Biệt', 150000.00, 99000.00, 500, '2026-07-01 00:00:00', '2026-12-31 23:59:59', '2026-07-01 00:00:00', '2027-01-01 23:59:59', 'HIDDEN'),
 (13, 5, 4, 'Chiến dịch Mùa Hè Rực Rỡ - Giảm 50% Vé Công Viên Nước', 200000.00, 100000.00, 800, '2026-05-01 00:00:00', '2026-07-31 23:59:59', '2026-05-01 00:00:00', '2026-08-31 23:59:59', 'ENDED'),
 (15, 3, 1, 'Set Menu Tiệc Tất Niên Gia Đình Ấm Cúng 2025', 1200000.00, 850000.00, 100, '2025-01-01 00:00:00', '2025-02-15 23:59:59', '2025-01-01 00:00:00', '2025-02-28 23:59:59', 'PUBLISHED');
+
+-- 6a. Insert voucher_program_images (24 rows)
+INSERT INTO voucher_program_images (image_id, program_id, image_url, is_primary, sort_order) VALUES
+(1, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
+(2, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', FALSE, 1),
+(3, 2, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
+(4, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
+(5, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', FALSE, 1),
+(6, 4, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
+(7, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
+(8, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', FALSE, 1),
+(9, 6, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
+(10, 7, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
+(11, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
+(12, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', FALSE, 1),
+(13, 9, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
+(14, 10, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
+(15, 11, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
+(16, 12, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
+(17, 13, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
+(18, 14, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
+(19, 15, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
+(20, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
+(21, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', FALSE, 1),
+(22, 17, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
+(23, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
+(24, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', FALSE, 1);
 
 -- 7. Insert voucher_program_branches
 INSERT INTO voucher_program_branches (program_id, branch_id) VALUES
@@ -341,14 +383,14 @@ INSERT INTO order_cancellations (cancellation_id, order_id, admin_id, requested_
 
 -- 15. Insert banners (3 rows)
 INSERT INTO banners (banner_id, program_id, title, image_url, target_url, display_position, display_from, display_to, status) VALUES
-(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://cdn.voucher.vn/banners/buffet30.jpg', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://cdn.voucher.vn/banners/spa.jpg', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://cdn.voucher.vn/banners/nhatrang.jpg', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 16. Insert popups (2 rows)
 INSERT INTO popups (popup_id, program_id, title, content, target_url, image_url, start_at, end_at, status) VALUES
-(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://cdn.voucher.vn/popups/buffet.jpg', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://cdn.voucher.vn/popups/spa.jpg', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 17. Insert contents (3 rows)
 INSERT INTO contents (content_id, program_id, title, body, content_type, created_at, updated_at, status) VALUES
@@ -379,7 +421,9 @@ SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT COALESCE(MAX(u
 SELECT setval(pg_get_serial_sequence('categories', 'category_id'), (SELECT COALESCE(MAX(category_id), 1) FROM categories));
 SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), (SELECT COALESCE(MAX(branch_id), 1) FROM branches));
 SELECT setval(pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_approval_requests));
+SELECT setval(pg_get_serial_sequence('partner_employee_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM partner_employee_approval_requests));
 SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), (SELECT COALESCE(MAX(program_id), 1) FROM voucher_programs));
+SELECT setval(pg_get_serial_sequence('voucher_program_images', 'image_id'), (SELECT COALESCE(MAX(image_id), 1) FROM voucher_program_images));
 SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), (SELECT COALESCE(MAX(approval_request_id), 1) FROM voucher_approval_requests));
 SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), (SELECT COALESCE(MAX(cart_item_id), 1) FROM cart_items));
 SELECT setval(pg_get_serial_sequence('orders', 'order_id'), (SELECT COALESCE(MAX(order_id), 1) FROM orders));
