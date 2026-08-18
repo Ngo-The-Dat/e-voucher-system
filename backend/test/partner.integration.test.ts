@@ -21,7 +21,7 @@ let profileToken: string;
 let createdProgramId: number | undefined;
 let earlyProgramId: number | undefined;
 
-const request = (path: string, token?: string, init: RequestInit = {}) =>
+const request = (path: string, token?: string | null, init: RequestInit = {}) =>
   fetch(`${baseUrl}${path}`, {
     ...init,
     headers: {
@@ -547,8 +547,12 @@ test('partner employee management and employee portal flow', async () => {
   assert.ok(Array.isArray(empList));
   assert.ok(empList.some((e: any) => e.email === newEmail));
 
+  // Phê duyệt nhân viên để có thể đăng nhập
+  await pool.query(`UPDATE partner_employee_approval_requests SET approval_status = 'APPROVED' WHERE user_id = $1`, [createdEmp.id]);
+  await pool.query(`UPDATE users SET status = 'ACTIVE' WHERE user_id = $1`, [createdEmp.id]);
+
   // 3. Employee logs in via /api/partner/auth/login
-  const loginRes = await request('/api/partner/auth/login', null, {
+  const loginRes = await request('/api/partner/auth/login', undefined, {
     method: 'POST',
     body: JSON.stringify({ email: newEmail, password: 'password1234' }),
   });
@@ -574,7 +578,7 @@ test('partner employee management and employee portal flow', async () => {
   assert.equal(changePwdRes.status, 200);
 
   // 6. Employee logs in with new password
-  const newLoginRes = await request('/api/partner/auth/login', null, {
+  const newLoginRes = await request('/api/partner/auth/login', undefined, {
     method: 'POST',
     body: JSON.stringify({ email: newEmail, password: 'newpassword1234' }),
   });

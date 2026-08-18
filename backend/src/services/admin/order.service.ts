@@ -21,7 +21,7 @@ import { logAdminAction } from './system-log.service.js';
 
 export interface GetOrdersFilter {
   search?: string;        // Tìm kiếm (Mã đơn, Tên/Email/SĐT người mua, Tên/Email/SĐT người nhận)
-  orderStatus?: string;   // Trạng thái đơn (PENDING, CONFIRMED, COMPLETED, CANCELLED hoặc ALL)
+  orderStatus?: string;   // Trạng thái đơn (PENDING, COMPLETED, CANCELLED hoặc ALL)
   paymentStatus?: string; // Trạng thái thanh toán (PENDING, PAID, FAILED, REFUNDED hoặc ALL)
   startDate?: string;     // Ngày tạo từ
   endDate?: string;       // Ngày tạo đến
@@ -109,7 +109,6 @@ export async function getOrders(filter: GetOrdersFilter = {}) {
     SELECT
       COUNT(*) as all_count,
       COUNT(*) FILTER (WHERE order_status = 'COMPLETED') as completed_count,
-      COUNT(*) FILTER (WHERE order_status = 'CONFIRMED') as confirmed_count,
       COUNT(*) FILTER (WHERE order_status = 'PENDING') as pending_count,
       COUNT(*) FILTER (WHERE order_status = 'CANCELLED') as cancelled_count
     FROM orders
@@ -119,7 +118,6 @@ export async function getOrders(filter: GetOrdersFilter = {}) {
   const stats = {
     all: parseInt(statsRow.all_count || '0', 10),
     completed: parseInt(statsRow.completed_count || '0', 10),
-    confirmed: parseInt(statsRow.confirmed_count || '0', 10),
     pending: parseInt(statsRow.pending_count || '0', 10),
     cancelled: parseInt(statsRow.cancelled_count || '0', 10),
   };

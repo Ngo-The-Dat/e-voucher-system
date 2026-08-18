@@ -112,6 +112,7 @@ export default function CartPage() {
           is_gift: isGift,
           recipient_info: isGift ? recipientInfo : undefined,
           payment_method: paymentMethod,
+          auto_pay: true,
         });
 
         alert(response.message || "Tạo đơn hàng và phát hành voucher thành công!");

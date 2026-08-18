@@ -83,7 +83,7 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   });
   assert.equal(addCartRes.status, 200);
 
-  // 2. Create Order
+  // 2. Create Order (chưa thanh toán: UNPAID, PENDING)
   const createOrderRes = await request('/api/customer/orders', customerToken, {
     method: 'POST',
     body: JSON.stringify({
@@ -98,11 +98,26 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(data.success, true);
   assert.ok(data.order);
   assert.ok(data.order.order_id);
-  assert.ok(Array.isArray(data.order.vouchers));
-  assert.equal(data.order.vouchers.length, 1);
-  assert.ok(data.order.vouchers[0].voucher_code.startsWith('EV-'));
+  assert.equal(data.order.order_status, 'PENDING');
+  assert.equal(data.order.payment_status, 'UNPAID');
 
   const createdOrderId = data.order.order_id;
+
+  // 2.1. Thanh toán đơn hàng (PAID, COMPLETED, phát hành voucher)
+  const payRes = await request(`/api/customer/orders/${createdOrderId}/pay`, customerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      payment_method: 'Ví VNPay',
+    }),
+  });
+  assert.equal(payRes.status, 200);
+  const payData = (await payRes.json()) as any;
+  assert.equal(payData.success, true);
+  assert.equal(payData.order.order_status, 'COMPLETED');
+  assert.equal(payData.order.payment_status, 'PAID');
+  assert.ok(Array.isArray(payData.order.vouchers));
+  assert.equal(payData.order.vouchers.length, 1);
+  assert.ok(payData.order.vouchers[0].voucher_code.startsWith('EV-'));
 
   // 3. Get customer orders list
   const getOrdersRes = await request('/api/customer/orders', customerToken);
@@ -115,13 +130,15 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(detailRes.status, 200);
   const detailData = (await detailRes.json()) as any;
   assert.equal(Number(detailData.order_id), createdOrderId);
+  assert.equal(detailData.order_status, 'COMPLETED');
+  assert.equal(detailData.payment_status, 'PAID');
 
   // 5. Get customer vouchers list (Kho voucher)
   const vouchersRes = await request('/api/customer/my-vouchers', customerToken);
   assert.equal(vouchersRes.status, 200);
   const vouchersData = (await vouchersRes.json()) as any;
   assert.ok(Array.isArray(vouchersData.vouchers));
-  const issuedVoucher = vouchersData.vouchers.find((v: any) => v.voucher_code === data.order.vouchers[0].voucher_code);
+  const issuedVoucher = vouchersData.vouchers.find((v: any) => v.voucher_code === payData.order.vouchers[0].voucher_code);
   assert.ok(issuedVoucher);
 
   // 6. Get single customer voucher detail by issued_voucher_id
@@ -131,7 +148,7 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(singleVoucherData.issued_voucher_id, issuedVoucher.issued_voucher_id);
   assert.equal(singleVoucherData.voucher_code, issuedVoucher.voucher_code);
   assert.equal(singleVoucherData.payment_status, 'PAID');
-  assert.equal(singleVoucherData.order_status, 'CONFIRMED');
+  assert.equal(singleVoucherData.order_status, 'COMPLETED');
 });
 
 test('Customer Voucher API: get non-existent voucher returns 404', async () => {

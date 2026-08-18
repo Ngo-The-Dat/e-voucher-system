@@ -139,6 +139,7 @@ export interface CreateOrderPayload {
   is_gift?: boolean;
   recipient_info?: RecipientInfoInput;
   payment_method?: string;
+  auto_pay?: boolean;
 }
 
 export interface CustomerVoucherItem {
@@ -166,7 +167,7 @@ export interface CustomerVoucherItem {
   purchase_date?: string;
   payment_method?: string;
   payment_status?: string;
-  order_status?: string;
+  order_status?: "PENDING" | "COMPLETED" | "CANCELLED" | string;
 }
 
 export interface CreateOrderResponse {
@@ -177,11 +178,11 @@ export interface CreateOrderResponse {
     created_at: string;
     total_amount: number;
     payment_method: string;
-    payment_status: string;
-    order_status: string;
-    is_gift: boolean;
-    recipient_user_id: number;
-    vouchers: Array<{
+    payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;
+    order_status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
+    is_gift?: boolean;
+    recipient_user_id?: number;
+    vouchers?: Array<{
       issued_voucher_id: number;
       voucher_code: string;
       qr_code: string;
@@ -198,8 +199,8 @@ export interface CustomerOrder {
   created_at: string;
   total_amount: number;
   payment_method: string;
-  payment_status: string;
-  order_status: string;
+  payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;
+  order_status: "PENDING" | "COMPLETED" | "CANCELLED" | string;
   buyer_user_id: number;
   recipient_user_id: number;
   buyer_name?: string;
@@ -229,6 +230,11 @@ export const customerOrderApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  payOrder: (orderId: number, paymentMethod?: string) =>
+    request<CreateOrderResponse>(`/customer/orders/${orderId}/pay`, {
+      method: "POST",
+      body: JSON.stringify({ payment_method: paymentMethod })
+    }),
   getOrders: (params?: { page?: number; limit?: number }) => {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set("page", String(params.page));
@@ -239,7 +245,7 @@ export const customerOrderApi = {
   getOrderById: (orderId: number) =>
     request<CustomerOrder>(`/customer/orders/${orderId}`),
   getMyVouchers: (status?: string) => customerVoucherApi.getMyVouchers(status),
-  getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId)
+  getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId),
 };
 
 export interface PublicVouchersFilter {

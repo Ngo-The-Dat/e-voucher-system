@@ -82,7 +82,7 @@ export default function OrderHistoryPage() {
   // Filter logic
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
-      const isPaid = order.payment_status === "PAID" || order.order_status === "CONFIRMED";
+      const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
 
       // 1. Status tab filter
       if (statusTab === "paid" && !isPaid) return false;
@@ -124,7 +124,7 @@ export default function OrderHistoryPage() {
   }, [orders, statusTab, searchTerm, paymentMethodFilter, timeRangeFilter]);
 
   const paidCount = useMemo(
-    () => orders.filter((o) => o.payment_status === "PAID" || o.order_status === "CONFIRMED").length,
+    () => orders.filter((o) => o.payment_status === "PAID" || o.order_status === "COMPLETED").length,
     [orders]
   );
   const failedCount = useMemo(
@@ -268,7 +268,7 @@ export default function OrderHistoryPage() {
         <div className="flex flex-col gap-6">
           {filteredOrders.map((order) => {
             const isExpanded = expandedOrderId === order.order_id;
-            const isPaid = order.payment_status === "PAID" || order.order_status === "CONFIRMED";
+            const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
 
             return (
               <div
@@ -294,7 +294,12 @@ export default function OrderHistoryPage() {
                         ) : isPaid ? (
                           <span className="bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
                             <CheckCircle2 className="w-3.5 h-3.5" />
-                            Đã thanh toán
+                            Hoàn thành
+                          </span>
+                        ) : order.order_status === "PENDING" || order.payment_status === "UNPAID" ? (
+                          <span className="bg-amber-100 text-amber-800 px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            Chờ thanh toán
                           </span>
                         ) : (
                           <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
@@ -362,7 +367,13 @@ export default function OrderHistoryPage() {
                       <div className="bg-surface-container-low p-6 rounded-xl border border-outline-variant relative overflow-hidden">
                         {/* Receipt Stamp */}
                         <div className="absolute top-4 right-4 rotate-12 border-2 border-primary/30 text-primary px-4 py-1 rounded font-bold uppercase tracking-widest text-xs select-none">
-                          {order.order_status === "CANCELLED" ? "ĐÃ HỦY ĐƠN" : isPaid ? "Đã Thanh Toán" : "Thanh Toán Thất Bại"}
+                          {order.order_status === "CANCELLED"
+                            ? "ĐÃ HỦY ĐƠN"
+                            : isPaid
+                            ? "Đã Thanh Toán"
+                            : order.order_status === "PENDING"
+                            ? "Chờ Thanh Toán"
+                            : "Thanh Toán Thất Bại"}
                         </div>
 
                         <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2 mb-4">

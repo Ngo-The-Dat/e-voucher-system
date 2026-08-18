@@ -249,7 +249,7 @@ INSERT INTO orders (order_id, buyer_user_id, recipient_user_id, created_at, tota
 -- Tháng 1/2026
 (1, 8, NULL, '2026-01-10 10:00:00', 140000.00, 'VNPAY', 'PAID', 'COMPLETED'),
 (2, 8, 9, '2026-01-11 11:00:00', 350000.00, 'MOMO', 'PAID', 'COMPLETED'),
-(3, 9, NULL, '2026-01-12 14:00:00', 300000.00, 'CREDIT_CARD', 'PAID', 'CONFIRMED'),
+(3, 9, NULL, '2026-01-12 14:00:00', 300000.00, 'CREDIT_CARD', 'PAID', 'COMPLETED'),
 (4, 10, NULL, '2026-01-13 16:00:00', 100000.00, 'BANK_TRANSFER', 'REFUNDED', 'CANCELLED'),
 (5, 8, NULL, '2026-01-14 12:00:00', 225000.00, 'MOMO', 'PAID', 'COMPLETED'),
 -- Tháng 7/2026 (Kỳ trước của Tháng này)
