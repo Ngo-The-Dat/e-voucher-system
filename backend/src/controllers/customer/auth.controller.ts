@@ -60,3 +60,14 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
     sendHttpError(res, err);
   }
 };
+
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { current_password, new_password } = req.body;
+    const result = await authService.changePassword(userId, current_password, new_password);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};

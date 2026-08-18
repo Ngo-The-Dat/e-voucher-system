@@ -74,6 +74,11 @@ export const customerAuthApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  changePassword: (payload: { current_password: string; new_password: string }) =>
+    request<{ message: string }>("/customer/auth/change-password", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    }),
   getMe: () => request<CustomerUser>("/customer/auth/me"),
   logout: () => {
     if (typeof window !== "undefined") {

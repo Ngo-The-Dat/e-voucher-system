@@ -33,5 +33,6 @@ router.post('/reset-password', authController.resetPassword);
 
 // Protected auth routes
 router.get('/me', authenticate, requireRole('CUSTOMER'), authController.getMe);
+router.put('/change-password', authenticate, requireRole('CUSTOMER'), authController.changePassword);
 
 export default router;

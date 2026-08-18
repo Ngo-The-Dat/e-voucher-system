@@ -245,3 +245,41 @@ export const resetPassword = async (email: string, challengeId: string, newPassw
   }
 };
 
+export const changePassword = async (userId: string, currentPassword: string, newPassword: string) => {
+  if (!newPassword || newPassword.length < 6) {
+    throw { status: 400, message: 'Mật khẩu mới phải chứa ít nhất 6 ký tự.' };
+  }
+
+  // Lấy password_hash hiện tại
+  const userResult = await pool.query(
+    `SELECT password_hash FROM users WHERE user_id = $1 AND role = 'CUSTOMER'`,
+    [userId]
+  );
+
+  if (userResult.rows.length === 0) {
+    throw { status: 404, message: 'Không tìm thấy tài khoản Khách hàng.' };
+  }
+
+  const { password_hash } = userResult.rows[0];
+
+  // Kiểm tra mật khẩu hiện tại
+  const isMatch = await bcrypt.compare(currentPassword, password_hash);
+  if (!isMatch) {
+    throw { status: 400, message: 'Mật khẩu hiện tại không đúng.' };
+  }
+
+  // Tránh việc đặt lại mật khẩu cũ
+  const isSamePassword = await bcrypt.compare(newPassword, password_hash);
+  if (isSamePassword) {
+    throw { status: 400, message: 'Mật khẩu mới không được trùng với mật khẩu hiện tại.' };
+  }
+
+  // Hash mật khẩu mới và lưu
+  const newPasswordHash = await bcrypt.hash(newPassword, 10);
+  await pool.query(
+    `UPDATE users SET password_hash = $1 WHERE user_id = $2`,
+    [newPasswordHash, userId]
+  );
+
+  return { message: 'Đổi mật khẩu thành công.' };
+};
