@@ -194,8 +194,6 @@ export default function OrderHistoryPage() {
     [orders, currentTime]
   );
   const paidCount = useMemo(
-    () => orders.filter((o) => o.payment_status === "PAID" || o.order_status === "COMPLETED").length,
-    [orders]
     () => orders.filter((o) => getOrderState(o).isPaid).length,
     [orders, currentTime]
   );
