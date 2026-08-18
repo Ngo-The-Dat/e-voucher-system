@@ -145,6 +145,6 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
     purchase_date: row.purchase_date,
     payment_method: row.payment_method,
     payment_status: row.payment_status || 'PAID',
-    order_status: row.order_status || 'CONFIRMED',
+    order_status: row.order_status || 'COMPLETED',
   };
 }

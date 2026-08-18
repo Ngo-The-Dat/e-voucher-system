@@ -378,7 +378,7 @@ export interface AdminOrderDetail {
   total_amount: number | string;
   payment_method: string;
   payment_status: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";
-  order_status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  order_status: "PENDING" | "COMPLETED" | "CANCELLED";
   buyer_id: number;
   buyer_name: string;
   buyer_email: string;
@@ -399,7 +399,7 @@ export interface AdminOrderListItem {
   total_amount: number | string;
   payment_method: string;
   payment_status: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";
-  order_status: "PENDING" | "CONFIRMED" | "COMPLETED" | "CANCELLED";
+  order_status: "PENDING" | "COMPLETED" | "CANCELLED";
   buyer_id: number;
   buyer_name: string;
   buyer_email: string;
@@ -423,7 +423,6 @@ export interface AdminOrdersResponse {
   stats: {
     all: number;
     completed: number;
-    confirmed: number;
     pending: number;
     cancelled: number;
   };

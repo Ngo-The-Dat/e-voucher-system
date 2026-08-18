@@ -167,7 +167,7 @@ CREATE TABLE orders (
     total_amount DECIMAL(18,2) NOT NULL CONSTRAINT chk_orders_total_amount CHECK (total_amount >= 0),
     payment_method VARCHAR(50) NOT NULL CONSTRAINT chk_orders_payment_method CHECK (payment_method IN ('VNPAY', 'MOMO', 'CREDIT_CARD', 'BANK_TRANSFER', 'CASH')),
     payment_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('UNPAID', 'PAID', 'FAILED', 'REFUNDED')),
-    order_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_order_status CHECK (order_status IN ('PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'))
+    order_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_order_status CHECK (order_status IN ('PENDING', 'CANCELLED', 'COMPLETED'))
 );
 
 -- 11. Bảng order_items (Chi tiết đơn hàng)

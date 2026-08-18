@@ -131,7 +131,7 @@ test('Customer Order API: create order & issue vouchers successfully', async () 
   assert.equal(singleVoucherData.issued_voucher_id, issuedVoucher.issued_voucher_id);
   assert.equal(singleVoucherData.voucher_code, issuedVoucher.voucher_code);
   assert.equal(singleVoucherData.payment_status, 'PAID');
-  assert.equal(singleVoucherData.order_status, 'CONFIRMED');
+  assert.equal(singleVoucherData.order_status, 'COMPLETED');
 });
 
 test('Customer Voucher API: get non-existent voucher returns 404', async () => {
