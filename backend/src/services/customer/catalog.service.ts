@@ -241,6 +241,7 @@ export async function getPublicVoucherById(programId: number) {
        rf.review_id,
        rf.rating,
        rf.review_content,
+       rf.complaint_content,
        rf.submitted_at,
        u.full_name as customer_name
      FROM reviews_feedback rf
@@ -248,7 +249,7 @@ export async function getPublicVoucherById(programId: number) {
      JOIN users u ON u.user_id = rf.customer_id
      WHERE iv.program_id = $1
      ORDER BY rf.submitted_at DESC
-     LIMIT 10`,
+     LIMIT 50`,
     [programId]
   );
 
@@ -259,6 +260,7 @@ export async function getPublicVoucherById(programId: number) {
     rating: Number(r.rating) || 5,
     timeAgo: new Date(r.submitted_at).toLocaleDateString("vi-VN"),
     content: r.review_content || "Khách hàng hài lòng về dịch vụ.",
+    complaint: r.complaint_content || undefined,
   }));
 
   const avgRating = reviewsList.length > 0 

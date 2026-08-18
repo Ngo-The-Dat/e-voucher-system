@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/context/AppContext";
@@ -66,6 +66,43 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [isSubmittingReview, setIsSubmittingReview] = useState<boolean>(false);
   const [reviewSubmitSuccess, setReviewSubmitSuccess] = useState<boolean>(false);
 
+  // Reviews from database
+  const [reviewsList, setReviewsList] = useState<any[]>([]);
+  const [reviewsSummary, setReviewsSummary] = useState<{ total_reviews: number; average_rating: number } | null>(null);
+  const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+
+  const fetchReviews = useCallback(async () => {
+    const programId = Number(id);
+    if (!programId || isNaN(programId)) return;
+    try {
+      setIsLoadingReviews(true);
+      const res = await customerReviewApi.getProgramReviews(programId);
+      if (res && Array.isArray(res.reviews)) {
+        const mapped = res.reviews.map((r: any) => ({
+          review_id: r.review_id,
+          author: r.customer_name || "Khách hàng",
+          avatarLetter: (r.customer_name || "K").charAt(0).toUpperCase(),
+          avatarBg: "bg-primary-container text-on-primary-container",
+          rating: Number(r.rating) || 5,
+          timeAgo: r.submitted_at ? new Date(r.submitted_at).toLocaleDateString("vi-VN") : "Gần đây",
+          content: r.review_content || "Khách hàng không để lại nhận xét.",
+          complaint: r.complaint_content || undefined,
+        }));
+        setReviewsList(mapped);
+        if (res.summary) {
+          setReviewsSummary({
+            total_reviews: Number(res.summary.total_reviews) || mapped.length,
+            average_rating: res.summary.average_rating ? parseFloat(Number(res.summary.average_rating).toFixed(1)) : 5.0,
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("Không tải được danh sách đánh giá từ API:", err);
+    } finally {
+      setIsLoadingReviews(false);
+    }
+  }, [id]);
+
   useEffect(() => {
     const user = getStoredCustomerUser();
     if (user) {
@@ -85,6 +122,8 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setIsLoadingEligibility(false);
     }
 
+    fetchReviews();
+
     // Fetch related policies and contents for this voucher
     const programId = Number(id);
     if (programId && !isNaN(programId)) {
@@ -99,7 +138,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
           console.error("Failed to load voucher contents:", err);
         });
     }
-  }, [id]);
+  }, [id, fetchReviews]);
 
   if (!voucher) {
     return (
@@ -184,7 +223,8 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setHasComplaint(false);
       setComplaintContent("");
 
-      // Recheck eligibility
+      // Reload reviews and recheck eligibility
+      await fetchReviews();
       const updated = await customerReviewApi.checkEligibility(id);
       setReviewEligibility(updated);
     } catch (err: any) {
@@ -573,12 +613,12 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center text-tertiary">
                 <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
                 <span className="font-title-md text-title-md font-bold text-on-surface ml-1">
-                  {voucher.rating}
+                  {reviewsSummary?.average_rating !== undefined ? reviewsSummary.average_rating : voucher.rating}
                 </span>
               </div>
               <div className="w-px h-6 bg-outline-variant" />
               <span className="text-on-surface-variant font-label-md text-label-md">
-                {voucher.reviewsCount} đánh giá
+                {reviewsSummary?.total_reviews !== undefined ? reviewsSummary.total_reviews : reviewsList.length} đánh giá
               </span>
             </div>
           </div>
@@ -761,10 +801,15 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Review List */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {voucher.reviews && voucher.reviews.length > 0 ? (
-              voucher.reviews.map((rev, index) => (
+            {isLoadingReviews ? (
+              <div className="col-span-2 text-center py-8 text-on-surface-variant flex items-center justify-center gap-2">
+                <RefreshCw className="w-5 h-5 animate-spin text-primary" />
+                <span>Đang tải danh sách đánh giá...</span>
+              </div>
+            ) : reviewsList && reviewsList.length > 0 ? (
+              reviewsList.map((rev, index) => (
                 <div
-                  key={index}
+                  key={rev.review_id || index}
                   className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/50 shadow-sm flex flex-col gap-3"
                 >
                   <div className="flex items-center justify-between">
