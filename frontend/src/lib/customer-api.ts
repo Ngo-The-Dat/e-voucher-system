@@ -177,6 +177,7 @@ export interface CreateOrderResponse {
   order: {
     order_id: number;
     created_at: string;
+    elapsed_seconds?: number;
     total_amount: number;
     payment_method: string;
     payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;
@@ -198,6 +199,7 @@ export interface CreateOrderResponse {
 export interface CustomerOrder {
   order_id: number;
   created_at: string;
+  elapsed_seconds?: number;
   total_amount: number;
   payment_method: string;
   payment_status: "UNPAID" | "PAID" | "FAILED" | "REFUNDED" | string;

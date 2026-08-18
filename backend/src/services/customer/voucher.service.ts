@@ -39,7 +39,7 @@ export async function getCustomerVouchers(customerId: number, statusFilter?: str
     LEFT JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN order_items oi ON oi.order_item_id = iv.order_item_id
     LEFT JOIN orders o ON o.order_id = oi.order_id
-    WHERE ${conditions.join(' AND ')}
+    WHERE ${conditions.join(' AND ')} AND (o.payment_status = 'PAID' OR o.payment_status IS NULL)
     ORDER BY iv.issued_at DESC
   `;
 
@@ -114,7 +114,7 @@ export async function getCustomerVoucherById(customerId: number, issuedVoucherId
     LEFT JOIN partners p ON p.user_id = vp.partner_id
     LEFT JOIN order_items oi ON oi.order_item_id = iv.order_item_id
     LEFT JOIN orders o ON o.order_id = oi.order_id
-    WHERE iv.issued_voucher_id = $1 AND iv.owner_user_id = $2
+    WHERE iv.issued_voucher_id = $1 AND iv.owner_user_id = $2 AND (o.payment_status = 'PAID' OR o.payment_status IS NULL)
   `;
 
   const res = await pool.query(query, [issuedVoucherId, customerId]);

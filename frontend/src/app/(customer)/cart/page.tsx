@@ -10,10 +10,11 @@ import { customerOrderApi, CreateOrderItemInput, getStoredCustomerToken } from "
 import CartItemList from "@/components/customer/cart/CartItemList";
 import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
 import EmptyCart from "@/components/customer/cart/EmptyCart";
+import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, updateCartQuantity, removeFromCart, checkout, refreshCart, refreshMyVouchers } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, refreshCart, refreshMyVouchers } = useApp();
 
   // Local page state
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(() => {
@@ -37,6 +38,8 @@ export default function CartPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdPaymentOrder, setCreatedPaymentOrder] = useState<PaymentSimulatorOrder | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const toggleItem = (id: string) => {
     setSelectedItems((prev) => ({
@@ -112,14 +115,24 @@ export default function CartPage() {
           is_gift: isGift,
           recipient_info: isGift ? recipientInfo : undefined,
           payment_method: paymentMethod,
-          auto_pay: true,
+          auto_pay: false,
         });
 
-        alert(response.message || "Tạo đơn hàng và phát hành voucher thành công!");
         if (refreshCart) await refreshCart();
-        if (refreshMyVouchers) await refreshMyVouchers();
-        router.push("/my-vouchers");
-        return;
+
+        setCreatedPaymentOrder({
+          orderId: response.order.order_id,
+          totalAmount: response.order.total_amount,
+          paymentMethod: response.order.payment_method,
+          createdAt: response.order.created_at,
+          elapsedSeconds: response.order.elapsed_seconds ?? 0,
+          items: itemsToCheckout.map((item) => ({
+            program_name: item.voucher.title,
+            quantity: item.quantity,
+            unit_price: item.voucher.price,
+          })),
+        });
+        setIsPaymentModalOpen(true);
       } catch (err: any) {
         if (err.message) {
           alert(err.message);
@@ -192,6 +205,16 @@ export default function CartPage() {
       ) : (
         <EmptyCart />
       )}
+
+      {/* Payment Simulator Modal */}
+      <PaymentSimulatorModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        order={createdPaymentOrder}
+        onPaymentSuccess={() => {
+          if (refreshMyVouchers) refreshMyVouchers();
+        }}
+      />
     </main>
   );
 }

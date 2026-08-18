@@ -291,6 +291,8 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
 
     await client.query('COMMIT');
 
+    const nowIso = new Date().toISOString();
+
     return {
       success: true,
       message: isPaidNow
@@ -298,7 +300,8 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
         : 'Tạo đơn hàng thành công. Vui lòng tiến hành thanh toán.',
       order: {
         order_id: orderId,
-        created_at: order.created_at,
+        created_at: nowIso,
+        elapsed_seconds: 0,
         total_amount: Number(order.total_amount),
         payment_method: order.payment_method,
         payment_status: order.payment_status,
@@ -326,7 +329,12 @@ export async function payCustomerOrder(customerId: number, orderId: number, paym
 
     // Khóa đơn hàng để xử lý thanh toán
     const orderRes = await client.query(
-      `SELECT * FROM orders WHERE order_id = $1 AND buyer_user_id = $2 FOR UPDATE`,
+      `SELECT 
+         *, 
+         EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))::int AS elapsed_seconds 
+       FROM orders 
+       WHERE order_id = $1 AND buyer_user_id = $2 
+       FOR UPDATE`,
       [orderId, customerId]
     );
 
@@ -338,6 +346,21 @@ export async function payCustomerOrder(customerId: number, orderId: number, paym
 
     if (order.order_status === 'CANCELLED') {
       throw { status: 400, message: 'Không thể thanh toán đơn hàng đã bị hủy.' };
+    }
+
+    // Kiểm tra thời hạn thanh toán 5 phút (300 giây)
+    const elapsedSeconds = Number(order.elapsed_seconds || 0);
+    if (elapsedSeconds > 300) {
+      // Đơn hàng quá 5 phút chưa thanh toán -> Hủy đơn
+      await client.query(
+        `UPDATE orders SET order_status = 'CANCELLED' WHERE order_id = $1`,
+        [orderId]
+      );
+      await client.query('COMMIT');
+      throw {
+        status: 400,
+        message: 'Đơn hàng đã hết hạn thời gian thanh toán (5 phút). Vui lòng tạo lại đơn hàng mới.',
+      };
     }
 
     if (order.order_status === 'COMPLETED' && order.payment_status === 'PAID') {
@@ -479,6 +502,7 @@ export async function getCustomerOrders(customerId: number, filter: GetCustomerO
     SELECT 
       o.order_id,
       o.created_at,
+      EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at))::int as elapsed_seconds,
       o.total_amount,
       o.payment_method,
       o.payment_status,
@@ -513,6 +537,7 @@ export async function getCustomerOrders(customerId: number, filter: GetCustomerO
   return {
     orders: dataRes.rows.map((row) => ({
       ...row,
+      elapsed_seconds: Math.max(0, Number(row.elapsed_seconds || 0)),
       total_amount: Number(row.total_amount),
       items: row.items || [],
     })),
@@ -533,6 +558,7 @@ export async function getCustomerOrderById(customerId: number, orderId: number) 
     SELECT 
       o.order_id,
       o.created_at,
+      EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - o.created_at))::int as elapsed_seconds,
       o.total_amount,
       o.payment_method,
       o.payment_status,
@@ -588,6 +614,7 @@ export async function getCustomerOrderById(customerId: number, orderId: number) 
 
   return {
     ...order,
+    elapsed_seconds: Math.max(0, Number(order.elapsed_seconds || 0)),
     total_amount: Number(order.total_amount),
     items: itemsRes.rows.map((item) => ({
       ...item,
