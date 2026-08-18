@@ -1,16 +1,16 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useVouchers } from "@/hooks/useVouchers";
+import { usePartnerVouchers } from "@/hooks/usePartnerVouchers";
 import { formatCurrency, formatDate, calcRate } from "@/lib/utils";
-import { VoucherItem } from "@/lib/types/voucher";
+import { VoucherItem } from "@/lib/types/partner-voucher";
 
 export default function ReportsPage() {
-  const { vouchers, isLoading } = useVouchers();
+  const { vouchers, isLoading } = usePartnerVouchers();
   const [selectedVoucherId, setSelectedVoucherId] = useState<string | null>(null);
 
 
@@ -37,7 +37,7 @@ export default function ReportsPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
-      <TopAppBar title="Thống kê doanh thu" />
+      <PartnerTopAppBar title="Thống kê doanh thu" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-6">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

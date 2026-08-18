@@ -1,7 +1,7 @@
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
-import { PartnerProfile, ProfileFormErrors } from "@/lib/types/profile";
+import { PartnerProfile, ProfileFormErrors } from "@/lib/types/partner-profile";
 
 interface LegalInfoSectionProps {
   legalInfo: PartnerProfile["legalInfo"];

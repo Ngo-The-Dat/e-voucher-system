@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import Toast from "@/components/shared/ui/Toast";
 import ValidationErrorBanner from "@/components/shared/ui/ValidationErrorBanner";
@@ -12,8 +12,8 @@ import VoucherGeneralSection from "@/components/partner/voucher/VoucherGeneralSe
 import VoucherPricingSection from "@/components/partner/voucher/VoucherPricingSection";
 import VoucherDateSection from "@/components/partner/voucher/VoucherDateSection";
 import { partnerApi } from "@/lib/partner-api";
-import { CategoryOption, CreateVoucherInput, VoucherFormErrors } from "@/lib/types/voucher";
-import { Branch } from "@/lib/types/profile";
+import { CategoryOption, CreateVoucherInput, VoucherFormErrors } from "@/lib/types/partner-voucher";
+import { Branch } from "@/lib/types/partner-profile";
 import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
 export default function CreateVoucherPage() {
@@ -278,7 +278,7 @@ export default function CreateVoucherPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
-      <TopAppBar title="Tạo voucher mới" />
+      <PartnerTopAppBar title="Tạo voucher mới" />
 
       <Toast message={isSuccessToast ? "Tạo mới chương trình voucher thành công! Đang chuyển về danh sách..." : null} />
       <Toast message={submitError} type="error" />

@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from "react";
 import Icon from "@/components/shared/ui/Icon";
-import { Branch } from "@/lib/types/profile";
+import { Branch } from "@/lib/types/partner-profile";
 import { partnerApi } from "@/lib/partner-api";
 
 /** Props truyền vào modal tạo nhân viên */

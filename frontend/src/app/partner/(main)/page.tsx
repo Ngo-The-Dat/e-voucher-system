@@ -1,16 +1,16 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import KpiCard from "@/components/shared/ui/KpiCard";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Icon from "@/components/shared/ui/Icon";
 import Link from "next/link";
-import { useVouchers } from "@/hooks/useVouchers";
+import { usePartnerVouchers } from "@/hooks/usePartnerVouchers";
 import { formatCurrency } from "@/lib/utils";
 import { usePartner } from "@/context/PartnerContext";
 
 export default function DashboardPage() {
-  const { vouchers, isLoading } = useVouchers();
+  const { vouchers, isLoading } = usePartnerVouchers();
   const partner = usePartner();
 
   // Tính toán chỉ số KPI từ danh sách voucher thực tế
@@ -24,7 +24,7 @@ export default function DashboardPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
-      <TopAppBar title="Tổng quan" />
+      <PartnerTopAppBar title="Tổng quan" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto w-full max-w-none space-y-8">
         {/* Header Section */}

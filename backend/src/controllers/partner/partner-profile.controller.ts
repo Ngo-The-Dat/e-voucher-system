@@ -7,7 +7,7 @@
 
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
-import * as profileService from '../../services/partner/profile.service.js';
+import * as profileService from '../../services/partner/partner-profile.service.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
 /**

@@ -1,5 +1,5 @@
 /**
- * @file EmployeeContext.tsx
+ * @file PartnerEmployeeContext.tsx
  * @description React Context cung cấp và quản lý trạng thái phiên làm việc của Nhân viên chi nhánh đối tác (Partner Employee):
  * lưu trữ thông tin hồ sơ nhân viên (`EmployeeProfile`), chi nhánh làm việc trực thuộc, thương hiệu chủ quản,
  * trạng thái đang tải dữ liệu và hàm tải lại dữ liệu (`reloadProfile`).
@@ -8,7 +8,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { EmployeeProfile } from "@/lib/types/employee";
+import { EmployeeProfile } from "@/lib/types/partner-employee";
 import { partnerApi } from "@/lib/partner-api";
 import Icon from "@/components/shared/ui/Icon";
 
@@ -19,8 +19,8 @@ export interface EmployeeAccountError {
   feedback?: string | null;
 }
 
-/** Cấu trúc dữ liệu và các phương thức được cung cấp qua EmployeeContext */
-interface EmployeeContextValue {
+/** Cấu trúc dữ liệu và các phương thức được cung cấp qua PartnerEmployeeContext */
+interface PartnerEmployeeContextValue {
   profile: EmployeeProfile | null;                                          // Thông tin hồ sơ nhân viên hiện tại
   isLoading: boolean;                                                       // Trạng thái đang tải dữ liệu ban đầu
   error: EmployeeAccountError | null;                                       // Lỗi phân quyền hoặc trạng thái phê duyệt
@@ -28,7 +28,7 @@ interface EmployeeContextValue {
   setProfile: React.Dispatch<React.SetStateAction<EmployeeProfile | null>>; // Cập nhật thủ công hồ sơ
 }
 
-const EmployeeContext = createContext<EmployeeContextValue>({
+const PartnerEmployeeContext = createContext<PartnerEmployeeContextValue>({
   profile: null,
   isLoading: true,
   error: null,
@@ -39,7 +39,7 @@ const EmployeeContext = createContext<EmployeeContextValue>({
 /**
  * Provider bao bọc layout của phân hệ Nhân viên đối tác (/partner/employee).
  */
-export function EmployeeProvider({ children }: { children: React.ReactNode }) {
+export function PartnerEmployeeProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<EmployeeProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<EmployeeAccountError | null>(null);
@@ -140,11 +140,13 @@ export function EmployeeProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <EmployeeContext.Provider value={{ profile, isLoading, error, reloadProfile, setProfile }}>
+    <PartnerEmployeeContext.Provider value={{ profile, isLoading, error, reloadProfile, setProfile }}>
       {children}
-    </EmployeeContext.Provider>
+    </PartnerEmployeeContext.Provider>
   );
 }
 
-/** Hook tiện ích để lấy dữ liệu context của nhân viên tại bất kỳ component con nào */
-export const useEmployee = () => useContext(EmployeeContext);
+/** Hook tiện ích để lấy dữ liệu context của nhân viên đối tác tại bất kỳ component con nào */
+export const usePartnerEmployee = () => useContext(PartnerEmployeeContext);
+export const useEmployee = usePartnerEmployee;
+export const EmployeeProvider = PartnerEmployeeProvider;

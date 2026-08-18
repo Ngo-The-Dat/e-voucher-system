@@ -1,18 +1,15 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { VoucherItem } from "@/lib/types/voucher";
+import { VoucherItem } from "@/lib/types/partner-voucher";
 import { partnerApi } from "@/lib/partner-api";
 
 const VOUCHER_SYNC_INTERVAL_MS = 10_000;
 
 /**
  * Hook lấy toàn bộ danh sách voucher.
- *
- * Khi chuyển sang API thật, chỉ cần thay phần bên trong useEffect:
- *   const data = await api.getVouchers();
  */
-export function useVouchers() {
+export function usePartnerVouchers() {
   const [vouchers, setVouchers] = useState<VoucherItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -59,7 +56,7 @@ export function useVouchers() {
 /**
  * Hook lấy chi tiết một voucher theo ID.
  */
-export function useVoucherDetail(id: string) {
+export function usePartnerVoucherDetail(id: string) {
   const [voucher, setVoucher] = useState<VoucherItem | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -73,3 +70,6 @@ export function useVoucherDetail(id: string) {
 
   return { voucher, isLoading, setVoucher };
 }
+
+export const useVouchers = usePartnerVouchers;
+export const useVoucherDetail = usePartnerVoucherDetail;

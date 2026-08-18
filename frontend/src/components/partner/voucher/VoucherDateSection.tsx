@@ -1,7 +1,7 @@
 import Icon from "@/components/shared/ui/Icon";
 import { Input } from "@/components/shared/ui/Input";
 import FormField, { getInputClass } from "@/components/shared/ui/FormField";
-import { VoucherFormErrors } from "@/lib/types/voucher";
+import { VoucherFormErrors } from "@/lib/types/partner-voucher";
 
 interface VoucherDateSectionProps {
   sellStartDate: string;

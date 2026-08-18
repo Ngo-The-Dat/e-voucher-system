@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
 import Toast from "@/components/shared/ui/Toast";
@@ -11,9 +11,9 @@ import BrandLogoSection from "@/components/partner/profile/BrandLogoSection";
 import LegalInfoSection from "@/components/partner/profile/LegalInfoSection";
 import RepresentativeSection from "@/components/partner/profile/RepresentativeSection";
 import BranchesSection from "@/components/partner/profile/BranchesSection";
-import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/profile";
-import { useProfile } from "@/hooks/useProfile";
-import { useProfileValidation } from "@/hooks/useProfileValidation";
+import { PartnerProfile, ProfileFormErrors, Branch } from "@/lib/types/partner-profile";
+import { usePartnerProfile } from "@/hooks/usePartnerProfile";
+import { usePartnerProfileValidation } from "@/hooks/usePartnerProfileValidation";
 import { usePartnerContext } from "@/context/PartnerContext";
 import { partnerApi } from "@/lib/partner-api";
 
@@ -26,9 +26,9 @@ const TABS = [
 ];
 
 export default function ProfilePage() {
-  const { profile, isLoading, setProfile, reload, save } = useProfile();
+  const { profile, isLoading, setProfile, reload, save } = usePartnerProfile();
   const { refreshPartner } = usePartnerContext();
-  const { validate } = useProfileValidation();
+  const { validate } = usePartnerProfileValidation();
 
   const [activeTab, setActiveTab] = useState("all");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -156,7 +156,7 @@ export default function ProfilePage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-28 w-full">
-      <TopAppBar title="Quản lý hồ sơ đối tác" />
+      <PartnerTopAppBar title="Quản lý hồ sơ đối tác" />
 
       <Toast message={toastMessage} type={toastType} />
 

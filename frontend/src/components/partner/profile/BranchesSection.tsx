@@ -1,6 +1,6 @@
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
-import { Branch } from "@/lib/types/profile";
+import { Branch } from "@/lib/types/partner-profile";
 
 interface BranchesSectionProps {
   branches: Branch[];

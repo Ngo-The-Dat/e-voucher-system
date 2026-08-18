@@ -7,7 +7,7 @@
 
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
-import * as employeeService from '../../services/partner/employee.service.js';
+import * as employeeService from '../../services/partner/partner-employee-profile.service.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
 /**

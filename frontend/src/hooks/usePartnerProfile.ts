@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { PartnerProfile } from "@/lib/types/profile";
+import { PartnerProfile } from "@/lib/types/partner-profile";
 import { partnerApi } from "@/lib/partner-api";
 
 export interface PartnerAccountError {
@@ -14,7 +14,7 @@ export interface PartnerAccountError {
 /**
  * Hook lấy thông tin hồ sơ đối tác và kiểm tra trạng thái phê duyệt.
  */
-export function useProfile() {
+export function usePartnerProfile() {
   const [profile, setProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<PartnerAccountError | null>(null);
@@ -117,3 +117,5 @@ export function useProfile() {
 
   return { profile, isLoading, error, setProfile, reload, save };
 }
+
+export const useProfile = usePartnerProfile;

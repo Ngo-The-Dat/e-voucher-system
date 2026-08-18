@@ -1,6 +1,6 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import Icon from "@/components/shared/ui/Icon";
@@ -8,9 +8,8 @@ import Link from "next/link";
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { partnerApi } from "@/lib/partner-api";
-import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
-import { VoucherImage } from "@/lib/types/voucher";
-import { Branch } from "@/lib/types/profile";
+import { CategoryOption, VoucherItem, VoucherFormErrors, VoucherImage } from "@/lib/types/partner-voucher";
+import { Branch } from "@/lib/types/partner-profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
@@ -106,7 +105,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   if (!voucher) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen">
-        <TopAppBar title={`Chi tiết Voucher ${id}`} />
+        <PartnerTopAppBar title={`Chi tiết Voucher ${id}`} />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />
@@ -308,7 +307,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-20 w-full">
-      <TopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
+      <PartnerTopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
 
       <Toast message={toastMessage} type={toastType} />
 

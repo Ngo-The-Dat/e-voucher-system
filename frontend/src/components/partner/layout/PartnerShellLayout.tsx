@@ -1,19 +1,19 @@
 "use client";
 
-import SideNavBar from "@/components/partner/layout/SideNavBar";
+import PartnerSideNavBar from "@/components/partner/layout/PartnerSideNavBar";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useProfile } from "@/hooks/useProfile";
+import { usePartnerProfile } from "@/hooks/usePartnerProfile";
 import { PartnerProvider } from "@/context/PartnerContext";
 import Icon from "@/components/shared/ui/Icon";
 import AccountRestrictedNotice from "@/components/shared/ui/AccountRestrictedNotice";
 
-export default function ShellLayout({ children }: { children: React.ReactNode }) {
+export default function PartnerShellLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
-  const { profile, isLoading, error, reload } = useProfile();
+  const { profile, isLoading, error, reload } = usePartnerProfile();
 
   useEffect(() => {
     const token = localStorage.getItem("partner_access_token");
@@ -73,7 +73,7 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
             className="md:hidden fixed inset-0 z-40 bg-black/40"
           />
         )}
-        <SideNavBar
+        <PartnerSideNavBar
           isCollapsed={isCollapsed}
           onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
           isMobileOpen={isMobileNavOpen}
