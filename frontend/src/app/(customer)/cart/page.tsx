@@ -95,41 +95,44 @@ export default function CartPage() {
       }))
       .filter((item) => !isNaN(item.program_id) && item.program_id > 0);
 
-    if (apiItems.length > 0) {
-      try {
-        setIsSubmitting(true);
-        const response = await customerOrderApi.createOrder({
-          items: apiItems,
-          is_gift: isGift,
-          recipient_info: isGift ? recipientInfo : undefined,
-          payment_method: paymentMethod,
-          auto_pay: false,
-        });
+    if (apiItems.length === 0) {
+      alert("Không tìm thấy thông tin sản phẩm hợp lệ để đặt hàng. Vui lòng thử tải lại trang.");
+      return;
+    }
 
-        if (refreshCart) await refreshCart();
+    try {
+      setIsSubmitting(true);
+      const response = await customerOrderApi.createOrder({
+        items: apiItems,
+        is_gift: isGift,
+        recipient_info: isGift ? recipientInfo : undefined,
+        payment_method: paymentMethod,
+        auto_pay: false,
+      });
 
-        setCreatedPaymentOrder({
-          orderId: response.order.order_id,
-          totalAmount: response.order.total_amount,
-          paymentMethod: response.order.payment_method,
-          createdAt: response.order.created_at,
-          elapsedSeconds: response.order.elapsed_seconds ?? 0,
-          items: itemsToCheckout.map((item) => ({
-            program_name: item.voucher.title,
-            quantity: item.quantity,
-            unit_price: item.voucher.price,
-          })),
-        });
-        setIsPaymentModalOpen(true);
-      } catch (err: any) {
-        if (err.message) {
-          alert(err.message);
-        } else {
-          alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
-        }
-      } finally {
-        setIsSubmitting(false);
+      if (refreshCart) await refreshCart();
+
+      setCreatedPaymentOrder({
+        orderId: response.order.order_id,
+        totalAmount: response.order.total_amount,
+        paymentMethod: response.order.payment_method,
+        createdAt: response.order.created_at,
+        elapsedSeconds: response.order.elapsed_seconds ?? 0,
+        items: itemsToCheckout.map((item) => ({
+          program_name: item.voucher.title,
+          quantity: item.quantity,
+          unit_price: item.voucher.price,
+        })),
+      });
+      setIsPaymentModalOpen(true);
+    } catch (err: any) {
+      if (err.message) {
+        alert(err.message);
+      } else {
+        alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
