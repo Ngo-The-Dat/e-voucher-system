@@ -296,11 +296,10 @@ export default function ManageVouchersPage() {
                       {/* Tồn kho / Số lượng phát hành */}
                       <td className="py-4 px-5">
                         <span
-                          className={`font-bold text-xs ${
-                            isStockOut
+                          className={`font-bold text-xs ${isStockOut
                               ? "text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200"
                               : "text-slate-800"
-                          }`}
+                            }`}
                         >
                           {stockNum.toLocaleString("vi-VN")} / {item.issue_quantity.toLocaleString("vi-VN")}
                         </span>
@@ -326,15 +325,15 @@ export default function ManageVouchersPage() {
                             item.display_status === "PUBLISHED"
                               ? "active"
                               : item.display_status === "HIDDEN"
-                              ? "pending"
-                              : "ended"
+                                ? "pending"
+                                : "ended"
                           }
                           label={
                             item.display_status === "PUBLISHED"
                               ? "Đang bán"
                               : item.display_status === "HIDDEN"
-                              ? "Tạm ngưng"
-                              : "Ngừng bán"
+                                ? "Tạm ngưng"
+                                : "Ngừng bán"
                           }
                         />
                       </td>
@@ -346,7 +345,6 @@ export default function ManageVouchersPage() {
                           className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-flex items-center gap-1.5"
                         >
                           <span>Xem chi tiết</span>
-                          <Icon name="arrow_forward" className="text-xs" />
                         </Link>
                       </td>
                     </tr>

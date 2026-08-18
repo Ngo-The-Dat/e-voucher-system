@@ -239,7 +239,6 @@ export default function PendingVouchersPage() {
                           className="px-3.5 py-1.5 bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-xs rounded-xl transition shadow-2xs inline-flex items-center gap-1.5"
                         >
                           <span>Xem chi tiết</span>
-                          <Icon name="arrow_forward" className="text-xs" />
                         </Link>
                       </td>
                     </tr>
