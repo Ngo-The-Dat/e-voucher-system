@@ -271,7 +271,6 @@ export default function EmployeePendingApprovalsPage() {
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50/80 hover:bg-blue-100 hover:text-blue-700 rounded-xl border border-blue-100 transition shadow-sm"
                         >
                           <span>Xem chi tiết</span>
-                          <Icon name="arrow_forward" className="text-sm" />
                         </Link>
                       </td>
                     </tr>
@@ -404,13 +403,12 @@ function DateRangePicker({
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className={`w-full h-[38px] px-3 bg-slate-50 border rounded-xl text-left flex items-center justify-between text-sm transition-all ${
-            isOpen
+          className={`w-full h-[38px] px-3 bg-slate-50 border rounded-xl text-left flex items-center justify-between text-sm transition-all ${isOpen
               ? "border-blue-500 ring-2 ring-blue-500/20 bg-white"
               : hasFilter
-              ? "border-blue-300 bg-blue-50/30 text-blue-900 font-medium"
-              : "border-slate-200 text-slate-700 hover:bg-slate-100/70"
-          }`}
+                ? "border-blue-300 bg-blue-50/30 text-blue-900 font-medium"
+                : "border-slate-200 text-slate-700 hover:bg-slate-100/70"
+            }`}
         >
           <div className="flex items-center gap-2 truncate pr-1">
             <Icon

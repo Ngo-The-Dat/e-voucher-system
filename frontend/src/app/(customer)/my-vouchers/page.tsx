@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
-import { MyVoucher, Voucher } from "@/data/mockData";
+import { MyVoucher, Voucher } from "@/lib/types/customer";
 import { getStoredCustomerUser } from "@/lib/customer-api";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
@@ -61,6 +61,7 @@ export default function MyVouchersPage() {
       thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
       images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
       price: 0,
+      originalPrice: 0,
       rating: 5,
       reviewsCount: 0,
       soldCount: "0",
@@ -192,6 +193,7 @@ export default function MyVouchersPage() {
                   thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
                   images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
                   price: 0,
+                  originalPrice: 0,
                   rating: 5,
                   reviewsCount: 0,
                   soldCount: "0",

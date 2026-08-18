@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MyVoucher, Voucher } from "@/data/mockData";
+import { MyVoucher, Voucher } from "@/lib/types/customer";
 import { Ticket, CheckCircle2, Clock, XCircle, Star } from "lucide-react";
 import Image from "next/image";
 

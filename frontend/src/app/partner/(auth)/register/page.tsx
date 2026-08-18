@@ -366,9 +366,9 @@ export default function RegisterPage() {
             <div className="w-16 h-16 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center mb-4 shadow-md">
               <Icon name="check_circle" className="text-4xl text-secondary" />
             </div>
-            <h3 className="text-xl font-bold text-on-surface mb-2">Đăng ký tài khoản đối tác thành công!</h3>
+            <h3 className="text-xl font-bold text-on-surface mb-2">Thông tin đăng ký đã được tạo thành công</h3>
             <p className="text-xs text-on-surface-variant mb-6 max-w-md leading-relaxed">
-              Tài khoản đối tác cho <span className="font-bold text-on-surface">{formData.fullName}</span> ({formData.email}) đã được hệ thống lưu trữ thành công.
+              Tài khoản đối tác cho <span className="font-bold text-on-surface">{formData.fullName}</span> ({formData.email}) đã được gửi đi và đang chờ xét duyệt.
             </p>
             <div className="bg-surface-container-low p-4 rounded-xl border border-outline-variant/50 w-full max-w-xs space-y-2 text-left mb-6">
               <div className="flex justify-between items-center text-[11px]">
@@ -384,8 +384,8 @@ export default function RegisterPage() {
                 <span className="text-on-surface tracking-wide font-medium">{formData.phone}</span>
               </div>
             </div>
-            <Link href="/partner" className="px-8 py-2.5 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-surface-tint shadow-md transition-all text-center">
-              Về trang chủ Dashboard
+            <Link href="/" className="px-8 py-2.5 rounded-lg text-xs font-bold bg-primary text-on-primary hover:bg-surface-tint shadow-md transition-all text-center">
+              Về trang chủ
             </Link>
           </div>
         )}

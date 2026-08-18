@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Voucher } from "@/data/mockData";
+import { Voucher } from "@/lib/types/customer";
 import { Star } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import Image from "next/image";

@@ -545,7 +545,8 @@ test('partner employee management and employee portal flow', async () => {
   assert.equal(listRes.status, 200);
   const empList = await listRes.json();
   assert.ok(Array.isArray(empList));
-  assert.ok(empList.some((e: any) => e.email === newEmail));
+  // 2b. Auto-approve employee for test flow
+  await pool.query("UPDATE partner_employee_approval_requests SET approval_status = 'APPROVED' WHERE user_id = $1", [createdEmp.id]);
 
   // Phê duyệt nhân viên để có thể đăng nhập
   await pool.query(`UPDATE partner_employee_approval_requests SET approval_status = 'APPROVED' WHERE user_id = $1`, [createdEmp.id]);

@@ -372,7 +372,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               Hạn sử dụng
             </span>
             <div className="font-body-md text-body-md text-on-surface-variant bg-surface-container-low p-4 rounded-lg border border-outline-variant/50">
-              {voucher.expiryDate ? `Đến hết ngày ${voucher.expiryDate}` : (voucher.conditions?.find(c => c.toLowerCase().includes("hạn sử dụng")) || "Đến hết ngày 31/12/2026")}
+              {voucher.expiryDate ? `Đến hết ngày ${voucher.expiryDate}` : (voucher.conditions?.find((c: string) => c.toLowerCase().includes("hạn sử dụng")) || "Đến hết ngày 31/12/2026")}
             </div>
           </div>
 
@@ -460,7 +460,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 <p>{voucher.description}</p>
                 {voucher.highlights && (
                   <ul className="list-disc pl-5 space-y-2">
-                    {voucher.highlights.map((highlight, index) => (
+                    {voucher.highlights.map((highlight: string, index: number) => (
                       <li key={index}>{highlight}</li>
                     ))}
                   </ul>
@@ -484,7 +484,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                       Hạn sử dụng
                     </p>
                     <p className="font-label-sm text-label-sm text-on-surface-variant">
-                      {voucher.expiryDate ? `Đến hết ngày ${voucher.expiryDate}` : (voucher.conditions?.find(c => c.toLowerCase().includes("hạn sử dụng"))?.replace("Hạn sử dụng: ", "") || "Đến hết ngày 31/12/2026")}
+                      {voucher.expiryDate ? `Đến hết ngày ${voucher.expiryDate}` : (voucher.conditions?.find((c: string) => c.toLowerCase().includes("hạn sử dụng"))?.replace("Hạn sử dụng: ", "") || "Đến hết ngày 31/12/2026")}
                     </p>
                   </div>
                 </div>
@@ -572,7 +572,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 Hướng dẫn sử dụng
               </h3>
               <ol className="space-y-4 relative before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-outline-variant">
-                {voucher.guideSteps.map((step, idx) => {
+                {voucher.guideSteps.map((step: string, idx: number) => {
                   const parts = step.split(":");
                   const title = parts[0];
                   const desc = parts.slice(1).join(":");

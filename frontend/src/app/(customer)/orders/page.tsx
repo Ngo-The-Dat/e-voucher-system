@@ -146,6 +146,7 @@ export default function OrderHistoryPage() {
   // Filter logic
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
+      const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
       const state = getOrderState(order);
 
       // 1. Status tab filter
@@ -193,6 +194,8 @@ export default function OrderHistoryPage() {
     [orders, currentTime]
   );
   const paidCount = useMemo(
+    () => orders.filter((o) => o.payment_status === "PAID" || o.order_status === "COMPLETED").length,
+    [orders]
     () => orders.filter((o) => getOrderState(o).isPaid).length,
     [orders, currentTime]
   );
@@ -338,6 +341,7 @@ export default function OrderHistoryPage() {
         <div className="flex flex-col gap-6">
           {filteredOrders.map((order) => {
             const isExpanded = expandedOrderId === order.order_id;
+            const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
             const state = getOrderState(order);
 
             return (

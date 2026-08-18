@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { Voucher } from "@/data/mockData";
+import { Voucher } from "@/lib/types/customer";
 import { customerCatalogApi } from "@/lib/customer-api";
 
 export function useCustomerVouchers() {

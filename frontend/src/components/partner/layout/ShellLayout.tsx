@@ -1,15 +1,40 @@
 "use client";
 
 import SideNavBar from "@/components/partner/layout/SideNavBar";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
 import { PartnerProvider } from "@/context/PartnerContext";
 import Icon from "@/components/shared/ui/Icon";
 
 export default function ShellLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const [isAuthed, setIsAuthed] = useState(false);
   const { profile, reload } = useProfile();
+
+  useEffect(() => {
+    const token = localStorage.getItem("partner_access_token");
+    const isJwt = token !== null && token.split('.').length === 3;
+    if (!isJwt) {
+      localStorage.removeItem("partner_access_token");
+      router.replace("/login");
+      return;
+    }
+    setIsAuthed(true);
+  }, [router]);
+
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 text-on-surface-variant font-medium text-base">
+          <Icon name="progress_activity" className="animate-spin text-primary text-xl" />
+          <span>Đang xác thực quyền truy cập...</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <PartnerProvider value={{ partner: profile, refreshPartner: reload }}>

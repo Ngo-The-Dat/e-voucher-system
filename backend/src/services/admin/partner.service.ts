@@ -16,6 +16,8 @@
 
 import pool from '../../config/db.js';
 import { logAdminAction } from './system-log.service.js';
+import { sendPartnerRejectionEmail } from '../email/partner-rejection-email.service.js';
+import { sendPartnerApprovalEmail } from '../email/partner-approval-email.service.js';
 
 /**
  * Interface bộ lọc dữ liệu khi truy vấn danh sách đối tác
@@ -230,8 +232,9 @@ export async function approvePartner(partnerId: number, adminId: number) {
 
     // Kiểm tra đối tác tồn tại
     const checkRes = await client.query(
-      `SELECT p.user_id, p.business_name, p.activity_status, par.approval_request_id, par.approval_status
+      `SELECT p.user_id, p.business_name, p.activity_status, u.email, u.full_name, par.approval_request_id, par.approval_status
        FROM partners p
+       JOIN users u ON u.user_id = p.user_id
        LEFT JOIN LATERAL (
          SELECT approval_request_id, approval_status
          FROM partner_approval_requests
@@ -286,7 +289,20 @@ export async function approvePartner(partnerId: number, adminId: number) {
       result: 'SUCCESS',
     });
 
-    return { message: 'Phê duyệt đối tác thành công', partner_id: partnerId };
+    // Gửi email thông báo phê duyệt tới đối tác
+    if (oldPartner.email) {
+      try {
+        await sendPartnerApprovalEmail({
+          email: oldPartner.email,
+          fullName: oldPartner.full_name || 'Đối tác',
+          businessName: oldPartner.business_name || 'Doanh nghiệp',
+        });
+      } catch (emailErr) {
+        console.error('Lỗi gửi email phê duyệt đối tác:', emailErr);
+      }
+    }
+
+    return { message: 'Phê duyệt đối tác và gửi email thông báo thành công', partner_id: partnerId };
   } catch (err) {
     await client.query('ROLLBACK');
 
@@ -316,8 +332,9 @@ export async function rejectPartner(partnerId: number, reason: string, adminId: 
     await client.query('BEGIN');
 
     const checkRes = await client.query(
-      `SELECT p.user_id, p.business_name, par.approval_request_id, par.approval_status
+      `SELECT p.user_id, p.business_name, u.email, u.full_name, par.approval_request_id, par.approval_status
        FROM partners p
+       JOIN users u ON u.user_id = p.user_id
        LEFT JOIN LATERAL (
          SELECT approval_request_id, approval_status
          FROM partner_approval_requests
@@ -364,7 +381,21 @@ export async function rejectPartner(partnerId: number, reason: string, adminId: 
       result: 'SUCCESS',
     });
 
-    return { message: 'Từ chối đối tác thành công', partner_id: partnerId };
+    // Gửi email thông báo từ chối kèm lý do tới đối tác
+    if (oldPartner.email) {
+      try {
+        await sendPartnerRejectionEmail({
+          email: oldPartner.email,
+          fullName: oldPartner.full_name || 'Đối tác',
+          businessName: oldPartner.business_name || 'Doanh nghiệp',
+          reason,
+        });
+      } catch (emailErr) {
+        console.error('Lỗi gửi email từ chối đối tác:', emailErr);
+      }
+    }
+
+    return { message: 'Từ chối đối tác và gửi email thông báo thành công', partner_id: partnerId };
   } catch (err) {
     await client.query('ROLLBACK');
 
