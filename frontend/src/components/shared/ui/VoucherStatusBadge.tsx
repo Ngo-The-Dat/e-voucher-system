@@ -54,7 +54,7 @@ export default function VoucherStatusBadge({
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap ${cfg.className} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border whitespace-nowrap shrink-0 ${cfg.className} ${className}`}
     >
       {withDot && (
         <span
