@@ -23,19 +23,15 @@ before(async () => {
   const secret = process.env.JWT_SECRET || 'testsecret';
   process.env.JWT_SECRET = secret;
 
-  // Lấy hoặc tạo user CUSTOMER active
-  let userRes = await pool.query(`SELECT user_id FROM users WHERE role = 'CUSTOMER' AND status = 'ACTIVE' LIMIT 1`);
-  let customerId = userRes.rows[0]?.user_id;
-
-  if (!customerId) {
-    const newUserRes = await pool.query(
-      `INSERT INTO users (email, full_name, role, status, password_hash)
-       VALUES ('testcustomer_order@example.com', 'Test Customer Order', 'CUSTOMER', 'ACTIVE', 'hash')
-       RETURNING user_id`
-    );
-    customerId = newUserRes.rows[0].user_id;
-  }
-
+  // Tạo user CUSTOMER mới tinh cho test suite để tránh ảnh hưởng dữ liệu cũ
+  const uniqueEmail = `testcustomer_order_${Date.now()}@example.com`;
+  const newUserRes = await pool.query(
+    `INSERT INTO users (email, full_name, role, status, password_hash)
+     VALUES ($1, 'Test Customer Order', 'CUSTOMER', 'ACTIVE', 'hash')
+     RETURNING user_id`,
+    [uniqueEmail]
+  );
+  const customerId = newUserRes.rows[0].user_id;
   customerToken = jwt.sign({ id: Number(customerId), role: 'CUSTOMER' }, secret, { expiresIn: '10m' });
 
   // Ensure program_id 1 is published and within valid sale dates
@@ -225,5 +221,33 @@ test('Customer Review API: allows review when user has purchased voucher', async
   const reviewData = (await reviewRes.json()) as any;
   assert.ok(reviewData.review);
   assert.equal(reviewData.review.rating, 5);
+  const reviewedIssuedVoucherId = reviewData.review.issued_voucher_id;
+
+  // 1. Attempt duplicate review on the EXACT SAME issued voucher code (should be rejected with 400)
+  const duplicateDirectRes = await request('/api/customer/reviews', customerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      issuedVoucherId: reviewedIssuedVoucherId,
+      rating: 4,
+      reviewContent: 'Đánh giá trùng trên cùng 1 mã voucher',
+    }),
+  });
+  assert.equal(duplicateDirectRes.status, 400);
+  const duplicateDirectData = (await duplicateDirectRes.json()) as any;
+  assert.match(duplicateDirectData.message, /1 lần/i);
+
+  // 2. Now that all voucher codes of this program are reviewed, submitting by programId must also fail with 400
+  const noRemainingVouchersRes = await request('/api/customer/reviews', customerToken, {
+    method: 'POST',
+    body: JSON.stringify({
+      programId,
+      rating: 5,
+      reviewContent: 'Không còn mã nào chưa đánh giá',
+    }),
+  });
+  assert.equal(noRemainingVouchersRes.status, 400);
+  const noRemainingData = (await noRemainingVouchersRes.json()) as any;
+  assert.match(noRemainingData.message, /1 lần/i);
 });
+
 

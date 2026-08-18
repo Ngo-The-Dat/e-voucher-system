@@ -683,8 +683,46 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 </button>
               </div>
             </div>
+          ) : reviewEligibility?.hasPurchased && reviewEligibility?.hasReviewed && !reviewEligibility?.canReview ? (
+            /* 3. Logged In and Already Reviewed This Voucher Code */
+            <div className="bg-emerald-500/10 border border-emerald-500/25 p-6 rounded-2xl shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2">
+                    <span>Bạn đã đánh giá voucher này rồi</span>
+                    <span className="text-[11px] bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 px-2.5 py-0.5 rounded-full font-semibold">
+                      1 lần / 1 mã voucher
+                    </span>
+                  </h3>
+                  <p className="text-xs text-on-surface-variant mt-0.5 max-w-lg">
+                    Mỗi mã voucher chỉ được gửi đánh giá 1 lần duy nhất. Bạn đã hoàn tất đánh giá cho mã <strong className="font-mono text-primary">{reviewEligibility.voucherCode}</strong>. Để tiếp tục gửi đánh giá mới, vui lòng mua thêm voucher.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  className="px-4 py-2.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  Thêm vào giỏ
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBuyNow}
+                  className="px-5 py-2.5 bg-primary text-on-primary rounded-xl font-label-md text-label-md font-bold hover:opacity-90 transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Mua để đánh giá
+                </button>
+              </div>
+            </div>
           ) : (
-            /* 3. Logged In and Purchased Case */
+            /* 4. Logged In and Eligible to Review (Has Unreviewed Voucher) */
             <div className="bg-surface-container-lowest/80 p-6 rounded-2xl border border-outline-variant/60 shadow-sm space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant/40 pb-4">
                 <div>
@@ -694,7 +732,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
-                      <CheckCircle2 className="w-3.5 h-3.5" /> Đã mua hàng
+                      <CheckCircle2 className="w-3.5 h-3.5" /> Đã mua hàng (1 đánh giá / mã)
                     </span>
                     {reviewEligibility?.voucherCode && (
                       <span className="text-xs text-on-surface-variant font-mono">

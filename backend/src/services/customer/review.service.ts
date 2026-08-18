@@ -10,24 +10,29 @@ export interface CreateReviewInput {
 }
 
 /**
- * Kiểm tra quyền đánh giá voucher của khách hàng (Phải đã mua và thanh toán đơn hàng)
+ * Kiểm tra quyền đánh giá voucher của khách hàng (Phải đã mua và mỗi mã voucher chỉ được đánh giá 1 lần)
  */
 export async function checkCustomerReviewEligibility(customerId: number | string, programId: number | string) {
-  // 1. Kiểm tra khách hàng có sở hữu voucher đã thanh toán thuộc chương trình này không
+  // 1. Lấy tất cả voucher đã mua thuộc chương trình này và trạng thái đánh giá tương ứng
   const purchaseQuery = `
     SELECT 
       iv.issued_voucher_id, 
       iv.owner_user_id, 
       iv.program_id,
       iv.voucher_code,
-      o.payment_status
+      o.payment_status,
+      rf.review_id,
+      rf.rating,
+      rf.review_content,
+      rf.complaint_content,
+      rf.submitted_at
     FROM issued_vouchers iv
     LEFT JOIN order_items oi ON oi.order_item_id = iv.order_item_id
     LEFT JOIN orders o ON o.order_id = oi.order_id
+    LEFT JOIN reviews_feedback rf ON rf.issued_voucher_id = iv.issued_voucher_id
     WHERE iv.program_id = $1 AND iv.owner_user_id = $2
       AND (o.payment_status = 'PAID' OR o.payment_status IS NULL)
-    ORDER BY iv.issued_at DESC
-    LIMIT 1
+    ORDER BY (rf.review_id IS NULL) DESC, iv.issued_at DESC
   `;
   const purchaseRes = await pool.query(purchaseQuery, [programId, customerId]);
 
@@ -40,31 +45,37 @@ export async function checkCustomerReviewEligibility(customerId: number | string
     };
   }
 
-  const issuedVoucher = purchaseRes.rows[0];
+  // Tìm voucher chưa được đánh giá
+  const unreviewedVoucher = purchaseRes.rows.find((r) => r.review_id === null || r.review_id === undefined);
 
-  // 2. Kiểm tra xem khách hàng đã từng đánh giá chương trình này chưa
-  const reviewQuery = `
-    SELECT 
-      rf.review_id,
-      rf.rating,
-      rf.review_content,
-      rf.complaint_content,
-      rf.submitted_at
-    FROM reviews_feedback rf
-    JOIN issued_vouchers iv ON rf.issued_voucher_id = iv.issued_voucher_id
-    WHERE iv.program_id = $1 AND rf.customer_id = $2
-    ORDER BY rf.submitted_at DESC
-    LIMIT 1
-  `;
-  const reviewRes = await pool.query(reviewQuery, [programId, customerId]);
+  if (unreviewedVoucher) {
+    return {
+      canReview: true,
+      hasPurchased: true,
+      hasReviewed: false,
+      issuedVoucherId: Number(unreviewedVoucher.issued_voucher_id),
+      voucherCode: unreviewedVoucher.voucher_code,
+      totalPurchased: purchaseRes.rows.length,
+      message: 'Mỗi mã voucher chỉ được đánh giá 1 lần duy nhất.',
+    };
+  }
 
+  // Tất cả mã voucher đã mua của chương trình này đều đã được đánh giá
+  const latestReviewed = purchaseRes.rows[0];
   return {
-    canReview: true,
+    canReview: false,
     hasPurchased: true,
-    hasReviewed: reviewRes.rows.length > 0,
-    issuedVoucherId: Number(issuedVoucher.issued_voucher_id),
-    voucherCode: issuedVoucher.voucher_code,
-    existingReview: reviewRes.rows[0] || null,
+    hasReviewed: true,
+    issuedVoucherId: Number(latestReviewed.issued_voucher_id),
+    voucherCode: latestReviewed.voucher_code,
+    existingReview: {
+      review_id: latestReviewed.review_id,
+      rating: latestReviewed.rating,
+      review_content: latestReviewed.review_content,
+      complaint_content: latestReviewed.complaint_content,
+      submitted_at: latestReviewed.submitted_at,
+    },
+    message: 'Mỗi mã voucher chỉ được đánh giá 1 lần duy nhất. Bạn đã hoàn tất đánh giá cho mã voucher này.',
   };
 }
 
@@ -72,11 +83,14 @@ export async function createCustomerReview(input: CreateReviewInput) {
   const { customerId, rating, reviewContent, complaintContent } = input;
   let targetIssuedVoucherId = input.issuedVoucherId;
 
-  // Nếu truyền programId mà chưa có issuedVoucherId -> Tự động tìm voucher hợp lệ của khách hàng
+  // Nếu truyền programId mà chưa có issuedVoucherId -> Tự động tìm voucher chưa đánh giá của khách hàng
   if (!targetIssuedVoucherId && input.programId) {
     const eligibility = await checkCustomerReviewEligibility(customerId, input.programId);
-    if (!eligibility.hasPurchased || !eligibility.issuedVoucherId) {
+    if (!eligibility.hasPurchased) {
       throw { status: 403, message: 'Bạn chưa mua sản phẩm này nên không thể gửi đánh giá.' };
+    }
+    if (!eligibility.canReview || !eligibility.issuedVoucherId) {
+      throw { status: 400, message: 'Mỗi mã voucher chỉ được đánh giá 1 lần duy nhất. Bạn đã gửi đánh giá cho mã voucher này rồi.' };
     }
     targetIssuedVoucherId = eligibility.issuedVoucherId;
   }
@@ -112,7 +126,16 @@ export async function createCustomerReview(input: CreateReviewInput) {
     throw { status: 403, message: 'Đơn hàng của voucher này chưa được thanh toán thành công.' };
   }
 
-  // 2. Validate rating if provided
+  // 2. Ràng buộc: Mỗi mã voucher (issued_voucher_id) chỉ được đánh giá 1 lần duy nhất
+  const duplicateReviewCheck = await pool.query(
+    `SELECT review_id FROM reviews_feedback WHERE issued_voucher_id = $1`,
+    [targetIssuedVoucherId]
+  );
+  if (duplicateReviewCheck.rows.length > 0) {
+    throw { status: 400, message: 'Mã voucher này đã được gửi đánh giá trước đó. Mỗi mã voucher chỉ được đánh giá 1 lần duy nhất.' };
+  }
+
+  // 3. Validate rating
   let numericRating: number = 5;
   if (rating !== undefined && rating !== null) {
     numericRating = Number(rating);
@@ -124,7 +147,7 @@ export async function createCustomerReview(input: CreateReviewInput) {
   const cleanReviewContent = reviewContent && reviewContent.trim() ? reviewContent.trim() : null;
   const cleanComplaintContent = complaintContent && complaintContent.trim() ? complaintContent.trim() : null;
 
-  // 3. Lưu bản ghi reviews_feedback
+  // 4. Lưu bản ghi reviews_feedback
   const result = await pool.query(
     `INSERT INTO reviews_feedback (issued_voucher_id, customer_id, rating, review_content, complaint_content, submitted_at)
      VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
