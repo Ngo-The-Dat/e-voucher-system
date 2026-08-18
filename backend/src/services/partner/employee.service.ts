@@ -38,11 +38,20 @@ export const getEmployeeProfile = async (userId: number) => {
        u.nationality, u.status, u.created_at, u.last_login_at,
        b.branch_id, b.branch_name, b.address AS branch_address, b.phone AS branch_phone,
        b.region AS branch_region, b.status AS branch_status,
-       p.user_id AS partner_id, p.business_name AS partner_business_name, p.brand_logo AS partner_brand_logo
+       p.user_id AS partner_id, p.business_name AS partner_business_name, p.brand_logo AS partner_brand_logo,
+       COALESCE(pear.approval_status, 'APPROVED') AS approval_status,
+       pear.admin_feedback
      FROM users u
      JOIN partner_employees pe ON u.user_id = pe.user_id
      JOIN branches b ON pe.branch_id = b.branch_id
      JOIN partners p ON b.partner_id = p.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status, admin_feedback
+       FROM partner_employee_approval_requests
+       WHERE user_id = u.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) pear ON TRUE
      WHERE u.user_id = $1 AND u.role = 'PARTNER_EMPLOYEE'`,
     [userId]
   );
@@ -61,6 +70,8 @@ export const getEmployeeProfile = async (userId: number) => {
     identity_no: row.identity_no,
     nationality: row.nationality,
     status: row.status,
+    approval_status: row.approval_status as 'PENDING' | 'APPROVED' | 'REJECTED',
+    admin_feedback: row.admin_feedback ?? null,
     created_at: row.created_at,
     last_login_at: row.last_login_at,
     branch: {

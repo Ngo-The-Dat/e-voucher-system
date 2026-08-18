@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { useProfile } from "@/hooks/useProfile";
 import { PartnerProvider } from "@/context/PartnerContext";
 import Icon from "@/components/shared/ui/Icon";
+import AccountRestrictedNotice from "@/components/shared/ui/AccountRestrictedNotice";
 
 export default function ShellLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isAuthed, setIsAuthed] = useState(false);
-  const { profile, reload } = useProfile();
+  const { profile, isLoading, error, reload } = useProfile();
 
   useEffect(() => {
     const token = localStorage.getItem("partner_access_token");
@@ -25,14 +26,28 @@ export default function ShellLayout({ children }: { children: React.ReactNode })
     setIsAuthed(true);
   }, [router]);
 
-  if (!isAuthed) {
+  if (!isAuthed || isLoading) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <div className="flex items-center gap-3 text-on-surface-variant font-medium text-base">
           <Icon name="progress_activity" className="animate-spin text-primary text-xl" />
-          <span>Đang xác thực quyền truy cập...</span>
+          <span>Đang xác thực quyền truy cập đối tác...</span>
         </div>
       </div>
+    );
+  }
+
+  // Nếu tài khoản đối tác đang chờ duyệt, bị từ chối hoặc bị khóa -> Hiển thị màn hình thông báo trạng thái
+  if (error || !profile) {
+    return (
+      <AccountRestrictedNotice
+        type={error?.type ?? "forbidden"}
+        title={error?.type === "pending" ? "Hồ sơ đối tác đang chờ xét duyệt" : undefined}
+        message={error?.message}
+        feedback={error?.feedback}
+        roleName="đối tác doanh nghiệp"
+        onRetry={reload}
+      />
     );
   }
 
