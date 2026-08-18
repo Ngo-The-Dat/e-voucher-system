@@ -31,6 +31,10 @@ export default function CustomerLoginPage() {
         localStorage.setItem("partner_access_token", result.token);
         localStorage.setItem("partner_user", JSON.stringify(result.user));
         window.location.href = "/partner";
+      } else if (result.user.role === 'PARTNER_EMPLOYEE') {
+        localStorage.setItem("partner_access_token", result.token);
+        localStorage.setItem("partner_user", JSON.stringify(result.user));
+        window.location.href = "/partner/employee";
       } else {
         // Customer or default
         localStorage.setItem("customer_access_token", result.token);
