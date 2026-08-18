@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { customerAuthApi } from "@/lib/customer-api";
 import { Eye, EyeOff, Check, CircleAlert } from "lucide-react";
+import RegisterTypeModal from "@/components/customer/auth/RegisterTypeModal";
 
 export default function CustomerLoginPage() {
   const router = useRouter();
@@ -13,6 +14,7 @@ export default function CustomerLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRegisterModalOpen, setIsRegisterModalOpen] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -178,13 +180,22 @@ export default function CustomerLoginPage() {
           <div className="mt-10 pt-8 text-center border-t border-gray-100">
             <p className="text-gray-600">
               Bạn chưa có tài khoản?{" "}
-              <Link href="/register" className="font-semibold text-[#0f2c59] hover:underline ml-1">
+              <button
+                type="button"
+                onClick={() => setIsRegisterModalOpen(true)}
+                className="font-semibold text-[#0f2c59] hover:underline ml-1 cursor-pointer"
+              >
                 Đăng ký ngay
-              </Link>
+              </button>
             </p>
           </div>
         </div>
       </div>
+
+      <RegisterTypeModal
+        isOpen={isRegisterModalOpen}
+        onClose={() => setIsRegisterModalOpen(false)}
+      />
     </main>
   );
 }
