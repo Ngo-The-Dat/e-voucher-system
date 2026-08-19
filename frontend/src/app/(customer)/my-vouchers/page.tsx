@@ -118,69 +118,70 @@ export default function MyVouchersPage() {
         <h1 className="font-headline-lg text-headline-lg font-bold text-text-main">Voucher của tôi</h1>
       </div>
 
+      {/* Filter Section */}
+      <div className="bg-surface rounded-xl border border-outline-variant p-4 md:p-6 mb-8 shadow-sm space-y-4">
+        {/* Status Tabs */}
+        <div className="flex overflow-x-auto border-b border-outline-variant/60 no-scrollbar gap-2 pb-2">
+          {[
+            { id: "all", label: "Tất cả" },
+            { id: "unused", label: "Chưa sử dụng", count: getUnusedCount() },
+            { id: "used", label: "Đã sử dụng" },
+            { id: "expiring", label: "Sắp hết hạn" },
+            { id: "expired", label: "Đã hết hạn" },
+            { id: "cancelled", label: "Đã hủy" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => handleTabClick(tab.id as any)}
+              className={`px-4 py-2 rounded-lg font-label-md text-label-md whitespace-nowrap transition-colors flex items-center gap-2 font-bold cursor-pointer ${
+                activeTab === tab.id
+                  ? "bg-primary text-on-primary shadow-sm"
+                  : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              <span>{tab.label}</span>
+              {tab.count !== undefined && tab.count > 0 && (
+                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                  activeTab === tab.id ? "bg-white/20 text-white" : "bg-surface-container-high text-on-surface-variant"
+                }`}>
+                  {tab.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Search & Selectors Bar */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+          <div className="md:col-span-8 relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm theo tên hoặc mã voucher..."
+              className="w-full bg-surface-lowest border border-outline-variant rounded-lg py-2.5 pl-10 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface shadow-sm"
+            />
+          </div>
+          <div className="md:col-span-4">
+            <select
+              value={selectedBrand}
+              onChange={(e) => setSelectedBrand(e.target.value)}
+              className="w-full bg-surface-lowest border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary font-body-md text-body-md text-on-surface shadow-sm cursor-pointer"
+            >
+              <option value="">Tất cả thương hiệu</option>
+              {uniqueBrands.map((brand) => (
+                <option key={brand} value={brand}>
+                  {brand}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+      </div>
+
       {/* Main Area */}
       <div className="flex flex-col gap-6">
-          {/* Status Tabs */}
-          <div className="flex overflow-x-auto border-b border-outline-variant/60 no-scrollbar gap-2 pb-2">
-            {[
-              { id: "all", label: "Tất cả" },
-              { id: "unused", label: "Chưa sử dụng", count: getUnusedCount() },
-              { id: "used", label: "Đã sử dụng" },
-              { id: "expiring", label: "Sắp hết hạn" },
-              { id: "expired", label: "Đã hết hạn" },
-              { id: "cancelled", label: "Đã hủy" }
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id as any)}
-                className={`px-4 py-2 rounded-lg font-label-md text-label-md whitespace-nowrap transition-colors flex items-center gap-2 font-bold cursor-pointer ${
-                  activeTab === tab.id
-                    ? "bg-primary text-on-primary shadow-sm"
-                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
-                }`}
-              >
-                <span>{tab.label}</span>
-                {tab.count !== undefined && tab.count > 0 && (
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                    activeTab === tab.id ? "bg-white/20 text-white" : "bg-surface-container-high text-on-surface-variant"
-                  }`}>
-                    {tab.count}
-                  </span>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Search & Brand Filter Bar */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-surface-container-low p-4 rounded-lg border border-outline-variant">
-            <div className="relative w-full sm:w-96">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" />
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Tìm kiếm theo tên hoặc mã voucher..."
-                className="w-full bg-surface-lowest border border-outline-variant rounded-md py-2 pl-10 pr-4 focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary font-body-md text-body-md text-on-surface shadow-sm"
-              />
-            </div>
-            <div className="w-full sm:w-auto flex items-center gap-2">
-              <span className="font-label-md text-label-md text-on-surface-variant whitespace-nowrap font-bold">
-                Lọc theo:
-              </span>
-              <select
-                value={selectedBrand}
-                onChange={(e) => setSelectedBrand(e.target.value)}
-                className="w-full sm:w-48 bg-surface-lowest border border-outline-variant rounded-md py-2 px-3 focus:outline-none focus:border-primary font-body-md text-body-md text-on-surface shadow-sm cursor-pointer"
-              >
-                <option value="">Tất cả thương hiệu</option>
-                {uniqueBrands.map((brand) => (
-                  <option key={brand} value={brand}>
-                    {brand}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
 
           {/* Vouchers Grid */}
           {filteredMyVouchers.length > 0 ? (

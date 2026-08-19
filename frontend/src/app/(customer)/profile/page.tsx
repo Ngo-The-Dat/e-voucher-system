@@ -203,8 +203,8 @@ export default function CustomerProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50 py-12 px-4 sm:px-6 lg:px-8">
-      <main className="max-w-4xl w-full mx-auto space-y-6">
+    <div className="min-h-screen bg-gray-50/50">
+      <main className="flex-grow w-full max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8 md:py-12 space-y-6">
         
         {/* Global Toasts */}
         {error && (
