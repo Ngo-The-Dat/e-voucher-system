@@ -4,14 +4,14 @@ import Link from "next/link";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
-import { Search, ShoppingCart, Bell, Menu, X, LogIn, UserPlus, LogOut, User, Ticket, Utensils, Plane, Monitor, Sparkles, Gamepad2, ShoppingBag, ChevronDown, List, KeyRound } from "lucide-react";
+import { Search, ShoppingCart, Bell, Menu, X, LogIn, UserPlus, LogOut, User, Ticket, Utensils, Plane, Monitor, Sparkles, Gamepad2, ShoppingBag, ChevronDown, List, KeyRound, UserCircle } from "lucide-react";
 import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
 
 export default function Header() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { cart } = useApp();
+  const { cart, clearCart, clearMyVouchers } = useApp();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -70,6 +70,8 @@ export default function Header() {
   const handleLogout = () => {
     customerAuthApi.logout();
     localStorage.removeItem("customer_user");
+    clearCart();
+    clearMyVouchers();
     setIsLoggedIn(false);
     setUser(null);
     setUserDropdownOpen(false);
@@ -185,6 +187,15 @@ export default function Header() {
                       <p className="font-title-sm text-title-sm font-bold truncate">{user?.full_name || "Khách hàng"}</p>
                       <p className="font-body-xs text-body-xs text-gray-500 truncate">{user?.email}</p>
                     </div>
+
+                    <Link
+                      href="/profile"
+                      onClick={() => setUserDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-2.5 font-label-md text-label-md hover:bg-gray-50 transition-colors"
+                    >
+                      <UserCircle className="w-4 h-4 text-[#0f2c59]" />
+                      <span>Hồ sơ cá nhân</span>
+                    </Link>
 
                     <Link
                       href="/my-vouchers"
@@ -388,6 +399,15 @@ export default function Header() {
               }`}
             >
               Khám phá
+            </Link>
+            <Link
+              href="/profile"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`py-3 px-4 rounded-lg flex items-center gap-3 ${
+                pathname === "/profile" ? "bg-[#0f2c59]/5 text-[#0f2c59] font-bold" : "text-gray-700"
+              }`}
+            >
+              Hồ sơ cá nhân
             </Link>
             <Link
               href="/my-vouchers"

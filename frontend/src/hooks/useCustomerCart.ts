@@ -281,6 +281,16 @@ export function useCustomerCart() {
     });
   }, []);
 
+  const clearCart = useCallback(() => {
+    setCart([]);
+    localStorage.removeItem("lumina_cart");
+  }, []);
+
+  const clearMyVouchers = useCallback(() => {
+    setMyVouchers([]);
+    localStorage.removeItem("lumina_my_vouchers");
+  }, []);
+
   return {
     cart,
     myVouchers,
@@ -290,6 +300,8 @@ export function useCustomerCart() {
     removeFromCart,
     checkout,
     markAsUsed,
+    clearCart,
+    clearMyVouchers,
     refreshCart: fetchBackendCart,
     refreshMyVouchers: fetchBackendMyVouchers
   };
