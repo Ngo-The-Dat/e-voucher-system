@@ -121,7 +121,7 @@ export default function MyVouchersPage() {
       {/* Main Area */}
       <div className="flex flex-col gap-6">
           {/* Status Tabs */}
-          <div className="flex overflow-x-auto border-b border-outline-variant no-scrollbar">
+          <div className="flex overflow-x-auto border-b border-outline-variant/60 no-scrollbar gap-2 pb-2">
             {[
               { id: "all", label: "Tất cả" },
               { id: "unused", label: "Chưa sử dụng", count: getUnusedCount() },
@@ -133,15 +133,17 @@ export default function MyVouchersPage() {
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id as any)}
-                className={`px-6 py-3 font-label-md text-label-md whitespace-nowrap transition-colors border-b-2 cursor-pointer font-bold ${
+                className={`px-4 py-2 rounded-lg font-label-md text-label-md whitespace-nowrap transition-colors flex items-center gap-2 font-bold cursor-pointer ${
                   activeTab === tab.id
-                    ? "text-primary border-primary"
-                    : "text-on-surface-variant border-transparent hover:text-primary"
+                    ? "bg-primary text-on-primary shadow-sm"
+                    : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
                 }`}
               >
-                {tab.label}
+                <span>{tab.label}</span>
                 {tab.count !== undefined && tab.count > 0 && (
-                  <span className="ml-1 bg-surface-container-high text-on-surface-variant px-2 py-0.5 rounded-full text-xs">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    activeTab === tab.id ? "bg-white/20 text-white" : "bg-surface-container-high text-on-surface-variant"
+                  }`}>
                     {tab.count}
                   </span>
                 )}

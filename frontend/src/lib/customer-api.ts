@@ -45,7 +45,11 @@ export interface CustomerUser {
   email: string;
   phone?: string;
   role: string;
-  status?: string;
+  status: string;
+  gender?: string;
+  identity_no?: string;
+  nationality?: string;
+  created_at?: string;
 }
 
 export const customerAuthApi = {
@@ -80,10 +84,10 @@ export const customerAuthApi = {
       body: JSON.stringify(payload)
     }),
   getMe: () => request<CustomerUser>("/customer/auth/me"),
-  updateProfile: (payload: { full_name: string; phone?: string }) =>
+  updateProfile: (data: { full_name: string; phone?: string; gender?: string; identity_no?: string; nationality?: string }) =>
     request<CustomerUser>("/customer/auth/me", {
       method: "PUT",
-      body: JSON.stringify(payload)
+      body: JSON.stringify(data),
     }),
   logout: () => {
     if (typeof window !== "undefined") {

@@ -146,7 +146,9 @@ export const login = async (input: CustomerLoginInput) => {
 
 export const getMe = async (userId: number) => {
   const result = await pool.query(
-    `SELECT user_id, full_name, email, phone, role, status, created_at
+    `SELECT 
+       user_id, full_name, email, phone, role, status, created_at,
+       gender, identity_no, nationality
      FROM users
      WHERE user_id = $1 AND role = 'CUSTOMER'`,
     [userId]
@@ -163,6 +165,9 @@ export const getMe = async (userId: number) => {
     email: user.email,
     phone: user.phone,
     role: user.role,
+    gender: user.gender,
+    identity_no: user.identity_no,
+    nationality: user.nationality,
     status: user.status,
     created_at: user.created_at,
   };
@@ -287,11 +292,17 @@ export const changePassword = async (userId: number, currentPassword: string, ne
 export interface UpdateProfileInput {
   full_name: string;
   phone?: string;
+  gender?: string;
+  identity_no?: string;
+  nationality?: string;
 }
 
 export const updateProfile = async (userId: number, input: UpdateProfileInput) => {
   const full_name = input.full_name?.trim();
   const phone = input.phone?.trim() || null;
+  const gender = input.gender?.trim() || null;
+  const identity_no = input.identity_no?.trim() || null;
+  const nationality = input.nationality?.trim() || null;
 
   if (!full_name) {
     throw { status: 400, message: 'Họ và tên không được để trống.' };
@@ -308,13 +319,24 @@ export const updateProfile = async (userId: number, input: UpdateProfileInput) =
     }
   }
 
+  // Kiểm tra CCCD nếu có
+  if (identity_no) {
+    const identityCheck = await pool.query(
+      'SELECT user_id FROM users WHERE identity_no = $1 AND user_id != $2',
+      [identity_no, userId]
+    );
+    if (identityCheck.rows.length > 0) {
+      throw { status: 409, message: 'Số CCCD/CMND này đã được tài khoản khác sử dụng.' };
+    }
+  }
+
   // Cập nhật thông tin
   const result = await pool.query(
     `UPDATE users 
-     SET full_name = $1, phone = $2
-     WHERE user_id = $3 AND role = 'CUSTOMER'
-     RETURNING user_id, full_name, email, phone, role, status, created_at`,
-    [full_name, phone, userId]
+     SET full_name = $1, phone = $2, gender = $3, identity_no = $4, nationality = $5
+     WHERE user_id = $6 AND role = 'CUSTOMER'
+     RETURNING user_id, full_name, email, phone, role, status, created_at, gender, identity_no, nationality`,
+    [full_name, phone, gender, identity_no, nationality, userId]
   );
 
   if (result.rows.length === 0) {
@@ -328,6 +350,9 @@ export const updateProfile = async (userId: number, input: UpdateProfileInput) =
     email: user.email,
     phone: user.phone,
     role: user.role,
+    gender: user.gender,
+    identity_no: user.identity_no,
+    nationality: user.nationality,
     status: user.status,
     created_at: user.created_at,
   };
