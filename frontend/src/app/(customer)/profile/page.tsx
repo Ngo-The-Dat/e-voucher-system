@@ -1,24 +1,46 @@
 "use client";
 
 import { FormEvent, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
-import { Check, CircleAlert, Mail, Phone, User as UserIcon, Camera, Save, ArrowLeft, ShieldCheck, Edit2, X } from "lucide-react";
+import { Check, CircleAlert, Mail, Phone, User as UserIcon, Camera, Save, ArrowLeft, ShieldCheck, Edit2, X, Lock, KeyRound, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
+  // Tab State
+  const [activeTab, setActiveTab] = useState<'info' | 'security'>('info');
+
+  // Personal Info States
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [originalData, setOriginalData] = useState({ fullName: "", phone: "" });
-  
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Password States
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Global UI States
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    // Check if there's a tab query param
+    const tab = searchParams.get('tab');
+    if (tab === 'security') {
+      setActiveTab('security');
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Load initial data
@@ -39,14 +61,14 @@ export default function CustomerProfilePage() {
     fetchUser();
   }, []);
 
-  const handleCancel = () => {
+  const handleCancelEdit = () => {
     setFullName(originalData.fullName);
     setPhone(originalData.phone);
     setIsEditing(false);
     setError("");
   };
 
-  const handleSubmit = async (event: FormEvent) => {
+  const handleUpdateProfile = async (event: FormEvent) => {
     event.preventDefault();
     setError("");
     setSuccess("");
@@ -76,6 +98,48 @@ export default function CustomerProfilePage() {
       setTimeout(() => setSuccess(""), 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi cập nhật thông tin.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChangePassword = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    setSuccess("");
+    
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setError("Vui lòng điền đầy đủ thông tin mật khẩu.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setError("Mật khẩu mới và xác nhận mật khẩu không khớp.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setError("Mật khẩu mới phải có ít nhất 6 ký tự.");
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      await customerAuthApi.changePassword({
+        current_password: currentPassword,
+        new_password: newPassword
+      });
+      
+      setSuccess("Đổi mật khẩu thành công.");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setSuccess(""), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu.");
     } finally {
       setIsSubmitting(false);
     }
@@ -122,10 +186,7 @@ export default function CustomerProfilePage() {
               </div>
             </div>
             
-            <h2 className="text-2xl font-bold mb-1 text-center z-10">{fullName || "Người dùng"}</h2>
-            <p className="text-blue-200 text-sm mb-6 flex items-center gap-1.5 z-10">
-              <ShieldCheck className="w-4 h-4" /> Tài khoản đã xác thực
-            </p>
+            <h2 className="text-2xl font-bold mb-6 text-center z-10">{fullName || "Người dùng"}</h2>
             
             <div className="w-full h-px bg-white/10 my-4 z-10"></div>
             
@@ -143,15 +204,50 @@ export default function CustomerProfilePage() {
             </div>
           </div>
 
-          {/* Right Content - Edit Form */}
-          <div className="w-full md:w-2/3 p-8 md:p-12 relative">
-            <div className="mb-8 flex justify-between items-start">
+          {/* Right Content - Edit Form & Tabs */}
+          <div className="w-full md:w-2/3 p-8 md:p-12 relative flex flex-col">
+            
+            {/* Tabs Header */}
+            <div className="flex items-center border-b border-gray-100 mb-8">
+              <button
+                onClick={() => { setActiveTab('info'); setError(''); setSuccess(''); }}
+                className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-all relative ${
+                  activeTab === 'info' ? "text-[#0f2c59]" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <UserIcon className="w-4 h-4" />
+                Thông tin cá nhân
+                {activeTab === 'info' && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#0f2c59] rounded-t-full"></div>
+                )}
+              </button>
+              <button
+                onClick={() => { setActiveTab('security'); setError(''); setSuccess(''); }}
+                className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-all relative ${
+                  activeTab === 'security' ? "text-[#0f2c59]" : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Lock className="w-4 h-4" />
+                Đổi mật khẩu
+                {activeTab === 'security' && (
+                  <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[#0f2c59] rounded-t-full"></div>
+                )}
+              </button>
+            </div>
+
+            <div className="mb-6 flex justify-between items-start">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Hồ sơ tài khoản</h1>
-                <p className="text-gray-500 mt-2">Quản lý thông tin cá nhân và cách thức liên hệ của bạn.</p>
+                <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+                  {activeTab === 'info' ? 'Hồ sơ tài khoản' : 'Đổi mật khẩu'}
+                </h1>
+                <p className="text-gray-500 mt-2 text-sm">
+                  {activeTab === 'info' 
+                    ? 'Quản lý thông tin cá nhân và cách thức liên hệ của bạn.'
+                    : 'Cập nhật mật khẩu để bảo vệ tài khoản của bạn an toàn hơn.'}
+                </p>
               </div>
               
-              {!isEditing && (
+              {activeTab === 'info' && !isEditing && (
                 <button
                   type="button"
                   onClick={() => setIsEditing(true)}
@@ -177,112 +273,238 @@ export default function CustomerProfilePage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Form Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Full Name */}
-                <div className="col-span-1 md:col-span-2 group">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Họ và tên {isEditing && <span className="text-error">*</span>}
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
-                      <UserIcon className="w-5 h-5" />
+            {/* Content: Personal Info */}
+            {activeTab === 'info' && (
+              <form onSubmit={handleUpdateProfile} className="space-y-6 flex-grow flex flex-col animate-fadeIn">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Full Name */}
+                  <div className="col-span-1 md:col-span-2 group">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Họ và tên {isEditing && <span className="text-error">*</span>}
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
+                        <UserIcon className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="text"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        placeholder="Nhập họ và tên của bạn"
+                        required
+                        disabled={!isEditing}
+                        className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
+                          isEditing 
+                            ? "bg-gray-50/50 border border-gray-200 focus:bg-white focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900" 
+                            : "bg-transparent border border-transparent text-gray-800"
+                        }`}
+                      />
                     </div>
-                    <input
-                      type="text"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      placeholder="Nhập họ và tên của bạn"
-                      required
-                      disabled={!isEditing}
-                      className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
-                        isEditing 
-                          ? "bg-gray-50/50 border border-gray-200 focus:bg-white focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900" 
-                          : "bg-transparent border border-transparent text-gray-800"
-                      }`}
-                    />
+                  </div>
+                  
+                  {/* Phone */}
+                  <div className="col-span-1 group">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại</label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
+                        <Phone className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="tel"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder={isEditing ? "Nhập số điện thoại" : "Chưa cập nhật"}
+                        disabled={!isEditing}
+                        className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
+                          isEditing 
+                            ? "bg-gray-50/50 border border-gray-200 focus:bg-white focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900" 
+                            : "bg-transparent border border-transparent text-gray-800"
+                        }`}
+                      />
+                    </div>
+                  </div>
+                  
+                  {/* Email (Disabled always) */}
+                  <div className="col-span-1">
+                    <label className="block text-sm font-semibold text-gray-700 mb-2 flex justify-between items-center">
+                      Email
+                      {isEditing && <span className="text-xs text-gray-500 font-medium px-2 py-0.5 bg-gray-100 rounded-md border border-gray-200">Không thể đổi</span>}
+                    </label>
+                    <div className={`relative ${isEditing ? "opacity-70" : ""}`}>
+                      <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                        <Mail className="w-5 h-5" />
+                      </div>
+                      <input
+                        type="email"
+                        value={email}
+                        disabled
+                        className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
+                          isEditing 
+                            ? "bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed" 
+                            : "bg-transparent border border-transparent text-gray-800"
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
-                
-                {/* Phone */}
-                <div className="col-span-1 group">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Số điện thoại</label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
-                      <Phone className="w-5 h-5" />
-                    </div>
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder={isEditing ? "Nhập số điện thoại" : "Chưa cập nhật"}
-                      disabled={!isEditing}
-                      className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
-                        isEditing 
-                          ? "bg-gray-50/50 border border-gray-200 focus:bg-white focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900" 
-                          : "bg-transparent border border-transparent text-gray-800"
-                      }`}
-                    />
-                  </div>
-                </div>
-                
-                {/* Email (Disabled always) */}
-                <div className="col-span-1">
-                  <label className="block text-sm font-semibold text-gray-700 mb-2 flex justify-between items-center">
-                    Email
-                    {isEditing && <span className="text-xs text-gray-500 font-medium px-2 py-0.5 bg-gray-100 rounded-md border border-gray-200">Không thể đổi</span>}
-                  </label>
-                  <div className={`relative ${isEditing ? "opacity-70" : ""}`}>
-                    <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-                      <Mail className="w-5 h-5" />
-                    </div>
-                    <input
-                      type="email"
-                      value={email}
-                      disabled
-                      className={`w-full py-3.5 pl-11 pr-4 rounded-xl transition-all font-medium focus:outline-none ${
-                        isEditing 
-                          ? "bg-gray-100 border border-gray-200 text-gray-600 cursor-not-allowed" 
-                          : "bg-transparent border border-transparent text-gray-800"
-                      }`}
-                    />
-                  </div>
-                </div>
-              </div>
 
-              {/* Action Buttons (Only visible when editing) */}
-              {isEditing && (
-                <div className="pt-8 mt-8 border-t border-gray-100 flex items-center justify-end animate-fadeIn">
-                  <button
-                    type="button"
-                    onClick={handleCancel}
-                    className="px-6 py-3.5 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors mr-4 cursor-pointer flex items-center gap-2"
-                  >
-                    <X className="w-4 h-4" />
-                    Hủy bỏ
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !fullName.trim()}
-                    className="bg-[#0f2c59] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#0f2c59]/90 hover:shadow-lg hover:shadow-[#0f2c59]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:hover:shadow-none"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Đang lưu...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="w-5 h-5" />
-                        Lưu thay đổi
-                      </>
-                    )}
-                  </button>
+                <div className="mt-auto pt-8">
+                  {isEditing && (
+                    <div className="border-t border-gray-100 pt-6 flex items-center justify-end animate-fadeIn">
+                      <button
+                        type="button"
+                        onClick={handleCancelEdit}
+                        className="px-6 py-3.5 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-xl transition-colors mr-4 cursor-pointer flex items-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Hủy bỏ
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !fullName.trim()}
+                        className="bg-[#0f2c59] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#0f2c59]/90 hover:shadow-lg hover:shadow-[#0f2c59]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:hover:shadow-none"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Đang lưu...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-5 h-5" />
+                            Lưu thay đổi
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </form>
+              </form>
+            )}
+
+            {/* Content: Change Password */}
+            {activeTab === 'security' && (
+              <div className="flex-grow flex flex-col animate-fadeIn">
+                <div className="bg-blue-50/50 border border-blue-100 rounded-2xl p-5 mb-8 flex gap-4 items-start">
+                  <div className="bg-blue-100 text-[#0f2c59] p-2 rounded-xl shrink-0">
+                    <ShieldCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 mb-1">Bảo vệ tài khoản của bạn</h3>
+                    <p className="text-sm text-gray-600 leading-relaxed">
+                      Sử dụng mật khẩu mạnh bao gồm ít nhất 6 ký tự. Chúng tôi khuyến nghị bạn không dùng lại mật khẩu đã sử dụng ở các ứng dụng khác.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleChangePassword} className="space-y-6 flex-grow flex flex-col">
+                  <div className="space-y-6">
+                    {/* Current Password */}
+                    <div className="group bg-gray-50/50 p-6 rounded-2xl border border-gray-100">
+                      <label className="block text-sm font-semibold text-gray-900 mb-2">Mật khẩu hiện tại <span className="text-error">*</span></label>
+                      <p className="text-xs text-gray-500 mb-4">Bạn cần nhập mật khẩu cũ để xác thực yêu cầu này.</p>
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
+                          <KeyRound className="w-5 h-5" />
+                        </div>
+                        <input
+                          type={showCurrentPassword ? "text" : "password"}
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          placeholder="Nhập mật khẩu hiện tại"
+                          required
+                          className="w-full bg-white border border-gray-200 rounded-xl py-3.5 pl-11 pr-12 focus:outline-none focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900 transition-all font-medium"
+                        />
+                        <button 
+                          type="button" 
+                          onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                          className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                        >
+                          {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-px bg-gray-100 my-2"></div>
+
+                    {/* New Password */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="group">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Mật khẩu mới <span className="text-error">*</span></label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
+                            <Lock className="w-5 h-5" />
+                          </div>
+                          <input
+                            type={showNewPassword ? "text" : "password"}
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Ít nhất 6 ký tự"
+                            required
+                            minLength={6}
+                            className="w-full bg-white border border-gray-200 rounded-xl py-3.5 pl-11 pr-12 focus:outline-none focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900 transition-all font-medium shadow-sm"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                          >
+                            {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="group">
+                        <label className="block text-sm font-semibold text-gray-900 mb-2">Xác nhận mật khẩu mới <span className="text-error">*</span></label>
+                        <div className="relative">
+                          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-[#0f2c59] transition-colors">
+                            <Check className="w-5 h-5" />
+                          </div>
+                          <input
+                            type={showConfirmPassword ? "text" : "password"}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            placeholder="Nhập lại mật khẩu mới"
+                            required
+                            minLength={6}
+                            className="w-full bg-white border border-gray-200 rounded-xl py-3.5 pl-11 pr-12 focus:outline-none focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 text-gray-900 transition-all font-medium shadow-sm"
+                          />
+                          <button 
+                            type="button" 
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-auto pt-8">
+                    <div className="border-t border-gray-100 pt-6 flex items-center justify-end">
+                      <button
+                        type="submit"
+                        disabled={isSubmitting || !currentPassword || !newPassword || !confirmPassword}
+                        className="bg-[#0f2c59] text-white font-bold px-8 py-3.5 rounded-xl hover:bg-[#0f2c59]/90 hover:shadow-lg hover:shadow-[#0f2c59]/20 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70 disabled:hover:shadow-none"
+                      >
+                        {isSubmitting ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            Đang xử lý...
+                          </>
+                        ) : (
+                          <>
+                            <Lock className="w-5 h-5" />
+                            Cập nhật mật khẩu
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       </div>
