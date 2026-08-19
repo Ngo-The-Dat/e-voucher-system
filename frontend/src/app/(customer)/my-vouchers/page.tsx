@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
-import { MyVoucher, Voucher } from "@/data/mockData";
+import { MyVoucher, Voucher } from "@/lib/types/customer";
 import { getStoredCustomerUser } from "@/lib/customer-api";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
@@ -13,9 +13,30 @@ export default function MyVouchersPage() {
   const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
 
   useEffect(() => {
-    if (refreshMyVouchers) {
+    if (!refreshMyVouchers) return;
+
+    // Initial fetch
+    refreshMyVouchers();
+
+    // Auto-polling every 2.5s to immediately catch admin cancellations/status changes
+    const interval = setInterval(() => {
       refreshMyVouchers();
-    }
+    }, 2500);
+
+    const handleRevalidate = () => {
+      if (document.visibilityState === "visible") {
+        refreshMyVouchers();
+      }
+    };
+
+    window.addEventListener("focus", handleRevalidate);
+    document.addEventListener("visibilitychange", handleRevalidate);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", handleRevalidate);
+      document.removeEventListener("visibilitychange", handleRevalidate);
+    };
   }, [refreshMyVouchers]);
 
   // Local Page Filters
@@ -35,11 +56,12 @@ export default function MyVouchersPage() {
       id: item.voucherId,
       title: `Voucher #${item.voucherId}`,
       brand: "Thương hiệu đối tác",
-      brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      brandLogo: "",
       category: "Ưu đãi",
       thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
       images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
       price: 0,
+      originalPrice: 0,
       rating: 5,
       reviewsCount: 0,
       soldCount: "0",
@@ -166,11 +188,12 @@ export default function MyVouchersPage() {
                   id: item.voucherId,
                   title: `Voucher #${item.voucherId}`,
                   brand: "Thương hiệu đối tác",
-                  brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+                  brandLogo: "",
                   category: "Ưu đãi",
                   thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
                   images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
                   price: 0,
+                  originalPrice: 0,
                   rating: 5,
                   reviewsCount: 0,
                   soldCount: "0",

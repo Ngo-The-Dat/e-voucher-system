@@ -19,7 +19,16 @@ export const unifiedLogin = async (input: UnifiedLoginInput) => {
   const userResult = await pool.query(
     `SELECT u.user_id, u.full_name, u.email, u.phone, u.password_hash, u.role, u.status,
             CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.business_name ELSE p.business_name END AS business_name,
-            CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN COALESCE(ep_par.approval_status, 'APPROVED') ELSE COALESCE(par.approval_status, 'PENDING') END AS approval_status,
+            CASE 
+              WHEN u.role = 'PARTNER_EMPLOYEE' THEN 
+                CASE 
+                  WHEN emp_pear.approval_status = 'REJECTED' THEN 'REJECTED'
+                  WHEN emp_pear.approval_status = 'PENDING' THEN 'PENDING'
+                  WHEN COALESCE(ep_par.approval_status, 'APPROVED') <> 'APPROVED' THEN ep_par.approval_status
+                  ELSE 'APPROVED'
+                END
+              ELSE COALESCE(par.approval_status, 'PENDING') 
+            END AS approval_status,
             CASE WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.activity_status ELSE p.activity_status END AS activity_status,
             b.branch_id, b.branch_name, b.address as branch_address, b.status as branch_status
      FROM users u
@@ -32,6 +41,13 @@ export const unifiedLogin = async (input: UnifiedLoginInput) => {
        LIMIT 1
      ) par ON TRUE
      LEFT JOIN partner_employees pe ON u.user_id = pe.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status
+       FROM partner_employee_approval_requests
+       WHERE user_id = u.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) emp_pear ON TRUE
      LEFT JOIN branches b ON pe.branch_id = b.branch_id
      LEFT JOIN partners ep_partner ON b.partner_id = ep_partner.user_id
      LEFT JOIN LATERAL (

@@ -1,6 +1,16 @@
+/**
+ * @file employee.service.ts
+ * @description Service xử lý nghiệp vụ thông tin cá nhân của Nhân viên chi nhánh đối tác (Partner Employee):
+ * tra cứu hồ sơ kèm thông tin chi nhánh và đối tác chủ quản, cập nhật thông tin cá nhân,
+ * và thay đổi mật khẩu đăng nhập với bcrypt.
+ */
+
 import pool from '../../config/db.js';
 import bcrypt from 'bcrypt';
 
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
+
+/** Dữ liệu đầu vào khi nhân viên tự cập nhật thông tin cá nhân */
 export interface UpdateEmployeeProfileInput {
   full_name?: string;
   phone?: string;
@@ -8,6 +18,19 @@ export interface UpdateEmployeeProfileInput {
   nationality?: string;
 }
 
+// ─── Service Methods ──────────────────────────────────────────────────────────
+
+/**
+ * Lấy toàn bộ thông tin chi tiết hồ sơ của nhân viên chi nhánh.
+ * 
+ * @description
+ * Thực hiện phép JOIN qua 4 bảng:
+ * `users` (u) -> `partner_employees` (pe) -> `branches` (b) -> `partners` (p).
+ * 
+ * @param userId User ID của nhân viên (role = 'PARTNER_EMPLOYEE')
+ * @returns Đối tượng thông tin hồ sơ kèm branch và partner
+ * @throws {Object} Lỗi HTTP 404 nếu không tìm thấy nhân viên
+ */
 export const getEmployeeProfile = async (userId: number) => {
   const result = await pool.query(
     `SELECT
@@ -15,11 +38,20 @@ export const getEmployeeProfile = async (userId: number) => {
        u.nationality, u.status, u.created_at, u.last_login_at,
        b.branch_id, b.branch_name, b.address AS branch_address, b.phone AS branch_phone,
        b.region AS branch_region, b.status AS branch_status,
-       p.user_id AS partner_id, p.business_name AS partner_business_name, p.brand_logo AS partner_brand_logo
+       p.user_id AS partner_id, p.business_name AS partner_business_name, p.brand_logo AS partner_brand_logo,
+       COALESCE(pear.approval_status, 'APPROVED') AS approval_status,
+       pear.admin_feedback
      FROM users u
      JOIN partner_employees pe ON u.user_id = pe.user_id
      JOIN branches b ON pe.branch_id = b.branch_id
      JOIN partners p ON b.partner_id = p.user_id
+     LEFT JOIN LATERAL (
+       SELECT approval_status, admin_feedback
+       FROM partner_employee_approval_requests
+       WHERE user_id = u.user_id
+       ORDER BY submitted_at DESC, approval_request_id DESC
+       LIMIT 1
+     ) pear ON TRUE
      WHERE u.user_id = $1 AND u.role = 'PARTNER_EMPLOYEE'`,
     [userId]
   );
@@ -38,6 +70,8 @@ export const getEmployeeProfile = async (userId: number) => {
     identity_no: row.identity_no,
     nationality: row.nationality,
     status: row.status,
+    approval_status: row.approval_status as 'PENDING' | 'APPROVED' | 'REJECTED',
+    admin_feedback: row.admin_feedback ?? null,
     created_at: row.created_at,
     last_login_at: row.last_login_at,
     branch: {
@@ -56,6 +90,13 @@ export const getEmployeeProfile = async (userId: number) => {
   };
 };
 
+/**
+ * Cập nhật thông tin cá nhân của nhân viên đối tác (có Transaction).
+ * 
+ * @param userId User ID nhân viên
+ * @param input Các thông tin cần thay đổi (họ tên, SĐT, giới tính, quốc tịch)
+ * @returns Hồ sơ nhân viên sau cập nhật
+ */
 export const updateEmployeeProfile = async (userId: number, input: UpdateEmployeeProfileInput) => {
   const client = await pool.connect();
   try {
@@ -90,6 +131,13 @@ export const updateEmployeeProfile = async (userId: number, input: UpdateEmploye
   }
 };
 
+/**
+ * Đổi mật khẩu tài khoản cho Nhân viên đối tác.
+ * 
+ * @param userId User ID nhân viên
+ * @param old_password Mật khẩu cũ
+ * @param new_password Mật khẩu mới (8-128 ký tự)
+ */
 export const changeEmployeePassword = async (
   userId: number,
   old_password: string,

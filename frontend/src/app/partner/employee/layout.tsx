@@ -1,15 +1,31 @@
 "use client";
 
-import React, { useState } from "react";
-import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
+import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { PartnerEmployeeProvider, usePartnerEmployee } from "@/context/PartnerEmployeeContext";
 import EmployeeTopAppBar from "@/components/partner/employee/EmployeeTopAppBar";
 import EmployeeSideNavBar from "@/components/partner/employee/EmployeeSideNavBar";
 import Icon from "@/components/shared/ui/Icon";
+import AccountRestrictedNotice from "@/components/shared/ui/AccountRestrictedNotice";
 
 function EmployeeLayoutContent({ children }: { children: React.ReactNode }) {
-  const { profile } = useEmployee();
+  const { profile, error, reloadProfile } = usePartnerEmployee();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+
+  // Nếu có lỗi xác thực / phê duyệt / khóa tài khoản, hiển thị màn hình thông báo và chặn hiển thị giao diện làm việc
+  if (error || !profile) {
+    return (
+      <AccountRestrictedNotice
+        type={error?.type ?? "forbidden"}
+        title={error?.type === "pending" ? "Tài khoản nhân viên đang chờ duyệt" : undefined}
+        message={error?.message}
+        feedback={error?.feedback}
+        roleName="nhân viên đối tác"
+        onRetry={reloadProfile}
+      />
+    );
+  }
 
   return (
     <div
@@ -55,9 +71,34 @@ function EmployeeLayoutContent({ children }: { children: React.ReactNode }) {
 }
 
 export default function EmployeeLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
+  const [isAuthed, setIsAuthed] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("partner_access_token");
+    const isJwt = token !== null && token.split('.').length === 3;
+    if (!isJwt) {
+      localStorage.removeItem("partner_access_token");
+      router.replace("/login");
+      return;
+    }
+    setIsAuthed(true);
+  }, [router]);
+
+  if (!isAuthed) {
+    return (
+      <div className="min-h-screen w-full flex items-center justify-center bg-background">
+        <div className="flex items-center gap-3 text-on-surface-variant font-medium text-base">
+          <Icon name="progress_activity" className="animate-spin text-primary text-xl" />
+          <span>Đang xác thực quyền truy cập...</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <EmployeeProvider>
+    <PartnerEmployeeProvider>
       <EmployeeLayoutContent>{children}</EmployeeLayoutContent>
-    </EmployeeProvider>
+    </PartnerEmployeeProvider>
   );
 }

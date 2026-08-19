@@ -40,7 +40,6 @@ export default function OrdersPage() {
   const [stats, setStats] = useState({
     all: 0,
     completed: 0,
-    confirmed: 0,
     pending: 0,
     cancelled: 0,
   });
@@ -127,8 +126,6 @@ export default function OrdersPage() {
     switch (status) {
       case "PENDING":
         return { label: "Chờ xử lý", status: "pending" };
-      case "CONFIRMED":
-        return { label: "Đã xác nhận", status: "confirmed" };
       case "COMPLETED":
         return { label: "Hoàn thành", status: "published" };
       case "CANCELLED":
@@ -198,7 +195,6 @@ export default function OrdersPage() {
                 >
                   <option value="ALL">Tất cả</option>
                   <option value="PENDING">Chờ xử lý</option>
-                  <option value="CONFIRMED">Đã xác nhận</option>
                   <option value="COMPLETED">Hoàn thành</option>
                   <option value="CANCELLED">Đã hủy</option>
                 </select>

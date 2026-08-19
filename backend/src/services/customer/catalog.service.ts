@@ -94,6 +94,7 @@ export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
       c.category_name,
       p.user_id as partner_id,
       p.business_name as brand_name,
+      p.brand_logo as brand_logo,
       (
         SELECT COALESCE(COUNT(iv.issued_voucher_id), 0)::int
         FROM issued_vouchers iv
@@ -142,7 +143,7 @@ export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
       program_id: Number(row.program_id),
       title: row.program_name,
       brand: row.brand_name || "Thương hiệu đối tác",
-      brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+      brandLogo: row.brand_logo || null,
       category: row.category_name || "Khác",
       merchant: row.brand_name || "Thương hiệu đối tác",
       thumbnail: imagesList[0],
@@ -189,6 +190,7 @@ export async function getPublicVoucherById(programId: number) {
       c.category_name,
       p.user_id as partner_id,
       p.business_name as brand_name,
+      p.brand_logo as brand_logo,
       (
         SELECT COALESCE(COUNT(iv.issued_voucher_id), 0)::int
         FROM issued_vouchers iv
@@ -239,6 +241,7 @@ export async function getPublicVoucherById(programId: number) {
        rf.review_id,
        rf.rating,
        rf.review_content,
+       rf.complaint_content,
        rf.submitted_at,
        u.full_name as customer_name
      FROM reviews_feedback rf
@@ -246,7 +249,7 @@ export async function getPublicVoucherById(programId: number) {
      JOIN users u ON u.user_id = rf.customer_id
      WHERE iv.program_id = $1
      ORDER BY rf.submitted_at DESC
-     LIMIT 10`,
+     LIMIT 50`,
     [programId]
   );
 
@@ -257,6 +260,7 @@ export async function getPublicVoucherById(programId: number) {
     rating: Number(r.rating) || 5,
     timeAgo: new Date(r.submitted_at).toLocaleDateString("vi-VN"),
     content: r.review_content || "Khách hàng hài lòng về dịch vụ.",
+    complaint: r.complaint_content || undefined,
   }));
 
   const avgRating = reviewsList.length > 0 
@@ -268,7 +272,7 @@ export async function getPublicVoucherById(programId: number) {
     program_id: Number(row.program_id),
     title: row.program_name,
     brand: row.brand_name || "Thương hiệu đối tác",
-    brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+    brandLogo: row.brand_logo || null,
     category: row.category_name || "Khác",
     merchant: row.brand_name || "Thương hiệu đối tác",
     thumbnail: imagesList[0],
@@ -297,11 +301,210 @@ export async function getPublicVoucherById(programId: number) {
 
 export async function getPublicCategories() {
   const res = await pool.query(
-    `SELECT category_id, category_name, description FROM categories WHERE status = 'ACTIVE' ORDER BY category_name ASC`
+    `SELECT 
+       c.category_id, 
+       c.category_name, 
+       c.description,
+       (
+         SELECT COUNT(*) 
+         FROM voucher_programs vp 
+         WHERE vp.category_id = c.category_id 
+           AND vp.display_status = 'PUBLISHED'
+       )::int as voucher_count
+     FROM categories c 
+     WHERE c.status = 'ACTIVE' 
+     ORDER BY c.category_id ASC`
   );
   return res.rows.map((row) => ({
     category_id: Number(row.category_id),
     category_name: row.category_name,
     description: row.description,
+    voucher_count: Number(row.voucher_count || 0),
   }));
+}
+
+function normalizeTargetUrl(programId?: number | null, rawTargetUrl?: string | null): string {
+  if (programId) {
+    return `/vouchers/${programId}`;
+  }
+  if (rawTargetUrl) {
+    const trimmed = rawTargetUrl.trim();
+    const match = trimmed.match(/\/(?:programs|vouchers)\/(\d+)/i);
+    if (match && match[1]) {
+      return `/vouchers/${match[1]}`;
+    }
+    return trimmed;
+  }
+  return '/vouchers';
+}
+
+export async function getPublicBanners(position?: string) {
+  const conditions = [
+    "b.status = 'ACTIVE'",
+    "(b.display_from IS NULL OR b.display_from <= CURRENT_TIMESTAMP)",
+    "(b.display_to IS NULL OR b.display_to >= CURRENT_TIMESTAMP)",
+  ];
+  const params: any[] = [];
+  if (position && position !== 'ALL') {
+    params.push(position);
+    conditions.push(`b.display_position = $${params.length}`);
+  }
+
+  const query = `
+    SELECT 
+      b.banner_id,
+      b.program_id,
+      b.title,
+      b.image_url,
+      b.target_url,
+      b.display_position,
+      vp.program_name,
+      vp.original_price,
+      vp.sale_price,
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
+    FROM banners b
+    LEFT JOIN voucher_programs vp ON vp.program_id = b.program_id
+    LEFT JOIN partners p ON p.user_id = vp.partner_id
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY b.banner_id DESC
+    LIMIT 5
+  `;
+  const res = await pool.query(query, params);
+  return res.rows.map((row) => ({
+    banner_id: Number(row.banner_id),
+    program_id: row.program_id ? Number(row.program_id) : null,
+    title: row.title,
+    image_url: row.image_url,
+    target_url: normalizeTargetUrl(row.program_id ? Number(row.program_id) : null, row.target_url),
+    display_position: row.display_position,
+    program_name: row.program_name || null,
+    original_price: row.original_price ? Number(row.original_price) : null,
+    sale_price: row.sale_price ? Number(row.sale_price) : null,
+    brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
+  }));
+}
+
+export async function getPublicActivePopups() {
+  const query = `
+    SELECT 
+      p.popup_id,
+      p.program_id,
+      p.title,
+      p.content,
+      p.target_url,
+      p.image_url,
+      p.start_at,
+      p.end_at,
+      vp.program_name,
+      vp.original_price,
+      vp.sale_price,
+      pt.business_name as brand_name,
+      pt.brand_logo as brand_logo
+    FROM popups p
+    LEFT JOIN voucher_programs vp ON vp.program_id = p.program_id
+    LEFT JOIN partners pt ON pt.user_id = vp.partner_id
+    WHERE p.status = 'ACTIVE'
+      AND (p.start_at IS NULL OR p.start_at <= CURRENT_TIMESTAMP)
+      AND (p.end_at IS NULL OR p.end_at >= CURRENT_TIMESTAMP)
+    ORDER BY p.popup_id DESC
+    LIMIT 5
+  `;
+  const res = await pool.query(query);
+  return res.rows.map((row) => ({
+    popup_id: Number(row.popup_id),
+    program_id: row.program_id ? Number(row.program_id) : null,
+    title: row.title,
+    content: row.content || '',
+    target_url: normalizeTargetUrl(row.program_id ? Number(row.program_id) : null, row.target_url),
+    image_url: row.image_url || '',
+    program_name: row.program_name || null,
+    original_price: row.original_price ? Number(row.original_price) : null,
+    sale_price: row.sale_price ? Number(row.sale_price) : null,
+    brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
+  }));
+}
+
+export async function getPublicContents(filter: { type?: string; program_id?: number } = {}) {
+  const conditions = ["c.status = 'ACTIVE'"];
+  const params: any[] = [];
+
+  if (filter.type && filter.type !== 'ALL') {
+    params.push(filter.type);
+    conditions.push(`c.content_type = $${params.length}`);
+  }
+
+  if (filter.program_id) {
+    params.push(filter.program_id);
+    conditions.push(`c.program_id = $${params.length}`);
+  }
+
+  const query = `
+    SELECT 
+      c.content_id,
+      c.program_id,
+      c.title,
+      c.body,
+      c.content_type,
+      c.created_at,
+      vp.program_name,
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
+    FROM contents c
+    LEFT JOIN voucher_programs vp ON vp.program_id = c.program_id
+    LEFT JOIN partners p ON p.user_id = vp.partner_id
+    WHERE ${conditions.join(' AND ')}
+    ORDER BY c.content_id DESC
+  `;
+  const res = await pool.query(query, params);
+  return res.rows.map((row) => ({
+    content_id: Number(row.content_id),
+    program_id: row.program_id ? Number(row.program_id) : null,
+    title: row.title,
+    body: row.body,
+    content_type: row.content_type,
+    created_at: row.created_at,
+    program_name: row.program_name || null,
+    brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
+  }));
+}
+
+export async function getPublicContentById(id: number) {
+  const query = `
+    SELECT 
+      c.content_id,
+      c.program_id,
+      c.title,
+      c.body,
+      c.content_type,
+      c.created_at,
+      c.updated_at,
+      vp.program_name,
+      p.business_name as brand_name,
+      p.brand_logo as brand_logo
+    FROM contents c
+    LEFT JOIN voucher_programs vp ON vp.program_id = c.program_id
+    LEFT JOIN partners p ON p.user_id = vp.partner_id
+    WHERE c.content_id = $1 AND c.status = 'ACTIVE'
+  `;
+  const res = await pool.query(query, [id]);
+  if (res.rows.length === 0) {
+    throw { status: 404, message: 'Nội dung không tồn tại hoặc đã ngừng hiển thị.' };
+  }
+  const row = res.rows[0];
+  return {
+    content_id: Number(row.content_id),
+    program_id: row.program_id ? Number(row.program_id) : null,
+    title: row.title,
+    body: row.body,
+    content_type: row.content_type,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    program_name: row.program_name || null,
+    brand_name: row.brand_name || null,
+    brand_logo: row.brand_logo || null,
+  };
 }

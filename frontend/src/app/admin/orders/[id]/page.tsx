@@ -106,8 +106,6 @@ export default function OrderDetailPage() {
     switch (status) {
       case "PENDING":
         return { label: "Chờ xử lý", status: "pending" };
-      case "CONFIRMED":
-        return { label: "Đã xác nhận", status: "confirmed" };
       case "COMPLETED":
         return { label: "Hoàn thành", status: "published" };
       case "CANCELLED":

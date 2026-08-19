@@ -12,14 +12,14 @@ const navItems = [
   { href: "/partner/reports", label: "Thống kê hiệu quả", icon: "analytics" },
 ];
 
-interface SideNavBarProps {
+interface PartnerSideNavBarProps {
   isCollapsed: boolean;
   onToggleCollapse: () => void;
   isMobileOpen: boolean;
   onMobileClose: () => void;
 }
 
-export default function SideNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }: SideNavBarProps) {
+export default function PartnerSideNavBar({ isCollapsed, onToggleCollapse, isMobileOpen, onMobileClose }: PartnerSideNavBarProps) {
   const pathname = usePathname();
   const router = useRouter();
 

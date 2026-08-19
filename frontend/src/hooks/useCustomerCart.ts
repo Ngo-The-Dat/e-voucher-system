@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Voucher, MyVoucher } from "@/data/mockData";
+import { Voucher, MyVoucher } from "@/lib/types/customer";
 import { customerCartApi, customerOrderApi, BackendCartItem, CustomerVoucherItem } from "@/lib/customer-api";
 
 export interface CartItem {
@@ -32,7 +32,7 @@ export function useCustomerCart() {
           id: String(item.program_id),
           title: item.program_name,
           brand: item.business_name || "Lumina Partner",
-          brandLogo: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+          brandLogo: item.brand_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
           category: item.category_name || "Khác",
           merchant: item.business_name || "Lumina Partner",
           thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",

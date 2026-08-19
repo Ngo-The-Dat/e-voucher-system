@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { Search, ShoppingCart, Bell, Menu, X, LogIn, UserPlus, LogOut, User, Ticket, Utensils, Plane, Monitor, Sparkles, Gamepad2, ShoppingBag, ChevronDown, List, KeyRound, UserCircle } from "lucide-react";
 import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
+import RegisterTypeModal from "@/components/customer/auth/RegisterTypeModal";
 
 export default function Header() {
   const router = useRouter();
@@ -19,6 +20,7 @@ export default function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [user, setUser] = useState<CustomerUser | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
+  const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
   // Sync auth state
   const checkAuth = () => {
@@ -244,12 +246,13 @@ export default function Header() {
                 >
                   Đăng nhập
                 </Link>
-                <Link
-                  href="/register"
-                  className="flex items-center justify-center px-5 py-2 bg-white text-[#0f2c59] rounded-full font-label-md font-semibold hover:bg-gray-100 transition-colors shadow-sm"
+                <button
+                  type="button"
+                  onClick={() => setRegisterModalOpen(true)}
+                  className="flex items-center justify-center px-5 py-2 bg-white text-[#0f2c59] rounded-full font-label-md font-semibold hover:bg-gray-100 transition-colors shadow-sm cursor-pointer"
                 >
                   Đăng ký
-                </Link>
+                </button>
               </div>
             )}
 
@@ -345,13 +348,16 @@ export default function Header() {
               >
                 Đăng nhập
               </Link>
-              <Link
-                href="/register"
-                onClick={() => setMobileMenuOpen(false)}
-                className="flex-1 py-2.5 text-center font-label-md text-label-md font-semibold bg-[#0f2c59] text-white rounded-lg"
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  setRegisterModalOpen(true);
+                }}
+                className="flex-1 py-2.5 text-center font-label-md text-label-md font-semibold bg-[#0f2c59] text-white rounded-lg cursor-pointer"
               >
                 Đăng ký
-              </Link>
+              </button>
             </div>
           ) : (
             <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 mb-2">
@@ -468,6 +474,12 @@ export default function Header() {
           </div>
         </div>
       )}
+
+      {/* Register Type Selection Modal */}
+      <RegisterTypeModal
+        isOpen={registerModalOpen}
+        onClose={() => setRegisterModalOpen(false)}
+      />
     </header>
   );
 }

@@ -1,11 +1,11 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import { useEffect, useRef, useState } from "react";
 import { ApiError, partnerApi } from "@/lib/partner-api";
-import { Branch } from "@/lib/types/profile";
-import { VoucherItem } from "@/lib/types/voucher";
+import { Branch } from "@/lib/types/partner-profile";
+import { VoucherItem } from "@/lib/types/partner-voucher";
 import {
   CheckResultIdleCode,
   CheckResultIdleQr,
@@ -13,7 +13,7 @@ import {
   CheckResultValid,
   CheckResultRedeemed,
   CheckResultRequestError,
-} from "@/components/partner/voucher/CheckResultStates";
+} from "@/components/partner/voucher/EmployeeCheckResultStates";
 
 type CheckType = "code" | "qr";
 
@@ -125,7 +125,7 @@ export default function CheckVoucherPage() {
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen w-full">
-      <TopAppBar title="Kiểm tra voucher" />
+      <PartnerTopAppBar title="Kiểm tra voucher" />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-4xl w-full mx-auto flex flex-col space-y-6">
         <div>

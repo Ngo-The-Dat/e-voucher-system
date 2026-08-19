@@ -4,12 +4,12 @@ import { requireRole } from '../middlewares/role.middleware.js';
 
 // Partner sub-routers
 import partnerAuthRouter from './partner/auth.router.js';
-import partnerProfileRouter from './partner/profile.router.js';
+import partnerProfileRouter from './partner/partner-profile.router.js';
 import partnerBranchRouter from './partner/branch.router.js';
 import partnerVoucherRouter from './partner/voucher.router.js';
 import partnerRedeemRouter from './partner/redeem.router.js';
 import partnerDashboardRouter from './partner/dashboard.router.js';
-import partnerEmployeeRouter from './partner/employee.router.js';
+import partnerEmployeeRouter from './partner/partner-employee-profile.router.js';
 import partnerEmployeeMgmtRouter from './partner/partner-employee-mgmt.router.js';
 
 // Admin sub-routers

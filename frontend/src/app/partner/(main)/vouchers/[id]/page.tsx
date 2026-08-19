@@ -1,6 +1,6 @@
 "use client";
 
-import TopAppBar from "@/components/partner/layout/TopAppBar";
+import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import VoucherStatusBadge from "@/components/shared/ui/VoucherStatusBadge";
 import Toast from "@/components/shared/ui/Toast";
 import Icon from "@/components/shared/ui/Icon";
@@ -8,9 +8,8 @@ import Link from "next/link";
 import { use, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { partnerApi } from "@/lib/partner-api";
-import { CategoryOption, VoucherItem, VoucherFormErrors } from "@/lib/types/voucher";
-import { VoucherImage } from "@/lib/types/voucher";
-import { Branch } from "@/lib/types/profile";
+import { CategoryOption, VoucherItem, VoucherFormErrors, VoucherImage } from "@/lib/types/partner-voucher";
+import { Branch } from "@/lib/types/partner-profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
@@ -106,7 +105,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   if (!voucher) {
     return (
       <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen">
-        <TopAppBar title={`Chi tiết Voucher ${id}`} />
+        <PartnerTopAppBar title={`Chi tiết Voucher ${id}`} />
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center space-y-3">
             <Icon name="error" className="text-4xl text-error mx-auto" />
@@ -308,27 +307,30 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="flex-1 flex flex-col min-w-0 bg-background min-h-screen relative pb-20 w-full">
-      <TopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
+      <PartnerTopAppBar title={`Chi tiết Chương trình Voucher ${voucher.code}`} />
 
       <Toast message={toastMessage} type={toastType} />
 
       <main className="p-6 md:p-8 flex-1 overflow-y-auto max-w-6xl w-full mx-auto space-y-6">
         {/* Header Bar */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-outline-variant/40 pb-4">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-on-surface">{voucher.title}</h1>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-outline-variant/40 pb-4">
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <h1 className="text-2xl font-bold text-on-surface break-words leading-tight">
+              {voucher.title}
+            </h1>
+            <div className="flex items-center gap-3 flex-wrap text-sm text-on-surface-variant">
               <VoucherStatusBadge status={voucher.status} />
+              <span className="text-outline-variant">•</span>
+              <p>
+                Mã chương trình: <strong className="text-on-surface">{voucher.code}</strong>
+              </p>
             </div>
-            <p className="text-sm text-on-surface-variant">
-              Mã chương trình: <strong>{voucher.code}</strong>
-            </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 flex-wrap sm:flex-nowrap">
             <Link
               href="/partner/vouchers"
-              className="bg-surface-container text-on-surface px-4 py-2.5 rounded-lg text-base font-semibold hover:bg-surface-container-highest transition-colors border border-outline-variant flex items-center gap-1.5"
+              className="bg-surface-container text-on-surface px-4 py-2.5 rounded-lg text-base font-semibold hover:bg-surface-container-highest transition-colors border border-outline-variant inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
             >
               <Icon name="arrow_back" /> Danh sách
             </Link>
@@ -337,14 +339,16 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
             {["draft", "rejected"].includes(voucher.status) && !isEditing && (
               <>
                 <button
+                  type="button"
                   onClick={() => setIsEditing(true)}
-                  className="bg-surface-bright border border-outline-variant text-on-surface px-4 py-2.5 rounded-lg text-base font-semibold hover:bg-surface-container-high transition-colors flex items-center gap-1.5"
+                  className="bg-surface-bright border border-outline-variant text-on-surface px-4 py-2.5 rounded-lg text-base font-semibold hover:bg-surface-container-high transition-colors inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0"
                 >
                   <Icon name="edit" className="text-primary" /> Chỉnh sửa
                 </button>
                 <button
+                  type="button"
                   onClick={handleSendForApproval}
-                  className="bg-primary text-on-primary px-6 py-2.5 rounded-lg text-base font-bold hover:bg-surface-tint transition-colors flex items-center gap-2 shadow-md"
+                  className="bg-primary text-on-primary px-5 sm:px-6 py-2.5 rounded-lg text-base font-bold hover:bg-surface-tint transition-colors inline-flex items-center justify-center gap-2 shadow-md whitespace-nowrap shrink-0"
                 >
                   <Icon name="send" /> Gửi duyệt
                 </button>
@@ -660,17 +664,17 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 onReorder={handleReorderImages}
               />
 
-              <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/40">
+              <div className="flex justify-end gap-3 pt-4 border-t border-outline-variant/40 flex-wrap">
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-5 py-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg font-semibold"
+                  className="px-5 py-2.5 text-on-surface-variant hover:bg-surface-container-high rounded-lg font-semibold whitespace-nowrap shrink-0 inline-flex items-center justify-center"
                 >
                   Hủy chỉnh sửa
                 </button>
                 <button
                   type="submit"
-                  className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-surface-tint shadow-sm"
+                  className="px-6 py-2.5 bg-primary text-on-primary font-bold rounded-lg hover:bg-surface-tint shadow-sm whitespace-nowrap shrink-0 inline-flex items-center justify-center"
                 >
                   Lưu thay đổi
                 </button>

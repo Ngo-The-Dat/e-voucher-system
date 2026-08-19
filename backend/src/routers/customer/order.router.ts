@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate, requireRole('CUSTOMER'));
 
 router.post('/', orderController.createOrder);
+router.post('/:orderId/pay', orderController.payOrder);
 router.get('/', orderController.getOrders);
 router.get('/:orderId', orderController.getOrderById);
 

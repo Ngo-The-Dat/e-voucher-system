@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext } from "react";
-import { Voucher, MyVoucher } from "@/data/mockData";
+import { Voucher, MyVoucher } from "@/lib/types/customer";
 import { useCustomerVouchers } from "@/hooks/useCustomerVouchers";
 import { useCustomerCart, CartItem } from "@/hooks/useCustomerCart";
 

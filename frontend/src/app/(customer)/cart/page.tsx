@@ -10,10 +10,11 @@ import { customerOrderApi, CreateOrderItemInput, getStoredCustomerToken } from "
 import CartItemList from "@/components/customer/cart/CartItemList";
 import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
 import EmptyCart from "@/components/customer/cart/EmptyCart";
+import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, updateCartQuantity, removeFromCart, checkout, refreshCart, refreshMyVouchers } = useApp();
+  const { cart, updateCartQuantity, removeFromCart, refreshCart, refreshMyVouchers } = useApp();
 
   // Local page state
   const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(() => {
@@ -24,9 +25,6 @@ export default function CartPage() {
     return initial;
   });
 
-  const [promoCode, setPromoCode] = useState("");
-  const [discountPercent, setDiscountPercent] = useState(0);
-  const [promoApplied, setPromoApplied] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("Ví VNPay");
 
   const [isGift, setIsGift] = useState(false);
@@ -37,6 +35,8 @@ export default function CartPage() {
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdPaymentOrder, setCreatedPaymentOrder] = useState<PaymentSimulatorOrder | null>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   const toggleItem = (id: string) => {
     setSelectedItems((prev) => ({
@@ -60,15 +60,6 @@ export default function CartPage() {
         removeFromCart(item.voucher.id);
       }
     });
-  };
-
-  const applyPromo = () => {
-    if (promoCode.trim().toUpperCase() === "LUMINA10") {
-      setDiscountPercent(10);
-      setPromoApplied(true);
-    } else {
-      alert("Mã ưu đãi không hợp lệ. Hãy thử: LUMINA10");
-    }
   };
 
   const handleCheckout = async () => {
@@ -104,38 +95,50 @@ export default function CartPage() {
       }))
       .filter((item) => !isNaN(item.program_id) && item.program_id > 0);
 
-    if (apiItems.length > 0) {
-      try {
-        setIsSubmitting(true);
-        const response = await customerOrderApi.createOrder({
-          items: apiItems,
-          is_gift: isGift,
-          recipient_info: isGift ? recipientInfo : undefined,
-          payment_method: paymentMethod,
-        });
+    if (apiItems.length === 0) {
+      alert("Không tìm thấy thông tin sản phẩm hợp lệ để đặt hàng. Vui lòng thử tải lại trang.");
+      return;
+    }
 
-        alert(response.message || "Tạo đơn hàng và phát hành voucher thành công!");
-        if (refreshCart) await refreshCart();
-        if (refreshMyVouchers) await refreshMyVouchers();
-        router.push("/my-vouchers");
-        return;
-      } catch (err: any) {
-        if (err.message) {
-          alert(err.message);
-        } else {
-          alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
-        }
-      } finally {
-        setIsSubmitting(false);
+    try {
+      setIsSubmitting(true);
+      const response = await customerOrderApi.createOrder({
+        items: apiItems,
+        is_gift: isGift,
+        recipient_info: isGift ? recipientInfo : undefined,
+        payment_method: paymentMethod,
+        auto_pay: false,
+      });
+
+      if (refreshCart) await refreshCart();
+
+      setCreatedPaymentOrder({
+        orderId: response.order.order_id,
+        totalAmount: response.order.total_amount,
+        paymentMethod: response.order.payment_method,
+        createdAt: response.order.created_at,
+        elapsedSeconds: response.order.elapsed_seconds ?? 0,
+        items: itemsToCheckout.map((item) => ({
+          program_name: item.voucher.title,
+          quantity: item.quantity,
+          unit_price: item.voucher.price,
+        })),
+      });
+      setIsPaymentModalOpen(true);
+    } catch (err: any) {
+      if (err.message) {
+        alert(err.message);
+      } else {
+        alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   // Calculations
   const activeCartItems = cart.filter((item) => selectedItems[item.voucher.id]);
-  const subtotal = activeCartItems.reduce((sum, item) => sum + item.voucher.price * item.quantity, 0);
-  const discountAmount = (subtotal * discountPercent) / 100;
-  const total = subtotal - discountAmount;
+  const total = activeCartItems.reduce((sum, item) => sum + item.voucher.price * item.quantity, 0);
 
   return (
     <main className="flex-grow pt-8 pb-16 px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto w-full">
@@ -171,13 +174,8 @@ export default function CartPage() {
           />
           <CartSummary 
             activeCartItemsLength={activeCartItems.length}
-            subtotal={subtotal}
-            discountAmount={discountAmount}
+            subtotal={total}
             total={total}
-            promoCode={promoCode}
-            setPromoCode={setPromoCode}
-            promoApplied={promoApplied}
-            applyPromo={applyPromo}
             paymentMethod={paymentMethod}
             setPaymentMethod={setPaymentMethod}
             isGift={isGift}
@@ -191,6 +189,16 @@ export default function CartPage() {
       ) : (
         <EmptyCart />
       )}
+
+      {/* Payment Simulator Modal */}
+      <PaymentSimulatorModal
+        isOpen={isPaymentModalOpen}
+        onClose={() => setIsPaymentModalOpen(false)}
+        order={createdPaymentOrder}
+        onPaymentSuccess={() => {
+          if (refreshMyVouchers) refreshMyVouchers();
+        }}
+      />
     </main>
   );
 }

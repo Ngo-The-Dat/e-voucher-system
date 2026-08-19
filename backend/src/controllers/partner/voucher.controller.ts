@@ -1,8 +1,28 @@
+/**
+ * @file voucher.controller.ts
+ * @description Controller quản lý các chiến dịch / chương trình khuyến mãi Voucher của Đối tác:
+ * tạo chương trình voucher, lấy danh sách phân trang (draft, pending, approved, rejected),
+ * xem chi tiết, chỉnh sửa thông tin chương trình, gửi yêu cầu phê duyệt lên Admin, và ẩn/hiện voucher.
+ */
+
 import { type Response } from 'express';
 import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as voucherService from '../../services/partner/voucher.service.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
+/**
+ * [POST] /api/partner/vouchers
+ * Tạo một chương trình voucher mới (mặc định ở trạng thái DRAFT).
+ * 
+ * @description
+ * Yêu cầu đầy đủ:
+ * - Thông tin cơ bản: Tên voucher, danh mục ngành hàng (`category_id`), giá gốc (`original_price`), giá bán (`sale_price`), số lượng phát hành.
+ * - Khung thời gian: Bán (`sale_start_at` -> `sale_end_at`) và sử dụng (`use_start_at` -> `use_end_at`).
+ * - Danh sách chi nhánh áp dụng (`branch_ids`).
+ * 
+ * @param req AuthRequest chứa dữ liệu chương trình voucher
+ * @param res Express Response trả về chương trình vừa tạo (HTTP 201 Created)
+ */
 export const createVoucherProgram = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -35,6 +55,13 @@ export const createVoucherProgram = async (req: AuthRequest, res: Response): Pro
   }
 };
 
+/**
+ * [GET] /api/partner/vouchers
+ * Lấy danh sách các chương trình voucher của đối tác có hỗ trợ lọc theo trạng thái, từ khóa tìm kiếm và phân trang.
+ * 
+ * @param req AuthRequest chứa query: `status` ('draft' | 'pending' | 'approved' | 'rejected'), `search`, `page`, `limit`
+ * @param res Express Response trả về { data, pagination: { total, page, limit, totalPages } }
+ */
 export const getVoucherPrograms = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -71,6 +98,13 @@ export const getVoucherPrograms = async (req: AuthRequest, res: Response): Promi
   }
 };
 
+/**
+ * [GET] /api/partner/vouchers/categories
+ * Lấy danh sách toàn bộ các danh mục ngành hàng đang hoạt động để hiển thị lựa chọn khi tạo voucher.
+ * 
+ * @param _req AuthRequest
+ * @param res Express Response trả về danh sách categories
+ */
 export const getCategories = async (_req: AuthRequest, res: Response): Promise<void> => {
   try {
     res.status(200).json(await voucherService.getActiveCategories());
@@ -79,6 +113,13 @@ export const getCategories = async (_req: AuthRequest, res: Response): Promise<v
   }
 };
 
+/**
+ * [GET] /api/partner/vouchers/:id
+ * Lấy thông tin chi tiết một chương trình voucher (kèm danh sách chi nhánh và hình ảnh mô tả).
+ * 
+ * @param req AuthRequest chứa ID chương trình
+ * @param res Express Response trả về dữ liệu voucher
+ */
 export const getVoucherProgramById = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -96,6 +137,13 @@ export const getVoucherProgramById = async (req: AuthRequest, res: Response): Pr
   }
 };
 
+/**
+ * [PUT] /api/partner/vouchers/:id
+ * Cập nhật nội dung chương trình voucher (chỉ cho phép chỉnh sửa khi ở trạng thái DRAFT hoặc bị REJECTED).
+ * 
+ * @param req AuthRequest chứa dữ liệu cập nhật
+ * @param res Express Response trả về chương trình sau cập nhật
+ */
 export const updateVoucherProgram = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -165,6 +213,13 @@ export const updateVoucherProgram = async (req: AuthRequest, res: Response): Pro
   }
 };
 
+/**
+ * [POST] /api/partner/vouchers/:id/submit
+ * Gửi chương trình voucher lên Quản trị viên (Admin) để xin phê duyệt phát hành.
+ * 
+ * @param req AuthRequest chứa ID chương trình
+ * @param res Express Response thông báo gửi duyệt thành công
+ */
 export const submitForApproval = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -182,6 +237,13 @@ export const submitForApproval = async (req: AuthRequest, res: Response): Promis
   }
 };
 
+/**
+ * [GET] /api/partner/vouchers/:id/approval-status
+ * Xem lịch sử và trạng thái phê duyệt gần nhất của chương trình voucher (kèm lý do phản hồi của Admin nếu bị từ chối).
+ * 
+ * @param req AuthRequest chứa ID chương trình
+ * @param res Express Response trả về bản ghi phê duyệt
+ */
 export const getApprovalStatus = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;
@@ -199,6 +261,13 @@ export const getApprovalStatus = async (req: AuthRequest, res: Response): Promis
   }
 };
 
+/**
+ * [PUT] /api/partner/vouchers/:id/visibility
+ * Thay đổi trạng thái hiển thị của voucher đã được duyệt (Ẩn / Hiện: `HIDDEN` hoặc `PUBLISHED`).
+ * 
+ * @param req AuthRequest chứa { display_status: 'PUBLISHED' | 'HIDDEN' }
+ * @param res Express Response thông báo cập nhật thành công
+ */
 export const updateVisibility = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
     const partnerId = req.user!.id;

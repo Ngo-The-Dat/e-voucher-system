@@ -1,6 +1,16 @@
+/**
+ * @file voucher-image.service.ts
+ * @description Service quản lý lưu trữ và thao tác với hình ảnh chương trình voucher:
+ * upload file lên Cloudflare R2 (S3-compatible), lưu URL và metadata vào bảng `voucher_program_images`,
+ * đồng bộ trạng thái ảnh chính (`is_primary`), sắp xếp thứ tự và dọn dẹp file R2 khi xóa.
+ */
+
 import pool from '../../config/db.js';
 import { deleteR2Image, uploadVoucherImage } from '../storage/r2.service.js';
 
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
+
+/** Kiểu dữ liệu một dòng trong bảng voucher_program_images */
 type VoucherImageRow = {
   image_id: string | number;
   image_url: string;
@@ -8,13 +18,17 @@ type VoucherImageRow = {
   sort_order: number;
 };
 
+/** Kiểu dữ liệu hình ảnh voucher trả về cho frontend */
 export type VoucherImage = {
-  id: string;
-  url: string;
-  isPrimary: boolean;
-  sortOrder: number;
+  id: string;          // ID ảnh dạng chuỗi
+  url: string;         // Đường dẫn URL ảnh công khai trên R2
+  isPrimary: boolean;  // Có phải là ảnh đại diện chính không
+  sortOrder: number;   // Thứ tự hiển thị
 };
 
+// ─── Helper Functions ─────────────────────────────────────────────────────────
+
+/** Ánh xạ dữ liệu thô từ database sang format frontend */
 const mapImage = (row: VoucherImageRow): VoucherImage => ({
   id: String(row.image_id),
   url: row.image_url,
@@ -22,6 +36,15 @@ const mapImage = (row: VoucherImageRow): VoucherImage => ({
   sortOrder: row.sort_order,
 });
 
+/**
+ * Khóa dòng bản ghi voucher `FOR UPDATE` và kiểm tra điều kiện cho phép sửa đổi ảnh:
+ * - Voucher phải tồn tại và thuộc về đối tác đang thao tác.
+ * - Trạng thái của voucher phải là `DRAFT`.
+ * 
+ * @param client Database client đang trong transaction
+ * @param programId ID chương trình voucher
+ * @param partnerId User ID của đối tác
+ */
 const lockEditableVoucher = async (
   client: { query: (text: string, values?: unknown[]) => Promise<{ rows: any[] }> },
   programId: number,
@@ -43,6 +66,15 @@ const lockEditableVoucher = async (
   }
 };
 
+// ─── Service Methods ──────────────────────────────────────────────────────────
+
+/**
+ * Lấy toàn bộ danh sách hình ảnh của một chương trình voucher.
+ * Sắp xếp: ảnh chính (is_primary = true) lên đầu tiên, sau đó theo `sort_order` tăng dần.
+ * 
+ * @param programId ID chương trình voucher
+ * @returns Danh sách hình ảnh
+ */
 export const getVoucherImages = async (programId: number): Promise<VoucherImage[]> => {
   const result = await pool.query(
     `SELECT image_id, image_url, is_primary, sort_order
@@ -54,6 +86,24 @@ export const getVoucherImages = async (programId: number): Promise<VoucherImage[
   return result.rows.map(mapImage);
 };
 
+/**
+ * Upload ảnh mới và thêm vào bộ sưu tập của voucher.
+ * 
+ * @description
+ * 1. Kiểm tra trạng thái DRAFT của voucher.
+ * 2. Upload file stream lên Cloudflare R2 bucket.
+ * 3. Mở transaction: Khóa voucher, tính toán `sort_order` tiếp theo.
+ * 4. Nếu là ảnh đầu tiên hoặc được yêu cầu `is_primary = true`, cập nhật các ảnh trước đó về `is_primary = false`.
+ * 5. Thêm bản ghi mới vào `voucher_program_images`.
+ * 6. Nếu database rollback, tự động gọi `deleteR2Image` để dọn dẹp file rác trên R2.
+ * 
+ * @param programId ID voucher
+ * @param partnerId User ID đối tác
+ * @param file File ảnh từ Multer
+ * @param requestedPrimary Có đặt làm ảnh chính hay không
+ * @param requestedSortOrder Vị trí sắp xếp tùy chọn
+ * @returns Thông tin ảnh vừa thêm
+ */
 export const addVoucherImage = async (
   programId: number,
   partnerId: number,
@@ -73,6 +123,7 @@ export const addVoucherImage = async (
     throw { status: 400, message: 'Chỉ có thể chỉnh sửa ảnh khi voucher ở trạng thái DRAFT.' };
   }
 
+  // Upload file lên Cloudflare R2
   const imageUrl = await uploadVoucherImage(programId, file);
   const client = await pool.connect();
   try {
@@ -87,9 +138,11 @@ export const addVoucherImage = async (
       [programId]
     );
     const imageCount = Number(imageState.rows[0].image_count);
+    // Nếu chưa có ảnh nào thì ảnh mới mặc định là ảnh chính
     const isPrimary = imageCount === 0 || requestedPrimary;
     const sortOrder = requestedSortOrder ?? Number(imageState.rows[0].max_sort_order) + 1;
 
+    // Đặt lại các ảnh khác về non-primary nếu ảnh này là ảnh chính
     if (isPrimary) {
       await client.query(
         'UPDATE voucher_program_images SET is_primary = FALSE WHERE program_id = $1 AND is_primary = TRUE',
@@ -107,6 +160,7 @@ export const addVoucherImage = async (
     return mapImage(inserted.rows[0]);
   } catch (error) {
     await client.query('ROLLBACK');
+    // Dọn dẹp ảnh trên R2 nếu ghi database thất bại
     try {
       await deleteR2Image(imageUrl);
     } catch (cleanupError) {
@@ -118,6 +172,14 @@ export const addVoucherImage = async (
   }
 };
 
+/**
+ * Đặt một ảnh làm ảnh đại diện chính của voucher.
+ * 
+ * @param programId ID voucher
+ * @param imageId ID ảnh muốn đặt làm chính
+ * @param partnerId User ID đối tác
+ * @returns Danh sách ảnh sau cập nhật
+ */
 export const setPrimaryImage = async (
   programId: number,
   imageId: number,
@@ -153,6 +215,14 @@ export const setPrimaryImage = async (
   }
 };
 
+/**
+ * Cập nhật thứ tự sắp xếp (sort_order) cho danh sách ảnh của voucher.
+ * 
+ * @param programId ID voucher
+ * @param partnerId User ID đối tác
+ * @param imageIds Mảng ID ảnh theo thứ tự mới
+ * @returns Danh sách ảnh sau khi sắp xếp
+ */
 export const reorderVoucherImages = async (
   programId: number,
   partnerId: number,
@@ -190,6 +260,15 @@ export const reorderVoucherImages = async (
   }
 };
 
+/**
+ * Xóa một ảnh khỏi voucher và xóa file trên R2 storage.
+ * Nếu ảnh bị xóa là ảnh chính (`is_primary`), hệ thống sẽ tự động gán ảnh kế tiếp làm ảnh chính mới.
+ * 
+ * @param programId ID voucher
+ * @param imageId ID ảnh cần xóa
+ * @param partnerId User ID đối tác
+ * @returns Danh sách ảnh còn lại
+ */
 export const deleteVoucherImage = async (
   programId: number,
   imageId: number,
@@ -210,11 +289,16 @@ export const deleteVoucherImage = async (
       throw { status: 404, message: 'Không tìm thấy ảnh của voucher.' };
     }
 
+    // Xóa file trên Cloudflare R2
     await deleteR2Image(image.image_url);
+
+    // Xóa bản ghi trong database
     await client.query(
       'DELETE FROM voucher_program_images WHERE image_id = $1 AND program_id = $2',
       [imageId, programId]
     );
+
+    // Nếu ảnh vừa xóa là ảnh chính thì tự động chọn ảnh đầu tiên còn lại làm ảnh chính
     if (image.is_primary) {
       await client.query(
         `UPDATE voucher_program_images SET is_primary = TRUE
@@ -236,4 +320,3 @@ export const deleteVoucherImage = async (
     client.release();
   }
 };
-

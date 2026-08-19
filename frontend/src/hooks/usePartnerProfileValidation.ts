@@ -1,13 +1,13 @@
 "use client";
 
-import { PartnerProfile, ProfileFormErrors } from "@/lib/types/profile";
+import { PartnerProfile, ProfileFormErrors } from "@/lib/types/partner-profile";
 import { useCallback } from "react";
 
 /**
  * Hook chứa toàn bộ validation logic cho profile form.
  * Tách riêng khỏi page để dễ test và tái sử dụng.
  */
-export function useProfileValidation() {
+export function usePartnerProfileValidation() {
   const validate = useCallback(
     (profile: PartnerProfile): ProfileFormErrors => {
       const errors: ProfileFormErrors = {};
@@ -54,3 +54,5 @@ export function useProfileValidation() {
 
   return { validate };
 }
+
+export const useProfileValidation = usePartnerProfileValidation;

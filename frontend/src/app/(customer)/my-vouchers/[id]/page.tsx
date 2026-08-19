@@ -29,7 +29,7 @@ import ReviewModal from "@/components/customer/ReviewModal";
 export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
 
-  const { myVouchers, vouchers, markAsUsed, addReview, refreshMyVouchers } = useApp();
+  const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
 
   const [copied, setCopied] = useState(false);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -105,7 +105,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
             : "unused",
         title: apiVoucher.program_name,
         brand: apiVoucher.business_name || "Thương hiệu đối tác",
-        brandLogo: apiVoucher.partner_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+        brandLogo: apiVoucher.partner_logo || "",
         category: apiVoucher.category_name || "Ưu đãi",
         datePurchased: apiVoucher.purchase_date ? new Date(apiVoucher.purchase_date).toLocaleDateString("vi-VN") : "Hôm nay",
         expiryDate: apiVoucher.expires_at ? new Date(apiVoucher.expires_at).toLocaleDateString("vi-VN") : "31/12/2026",
@@ -168,11 +168,6 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleMarkAsUsed = () => {
-    if (displayVoucher.status === "unused") {
-      markAsUsed(displayVoucher.id);
-    }
-  };
 
   return (
     <main className="flex-grow max-w-container-max mx-auto w-full px-margin-mobile md:px-margin-desktop py-8 md:py-12 flex flex-col gap-8">
@@ -197,13 +192,22 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
 
             {/* Brand Logo */}
             <div className="w-full md:w-32 h-32 md:h-auto rounded-lg overflow-hidden flex-shrink-0 bg-surface-container-lowest border border-outline-variant flex items-center justify-center p-4 shadow-sm">
-              <Image
-                width={128}
-                height={128}
-                className="w-full h-full object-contain"
-                src={displayVoucher.brandLogo}
-                alt={displayVoucher.brand}
-              />
+              {displayVoucher.brandLogo ? (
+                <img
+                  width={128}
+                  height={128}
+                  className="w-full h-full object-contain"
+                  src={displayVoucher.brandLogo}
+                  alt={displayVoucher.brand}
+                  onError={(e) => {
+                    (e.target as HTMLElement).style.display = "none";
+                  }}
+                />
+              ) : (
+                <span className="text-3xl font-extrabold text-primary">
+                  {(displayVoucher.brand || "V").charAt(0).toUpperCase()}
+                </span>
+              )}
             </div>
 
             {/* Details Content */}
@@ -278,7 +282,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                 {(displayVoucher.termsConditions ? displayVoucher.termsConditions.split("\n") : [
                   "Áp dụng cho mọi chi nhánh.",
                   "Không có giá trị quy đổi thành tiền mặt."
-                ]).map((cond, i) => (
+                ]).map((cond: string, i: number) => (
                   <li key={i} className="flex items-start gap-2">
                     <Check className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                     <span>{cond}</span>
@@ -404,36 +408,53 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
                   Mã Voucher
                 </p>
                 <div className="flex items-center justify-between bg-surface-container-low border border-outline-variant rounded-lg p-3">
-                  <span className="font-headline-lg text-headline-lg font-bold text-primary tracking-widest font-mono select-all">
+                  <span
+                    className={`font-headline-lg text-headline-lg font-bold tracking-widest font-mono ${
+                      displayVoucher.status === "used" || displayVoucher.status === "expired" || displayVoucher.status === "cancelled"
+                        ? "text-text-muted/60 line-through select-none"
+                        : "text-primary select-all"
+                    }`}
+                  >
                     {displayVoucher.code}
                   </span>
-                  <button
-                    onClick={handleCopyCode}
-                    className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
-                    title="Copy mã"
-                  >
-                    {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
-                  </button>
+                  {displayVoucher.status === "unused" && (
+                    <button
+                      onClick={handleCopyCode}
+                      className="text-on-surface-variant hover:text-primary transition-colors p-2 rounded-full hover:bg-surface-container cursor-pointer flex items-center justify-center"
+                      title="Copy mã"
+                    >
+                      {copied ? <Check className="w-5 h-5 text-secondary" /> : <Copy className="w-5 h-5" />}
+                    </button>
+                  )}
                 </div>
-                {copied && <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>}
+                {copied && displayVoucher.status === "unused" && (
+                  <p className="text-xs text-secondary mt-1">Đã copy mã voucher!</p>
+                )}
               </div>
 
               <div className="w-full h-px bg-outline-variant border-dashed mb-6" />
 
-              {/* Action buttons */}
+              {/* Status & Actions */}
               <div className="w-full flex flex-col gap-3">
                 {displayVoucher.status === "unused" ? (
-                  <button
-                    onClick={handleMarkAsUsed}
-                    className="w-full bg-primary text-on-primary font-label-md text-label-md py-3 px-4 rounded-lg font-bold shadow-sm hover:opacity-95 transition-all hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
-                  >
+                  <div className="w-full bg-secondary-container/60 text-on-secondary-container py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 border border-secondary/20 font-label-md text-label-md select-none text-center">
+                    <CheckCircle2 className="w-5 h-5 text-secondary shrink-0" />
+                    <span>Xuất trình mã QR/Code cho thu ngân tại quầy</span>
+                  </div>
+                ) : displayVoucher.status === "used" ? (
+                  <div className="w-full bg-surface-variant/40 text-on-surface-variant py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 select-none border border-outline-variant font-label-md text-label-md">
                     <CheckCircle2 className="w-5 h-5" />
-                    Đánh dấu đã sử dụng
-                  </button>
+                    Voucher đã được sử dụng
+                  </div>
+                ) : displayVoucher.status === "expired" ? (
+                  <div className="w-full bg-surface-dim/40 text-on-surface-variant py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 select-none border border-outline-variant font-label-md text-label-md">
+                    <XCircle className="w-5 h-5" />
+                    Voucher đã hết hạn
+                  </div>
                 ) : (
-                  <div className="w-full bg-surface-variant/40 text-on-surface-variant py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 select-none border border-outline-variant">
-                    <CheckCircle2 className="w-5 h-5" />
-                    Voucher đã hoàn tất
+                  <div className="w-full bg-error-container/40 text-error py-3 px-4 rounded-lg font-bold flex items-center justify-center gap-2 select-none border border-error/20 font-label-md text-label-md">
+                    <XCircle className="w-5 h-5" />
+                    Voucher đã bị hủy
                   </div>
                 )}
 

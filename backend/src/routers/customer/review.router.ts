@@ -8,7 +8,8 @@ const router = Router();
 // Public: Xem danh sách & thống kê đánh giá của một chương trình voucher
 router.get('/program/:programId', reviewController.getProgramReviews);
 
-// Customer protected routes: Gửi phiếu đánh giá & xem lịch sử phiếu của tôi
+// Customer protected routes: Kiểm tra quyền đánh giá, gửi phiếu đánh giá & xem lịch sử phiếu của tôi
+router.get('/eligibility/:programId', authenticate, requireRole('CUSTOMER'), reviewController.checkEligibility);
 router.post('/', authenticate, requireRole('CUSTOMER'), reviewController.createReview);
 router.get('/my', authenticate, requireRole('CUSTOMER'), reviewController.getMyReviews);
 

@@ -4,15 +4,15 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePartner } from "@/context/PartnerContext";
 
-interface TopAppBarProps {
+interface PartnerTopAppBarProps {
   title?: string;
   partnerName?: string;
 }
 
-export default function TopAppBar({
+export default function PartnerTopAppBar({
   title,
   partnerName,
-}: TopAppBarProps) {
+}: PartnerTopAppBarProps) {
   const partner = usePartner();
   const displayName = partnerName ?? partner?.businessName ?? "Đối tác";
   const brandLogo = partner?.brandLogo;

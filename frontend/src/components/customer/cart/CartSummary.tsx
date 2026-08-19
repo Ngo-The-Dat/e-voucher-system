@@ -12,12 +12,7 @@ export interface RecipientState {
 interface CartSummaryProps {
   activeCartItemsLength: number;
   subtotal: number;
-  discountAmount: number;
   total: number;
-  promoCode: string;
-  setPromoCode: (code: string) => void;
-  promoApplied: boolean;
-  applyPromo: () => void;
   paymentMethod: string;
   setPaymentMethod: (method: string) => void;
   isGift: boolean;
@@ -31,12 +26,7 @@ interface CartSummaryProps {
 export default function CartSummary({
   activeCartItemsLength,
   subtotal,
-  discountAmount,
   total,
-  promoCode,
-  setPromoCode,
-  promoApplied,
-  applyPromo,
   paymentMethod,
   setPaymentMethod,
   isGift,
@@ -62,37 +52,6 @@ export default function CartSummary({
               {formatCurrency(subtotal)}
             </span>
           </div>
-
-          <div className="flex justify-between items-center text-secondary">
-            <span className="font-label-md text-label-md">Giảm giá voucher</span>
-            <span className="font-body-md text-body-md font-semibold">
-              -{formatCurrency(discountAmount)}
-            </span>
-          </div>
-
-          {/* Promo Code Box */}
-          <div className="flex gap-2 mt-2 pt-2 border-t border-outline-variant/30">
-            <input
-              type="text"
-              value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              placeholder="Nhập mã ưu đãi..."
-              disabled={promoApplied}
-              className="flex-grow bg-surface-bright border border-outline-variant rounded-lg px-3 py-2 text-body-md font-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-shadow disabled:opacity-50"
-            />
-            <button
-              onClick={applyPromo}
-              disabled={promoApplied}
-              className="bg-surface-container-high text-on-surface font-label-md text-label-md px-4 py-2 rounded-lg hover:bg-surface-variant transition-colors border border-outline-variant cursor-pointer disabled:opacity-50"
-            >
-              {promoApplied ? "Đã áp dụng" : "Áp dụng"}
-            </button>
-          </div>
-          {promoApplied && (
-            <p className="text-xs text-secondary px-1">
-              Đã áp dụng mã giảm giá 10% (LUMINA10) thành công!
-            </p>
-          )}
 
           {/* Gift Option (BR-CUS-06) */}
           <div className="mt-4 pt-4 border-t border-outline-variant/30 flex flex-col gap-3">

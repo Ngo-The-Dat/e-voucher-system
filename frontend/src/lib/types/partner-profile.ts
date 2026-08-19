@@ -26,6 +26,9 @@ export interface Branch {
 export interface PartnerProfile {
   businessName: string;
   brandLogo?: string | null;
+  activityStatus?: "ACTIVE" | "INACTIVE" | "LOCKED";
+  approvalStatus?: "PENDING" | "APPROVED" | "REJECTED";
+  adminFeedback?: string | null;
   legalInfo: LegalInfo;
   representativeInfo: RepresentativeInfo;
   branches: Branch[];

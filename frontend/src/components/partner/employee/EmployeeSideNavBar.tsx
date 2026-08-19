@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import Icon from "@/components/shared/ui/Icon";
-import { EmployeeProfile } from "@/lib/types/employee";
+import { EmployeeProfile } from "@/lib/types/partner-employee";
 
 interface EmployeeSideNavBarProps {
   profile: EmployeeProfile | null;

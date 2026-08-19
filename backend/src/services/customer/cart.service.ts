@@ -88,6 +88,7 @@ export async function getCart(customerId: number): Promise<CartItemResponse[]> {
       vp.display_status,
       c.category_name,
       p.business_name,
+      p.brand_logo as brand_logo,
       (vp.issue_quantity - COALESCE((
         SELECT COUNT(iv.issued_voucher_id) 
         FROM issued_vouchers iv 
@@ -121,6 +122,7 @@ export async function getCart(customerId: number): Promise<CartItemResponse[]> {
       display_status: row.display_status,
       category_name: row.category_name,
       business_name: row.business_name,
+      brand_logo: row.brand_logo || null,
       available_stock: Math.max(0, Number(row.available_stock)),
       line_total: salePrice * quantity
     };

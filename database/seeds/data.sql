@@ -10,7 +10,7 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
 
 -- 1. Insert users (36 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
-(1, 'Nguyễn Văn Admin', 'admin1@voucher.vn', '0901000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
+(1, 'Ngô Thế Đạt', 'admin@voucher.vn', '0901000001', '$2b$10$JITaepX2GQH3.6T2KhDIiuh4OcJulzeW80vyNF4jfdjV3JpJ5prNq', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
 (2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
 (3, 'Lê Văn Đối Tác F&B', 'partner_fb@voucher.vn', '0902000001', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001088000003', 'Việt Nam', 'ACTIVE', '2026-01-02 09:00:00'),
 (4, 'Phạm Thị Spa Đối Tác', 'partner_spa@voucher.vn', '0902000002', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'FEMALE', '001185000004', 'Việt Nam', 'ACTIVE', '2026-01-02 09:30:00'),
@@ -53,24 +53,24 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender
 -- 2. Insert partners (17 rows: 12 ACTIVE, 5 INACTIVE)
 INSERT INTO partners (user_id, business_name, tax_code, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place, brand_logo) VALUES
 -- Đối tác hoạt động (ACTIVE)
-(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
-(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
-(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
-(11, 'Công ty TNHH Dịch vụ Spa Sen Vàng', '0102123456', 'ACTIVE', '2026-08-01 14:30:00', '0102123456-001', '2022-03-15', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
-(13, 'Công ty Cổ phần DV Cà Phê Cao Nguyên (Highlands)', '0303725714', 'ACTIVE', '2026-07-28 10:20:00', '0303725714-001', '2020-01-18', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
-(14, 'Công ty TNHH CJ CGV Việt Nam', '0303675394', 'ACTIVE', '2026-07-25 11:00:00', '0303675394-001', '2018-09-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuA-kB-zIGuyRwEa8ynWbzI3QV6-5uXYHfsglxEWUl6fl2wd_juPog4hQUEy924ResZ6tvCxyFw4UmDM1ll_itltegYbEtbYMPVokuvkvrLP5beAjQ5_QgbCV-47OiNn0TlhWxI42z6ZHQro0CAUtmqzEgU50tISW8hA66LDva2p98P7FTJa5wp69EpkiIclnGZGbxObtMp3LPsLtzLZAgEQsAgHemvNvhNNRx0osaCrzpgixQ6Ji1E_'),
-(15, 'Công ty Cổ phần Trà sữa TocoToco', '0106789012', 'ACTIVE', '2026-08-02 16:15:00', '0106789012-001', '2023-02-20', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
-(16, 'Công ty TNHH Golden Gate Restaurant Group', '0102721191', 'ACTIVE', '2026-08-04 09:00:00', '0102721191-001', '2021-04-10', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
-(17, 'Công ty Cổ phần Thương mại Dịch vụ California Fitness & Yoga', '0305123987', 'ACTIVE', '2026-08-04 10:30:00', '0305123987-001', '2020-08-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
-(20, 'Công ty Cổ phần Đầu tư Du lịch Mường Thanh', '0101998877', 'ACTIVE', '2026-08-01 16:45:00', '0101998877-001', '2019-09-01', 'Sở KH&ĐT Tỉnh Nghệ An', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
-(31, 'Công ty Cổ phần Phúc Long Heritage', '0302789123', 'ACTIVE', '2026-08-05 09:15:00', '0302789123-001', '2021-03-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
-(32, 'Công ty Cổ phần Foody Việt Nam (ShopeeFood)', '0314567890', 'ACTIVE', '2026-08-06 10:30:00', '0314567890-001', '2019-12-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
+(3, 'Công ty TNHH Ẩm Thực Việt', '0101234567', 'ACTIVE', '2026-01-02 09:05:00', '0101234567-001', '2020-05-10', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop&q=80'),
+(4, 'Công ty Cổ phần Thẩm mỹ Spa Hương Sen', '0107654321', 'ACTIVE', '2026-01-02 09:35:00', '0107654321-001', '2021-08-15', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=400&auto=format&fit=crop&q=80'),
+(5, 'Công ty Du lịch & Khách sạn Biển Bạc', '0109998887', 'ACTIVE', '2026-01-02 10:05:00', '0109998887-001', '2019-11-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400&auto=format&fit=crop&q=80'),
+(11, 'Công ty TNHH Dịch vụ Spa Sen Vàng', '0102123456', 'ACTIVE', '2026-08-01 14:30:00', '0102123456-001', '2022-03-15', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=400&auto=format&fit=crop&q=80'),
+(13, 'Công ty Cổ phần DV Cà Phê Cao Nguyên (Highlands)', '0303725714', 'ACTIVE', '2026-07-28 10:20:00', '0303725714-001', '2020-01-18', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400&auto=format&fit=crop&q=80'),
+(14, 'Công ty TNHH CJ CGV Việt Nam', '0303675394', 'ACTIVE', '2026-07-25 11:00:00', '0303675394-001', '2018-09-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=400&auto=format&fit=crop&q=80'),
+(15, 'Công ty Cổ phần Trà sữa TocoToco', '0106789012', 'ACTIVE', '2026-08-02 16:15:00', '0106789012-001', '2023-02-20', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1558857563-b37cf0c793ff?w=400&auto=format&fit=crop&q=80'),
+(16, 'Công ty TNHH Golden Gate Restaurant Group', '0102721191', 'ACTIVE', '2026-08-04 09:00:00', '0102721191-001', '2021-04-10', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400&auto=format&fit=crop&q=80'),
+(17, 'Công ty Cổ phần Thương mại Dịch vụ California Fitness & Yoga', '0305123987', 'ACTIVE', '2026-08-04 10:30:00', '0305123987-001', '2020-08-20', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400&auto=format&fit=crop&q=80'),
+(20, 'Công ty Cổ phần Đầu tư Du lịch Mường Thanh', '0101998877', 'ACTIVE', '2026-08-01 16:45:00', '0101998877-001', '2019-09-01', 'Sở KH&ĐT Tỉnh Nghệ An', 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400&auto=format&fit=crop&q=80'),
+(31, 'Công ty Cổ phần Phúc Long Heritage', '0302789123', 'ACTIVE', '2026-08-05 09:15:00', '0302789123-001', '2021-03-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=400&auto=format&fit=crop&q=80'),
+(32, 'Công ty Cổ phần Foody Việt Nam (ShopeeFood)', '0314567890', 'ACTIVE', '2026-08-06 10:30:00', '0314567890-001', '2019-12-05', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1526367790999-0150786686a2?w=400&auto=format&fit=crop&q=80'),
 -- Đối tác chưa kích hoạt / Đang chờ duyệt (INACTIVE)
-(18, 'Hộ Kinh Doanh Chuỗi Cafe The Coffee House', '0312345678', 'INACTIVE', '2026-08-03 14:15:00', '0312345678-001', '2022-11-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuAR9Nue5ECgcxhzpAARFglVfp2DYe_G67rvt-BqJJUd8d21IpvmC8yO3RctVCYsjCDEd2kTIpO6Fu_50rnc-OTMJfRH0kWbtZwMLyIMWnIUTl7nBRDWOxaCHK1t9UIQOnWtv1wLw4vKr8WcuoY3a85rY_m0QZp-N17pSvMcpo0JxfQptbU-DDHJD_CHXOH87aldH3N3whF5YnjkPi2qHDe6jPKcWqViVcjJWgpiKmPfHwtT-FyZL4Vl'),
-(19, 'Công ty TNHH Thẩm Mỹ Viện Quốc Tế Seoul Center', '0108889999', 'INACTIVE', '2026-08-02 11:20:00', '0108889999-001', '2023-05-12', 'Sở KH&ĐT TP. Hà Nội', 'https://lh3.googleusercontent.com/aida-public/AB6AXuC27y0GJDlQB_PHOVdYOBxC0ZE6RxnSRbdnvVmRg4TN3d-fqInXu0TuLT_OHoYpJqvBvYmszFR_ZxgmyWkbmN3EcqQmyjFzGSMvCIVxIEPUJGE3Wd6Us37erRZTmkmDqzlMId0FPM1Q0EqaE_uijgH4RgkhoNVRLiEfCnehx9rpDBITW6pzCVcB_cHvFiLGbSPazT0h6BM01NwYQVydJhEEKqplwd1q2niu-1cdphLoCYlXUcKD6GyC'),
-(33, 'Công ty TNHH Uniqlo Việt Nam', '0315678901', 'INACTIVE', '2026-08-07 14:00:00', '0315678901-001', '2023-08-01', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKj2Ua2o04uvw74K8Arw42a7hD3UNWh4RShdWGa2sofnMD8f7hKc1IiABNWe2ZSHwZT4STT39AmYIrk4WvRsPISLnOZLqDnDl1gFsFAvlbWpNJEvWU1BIsQBzobyn04YXRBibc0I0hSREr8Sxj7ArPFr2t2wV5DVKHmfwetfcT9l6e6RZPDDkncv7qauQwEdqy90fMw3aQWDYRNOKJoKI9dRrkrW5tUwGaT_ERcm-7f5isVZfKEkVA'),
-(21, 'Công ty TNHH Lẩu Nướng Haidilao Việt Nam', '0315897462', 'INACTIVE', '2026-07-30 08:30:00', '0315897462-001', '2022-07-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9'),
-(12, 'Công ty Cổ phần Nhà hàng Hải Sản X', '0103456789', 'INACTIVE', '2026-07-31 09:15:00', '0103456789-001', '2021-06-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://lh3.googleusercontent.com/aida-public/AB6AXuCEs3OhuwKQs3QRTCJHGZXfkMY6-FKOJq_71RNVaGZGGGlLy6yEJmoqbVwEVZ7qQiLyCQk2EDCv7Tn87pc1pDiKnnmQjKlkc0bISSf2oqTIsmbxYedOtvzznMaHjluuasIpeYP7L_iSEN0nlAQ_zQR8XKYerxBWfYMxdDV8iAoYQvjm0pokoa01WDt7M6nBLekv6vuLdQ5k7LMBDRnRiLZCRM9fY3T0Ewv8SeY8V0ESqSDWqDlYrjk9');
+(18, 'Hộ Kinh Doanh Chuỗi Cafe The Coffee House', '0312345678', 'INACTIVE', '2026-08-03 14:15:00', '0312345678-001', '2022-11-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1442512595331-e89e73853f31?w=400&auto=format&fit=crop&q=80'),
+(19, 'Công ty TNHH Thẩm Mỹ Viện Quốc Tế Seoul Center', '0108889999', 'INACTIVE', '2026-08-02 11:20:00', '0108889999-001', '2023-05-12', 'Sở KH&ĐT TP. Hà Nội', 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=400&auto=format&fit=crop&q=80'),
+(33, 'Công ty TNHH Uniqlo Việt Nam', '0315678901', 'INACTIVE', '2026-08-07 14:00:00', '0315678901-001', '2023-08-01', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&auto=format&fit=crop&q=80'),
+(21, 'Công ty TNHH Lẩu Nướng Haidilao Việt Nam', '0315897462', 'INACTIVE', '2026-07-30 08:30:00', '0315897462-001', '2022-07-15', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=400&auto=format&fit=crop&q=80'),
+(12, 'Công ty Cổ phần Nhà hàng Hải Sản X', '0103456789', 'INACTIVE', '2026-07-31 09:15:00', '0103456789-001', '2021-06-10', 'Sở KH&ĐT TP. Hồ Chí Minh', 'https://images.unsplash.com/photo-1534422298391-e4f8c172dddb?w=400&auto=format&fit=crop&q=80');
 
 -- 2a. Insert partner_approval_requests (17 rows: 12 APPROVED, 4 PENDING, 1 REJECTED)
 INSERT INTO partner_approval_requests (approval_request_id, partner_id, admin_id, submitted_at, reviewed_at, approval_status, admin_feedback) VALUES
@@ -174,30 +174,30 @@ INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name,
 
 -- 6a. Insert voucher_program_images (24 rows)
 INSERT INTO voucher_program_images (image_id, program_id, image_url, is_primary, sort_order) VALUES
-(1, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
-(2, 1, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', FALSE, 1),
-(3, 2, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
-(4, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
-(5, 3, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', FALSE, 1),
-(6, 4, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
-(7, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
-(8, 5, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', FALSE, 1),
-(9, 6, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
-(10, 7, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
-(11, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
-(12, 8, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', FALSE, 1),
-(13, 9, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
-(14, 10, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', TRUE, 0),
-(15, 11, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/CUpdueq7.jpg', TRUE, 0),
-(16, 12, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', TRUE, 0),
-(17, 13, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/THula72j.jpg', TRUE, 0),
-(18, 14, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', TRUE, 0),
-(19, 15, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/oc7dClcm.jpg', TRUE, 0),
-(20, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/q4ttgSEj.jpg', TRUE, 0),
-(21, 16, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', FALSE, 1),
-(22, 17, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/yIycDFjw.jpg', TRUE, 0),
-(23, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/zodirtty.jpg', TRUE, 0),
-(24, 18, 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', FALSE, 1);
+(1, 1, 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(2, 1, 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=1200&auto=format&fit=crop&q=80', FALSE, 1),
+(3, 2, 'https://images.unsplash.com/photo-1565299585323-38d6b0865b47?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(4, 3, 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(5, 3, 'https://images.unsplash.com/photo-1515377905703-c4788e51af15?w=1200&auto=format&fit=crop&q=80', FALSE, 1),
+(6, 4, 'https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(7, 5, 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(8, 5, 'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=1200&auto=format&fit=crop&q=80', FALSE, 1),
+(9, 6, 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(10, 7, 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(11, 8, 'https://images.unsplash.com/photo-1585647347483-22b66260dfff?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(12, 8, 'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=1200&auto=format&fit=crop&q=80', FALSE, 1),
+(13, 9, 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(14, 10, 'https://images.unsplash.com/photo-1558857563-b37cf0c793ff?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(15, 11, 'https://images.unsplash.com/photo-1541658016709-82535e94bc69?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(16, 12, 'https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(17, 13, 'https://images.unsplash.com/photo-1582650625119-3a31f841807d?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(18, 14, 'https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(19, 15, 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(20, 16, 'https://images.unsplash.com/photo-1582878826629-29b7ad1cdc43?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(21, 16, 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1200&auto=format&fit=crop&q=80', FALSE, 1),
+(22, 17, 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(23, 18, 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1200&auto=format&fit=crop&q=80', TRUE, 0),
+(24, 18, 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=1200&auto=format&fit=crop&q=80', FALSE, 1);
 
 -- 7. Insert voucher_program_branches
 INSERT INTO voucher_program_branches (program_id, branch_id) VALUES
@@ -249,7 +249,7 @@ INSERT INTO orders (order_id, buyer_user_id, recipient_user_id, created_at, tota
 -- Tháng 1/2026
 (1, 8, NULL, '2026-01-10 10:00:00', 140000.00, 'VNPAY', 'PAID', 'COMPLETED'),
 (2, 8, 9, '2026-01-11 11:00:00', 350000.00, 'MOMO', 'PAID', 'COMPLETED'),
-(3, 9, NULL, '2026-01-12 14:00:00', 300000.00, 'CREDIT_CARD', 'PAID', 'CONFIRMED'),
+(3, 9, NULL, '2026-01-12 14:00:00', 300000.00, 'CREDIT_CARD', 'PAID', 'COMPLETED'),
 (4, 10, NULL, '2026-01-13 16:00:00', 100000.00, 'BANK_TRANSFER', 'REFUNDED', 'CANCELLED'),
 (5, 8, NULL, '2026-01-14 12:00:00', 225000.00, 'MOMO', 'PAID', 'COMPLETED'),
 -- Tháng 7/2026 (Kỳ trước của Tháng này)
@@ -383,14 +383,14 @@ INSERT INTO order_cancellations (cancellation_id, order_id, admin_id, requested_
 
 -- 15. Insert banners (3 rows)
 INSERT INTO banners (banner_id, program_id, title, image_url, target_url, display_position, display_from, display_to, status) VALUES
-(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/WQhaZ8Lp.jpg', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Bùng Nổ Tiệc Buffet Giảm 30%', 'https://images.unsplash.com/photo-1544025162-d76694265947?w=1600&auto=format&fit=crop&q=80', 'https://voucher.vn/programs/1', 'HOME_TOP', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Thư Giãn Cùng Spa Hương Sen', 'https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=1600&auto=format&fit=crop&q=80', 'https://voucher.vn/programs/3', 'CATEGORY_HEADER', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(3, 5, 'Nghỉ Dưỡng Biển Nha Trang Giá Cực Tốt', 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1600&auto=format&fit=crop&q=80', 'https://voucher.vn/programs/5', 'HOME_MIDDLE', '2026-01-07 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 16. Insert popups (2 rows)
 INSERT INTO popups (popup_id, program_id, title, content, target_url, image_url, start_at, end_at, status) VALUES
-(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/9FslEuJs.jpg', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
-(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://pub-e403b656ff1b44f5b43fb425d157090b.r2.dev/mock/GbO0q1hZ.jpg', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
+(1, 1, 'Săn Voucher Buffet Giá Sốc', 'Giảm trực tiếp 30k khi mua hôm nay!', 'https://voucher.vn/programs/1', 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?w=800&auto=format&fit=crop&q=80', '2026-01-05 00:00:00', '2026-12-31 23:59:59', 'ACTIVE'),
+(2, 3, 'Đón Xuân Cùng Spa Hương Sen', 'Khuyến mãi tri ân khách hàng thân thiết.', 'https://voucher.vn/programs/3', 'https://images.unsplash.com/photo-1600334129128-685c5582fd35?w=800&auto=format&fit=crop&q=80', '2026-01-06 00:00:00', '2026-12-31 23:59:59', 'ACTIVE');
 
 -- 17. Insert contents (3 rows)
 INSERT INTO contents (content_id, program_id, title, body, content_type, created_at, updated_at, status) VALUES
@@ -398,23 +398,22 @@ INSERT INTO contents (content_id, program_id, title, body, content_type, created
 (2, 3, 'Trải nghiệm liệu trình Spa Hương Sen', 'Bài viết đánh giá chi tiết về quy trình chăm sóc da mặt...', 'ARTICLE', '2026-01-06 09:00:00', NULL, 'ACTIVE'),
 (3, 5, 'Hướng dẫn đặt phòng tại Biển Bạc Hotel', 'Quy trình đặt phòng và xác nhận mã voucher khi nhận phòng...', 'ARTICLE', '2026-01-07 10:00:00', NULL, 'ACTIVE');
 
--- 18. Insert system_logs (15 rows)
+-- 18. Insert system_logs (14 rows)
 INSERT INTO system_logs (log_id, user_id, action, object_id, object_type, old_value, new_value, performed_at, result) VALUES
-(1, 1, 'CREATE_USER', '1', 'USER', NULL, '{"role": "ADMIN", "email": "admin1@voucher.vn"}'::jsonb, '2026-01-01 08:00:00', 'SUCCESS'),
-(2, 3, 'REGISTER_PARTNER', '3', 'PARTNER', NULL, '{"business_name": "Công ty TNHH Ẩm Thực Việt"}'::jsonb, '2026-01-02 09:05:00', 'SUCCESS'),
-(3, 3, 'CREATE_VOUCHER_PROGRAM', '1', 'VOUCHER_PROGRAM', NULL, '{"program_name": "Buffet Lẩu Nướng Cao Cấp Giảm 30%"}'::jsonb, '2026-01-04 09:50:00', 'SUCCESS'),
-(4, 1, 'APPROVE_VOUCHER_PROGRAM', '1', 'APPROVAL_REQUEST', '{"status": "PENDING"}'::jsonb, '{"status": "APPROVED"}'::jsonb, '2026-01-04 11:00:00', 'SUCCESS'),
-(5, 8, 'ADD_TO_CART', '1', 'CART_ITEM', NULL, '{"program_id": 3, "quantity": 1}'::jsonb, '2026-01-09 15:00:00', 'SUCCESS'),
-(6, 8, 'CREATE_ORDER', '1', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-01-10 10:00:00', 'SUCCESS'),
-(7, 8, 'ISSUE_VOUCHER', '1', 'ISSUED_VOUCHER', NULL, '{"voucher_code": "VCH-FB-0001"}'::jsonb, '2026-01-10 10:01:00', 'SUCCESS'),
-(8, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
-(9, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
-(10, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS'),
-(11, 28, 'CREATE_ORDER', '20', 'ORDER', NULL, '{"total_amount": 158000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 02:30:00', 'SUCCESS'),
-(12, 28, 'CREATE_ORDER', '21', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-08-12 07:45:00', 'SUCCESS'),
-(13, 29, 'CREATE_ORDER', '22', 'ORDER', NULL, '{"total_amount": 578000.00, "payment_method": "CREDIT_CARD"}'::jsonb, '2026-08-12 10:15:00', 'SUCCESS'),
-(14, 29, 'USE_VOUCHER', '45', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-08-12 12:30:00', 'SUCCESS'),
-(15, 30, 'CREATE_ORDER', '24', 'ORDER', NULL, '{"total_amount": 108000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 16:30:00', 'SUCCESS');
+(1, 3, 'REGISTER_PARTNER', '3', 'PARTNER', NULL, '{"business_name": "Công ty TNHH Ẩm Thực Việt"}'::jsonb, '2026-01-02 09:05:00', 'SUCCESS'),
+(2, 3, 'CREATE_VOUCHER_PROGRAM', '1', 'VOUCHER_PROGRAM', NULL, '{"program_name": "Buffet Lẩu Nướng Cao Cấp Giảm 30%"}'::jsonb, '2026-01-04 09:50:00', 'SUCCESS'),
+(3, 1, 'APPROVE_VOUCHER_PROGRAM', '1', 'APPROVAL_REQUEST', '{"status": "PENDING"}'::jsonb, '{"status": "APPROVED"}'::jsonb, '2026-01-04 11:00:00', 'SUCCESS'),
+(4, 8, 'ADD_TO_CART', '1', 'CART_ITEM', NULL, '{"program_id": 3, "quantity": 1}'::jsonb, '2026-01-09 15:00:00', 'SUCCESS'),
+(5, 8, 'CREATE_ORDER', '1', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-01-10 10:00:00', 'SUCCESS'),
+(6, 8, 'ISSUE_VOUCHER', '1', 'ISSUED_VOUCHER', NULL, '{"voucher_code": "VCH-FB-0001"}'::jsonb, '2026-01-10 10:01:00', 'SUCCESS'),
+(7, 8, 'USE_VOUCHER', '1', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-01-15 12:30:00', 'SUCCESS'),
+(8, 8, 'CREATE_REVIEW', '1', 'REVIEW_FEEDBACK', NULL, '{"rating": 5, "content": "Thức ăn rất ngon"}'::jsonb, '2026-01-15 14:00:00', 'SUCCESS'),
+(9, 10, 'REQUEST_CANCEL_ORDER', '4', 'ORDER_CANCELLATION', NULL, '{"reason": "Khách hàng đổi ý"}'::jsonb, '2026-01-13 16:30:00', 'SUCCESS'),
+(10, 28, 'CREATE_ORDER', '20', 'ORDER', NULL, '{"total_amount": 158000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 02:30:00', 'SUCCESS'),
+(11, 28, 'CREATE_ORDER', '21', 'ORDER', NULL, '{"total_amount": 140000.00, "payment_method": "VNPAY"}'::jsonb, '2026-08-12 07:45:00', 'SUCCESS'),
+(12, 29, 'CREATE_ORDER', '22', 'ORDER', NULL, '{"total_amount": 578000.00, "payment_method": "CREDIT_CARD"}'::jsonb, '2026-08-12 10:15:00', 'SUCCESS'),
+(13, 29, 'USE_VOUCHER', '45', 'ISSUED_VOUCHER', '{"usage_status": "UNUSED"}'::jsonb, '{"usage_status": "USED"}'::jsonb, '2026-08-12 12:30:00', 'SUCCESS'),
+(14, 30, 'CREATE_ORDER', '24', 'ORDER', NULL, '{"total_amount": 108000.00, "payment_method": "MOMO"}'::jsonb, '2026-08-12 16:30:00', 'SUCCESS');
 
 -- Reset IDENTITY sequences sau khi seed data tường minh
 SELECT setval(pg_get_serial_sequence('users', 'user_id'), (SELECT COALESCE(MAX(user_id), 1) FROM users));

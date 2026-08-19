@@ -1,27 +1,48 @@
+/**
+ * @file dashboard.service.ts
+ * @description Service tính toán và tổng hợp các chỉ số báo cáo, hiệu suất kinh doanh cho Đối tác:
+ * tổng số chương trình, số voucher đang chờ duyệt/đang chạy, số voucher đã bán, số voucher đã đổi (Redeemed),
+ * và doanh thu thực nhận từ các đơn hàng thành công (`payment_status = 'PAID'`).
+ */
+
 import pool from '../../config/db.js';
 
-// ─── Service ──────────────────────────────────────────────────────────────────
+// ─── Service Methods ──────────────────────────────────────────────────────────
 
+/**
+ * Lấy số liệu thống kê tổng quan (Dashboard Overview) cho đối tác.
+ * 
+ * @description
+ * Thực hiện 5 truy vấn tổng hợp:
+ * 1. Tổng số chiến dịch voucher do đối tác tạo (`total_programs`).
+ * 2. Số lượng chiến dịch đang chờ Admin phê duyệt (`pending_approval` với `display_status = 'PENDING_APPROVAL'`).
+ * 3. Số lượng chiến dịch đang mở bán công khai (`active_programs` với `display_status = 'PUBLISHED'`).
+ * 4. Tổng số lượng voucher đã bán ra (`total_sold`) và số lượng đã được khách hàng đổi tại quầy (`total_redeemed`).
+ * 5. Tổng doanh thu bán voucher (`total_revenue`) từ các đơn hàng đã thanh toán (`PAID`).
+ * 
+ * @param partnerId User ID của đối tác
+ * @returns Đối tượng chứa các chỉ số thống kê
+ */
 export const getOverview = async (partnerId: number) => {
-  // Tổng số chương trình
+  // 1. Tổng số chương trình voucher
   const totalProgramsResult = await pool.query(
     'SELECT COUNT(*) FROM voucher_programs WHERE partner_id = $1',
     [partnerId]
   );
 
-  // Số chương trình đang chờ duyệt
+  // 2. Số chương trình đang chờ Admin duyệt
   const pendingResult = await pool.query(
     "SELECT COUNT(*) FROM voucher_programs WHERE partner_id = $1 AND display_status = 'PENDING_APPROVAL'",
     [partnerId]
   );
 
-  // Số chương trình đang hoạt động (PUBLISHED)
+  // 3. Số chương trình đang hoạt động (PUBLISHED)
   const activeResult = await pool.query(
     "SELECT COUNT(*) FROM voucher_programs WHERE partner_id = $1 AND display_status = 'PUBLISHED'",
     [partnerId]
   );
 
-  // Tổng voucher đã bán (issued_vouchers) và đã sử dụng
+  // 4. Tổng voucher đã bán (issued_vouchers) và đã đổi tại chi nhánh (USED)
   const salesResult = await pool.query(
     `SELECT
        COUNT(iv.issued_voucher_id) AS total_sold,
@@ -32,7 +53,7 @@ export const getOverview = async (partnerId: number) => {
     [partnerId]
   );
 
-  // Tổng doanh thu (từ order_items)
+  // 5. Tổng doanh thu từ các đơn hàng đã thanh toán thành công
   const revenueResult = await pool.query(
     `SELECT COALESCE(SUM(oi.unit_price * oi.quantity), 0) AS total_revenue
      FROM order_items oi
@@ -52,6 +73,13 @@ export const getOverview = async (partnerId: number) => {
   };
 };
 
+/**
+ * Lấy danh sách thống kê chi tiết theo từng chương trình voucher của đối tác.
+ * 
+ * @param partnerId User ID của đối tác
+ * @param programId ID chương trình voucher cụ thể (nếu muốn lọc riêng 1 chương trình)
+ * @returns Mảng các bản ghi thống kê: số lượng đã bán, đã dùng, hết hạn, doanh thu theo chương trình
+ */
 export const getVoucherStats = async (
   partnerId: number,
   programId?: number

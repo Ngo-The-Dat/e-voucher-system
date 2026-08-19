@@ -1,3 +1,10 @@
+/**
+ * @file auth.service.ts
+ * @description Service xử lý nghiệp vụ xác thực cho Đối tác (Partner) và Nhân viên đối tác (Partner Employee),
+ * bao gồm kiểm tra trùng lặp thông tin đăng ký, xử lý giao dịch tạo tài khoản, xác thực mật khẩu bcrypt,
+ * kiểm tra các trạng thái phê duyệt / trạng thái hoạt động và phát hành JWT access token.
+ */
+
 import pool from '../../config/db.js';
 import bcrypt from 'bcrypt';
 import jwt, { type SignOptions } from 'jsonwebtoken';
@@ -7,40 +14,52 @@ import {
   releaseOtpConsumption,
 } from './registration-otp.service.js';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types & Interfaces ───────────────────────────────────────────────────────
 
+/** Dữ liệu đầu vào yêu cầu khi đăng ký tài khoản Đối tác mới */
 interface RegisterInput {
   full_name: string;
   email: string;
   phone: string;
-  identity_no: string;       // Số CCCD/CMND
+  identity_no: string;       // Số CCCD/CMND của người đại diện pháp luật
   password: string;
-  business_name: string;
-  tax_code: string;
-  otp_challenge_id: string;
+  business_name: string;     // Tên thương hiệu / doanh nghiệp đối tác
+  tax_code: string;          // Mã số thuế doanh nghiệp (10-13 chữ số)
+  otp_challenge_id: string;  // Challenge ID đã xác thực OTP email thành công
 }
 
+/** Dữ liệu đầu vào khi đăng nhập */
 interface LoginInput {
   email: string;
   password: string;
 }
 
-// ─── Service ──────────────────────────────────────────────────────────────────
-
+/** Dữ liệu đầu vào khi kiểm tra tính khả dụng của thông tin đăng ký */
 export interface RegistrationCheckInput {
   email: string;
   identity_no: string;
   tax_code: string;
 }
 
+// ─── Regular Expressions ──────────────────────────────────────────────────────
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TAX_CODE_PATTERN = /^[0-9]{10,13}$/;
 
+// ─── Service Methods ──────────────────────────────────────────────────────────
+
+/**
+ * Kiểm tra tính hợp lệ và sự khả dụng của Email, CCCD/CMND và Mã số thuế trên toàn hệ thống.
+ * 
+ * @param input Thông tin gồm email, identity_no, tax_code
+ * @throws {Object} Lỗi HTTP 400 nếu dữ liệu không đúng định dạng regex (email, tax code)
+ * @throws {Object} Lỗi HTTP 409 nếu email, CCCD hoặc mã số thuế đã tồn tại trong database
+ */
 export const checkRegistrationAvailability = async (input: RegistrationCheckInput): Promise<void> => {
   const email = input.email.trim().toLowerCase();
   const identityNo = input.identity_no.trim();
   const taxCode = input.tax_code.trim();
 
+  // 1. Kiểm tra định dạng dữ liệu đầu vào
   if (!EMAIL_PATTERN.test(email)) {
     throw { status: 400, field: 'email', message: 'Định dạng email không hợp lệ.' };
   }
@@ -51,6 +70,7 @@ export const checkRegistrationAvailability = async (input: RegistrationCheckInpu
     throw { status: 400, field: 'tax_code', message: 'Mã số thuế phải gồm 10 đến 13 chữ số.' };
   }
 
+  // 2. Chạy đồng thời các truy vấn kiểm tra trùng lặp để tối ưu hiệu năng
   const [emailCheck, identityCheck, taxCheck] = await Promise.all([
     pool.query('SELECT user_id FROM users WHERE email = $1', [email]),
     pool.query('SELECT user_id FROM users WHERE identity_no = $1', [identityNo]),
@@ -68,6 +88,24 @@ export const checkRegistrationAvailability = async (input: RegistrationCheckInpu
   }
 };
 
+/**
+ * Đăng ký tài khoản Đối tác doanh nghiệp mới với cơ chế giao dịch (Transaction) an toàn.
+ * 
+ * @description
+ * Quy trình xử lý:
+ * 1. Validate mã số thuế và bắt đầu tiêu thụ mã OTP challenge (`beginOtpConsumption`).
+ * 2. Kiểm tra lại trùng lặp email, CCCD/CMND và mã số thuế.
+ * 3. Băm mật khẩu bằng thuật toán bcrypt (cost factor = 10).
+ * 4. Mở Database Transaction:
+ *    - Tạo người dùng trong bảng `users` với vai trò `PARTNER`.
+ *    - Tạo hồ sơ đối tác trong bảng `partners` (trạng thái `INACTIVE`).
+ *    - Tạo yêu cầu phê duyệt trong bảng `partner_approval_requests` (trạng thái `PENDING`).
+ * 5. Commit Transaction, hoàn tất OTP challenge (`completeOtpConsumption`) và trả về thông tin user.
+ * 6. Rollback nếu có lỗi xảy ra và nhả lại OTP challenge (`releaseOtpConsumption`).
+ * 
+ * @param input Thông tin đăng ký đối tác
+ * @returns Thông tin tài khoản người dùng vừa tạo
+ */
 export const register = async (input: RegisterInput) => {
   const full_name = input.full_name.trim();
   const email = input.email.trim().toLowerCase();
@@ -82,6 +120,7 @@ export const register = async (input: RegisterInput) => {
     throw { status: 400, field: 'tax_code', message: 'Mã số thuế phải gồm 10 đến 13 chữ số.' };
   }
 
+  // Khóa tiêu thụ OTP challenge để chống việc dùng lại một challenge cho nhiều request
   beginOtpConsumption(email, otp_challenge_id);
 
   try {
@@ -114,14 +153,15 @@ export const register = async (input: RegisterInput) => {
       throw { status: 409, field: 'tax_code', message: 'Mã số thuế này đã được đăng ký.' };
     }
 
-    // 4. Hash mật khẩu
+    // 4. Hash mật khẩu người dùng
     const password_hash = await bcrypt.hash(password, 10);
 
-    // 5. Tạo user với role PARTNER (dùng transaction)
+    // 5. Mở transaction để tạo dữ liệu đối tác toàn vẹn
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
 
+      // 5.1 Tạo bản ghi trong bảng users (role: PARTNER)
       const userResult = await client.query(
         `INSERT INTO users (full_name, email, phone, identity_no, password_hash, role)
          VALUES ($1, $2, $3, $4, $5, 'PARTNER')
@@ -130,25 +170,28 @@ export const register = async (input: RegisterInput) => {
       );
       const user = userResult.rows[0];
 
-      // 6. Tạo bản ghi partner (activity_status INACTIVE) và tạo yêu cầu duyệt PENDING
+      // 5.2 Tạo bản ghi partner (mặc định INACTIVE khi chưa được Admin duyệt)
       await client.query(
         `INSERT INTO partners (user_id, business_name, tax_code, activity_status)
          VALUES ($1, $2, $3, 'INACTIVE')`,
         [user.user_id, business_name, tax_code]
       );
 
+      // 5.3 Tạo yêu cầu phê duyệt đối tác mới (trạng thái PENDING)
       await client.query(
         `INSERT INTO partner_approval_requests (partner_id, approval_status)
          VALUES ($1, 'PENDING')`,
         [user.user_id]
       );
 
+      // Hoàn tất transaction
       await client.query('COMMIT');
       completeOtpConsumption(email, otp_challenge_id);
       return user;
     } catch (err) {
       await client.query('ROLLBACK');
       const databaseError = err as { code?: string; constraint?: string };
+      // Xử lý các lỗi vi phạm ràng buộc duy nhất (Unique Constraint Violation: 23505)
       if (databaseError.code === '23505') {
         if (databaseError.constraint?.includes('email')) {
           throw { status: 409, field: 'email', message: 'Email này đã được đăng ký.' };
@@ -169,11 +212,31 @@ export const register = async (input: RegisterInput) => {
       client.release();
     }
   } catch (err) {
+    // Nhả lại trạng thái challenge OTP nếu quá trình đăng ký gặp lỗi
     releaseOtpConsumption(email, otp_challenge_id);
     throw err;
   }
 };
 
+/**
+ * Đăng nhập dành cho Đối tác (PARTNER) và Nhân viên chi nhánh đối tác (PARTNER_EMPLOYEE).
+ * 
+ * @description
+ * Quy trình xử lý:
+ * 1. Truy vấn thông tin tài khoản người dùng kèm theo:
+ *    - Nếu là PARTNER: thông tin doanh nghiệp, trạng thái phê duyệt từ `partner_approval_requests`.
+ *    - Nếu là PARTNER_EMPLOYEE: thông tin chi nhánh công tác, doanh nghiệp chủ quản, và trạng thái phê duyệt từ `partner_employee_approval_requests`.
+ * 2. So sánh mật khẩu băm bcrypt.
+ * 3. Kiểm tra điều kiện phê duyệt và hoạt động:
+ *    - Nhân viên phải được gán vào chi nhánh đang ACTIVE.
+ *    - Tài khoản không được ở trạng thái PENDING hoặc REJECTED.
+ *    - Tài khoản không bị khóa (LOCKED).
+ * 4. Phát hành JWT token có chứa user id, role và email.
+ * 5. Cập nhật thời điểm đăng nhập gần nhất (`last_login_at`).
+ * 
+ * @param input Thông tin đăng nhập { email, password }
+ * @returns Token xác thực JWT và thông tin người dùng / chi nhánh
+ */
 export const login = async (input: LoginInput) => {
   const email = input.email.trim().toLowerCase();
   const { password } = input;
@@ -230,13 +293,13 @@ export const login = async (input: LoginInput) => {
 
   const user = userResult.rows[0];
 
-  // 2. Verify mật khẩu
+  // 2. Verify mật khẩu bcrypt
   const isValid = await bcrypt.compare(password, user.password_hash);
   if (!isValid) {
     throw { status: 401, message: 'Email hoặc mật khẩu không đúng.' };
   }
 
-  // 3. Kiểm tra trạng thái tài khoản
+  // 3. Kiểm tra tính hợp lệ của chi nhánh đối với Nhân viên
   if (user.role === 'PARTNER_EMPLOYEE') {
     if (!user.branch_id) {
       throw { status: 403, message: 'Nhân viên chưa được gán vào chi nhánh nào.' };
@@ -246,6 +309,7 @@ export const login = async (input: LoginInput) => {
     }
   }
 
+  // 4. Kiểm tra trạng thái phê duyệt của tài khoản
   if (user.approval_status === 'PENDING') {
     throw { status: 403, message: 'Tài khoản đang chờ được Admin phê duyệt.' };
   }
@@ -253,12 +317,12 @@ export const login = async (input: LoginInput) => {
     throw { status: 403, message: 'Tài khoản đã bị từ chối. Vui lòng liên hệ hỗ trợ.' };
   }
 
-  // 4. Kiểm tra tài khoản có bị khóa không
+  // 5. Kiểm tra tài khoản có bị khóa không
   if (user.status === 'LOCKED' || user.activity_status === 'LOCKED') {
     throw { status: 403, message: 'Tài khoản đã bị khóa. Vui lòng liên hệ hỗ trợ.' };
   }
 
-  // 5. Tạo JWT token
+  // 6. Phát hành JWT token
   const secret = process.env.JWT_SECRET;
   if (!secret) throw new Error('JWT_SECRET chưa được cấu hình');
 
@@ -269,7 +333,7 @@ export const login = async (input: LoginInput) => {
     jwtOptions
   );
 
-  // 6. Cập nhật last_login_at
+  // 7. Cập nhật thời điểm đăng nhập gần nhất
   await pool.query(
     'UPDATE users SET last_login_at = NOW() WHERE user_id = $1',
     [user.user_id]
