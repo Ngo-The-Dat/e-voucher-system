@@ -80,6 +80,11 @@ export const customerAuthApi = {
       body: JSON.stringify(payload)
     }),
   getMe: () => request<CustomerUser>("/customer/auth/me"),
+  updateProfile: (payload: { full_name: string; phone?: string }) =>
+    request<CustomerUser>("/customer/auth/me", {
+      method: "PUT",
+      body: JSON.stringify(payload)
+    }),
   logout: () => {
     if (typeof window !== "undefined") {
       localStorage.removeItem("customer_access_token");

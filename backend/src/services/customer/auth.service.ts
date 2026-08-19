@@ -245,7 +245,7 @@ export const resetPassword = async (email: string, challengeId: string, newPassw
   }
 };
 
-export const changePassword = async (userId: string, currentPassword: string, newPassword: string) => {
+export const changePassword = async (userId: number, currentPassword: string, newPassword: string) => {
   if (!newPassword || newPassword.length < 6) {
     throw { status: 400, message: 'Mật khẩu mới phải chứa ít nhất 6 ký tự.' };
   }
@@ -283,3 +283,53 @@ export const changePassword = async (userId: string, currentPassword: string, ne
 
   return { message: 'Đổi mật khẩu thành công.' };
 };
+
+export interface UpdateProfileInput {
+  full_name: string;
+  phone?: string;
+}
+
+export const updateProfile = async (userId: number, input: UpdateProfileInput) => {
+  const full_name = input.full_name?.trim();
+  const phone = input.phone?.trim() || null;
+
+  if (!full_name) {
+    throw { status: 400, message: 'Họ và tên không được để trống.' };
+  }
+
+  // Kiểm tra số điện thoại nếu có
+  if (phone) {
+    const phoneCheck = await pool.query(
+      'SELECT user_id FROM users WHERE phone = $1 AND user_id != $2',
+      [phone, userId]
+    );
+    if (phoneCheck.rows.length > 0) {
+      throw { status: 409, message: 'Số điện thoại này đã được tài khoản khác sử dụng.' };
+    }
+  }
+
+  // Cập nhật thông tin
+  const result = await pool.query(
+    `UPDATE users 
+     SET full_name = $1, phone = $2
+     WHERE user_id = $3 AND role = 'CUSTOMER'
+     RETURNING user_id, full_name, email, phone, role, status, created_at`,
+    [full_name, phone, userId]
+  );
+
+  if (result.rows.length === 0) {
+    throw { status: 404, message: 'Không tìm thấy tài khoản Khách hàng.' };
+  }
+
+  const user = result.rows[0];
+  return {
+    id: Number(user.user_id),
+    full_name: user.full_name,
+    email: user.email,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    created_at: user.created_at,
+  };
+};
+

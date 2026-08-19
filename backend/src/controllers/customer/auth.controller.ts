@@ -71,3 +71,13 @@ export const changePassword = async (req: AuthRequest, res: Response): Promise<v
     sendHttpError(res, err);
   }
 };
+
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const result = await authService.updateProfile(userId, req.body);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};
