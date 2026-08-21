@@ -26,9 +26,16 @@ const navItems: NavItem[] = [
 interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
+export default function Sidebar({
+  isOpen = true,
+  onClose,
+  isCollapsed = false,
+  onToggleCollapse,
+}: SidebarProps) {
   const pathname = usePathname();
   const [pendingCounts, setPendingCounts] = useState<{
     partners: number;
@@ -81,26 +88,56 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
       />
 
       <aside
-        className={`fixed left-0 top-0 h-full w-64 z-50 bg-white border-r border-border shadow-sm flex flex-col justify-between p-4 transition-transform duration-300 lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed left-0 top-0 h-full ${
+          isCollapsed ? "lg:w-20" : "lg:w-64"
+        } w-64 z-50 bg-white border-r border-border shadow-sm flex flex-col justify-between p-3 lg:p-4 transition-all duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         }`}
       >
-        <div>
-          {/* Logo & Brand */}
-          <div className="flex items-center justify-between mb-8 px-2">
-            <Link href="/admin" className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm">
+        <div className="flex flex-col min-h-0 flex-1">
+          {/* Logo & Brand & Toggle Collapse Button */}
+          <div
+            className={`flex items-center ${
+              isCollapsed ? "justify-center relative" : "justify-between"
+            } mb-6 px-1 h-12 shrink-0`}
+          >
+            <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
+              <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
                 L
               </div>
-              <div>
-                <h1 className="font-bold text-slate-900 text-lg leading-tight">
-                  Lumina Admin
-                </h1>
-                <p className="text-text-muted text-xs">Hệ thống quản trị Sàn</p>
-              </div>
+              {!isCollapsed && (
+                <div className="min-w-0 transition-opacity duration-200">
+                  <h1 className="font-bold text-slate-900 text-lg leading-tight truncate">
+                    Lumina Admin
+                  </h1>
+                  <p className="text-text-muted text-xs truncate">Hệ thống quản trị Sàn</p>
+                </div>
+              )}
             </Link>
+
+            {/* Desktop Toggle Button */}
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                title={isCollapsed ? "Mở rộng menu" : "Thu hẹp menu"}
+                className={`hidden lg:flex ${
+                  isCollapsed
+                    ? "absolute -right-3.5 top-1/2 -translate-y-1/2 bg-white border border-border shadow-md w-7 h-7 rounded-full"
+                    : "w-8 h-8 rounded-lg hover:bg-slate-100"
+                } items-center justify-center text-slate-500 hover:text-slate-800 transition-colors z-40`}
+              >
+                <Icon
+                  name={isCollapsed ? "chevron_right" : "chevron_left"}
+                  className="text-base"
+                />
+              </button>
+            )}
+
+            {/* Mobile Close Button */}
             {onClose && (
               <button
+                type="button"
                 onClick={onClose}
                 className="lg:hidden p-1 text-slate-400 hover:text-slate-600 rounded-md"
               >
@@ -110,7 +147,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation Items */}
-          <nav className="space-y-1">
+          <nav className="space-y-1.5 flex-1 overflow-y-auto">
             {navItems.map((item) => {
               const active = isActive(item.href);
               const badgeValue = item.badgeKey ? pendingCounts[item.badgeKey] : undefined;
@@ -120,24 +157,36 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                   key={item.href}
                   href={item.href}
                   onClick={() => onClose?.()}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  title={isCollapsed ? item.label : undefined}
+                  className={`flex items-center ${
+                    isCollapsed ? "justify-center px-0 py-3" : "justify-between px-3.5 py-2.5"
+                  } rounded-xl text-sm font-medium transition-all duration-200 relative group ${
                     active
                       ? "bg-primary-container text-white shadow-sm font-semibold"
                       : "text-slate-600 hover:bg-slate-100 hover:text-primary"
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <Icon
-                      name={item.icon}
-                      className={`text-[20px] ${
-                        active ? "text-white" : "text-slate-400 group-hover:text-primary"
-                      }`}
-                    />
-                    <span>{item.label}</span>
+                  <div className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 min-w-0"}`}>
+                    <div className="relative shrink-0 flex items-center justify-center">
+                      <Icon
+                        name={item.icon}
+                        className={`text-[20px] ${
+                          active ? "text-white" : "text-slate-400 group-hover:text-primary"
+                        }`}
+                      />
+                      {/* Compact badge when collapsed */}
+                      {isCollapsed && Boolean(badgeValue && badgeValue > 0) && (
+                        <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-bold rounded-full bg-amber-500 text-white shadow-xs">
+                          {badgeValue}
+                        </span>
+                      )}
+                    </div>
+                    {!isCollapsed && <span className="truncate">{item.label}</span>}
                   </div>
-                  {Boolean(badgeValue && badgeValue > 0) && (
+
+                  {!isCollapsed && Boolean(badgeValue && badgeValue > 0) && (
                     <span
-                      className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                      className={`px-2 py-0.5 text-xs font-semibold rounded-full shrink-0 ${
                         active
                           ? "bg-white/20 text-white"
                           : "bg-amber-100 text-amber-800"
@@ -153,7 +202,7 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
         </div>
 
         {/* Footer Logout Button */}
-        <div className="pt-4 border-t border-border">
+        <div className="pt-3 border-t border-border shrink-0">
           <button
             type="button"
             onClick={() => {
@@ -163,10 +212,16 @@ export default function Sidebar({ isOpen = true, onClose }: SidebarProps) {
                 window.location.href = "/login";
               }
             }}
-            className="w-full flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/70 transition-all duration-150 shadow-2xs group"
+            title={isCollapsed ? "Đăng xuất" : undefined}
+            className={`w-full flex items-center justify-center gap-2.5 ${
+              isCollapsed ? "px-0 py-3" : "px-4 py-2.5"
+            } rounded-xl text-sm font-semibold text-rose-600 bg-rose-50 hover:bg-rose-100 hover:text-rose-700 border border-rose-200/70 transition-all duration-150 shadow-2xs group`}
           >
-            <Icon name="logout" className="text-lg transition-transform group-hover:-translate-x-0.5" />
-            <span>Đăng xuất</span>
+            <Icon
+              name="logout"
+              className="text-lg transition-transform group-hover:-translate-x-0.5 shrink-0"
+            />
+            {!isCollapsed && <span>Đăng xuất</span>}
           </button>
         </div>
       </aside>
