@@ -34,6 +34,7 @@ import customerCartRouter from './customer/cart.router.js';
 import customerOrderRouter from './customer/order.router.js';
 import customerVoucherRouter from './customer/voucher.router.js';
 import customerCatalogRouter from './customer/catalog.router.js';
+import customerPaymentRouter from './customer/payment.router.js';
 
 import commonAuthRouter from './common/auth.router.js';
 const router = Router();
@@ -46,6 +47,7 @@ router.use('/customer/auth', customerAuthRouter);
 router.use('/customer/reviews', customerReviewRouter);
 router.use('/customer/cart', customerCartRouter);
 router.use('/customer/orders', customerOrderRouter);
+router.use('/customer/payments', customerPaymentRouter);
 router.use('/customer/my-vouchers', customerVoucherRouter);
 router.use('/customer', customerCatalogRouter);
 

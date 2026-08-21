@@ -3,6 +3,8 @@
 import { ArrowRight, Gift, ShieldCheck } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 
+import type { PaymentMethodItem } from "@/lib/customer-api";
+
 export interface RecipientState {
   full_name: string;
   email: string;
@@ -21,6 +23,7 @@ interface CartSummaryProps {
   setRecipientInfo: React.Dispatch<React.SetStateAction<RecipientState>>;
   handleCheckout: () => void;
   isSubmitting?: boolean;
+  paymentMethods?: PaymentMethodItem[];
 }
 
 export default function CartSummary({
@@ -35,6 +38,7 @@ export default function CartSummary({
   setRecipientInfo,
   handleCheckout,
   isSubmitting = false,
+  paymentMethods,
 }: CartSummaryProps) {
   return (
     <div className="lg:col-span-4 lg:sticky lg:top-[128px] h-fit">
@@ -125,11 +129,22 @@ export default function CartSummary({
             <select
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value)}
-              className="w-full bg-surface-bright border border-outline-variant rounded-lg py-2 px-3 text-body-md focus:border-primary cursor-pointer outline-none shadow-sm"
+              className="w-full bg-surface-bright border border-outline-variant rounded-lg py-2.5 px-3 text-body-md focus:border-primary cursor-pointer outline-none shadow-sm font-medium"
             >
-              <option value="Ví VNPay">Ví VNPay</option>
-              <option value="Thẻ Visa/Mastercard">Thẻ Visa/Mastercard</option>
-              <option value="Ví MoMo">Ví MoMo</option>
+              {paymentMethods && paymentMethods.length > 0 ? (
+                paymentMethods.map((method) => (
+                  <option key={method.code} value={method.code}>
+                    {method.name}
+                  </option>
+                ))
+              ) : (
+                <>
+                  <option value="PAYPAL">Ví điện tử PayPal (USD)</option>
+                  <option value="STRIPE">Thẻ Visa / Mastercard (Stripe)</option>
+                  <option value="VNPAY">Cổng thanh toán VNPay</option>
+                  <option value="MOMO">Ví điện tử MoMo</option>
+                </>
+              )}
             </select>
           </div>
         </div>

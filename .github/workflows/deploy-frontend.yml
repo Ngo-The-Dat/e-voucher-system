@@ -80,7 +80,7 @@ jobs:
             sudo systemctl start "$SERVICE"
 
             echo "Waiting for frontend..."
-            sleep 2
+            sleep 15
 
             echo "Checking systemd service..."
             sudo systemctl is-active --quiet "$SERVICE"
