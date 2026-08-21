@@ -28,13 +28,19 @@ let tokenExpiresAt: number = 0;
 
 export function getPayPalConfig(): PayPalConfig {
   const mode = (process.env.PAYPAL_MODE || 'mock').toLowerCase() as 'sandbox' | 'live' | 'mock';
-  const clientId = process.env.PAYPAL_CLIENT_ID || '';
-  const clientSecret = process.env.PAYPAL_CLIENT_SECRET || '';
+  const clientId = process.env.PAYPAL_CLIENT_ID;
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET;
   const baseUrl =
     process.env.PAYPAL_API_BASE_URL ||
     (mode === 'live' ? 'https://api-m.paypal.com' : 'https://api-m.sandbox.paypal.com');
-  const returnUrl = process.env.PAYPAL_RETURN_URL || 'http://localhost:3000/orders';
-  const cancelUrl = process.env.PAYPAL_CANCEL_URL || 'http://localhost:3000/cart';
+
+  const returnUrl = process.env.PAYPAL_RETURN_URL;
+  const cancelUrl = process.env.PAYPAL_CANCEL_URL;
+
+  if (!clientId) throw new Error('[PayPal] PAYPAL_CLIENT_ID chưa được cấu hình trong .env');
+  if (!clientSecret) throw new Error('[PayPal] PAYPAL_CLIENT_SECRET chưa được cấu hình trong .env');
+  if (!returnUrl) throw new Error('[PayPal] PAYPAL_RETURN_URL chưa được cấu hình trong .env');
+  if (!cancelUrl) throw new Error('[PayPal] PAYPAL_CANCEL_URL chưa được cấu hình trong .env');
 
   return {
     mode,
