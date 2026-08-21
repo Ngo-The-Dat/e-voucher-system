@@ -13,6 +13,7 @@ import partnerEmployeeRouter from './partner/partner-employee-profile.router.js'
 import partnerEmployeeMgmtRouter from './partner/partner-employee-mgmt.router.js';
 
 // Admin sub-routers
+import adminProfileRouter from './admin/profile.router.js';
 import adminUserRouter from './admin/user.router.js';
 import adminLogRouter from './admin/log.router.js';
 import adminPartnerRouter from './admin/partner.router.js';
@@ -99,6 +100,12 @@ router.use('/partner/employee',
 );
 
 // ─── Admin Protected Routes ───────────────────────────────────────────────────
+router.use('/admin/profile',
+  authenticate,
+  requireRole('ADMIN'),
+  adminProfileRouter
+);
+
 router.use('/admin/dashboard',
   authenticate,
   requireRole('ADMIN'),

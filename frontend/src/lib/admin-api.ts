@@ -74,6 +74,11 @@ import {
   ContentsResponse,
   VoucherProgramOption,
 } from "./types/admin-content";
+import {
+  AdminProfile,
+  UpdateAdminProfilePayload,
+  ChangeAdminPasswordPayload,
+} from "./types/admin-profile";
 
 // Re-export toàn bộ types để các components / pages đang import từ '@/lib/admin-api' không bị ảnh hưởng
 export * from "./types/admin-user";
@@ -81,6 +86,7 @@ export * from "./types/admin-partner";
 export * from "./types/admin-voucher";
 export * from "./types/admin-order";
 export * from "./types/admin-content";
+export * from "./types/admin-profile";
 
 /** URL gốc của máy chủ Backend API (lấy từ biến môi trường .env) */
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -1108,5 +1114,43 @@ export const adminApi = {
    */
   getVoucherOptions: async (): Promise<{ options: VoucherProgramOption[] }> => {
     return adminRequest<{ options: VoucherProgramOption[] }>(`/admin/content/voucher-options`);
+  },
+
+  // =========================================================================
+  // 15. HỒ SƠ & BẢO MẬT QUẢN TRỊ VIÊN (ADMIN PROFILE & SECURITY)
+  // =========================================================================
+
+  /**
+   * Lấy thông tin chi tiết hồ sơ cá nhân của Quản trị viên đang đăng nhập.
+   * Method: GET `/admin/profile`
+   */
+  getProfile: async (): Promise<AdminProfile> => {
+    return adminRequest<AdminProfile>(`/admin/profile`);
+  },
+
+  /**
+   * Cập nhật thông tin cá nhân của Quản trị viên (Họ tên, SĐT, giới tính, quốc tịch, CCCD).
+   * Method: PUT `/admin/profile`
+   * 
+   * @param payload Dữ liệu thông tin cá nhân cần cập nhật.
+   */
+  updateProfile: async (payload: UpdateAdminProfilePayload): Promise<AdminProfile> => {
+    return adminRequest<AdminProfile>(`/admin/profile`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  /**
+   * Đổi mật khẩu tài khoản Quản trị viên.
+   * Method: PUT `/admin/profile/change-password`
+   * 
+   * @param payload Mật khẩu cũ và mật khẩu mới.
+   */
+  changePassword: async (payload: ChangeAdminPasswordPayload): Promise<{ message: string }> => {
+    return adminRequest<{ message: string }>(`/admin/profile/change-password`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   },
 };
