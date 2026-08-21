@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { customerOrderApi, CustomerOrder } from "@/lib/customer-api";
+import { customerOrderApi, customerPaymentApi, CustomerOrder } from "@/lib/customer-api";
 import {
   ChevronRight,
   ShoppingBag,
@@ -19,6 +19,7 @@ import {
   RotateCcw,
   QrCode,
   AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
@@ -27,6 +28,12 @@ export default function OrderHistoryPage() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  // Trạng thái tự động xử lý khi PayPal redirect về
+  const [paypalCaptureStatus, setPaypalCaptureStatus] = useState<{
+    status: "processing" | "success" | "error" | null;
+    message?: string;
+  }>({ status: null });
 
   // Payment simulator modal state
   const [selectedPayOrder, setSelectedPayOrder] = useState<PaymentSimulatorOrder | null>(null);
@@ -72,6 +79,46 @@ export default function OrderHistoryPage() {
 
     window.addEventListener("focus", handleRevalidate);
     document.addEventListener("visibilitychange", handleRevalidate);
+
+    // Tự động kiểm tra và capture nếu được PayPal redirect về
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get("token");
+      const orderIdStr = urlParams.get("order_id");
+      const isPaypalSuccess = urlParams.get("paypal_success") === "true";
+
+      if (token && (orderIdStr || isPaypalSuccess)) {
+        const orderId = orderIdStr ? parseInt(orderIdStr, 10) : undefined;
+        
+        setPaypalCaptureStatus({
+          status: "processing",
+          message: "Đang tự động khớp lệnh thanh toán PayPal và phát hành mã Voucher...",
+        });
+
+        // Xóa query params khỏi URL để không bị re-trigger khi F5
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (orderId && !isNaN(orderId)) {
+          customerPaymentApi
+            .capturePayPalOrder(orderId, token)
+            .then(() => {
+              setPaypalCaptureStatus({
+                status: "success",
+                message: `Thanh toán PayPal cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+              });
+              loadOrders();
+            })
+            .catch((err) => {
+              console.warn("Lỗi auto capture PayPal redirect:", err);
+              setPaypalCaptureStatus({
+                status: "error",
+                message: err.message || "Không thể hoàn tất thanh toán tự động qua PayPal.",
+              });
+              loadOrders();
+            });
+        }
+      }
+    }
 
     return () => {
       clearInterval(interval);
@@ -229,6 +276,39 @@ export default function OrderHistoryPage() {
           Kho Voucher của tôi
         </Link>
       </div>
+
+      {/* PayPal Auto-Capture Status Alert Banner */}
+      {paypalCaptureStatus.status && (
+        <div
+          className={`p-4 rounded-xl mb-6 border flex items-center justify-between gap-3 animate-fade-in ${
+            paypalCaptureStatus.status === "processing"
+              ? "bg-primary/10 border-primary/30 text-primary"
+              : paypalCaptureStatus.status === "success"
+              ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400"
+              : "bg-error/10 border-error/30 text-error"
+          }`}
+        >
+          <div className="flex items-center gap-3">
+            {paypalCaptureStatus.status === "processing" ? (
+              <RefreshCw className="w-5 h-5 animate-spin shrink-0" />
+            ) : paypalCaptureStatus.status === "success" ? (
+              <CheckCircle2 className="w-5 h-5 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-5 h-5 shrink-0" />
+            )}
+            <p className="text-sm font-semibold">{paypalCaptureStatus.message}</p>
+          </div>
+          {paypalCaptureStatus.status !== "processing" && (
+            <button
+              type="button"
+              onClick={() => setPaypalCaptureStatus({ status: null })}
+              className="text-xs font-bold px-2 py-1 hover:bg-black/5 dark:hover:bg-white/5 rounded cursor-pointer"
+            >
+              Đóng
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Filter Section */}
       <div className="bg-surface rounded-xl border border-outline-variant p-4 md:p-6 mb-8 shadow-sm space-y-4">

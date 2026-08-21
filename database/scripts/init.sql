@@ -165,7 +165,7 @@ CREATE TABLE orders (
     recipient_user_id BIGINT REFERENCES users(user_id),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     total_amount DECIMAL(18,2) NOT NULL CONSTRAINT chk_orders_total_amount CHECK (total_amount >= 0),
-    payment_method VARCHAR(50) NOT NULL CONSTRAINT chk_orders_payment_method CHECK (payment_method IN ('VNPAY', 'MOMO', 'CREDIT_CARD', 'BANK_TRANSFER', 'CASH')),
+    payment_method VARCHAR(50) NOT NULL CONSTRAINT chk_orders_payment_method CHECK (payment_method IN ('STRIPE', 'VNPAY', 'MOMO', 'PAYPAL', 'CREDIT_CARD', 'BANK_TRANSFER', 'CASH')),
     payment_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('UNPAID', 'PAID', 'FAILED', 'REFUNDED')),
     order_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_order_status CHECK (order_status IN ('PENDING', 'CANCELLED', 'COMPLETED'))
 );
