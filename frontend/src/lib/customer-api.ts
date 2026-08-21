@@ -28,13 +28,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     headers
   });
 
-  const data = await response.json();
+  const contentType = response.headers.get("content-type") || "";
+  let data: any = null;
+
+  if (contentType.includes("application/json")) {
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+  } else {
+    const text = await response.text();
+    data = { message: text && text.length < 200 ? text : `Lỗi máy chủ (HTTP ${response.status})` };
+  }
+
   if (!response.ok) {
     if (response.status === 401 && typeof window !== "undefined") {
       localStorage.removeItem("customer_access_token");
       localStorage.removeItem("token");
     }
-    throw new Error(data.message || "Đã xảy ra lỗi khi kết nối tới máy chủ.");
+    throw new Error(data?.message || `Lỗi kết nối máy chủ (HTTP ${response.status})`);
   }
   return data as T;
 }
@@ -278,6 +291,62 @@ export const customerOrderApi = {
     request<CustomerOrder>(`/customer/orders/${orderId}`),
   getMyVouchers: (status?: string) => customerVoucherApi.getMyVouchers(status),
   getMyVoucherById: (issuedVoucherId: number) => customerVoucherApi.getMyVoucherById(issuedVoucherId),
+};
+
+export interface PaymentMethodItem {
+  code: string;
+  name: string;
+  description: string;
+  currency: string;
+  is_active: boolean;
+}
+
+export interface PayPalCreateOrderResponse {
+  success: boolean;
+  message: string;
+  payment: {
+    order_id: number;
+    paypal_order_id: string;
+    amount_vnd: number;
+    amount_usd: number;
+    exchange_rate: number;
+    rate_source?: string;
+    currency: string;
+    status: string;
+    approve_url: string;
+    created_at?: string;
+  };
+}
+
+export const customerPaymentApi = {
+  getPaymentMethods: () =>
+    request<{ success: boolean; payment_methods: PaymentMethodItem[] }>("/customer/payments/methods"),
+  createPayPalOrder: (orderId: number) =>
+    request<PayPalCreateOrderResponse>("/customer/payments/paypal/create-order", {
+      method: "POST",
+      body: JSON.stringify({ order_id: orderId }),
+    }),
+  capturePayPalOrder: (orderId: number, paypalOrderId?: string, payerInfo?: { email?: string; name?: string }) =>
+    request<CreateOrderResponse>("/customer/payments/paypal/capture-order", {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        paypal_order_id: paypalOrderId,
+        payer_info: payerInfo,
+      }),
+    }),
+  simulatePayPal: (orderId: number, scenario: string, paypalOrderId?: string, payerInfo?: { email?: string; name?: string }) =>
+    request<any>("/customer/payments/paypal/simulate", {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        scenario,
+        paypal_order_id: paypalOrderId,
+        payer_info: payerInfo,
+      }),
+    }),
+  getPayPalStatus: (orderId: number) =>
+    request<any>(`/customer/payments/paypal/order/${orderId}/status`),
 };
 
 export interface PublicVouchersFilter {

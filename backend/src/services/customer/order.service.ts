@@ -30,7 +30,7 @@ export interface GetCustomerOrdersFilter {
 /**
  * Generate a unique voucher code format: EV-XXXX-XXXX
  */
-function generateVoucherCode(): string {
+export function generateVoucherCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let code = 'EV-';
   for (let i = 0; i < 8; i++) {
@@ -43,12 +43,14 @@ function generateVoucherCode(): string {
 /**
  * Map payment method string to DB enum value
  */
-function normalizePaymentMethod(method?: string): string {
+export function normalizePaymentMethod(method?: string): string {
   if (!method) return 'VNPAY';
   const m = method.toUpperCase();
-  if (m.includes('VN') || m.includes('VNPAY')) return 'VNPAY';
+  if (m.includes('PAYPAL')) return 'PAYPAL';
+  if (m.includes('STRIPE')) return 'STRIPE';
   if (m.includes('MOMO')) return 'MOMO';
-  if (m.includes('VISA') || m.includes('MASTER') || m.includes('CREDIT') || m.includes('CARD')) return 'CREDIT_CARD';
+  if (m.includes('VN') || m.includes('VNPAY')) return 'VNPAY';
+  if (m.includes('VISA') || m.includes('MASTER') || m.includes('CREDIT') || m.includes('CARD')) return 'STRIPE';
   if (m.includes('BANK') || m.includes('CHUYỂN') || m.includes('TRANSFER')) return 'BANK_TRANSFER';
   if (m.includes('TIỀN MẶT') || m.includes('CASH')) return 'CASH';
   return 'VNPAY';
