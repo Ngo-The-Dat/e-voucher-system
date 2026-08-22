@@ -24,7 +24,8 @@ export async function createPaymentSession(req: AuthRequest, res: Response): Pro
   try {
     const customerId = req.user!.id;
     const orderId = Number(req.body?.order_id);
-    const result = await momoService.createMoMoPaymentSession(customerId, orderId);
+    const requestType = req.body?.request_type || 'payWithATM';
+    const result = await momoService.createMoMoPaymentSession(customerId, orderId, requestType);
     res.status(201).json(result);
   } catch (error) {
     sendHttpError(res, error);

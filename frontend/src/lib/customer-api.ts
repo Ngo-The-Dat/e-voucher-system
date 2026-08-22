@@ -423,12 +423,12 @@ export const customerPaymentApi = {
   // ==========================================
 
   /**
-   * 1. Khởi tạo phiên thanh toán MoMo Sandbox và nhận QR Code / URL chuyển hướng
+   * 1. Khởi tạo phiên thanh toán MoMo Sandbox và nhận QR Code / URL chuyển hướng (payWithATM hoặc captureWallet)
    */
-  createMoMoPayment: (orderId: number) =>
+  createMoMoPayment: (orderId: number, requestType: string = 'payWithATM') =>
     request<MoMoCreatePaymentResponse>("/customer/payments/momo/create-payment", {
       method: "POST",
-      body: JSON.stringify({ order_id: orderId }),
+      body: JSON.stringify({ order_id: orderId, request_type: requestType }),
     }),
 
   /**

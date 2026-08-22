@@ -37,12 +37,19 @@ export interface MoMoIpnPayload {
 }
 
 /**
- * 1. Khởi tạo phiên thanh toán MoMo Sandbox cho đơn hàng
+ * 1. Khởi tạo phiên thanh toán MoMo Sandbox cho đơn hàng (hỗ trợ cả payWithATM và captureWallet)
  */
-export async function createMoMoPaymentSession(customerId: number, orderId: number) {
+export async function createMoMoPaymentSession(
+  customerId: number,
+  orderId: number,
+  requestType: string = 'payWithATM'
+) {
   if (!orderId || isNaN(orderId)) {
     throw { status: 400, message: 'Mã đơn hàng không hợp lệ.' };
   }
+
+  // Chuẩn hóa requestType ('payWithATM' hoặc 'captureWallet')
+  const validRequestType = requestType === 'captureWallet' ? 'captureWallet' : 'payWithATM';
 
   // Bước 1: Kiểm tra đơn hàng có tồn tại và thuộc quyền của khách hàng
   const orderRes = await pool.query(
@@ -108,7 +115,6 @@ export async function createMoMoPaymentSession(customerId: number, orderId: numb
   const momoOrderId = `EV_ORD_${orderId}_${timeNow}`;
   const orderInfo = `Thanh toan don hang #${orderId} tai Lumina E-Voucher`;
   const extraData = Buffer.from(JSON.stringify({ orderId, customerId })).toString('base64');
-  const requestType = 'captureWallet';
 
   // Chữ ký HMAC-SHA256 chuẩn MoMo
   const signature = createMoMoCreatePaymentSignature({
@@ -121,7 +127,7 @@ export async function createMoMoPaymentSession(customerId: number, orderId: numb
     partnerCode: config.partnerCode,
     redirectUrl: `${config.redirectUrl}?order_id=${orderId}&momo_redirect=true`,
     requestId,
-    requestType,
+    requestType: validRequestType,
     secretKey: config.secretKey,
   });
 
@@ -137,7 +143,7 @@ export async function createMoMoPaymentSession(customerId: number, orderId: numb
     ipnUrl: config.ipnUrl,
     lang: 'vi',
     extraData,
-    requestType,
+    requestType: validRequestType,
     signature,
   };
 

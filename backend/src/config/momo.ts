@@ -27,6 +27,15 @@ export interface MoMoConfig {
  * Lấy cấu hình MoMo từ biến môi trường (Mặc định sử dụng thông tin Sandbox chính thức của MoMo)
  */
 export function getMoMoConfig(): MoMoConfig {
+  let ipnUrl = process.env.MOMO_IPN_URL || 'https://test-payment.momo.vn/v2/gateway/api/notify';
+  
+  // Nếu cấu hình IPN là localhost/127.0.0.1, máy chủ MoMo trên Cloud sẽ không kết nối được
+  // và bị treo (TCP timeout 15-30s) ở trang "Đang hoàn tất giao dịch...".
+  // Tự động dùng endpoint notify của MoMo Sandbox để MoMo phản hồi và redirect ngay lập tức!
+  if (ipnUrl.includes('localhost') || ipnUrl.includes('127.0.0.1')) {
+    ipnUrl = 'https://test-payment.momo.vn/v2/gateway/api/notify';
+  }
+
   return {
     partnerCode: process.env.MOMO_PARTNER_CODE || 'MOMOBKUN20180529',
     accessKey: process.env.MOMO_ACCESS_KEY || 'klm05TvNBzhg7h7j',
@@ -34,7 +43,7 @@ export function getMoMoConfig(): MoMoConfig {
     apiEndpoint: process.env.MOMO_API_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create',
     queryEndpoint: process.env.MOMO_QUERY_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/query',
     redirectUrl: process.env.MOMO_REDIRECT_URL || 'http://localhost:3000/orders',
-    ipnUrl: process.env.MOMO_IPN_URL || 'http://localhost:8000/api/customer/payments/momo/ipn',
+    ipnUrl,
   };
 }
 
