@@ -565,23 +565,42 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Right Content (Narrower) */}
         <div className="flex flex-col gap-6">
-          {/* Location */}
-          {voucher.location && (
+          {/* Location / Branches */}
+          {(voucher.locations && voucher.locations.length > 0) ? (
             <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
               <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
-                Địa điểm áp dụng
+                Chi nhánh áp dụng ({voucher.locations.length})
               </h3>
-              <p className="font-label-md text-label-md text-on-surface-variant mb-4">
-                {voucher.location}
-              </p>
-              <div className="w-full h-40 bg-surface-container-low rounded-lg overflow-hidden border border-outline-variant relative">
-                <div className="absolute inset-0 flex items-center justify-center text-on-surface-variant flex-col bg-surface-container-high/40">
-                  <MapPin className="w-10 h-10 mb-2" />
-                  <span className="font-label-sm text-label-sm">Bản đồ chi nhánh</span>
-                </div>
-              </div>
+              <ul className="space-y-3 mb-4">
+                {voucher.locations.map((loc, idx) => (
+                  <li key={idx} className="flex gap-2 items-start text-label-md text-on-surface-variant">
+                    <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    <span>{loc}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-          )}
+          ) : voucher.location ? (
+            <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+              <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
+                Chi nhánh áp dụng
+              </h3>
+              <p className="font-label-md text-label-md text-on-surface-variant mb-4 flex gap-2 items-start">
+                <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                <span>{voucher.location}</span>
+              </p>
+            </div>
+          ) : null}
+
+          {/* Cancellation Policy */}
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
+              Chính sách hoàn hủy
+            </h3>
+            <p className="font-label-md text-label-md text-on-surface-variant">
+              Không hỗ trợ hoàn/hủy đối với voucher giảm giá (Trừ trường hợp do lỗi hệ thống hoặc đối tác ngừng kinh doanh).
+            </p>
+          </div>
 
           {/* Guide Steps */}
           {voucher.guideSteps && (

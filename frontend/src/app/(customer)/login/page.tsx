@@ -19,6 +19,20 @@ export default function CustomerLoginPage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError("");
+
+    const loginId = email.trim();
+    if (!loginId) {
+      setError("Vui lòng nhập Email hoặc Số điện thoại.");
+      return;
+    }
+
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(loginId);
+    const isPhone = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(loginId.replace(/\s/g, ''));
+    if (!isEmail && !isPhone) {
+      setError("Vui lòng nhập đúng định dạng Email hoặc Số điện thoại Việt Nam hợp lệ.");
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -128,15 +142,17 @@ export default function CustomerLoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+              <label htmlFor="login-identifier" className="block text-sm font-semibold text-gray-700 mb-2">Email / Số điện thoại</label>
               <div className="relative">
                 <input
-                  type="email"
+                  id="login-identifier"
+                  type="text"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Nhập email của bạn"
+                  placeholder="Nhập email hoặc SĐT của bạn"
                   required
                   autoFocus
+                  autoComplete="username"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 px-4 focus:outline-none focus:bg-white focus:border-[#0f2c59] focus:ring-1 focus:ring-[#0f2c59] text-gray-900 transition-colors"
                 />
               </div>
@@ -144,22 +160,26 @@ export default function CustomerLoginPage() {
             
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-sm font-semibold text-gray-700">Mật khẩu</label>
+                <label htmlFor="login-password" className="block text-sm font-semibold text-gray-700">Mật khẩu</label>
                 <Link href="/forgot-password" className="text-sm font-medium text-[#0f2c59] hover:underline">
                   Quên mật khẩu?
                 </Link>
               </div>
               <div className="relative">
                 <input
+                  id="login-password"
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  autoComplete="current-password"
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl py-3.5 px-4 focus:outline-none focus:bg-white focus:border-[#0f2c59] focus:ring-1 focus:ring-[#0f2c59] text-gray-900 transition-colors pr-12"
                 />
                 <button
                   type="button"
+                  aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+                  title={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer p-1"
                 >
