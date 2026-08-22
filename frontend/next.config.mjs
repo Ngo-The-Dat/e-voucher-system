@@ -13,6 +13,7 @@ const nextConfig = {
       { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "https", hostname: "static.hotdeal.vn" },
       { protocol: "https", hostname: "oms.hotdeal.vn" },
+      { protocol: "https", hostname: "s3-hd.hotdeal.vn" },
       { protocol: "https", hostname: "**.hotdeal.vn" },
     ],
   },

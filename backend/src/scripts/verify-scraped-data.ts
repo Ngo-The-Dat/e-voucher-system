@@ -51,8 +51,15 @@ async function verify() {
     LIMIT 6
   `);
 
-  console.log(`\n📝 Mẫu 6 nội dung bài viết & chính sách sau khi đã làm sạch HTML:`);
-  console.table(sampleContentsRes.rows);
+  const sampleImagesRes = await pool.query(`
+    SELECT program_id, image_url, is_primary
+    FROM voucher_program_images
+    ORDER BY image_id ASC
+    LIMIT 5
+  `);
+
+  console.log(`\n🖼️  Mẫu 5 URL hình ảnh trong database:`);
+  console.table(sampleImagesRes.rows);
 
   await pool.end();
 }

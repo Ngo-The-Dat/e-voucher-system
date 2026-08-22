@@ -128,7 +128,7 @@ export async function scrapeListingCategory(
                      /<img[^>]*itemprop="image"[^>]*src="([^"]+)"/i.exec(block);
     let primaryImage = imgMatch ? imgMatch[1].trim() : '';
     if (primaryImage.includes('280x280') || primaryImage.includes('210x210')) {
-      primaryImage = primaryImage.replace(/\/(280x280|210x210)\//, '/800x800/');
+      primaryImage = primaryImage.replace(/\/(280x280|210x210)\//, '/500x500/');
     }
 
     // Trích xuất giá khuyến mãi (sale price)
