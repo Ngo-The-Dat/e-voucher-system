@@ -1,0 +1,88 @@
+@startuml
+title SQ07 - Quản lý nhân viên chi nhánh đối tác
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":EmployeeManagementPage" as UI
+control ":PartnerEmployeeMgmtController" as Ctrl
+entity ":PartnerEmployeeMgmtService" as Svc
+actor "Quản trị viên" as Admin
+boundary ":AdminEmployeeApprovalPage" as AdminUI
+control ":EmployeeApprovalController" as AdminCtrl
+entity ":EmployeeApprovalService" as AdminSvc
+
+== 1. Lấy danh sách nhân viên chi nhánh ==
+DT -> UI: openEmployeeListPage()
+UI -> Ctrl: getEmployees()
+activate Ctrl
+Ctrl -> Svc: getEmployees(partnerId)
+activate Svc
+Svc --> Ctrl: return employees
+deactivate Svc
+Ctrl --> UI: return employees
+deactivate Ctrl
+UI --> DT: displayEmployeesTable(employees)
+
+== 2. Thêm mới nhân viên chi nhánh ==
+DT -> UI: submitCreateEmployee(full_name, email, phone, identity_no, password, branch_id, gender, nationality)
+UI -> Ctrl: createEmployee({ full_name, email, phone, identity_no, password, branch_id, gender, nationality })
+activate Ctrl
+Ctrl -> Svc: createEmployee(partnerId, input)
+activate Svc
+Svc --> Ctrl: return newEmployee
+deactivate Svc
+Ctrl --> UI: return newEmployee
+deactivate Ctrl
+UI --> DT: showSuccessToast("Thêm nhân viên thành công, đang chờ Admin duyệt.")
+
+== 3. Quản trị viên xét duyệt hồ sơ nhân viên ==
+Admin -> AdminUI: openPendingEmployeesPage()
+AdminUI -> AdminCtrl: getPendingEmployees(query)
+activate AdminCtrl
+AdminCtrl -> AdminSvc: getPendingEmployees(query)
+activate AdminSvc
+AdminSvc --> AdminCtrl: return pendingEmployees
+deactivate AdminSvc
+AdminCtrl --> AdminUI: return pendingEmployees
+deactivate AdminCtrl
+
+alt Admin phê duyệt nhân viên
+    Admin -> AdminUI: clickApprove(employeeId)
+    AdminUI -> AdminCtrl: approveEmployee(employeeId)
+    activate AdminCtrl
+    AdminCtrl -> AdminSvc: approveEmployee(employeeId, adminId)
+    activate AdminSvc
+    AdminSvc --> AdminCtrl: return { success: true, message: "Phê duyệt hồ sơ nhân viên đối tác thành công" }
+    deactivate AdminSvc
+    AdminCtrl --> AdminUI: return result
+    deactivate AdminCtrl
+    AdminUI --> Admin: showToast("Phê duyệt nhân viên thành công.")
+else Admin từ chối nhân viên
+    Admin -> AdminUI: clickReject(employeeId, reason)
+    AdminUI -> AdminCtrl: rejectEmployee(employeeId, reason)
+    activate AdminCtrl
+    AdminCtrl -> AdminSvc: rejectEmployee(employeeId, reason, adminId)
+    activate AdminSvc
+    AdminSvc --> AdminCtrl: return { success: true, message: "Từ chối hồ sơ nhân viên đối tác thành công" }
+    deactivate AdminSvc
+    AdminCtrl --> AdminUI: return result
+    deactivate AdminCtrl
+    AdminUI --> Admin: showToast("Đã từ chối nhân viên.")
+end
+
+== 4. Cập nhật thông tin hoặc Điều chuyển chi nhánh ==
+DT -> UI: submitUpdateEmployee(employeeId, input)
+UI -> Ctrl: updateEmployee(employeeId, input)
+activate Ctrl
+Ctrl -> Svc: updateEmployee(partnerId, employeeId, input)
+activate Svc
+Svc --> Ctrl: return { success: true, message: "Cập nhật nhân viên thành công." }
+deactivate Svc
+Ctrl --> UI: return { success: true, message: "Cập nhật nhân viên thành công." }
+deactivate Ctrl
+UI --> DT: showSuccessToast("Cập nhật thông tin nhân viên thành công.")
+
+@enduml

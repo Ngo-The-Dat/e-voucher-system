@@ -1,0 +1,31 @@
+@startuml
+title SQ03 - Đổi mật khẩu tài khoản (Đối tác & Nhân viên đối tác)
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Người dùng\n(Đối tác / Nhân viên)" as User
+boundary ":ChangePasswordModal" as UI
+control ":PartnerProfileController" as Ctrl
+entity ":PartnerProfileService" as Svc
+
+User -> UI: submitChangePassword(old_password, new_password, confirm_password)
+UI -> Ctrl: changePassword({ old_password, new_password })
+activate Ctrl
+Ctrl -> Svc: changePassword(partnerId, old_password, new_password)
+activate Svc
+
+alt Mật khẩu cũ không chính xác
+    Svc --> Ctrl: throw HttpError(400, "Mật khẩu cũ không đúng.")
+    Ctrl --> UI: return error(400, "Mật khẩu cũ không đúng.")
+    UI --> User: showErrorMessage("Mật khẩu cũ không chính xác")
+else Mật khẩu cũ chính xác
+    Svc --> Ctrl: return void
+    deactivate Svc
+    Ctrl --> UI: return { message: "Đổi mật khẩu thành công." }
+    deactivate Ctrl
+    UI --> User: showSuccessToast("Đổi mật khẩu thành công.")
+end
+
+@enduml
