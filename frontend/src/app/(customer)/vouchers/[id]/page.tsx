@@ -182,7 +182,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const handleBuyNow = () => {
     addToCart(voucher, quantity);
-    router.push("/cart");
+    router.push(`/cart?buyNowId=${voucher.id}`);
   };
 
   const handleAddReviewSubmit = async (e: React.FormEvent) => {
