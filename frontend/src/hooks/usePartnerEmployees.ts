@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { PartnerEmployeeItem } from "@/lib/types/partner-employee";
 import { partnerApi } from "@/lib/partner-api";
 
-const EMPLOYEE_SYNC_INTERVAL_MS = 10_000;
+const EMPLOYEE_SYNC_INTERVAL_MS = 5_000;
 
 /**
  * Hook lấy toàn bộ danh sách nhân viên đối tác với cơ chế tự động đồng bộ chạy ngầm (polling + focus + visibilitychange).
