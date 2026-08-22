@@ -81,6 +81,13 @@ export default function PaymentSimulatorModal({
   } | null>(null);
   const [momoLoading, setMomoLoading] = useState(false);
 
+  // VNPay specific state
+  const [vnpayDetails, setVnpayDetails] = useState<{
+    payUrl: string;
+    amountVnd: number;
+  } | null>(null);
+  const [vnpayLoading, setVnpayLoading] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isPayPal = useMemo(() => {
@@ -94,6 +101,10 @@ export default function PaymentSimulatorModal({
 
   const isMoMo = useMemo(() => {
     return (order?.paymentMethod || "").toUpperCase().includes("MOMO");
+  }, [order?.paymentMethod]);
+
+  const isVNPay = useMemo(() => {
+    return (order?.paymentMethod || "").toUpperCase().includes("VNPAY");
   }, [order?.paymentMethod]);
 
   // Khởi tạo PayPal Order khi modal mở cho đơn PayPal
@@ -195,6 +206,36 @@ export default function PaymentSimulatorModal({
       });
   }, [isOpen, order?.orderId, isMoMo, momoMode]);
 
+  // Khởi tạo VNPay Payment Session khi modal mở cho đơn VNPay
+  useEffect(() => {
+    if (!isOpen || !order || !isVNPay) {
+      setVnpayDetails(null);
+      return;
+    }
+
+    setVnpayDetails(null);
+    setVnpayLoading(true);
+    setErrorMessage(null);
+
+    customerPaymentApi
+      .createVNPayPayment(order.orderId)
+      .then((res) => {
+        if (res.success && res.payment) {
+          setVnpayDetails({
+            payUrl: res.payment.pay_url,
+            amountVnd: res.payment.amount_vnd,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Lỗi khi khởi tạo đơn hàng VNPay:", err);
+        setErrorMessage(err.message || "Không thể kết nối cổng VNPay Sandbox.");
+      })
+      .finally(() => {
+        setVnpayLoading(false);
+      });
+  }, [isOpen, order?.orderId, isVNPay]);
+
   // Tính toán thời gian đếm ngược 5 phút
   useEffect(() => {
     if (!isOpen || !order) return;
@@ -277,6 +318,15 @@ export default function PaymentSimulatorModal({
       return;
     }
     window.location.href = momoDetails.payUrl;
+  };
+
+  // Điều hướng người dùng sang Cổng thanh toán VNPay Sandbox
+  const handleProceedToVNPay = () => {
+    if (!vnpayDetails?.payUrl) {
+      setErrorMessage("Chưa nhận được đường dẫn thanh toán từ VNPay. Vui lòng thử lại.");
+      return;
+    }
+    window.location.href = vnpayDetails.payUrl;
   };
 
   // Xử lý xác nhận thanh toán (Dành cho phương thức QR / Chuyển khoản thông thường hoặc Giả lập Dev Test)
@@ -787,6 +837,53 @@ export default function PaymentSimulatorModal({
                     </div>
                   )}
                 </div>
+              ) : isVNPay ? (
+                /* Giao diện VNPay Sandbox Flow */
+                <div className="space-y-4">
+                  {vnpayLoading ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
+                      <RefreshCw className="w-6 h-6 animate-spin text-blue-500" />
+                      <span className="text-sm font-medium">Đang kết nối cổng thanh toán VNPay...</span>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50/50 via-sky-50/30 to-surface border border-outline-variant/60 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-blue-700 font-black text-2xl tracking-tight">
+                            VNPAY
+                          </span>
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">
+                            Sandbox Checkout
+                          </span>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 font-bold border border-emerald-200">
+                          VND
+                        </span>
+                      </div>
+
+                      <div className="p-4 bg-surface rounded-xl border border-outline-variant/40 shadow-sm flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-on-surface-variant font-medium block">Tổng tiền thanh toán</span>
+                          <span className="text-2xl font-black text-blue-700">
+                            {order.totalAmount.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/50 text-xs text-on-surface-variant space-y-1.5">
+                        <p className="font-bold text-blue-700 dark:text-blue-300 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4" /> Thẻ Test VNPay Sandbox (Ngân hàng NCB):
+                        </p>
+                        <div className="p-2 rounded bg-surface border border-outline-variant/40 space-y-1 font-mono text-[11px]">
+                          <p>• Số thẻ: <strong className="text-primary font-bold">9704198526191432198</strong></p>
+                          <p>• Tên chủ thẻ: <span className="font-semibold">NGUYEN VAN A</span></p>
+                          <p>• Ngày phát hành: <span className="font-semibold">07/15</span></p>
+                          <p>• Mật khẩu OTP: <span className="font-semibold">123456</span></p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               ) : (
                 /* QR Code & Transfer Details Grid cho phương thức truyền thống */
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -968,6 +1065,21 @@ export default function PaymentSimulatorModal({
                     <span>{momoMode === "atm" ? "Mở Cổng Nhập Thẻ ATM MoMo" : "Mở Cổng Quét Mã MoMo"}</span>
                   </button>
                 </div>
+              ) : isVNPay ? (
+                /* Nút thanh toán cho VNPay Sandbox */
+                <button
+                  type="button"
+                  onClick={handleProceedToVNPay}
+                  disabled={isExpired || vnpayLoading || !vnpayDetails?.payUrl}
+                  className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                    isExpired || !vnpayDetails?.payUrl
+                      ? "bg-surface-container-highest text-on-surface-variant cursor-not-allowed"
+                      : "bg-blue-600 hover:bg-blue-700 text-white hover:shadow-lg active:scale-98"
+                  }`}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  <span>Tiến hành Thanh toán qua VNPay</span>
+                </button>
               ) : (
                 /* Nút xác nhận cho các phương thức quét mã QR khác */
                 <button
