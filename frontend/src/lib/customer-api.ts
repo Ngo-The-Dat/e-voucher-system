@@ -337,6 +337,26 @@ export interface StripeCreateSessionResponse {
   };
 }
 
+/**
+ * Kiểu dữ liệu phản hồi khi tạo phiên thanh toán MoMo Sandbox thành công
+ */
+export interface MoMoCreatePaymentResponse {
+  success: boolean;
+  message: string;
+  payment: {
+    order_id: number;
+    momo_order_id: string;
+    request_id: string;
+    amount_vnd: number;
+    pay_url: string;         // URL chuyển hướng người dùng sang trang thanh toán của MoMo
+    qr_code_url: string;     // URL mã QR để quét bằng App MoMo Test
+    deeplink?: string;       // Deeplink mở trực tiếp App MoMo trên điện thoại
+    deeplink_web_in_app?: string;
+    status: string;
+    created_at?: string;
+  };
+}
+
 export const customerPaymentApi = {
   getPaymentMethods: () =>
     request<{ success: boolean; payment_methods: PaymentMethodItem[] }>("/customer/payments/methods"),
@@ -397,6 +417,37 @@ export const customerPaymentApi = {
    */
   getStripeStatus: (orderId: number) =>
     request<any>(`/customer/payments/stripe/order/${orderId}/status`),
+
+  // ==========================================
+  // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN MOMO SANDBOX
+  // ==========================================
+
+  /**
+   * 1. Khởi tạo phiên thanh toán MoMo Sandbox và nhận QR Code / URL chuyển hướng
+   */
+  createMoMoPayment: (orderId: number) =>
+    request<MoMoCreatePaymentResponse>("/customer/payments/momo/create-payment", {
+      method: "POST",
+      body: JSON.stringify({ order_id: orderId }),
+    }),
+
+  /**
+   * 2. Xác thực giao dịch thanh toán từ MoMo và phát hành mã E-Voucher
+   */
+  captureMoMoOrder: (orderId: number, params?: any) =>
+    request<CreateOrderResponse>("/customer/payments/momo/capture-order", {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        ...params,
+      }),
+    }),
+
+  /**
+   * 3. Tra cứu trạng thái đơn hàng MoMo
+   */
+  getMoMoStatus: (orderId: number) =>
+    request<any>(`/customer/payments/momo/order/${orderId}/status`),
 };
 
 export interface PublicVouchersFilter {
