@@ -62,7 +62,7 @@ export default function RegisterTypeModal({ isOpen, onClose }: RegisterTypeModal
             Chọn loại tài khoản đăng ký
           </h2>
           <p className="text-sm sm:text-base text-gray-500 max-w-md mx-auto">
-            Lựa chọn vai trò phù hợp nhất với nhu cầu sử dụng của bạn trên Lumina Marketplace.
+            Lựa chọn vai trò phù hợp nhất với nhu cầu sử dụng của bạn trên Vouchify Marketplace.
           </p>
         </div>
 

@@ -26,13 +26,13 @@ export async function sendPartnerRejectionEmail({
     auth: { user, pass },
   });
 
-  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Lumina Partner';
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Vouchify Partner';
 
   const html = `
     <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; overflow: hidden; color: #1e293b;">
       <!-- Header -->
       <div style="background-color: #0f2c59; padding: 24px 32px; text-align: center;">
-        <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Lumina Marketplace</h1>
+        <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 700;">Vouchify Marketplace</h1>
         <p style="color: #93c5fd; margin: 4px 0 0 0; font-size: 13px;">Kênh Đối tác Doanh nghiệp</p>
       </div>
 
@@ -41,7 +41,7 @@ export async function sendPartnerRejectionEmail({
         <p style="font-size: 15px; margin: 0 0 16px 0;">Kính gửi <strong>${fullName}</strong> (Đại diện <strong>${businessName}</strong>),</p>
         
         <p style="font-size: 14px; line-height: 1.6; color: #475569; margin: 0 0 16px 0;">
-          Ban Quản trị <strong>Lumina Marketplace</strong> xin thông báo hồ sơ đăng ký tài khoản đối tác của Quý đối tác <strong>chưa được phê duyệt</strong>.
+          Ban Quản trị <strong>Vouchify Marketplace</strong> xin thông báo hồ sơ đăng ký tài khoản đối tác của Quý đối tác <strong>chưa được phê duyệt</strong>.
         </p>
 
         <!-- Lý do từ chối -->
@@ -56,14 +56,14 @@ export async function sendPartnerRejectionEmail({
 
         <p style="font-size: 13px; color: #64748b; margin: 24px 0 0 0; line-height: 1.5;">
           Trân trọng,<br />
-          <strong>Đội ngũ Lumina Marketplace</strong>
+          <strong>Đội ngũ Vouchify Marketplace</strong>
         </p>
       </div>
 
       <!-- Footer -->
       <div style="background-color: #f8fafc; padding: 16px 32px; border-top: 1px solid #e2e8f0; text-align: center;">
         <p style="font-size: 12px; color: #94a3b8; margin: 0;">
-          © ${new Date().getFullYear()} Lumina Marketplace. Mọi quyền được bảo lưu.
+          © ${new Date().getFullYear()} Vouchify Marketplace. Mọi quyền được bảo lưu.
         </p>
       </div>
     </div>
@@ -72,8 +72,8 @@ export async function sendPartnerRejectionEmail({
   await transporter.sendMail({
     from: { name: fromName, address: user },
     to: email,
-    subject: `[Lumina Partner] Thông báo kết quả xét duyệt hồ sơ đối tác - ${businessName}`,
-    text: `Kính gửi ${fullName} (Đại diện ${businessName}),\n\nHồ sơ đăng ký đối tác của bạn chưa được phê duyệt.\nLý do từ chối: ${reason}\n\nTrân trọng,\nĐội ngũ Lumina Marketplace`,
+    subject: `[Vouchify Partner] Thông báo kết quả xét duyệt hồ sơ đối tác - ${businessName}`,
+    text: `Kính gửi ${fullName} (Đại diện ${businessName}),\n\nHồ sơ đăng ký đối tác của bạn chưa được phê duyệt.\nLý do từ chối: ${reason}\n\nTrân trọng,\nĐội ngũ Vouchify Marketplace`,
     html,
   });
 }
