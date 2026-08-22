@@ -140,7 +140,7 @@ export default function Header() {
             href="/"
             className="text-xl sm:text-2xl lg:text-headline-lg font-bold text-white tracking-tight shrink-0 whitespace-nowrap"
           >
-            Lumina<span className="hidden sm:inline"> Marketplace</span>
+            Vouchify<span className="hidden sm:inline"> Marketplace</span>
           </Link>
 
           {/* Search Bar (Desktop) */}

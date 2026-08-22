@@ -33,11 +33,11 @@ export default function PartnerSideNavBar({ isCollapsed, onToggleCollapse, isMob
       <div className={`p-4 flex items-center ${isCollapsed ? "justify-center relative" : "justify-between"} border-b border-outline-variant/30 h-16`}>
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary font-bold text-2xl shadow-md shrink-0">
-            L
+            V
           </div>
           {!isCollapsed && (
             <div className="transition-opacity duration-200 min-w-0">
-              <h1 className="font-bold text-on-surface text-lg leading-tight truncate">Lumina</h1>
+              <h1 className="font-bold text-on-surface text-lg leading-tight truncate">Vouchify</h1>
               <p className="text-xs text-on-surface-variant font-medium truncate">Partner Portal</p>
             </div>
           )}

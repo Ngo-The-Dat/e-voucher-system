@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Lumina Partner Portal",
-  description: "Hệ thống quản lý đối tác & e-voucher Lumina",
+  title: "Vouchify - Hệ thống E-Voucher & Partner Portal",
+  description: "Hệ thống quản lý đối tác & e-voucher Vouchify",
 };
 
 export default function RootLayout({

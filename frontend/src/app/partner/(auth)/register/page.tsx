@@ -290,8 +290,8 @@ export default function RegisterPage() {
       {/* Header */}
       <header className="p-6 border-b border-outline-variant/50 flex flex-col items-center justify-center bg-surface-container-low">
         <div className="flex items-center gap-2.5 mb-1">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold text-lg shadow">L</div>
-          <h1 className="text-xl font-bold text-primary">Lumina Partner</h1>
+          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary font-bold text-lg shadow">V</div>
+          <h1 className="text-xl font-bold text-primary">Vouchify Partner</h1>
         </div>
         <h2 className="text-base font-bold text-on-surface">Đăng ký tài khoản đối tác</h2>
       </header>
