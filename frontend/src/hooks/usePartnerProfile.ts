@@ -92,7 +92,10 @@ export function usePartnerProfile() {
           });
         }
       } else if (err?.status === 401) {
-        // Handled by redirectToPartnerLogin
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("partner_access_token");
+          window.location.replace("/login");
+        }
       } else {
         setError({
           status: err?.status,
@@ -108,6 +111,31 @@ export function usePartnerProfile() {
 
   useEffect(() => {
     void reload();
+
+    const handleSync = () => {
+      void reload();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void reload();
+      }
+    };
+
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Heartbeat check every 10s to sync auth in real-time
+    const interval = setInterval(() => {
+      void reload();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [reload]);
 
   const save = useCallback(async (updated: PartnerProfile) => {

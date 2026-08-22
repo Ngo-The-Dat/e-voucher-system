@@ -1,6 +1,8 @@
 @startuml
 left to right direction
+
 actor "Đối tác" as DT
+actor "Nhân viên đối tác" as NVDT
 
 rectangle "Doanh nghiệp quản lý đối tác & voucher" {
   usecase "Thiết lập và duy trì quan hệ đối tác" as BUC01
@@ -9,8 +11,13 @@ rectangle "Doanh nghiệp quản lý đối tác & voucher" {
   usecase "Theo dõi hiệu quả kinh doanh của đối tác" as BUC04
 }
 
+' Đối tác tham gia vào toàn bộ chu trình kinh doanh
 DT --> BUC01
 DT --> BUC02
 DT --> BUC03
 DT --> BUC04
+
+' Nhân viên đối tác trực tiếp thực hiện đổi voucher tại điểm bán
+NVDT --> BUC03
+
 @enduml

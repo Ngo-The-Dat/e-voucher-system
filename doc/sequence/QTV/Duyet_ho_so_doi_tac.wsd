@@ -1,0 +1,109 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-04 - Duyệt hồ sơ đối tác
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Duyệt hồ sơ đối tác\n(PendingPartnersPage)" as UI
+control "PartnerController" as Controller
+entity "PartnerService" as Service
+entity "SystemLogService" as LogService
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách hồ sơ đối tác chờ duyệt ==
+QTV -> UI : openPendingPartnersTab()
+activate UI
+UI -> Controller : getPendingPartners(page, limit, filter)
+activate Controller
+Controller -> Service : getPendingPartners(filter)
+activate Service
+Service -> DB : executeQuery() (SELECT FROM partners WHERE status = 'PENDING')
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnPendingPartners(partners)
+deactivate Service
+Controller --> UI : returnResponse(partnersData)
+deactivate Controller
+
+alt A1: Không có hồ sơ chờ duyệt (partners.length == 0)
+    UI --> QTV : showEmptyMessage("Không có hồ sơ đối tác nào đang chờ phê duyệt")
+else Có hồ sơ chờ duyệt (partners.length > 0)
+    UI --> QTV : displayPendingPartnerList(partners)
+
+    == 2. Xem chi tiết hồ sơ đối tác ==
+    QTV -> UI : selectPartnerDetail(partnerId)
+    UI -> Controller : getPendingPartnerDetail(partnerId)
+    activate Controller
+    Controller -> Service : getPendingPartnerDetail(partnerId)
+    activate Service
+    Service -> DB : executeQuery()
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+    Service --> Controller : returnPartnerDetail(detail)
+    deactivate Service
+    Controller --> UI : returnResponse(detail)
+    deactivate Controller
+    UI --> QTV : displayPartnerDetailModal(detail)
+
+    == 3. Quyết định phê duyệt hoặc từ chối ==
+    alt Phê duyệt hồ sơ đối tác
+        QTV -> UI : clickApproveButton()
+        UI -> Controller : approvePartnerRegistration(partnerId)
+        activate Controller
+        Controller -> Service : approvePartnerRegistration(partnerId, adminId)
+        activate Service
+
+        Service -> DB : executeQuery() (UPDATE partners SET status = 'ACTIVE', approved_at = NOW())
+        activate DB
+        DB --> Service : returnResult
+        deactivate DB
+
+        Service -> LogService : logAdminAction(adminId, 'APPROVE_PARTNER', partnerId)
+        activate LogService
+        LogService -> DB : executeQuery() (INSERT INTO system_logs)
+        activate DB
+        DB --> LogService : returnResult
+        deactivate DB
+        LogService --> Service : returnLogged
+        deactivate LogService
+
+        Service --> Controller : returnApproveSuccess()
+        Controller --> UI : returnResponse({ message: "Phê duyệt đối tác thành công" })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showSuccessToast("Phê duyệt hồ sơ đối tác thành công")
+
+    else A2 / A3: Từ chối hồ sơ đối tác (hoặc thiếu thông tin)
+        QTV -> UI : clickRejectButton()
+        UI --> QTV : displayRejectReasonModal()
+        QTV -> UI : inputRejectReasonAndConfirm(reason)
+        UI -> Controller : rejectPartnerRegistration(partnerId, reason)
+        activate Controller
+        Controller -> Service : rejectPartnerRegistration(partnerId, reason, adminId)
+        activate Service
+
+        Service -> DB : executeQuery() (UPDATE partners SET status = 'REJECTED', reject_reason = $1)
+        activate DB
+        DB --> Service : returnResult
+        deactivate DB
+
+        Service -> LogService : logAdminAction(adminId, 'REJECT_PARTNER', partnerId)
+        activate LogService
+        LogService -> DB : executeQuery() (INSERT INTO system_logs)
+        activate DB
+        DB --> LogService : returnResult
+        deactivate DB
+        LogService --> Service : returnLogged
+        deactivate LogService
+
+        Service --> Controller : returnRejectSuccess()
+        Controller --> UI : returnResponse({ message: "Từ chối hồ sơ đối tác thành công" })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastMessage("Hồ sơ đối tác đã bị từ chối")
+    end
+end
+deactivate UI
+
+@enduml

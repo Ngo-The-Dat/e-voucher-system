@@ -1,0 +1,62 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-12 - Xem dashboard quản trị
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Dashboard\n(AdminDashboardPage)" as UI
+control "DashboardController" as Controller
+entity "DashboardService" as Service
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải dữ liệu Dashboard tổng quan ==
+QTV -> UI : openDashboardPage()
+activate UI
+UI -> Controller : getDashboardStats(period='30d')
+activate Controller
+Controller -> Service : getDashboardOverview(filter)
+activate Service
+
+alt A1: Lỗi kết nối Cơ sở dữ liệu
+    Service -> DB : executeQuery() (Aggregate KPIs, Revenue, Orders, Users)
+    activate DB
+    DB --> Service : throwDatabaseError()
+    deactivate DB
+    Service --> Controller : returnError("Database connection error")
+    Controller --> UI : returnErrorResponse(500)
+    UI --> QTV : showErrorMessage("Không thể tải dữ liệu", retryButton)
+else Truy vấn dữ liệu thành công
+    Service -> DB : executeQuery() (Aggregate KPIs, Revenue, Orders, Users)
+    activate DB
+    DB --> Service : returnResult (kpis, charts, topVouchers)
+    deactivate DB
+    Service --> Controller : returnDashboardData(data)
+    Controller --> UI : returnResponse(data)
+    UI --> QTV : displayDashboardWidgets(kpis, revenueChart, orderStats)
+end
+deactivate Service
+deactivate Controller
+
+== 2. Lọc số liệu theo khoảng thời gian ==
+QTV -> UI : selectTimeRange(today / this_week / this_month / customDate)
+
+alt A2: Khoảng thời gian tùy chọn không hợp lệ (startDate > endDate)
+    UI -> UI : validateDateRange(startDate, endDate)
+    UI --> QTV : showWarning("Khoảng thời gian không hợp lệ - Ngày bắt đầu phải nhỏ hơn hoặc bằng ngày kết thúc")
+else Khoảng thời gian hợp lệ
+    UI -> Controller : getDashboardStats(period, startDate, endDate)
+    activate Controller
+    Controller -> Service : getDashboardOverview({ period, startDate, endDate })
+    activate Service
+    Service -> DB : executeQuery()
+    activate DB
+    DB --> Service : returnResult (filteredStats)
+    deactivate DB
+    Service --> Controller : returnDashboardData(filteredStats)
+    deactivate Service
+    Controller --> UI : returnResponse(filteredStats)
+    deactivate Controller
+    UI --> QTV : updateDashboardDisplay(filteredStats)
+end
+deactivate UI
+
+@enduml

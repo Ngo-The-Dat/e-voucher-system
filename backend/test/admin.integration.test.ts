@@ -70,13 +70,57 @@ test('Admin User Management: list, detail, change role, lock and unlock', async 
   assert.ok(Array.isArray(listData.users));
   assert.ok(listData.pagination);
 
-  // 2. Get user detail
+  // 2. Get branches for assignment
+  const branchesRes = await request('/api/admin/users/branches', adminToken);
+  assert.equal(branchesRes.status, 200);
+  const branchesData = await branchesRes.json() as any;
+  assert.ok(Array.isArray(branchesData.branches));
+  assert.ok(branchesData.branches.length > 0);
+
+  // 3. Get user detail
   const detailRes = await request('/api/admin/users/8', adminToken);
   assert.equal(detailRes.status, 200);
   const detailData = await detailRes.json() as any;
   assert.equal(Number(detailData.user_id), 8);
 
-  // 3. Lock user
+  // 4. Change role to PARTNER with business name and tax code
+  const toPartnerRes = await request('/api/admin/users/8/role', adminToken, {
+    method: 'PUT',
+    body: JSON.stringify({
+      role: 'PARTNER',
+      business_name: 'Công Ty CP Kiểm Thử Tự Động',
+      tax_code: '0109999888',
+    }),
+  });
+  assert.equal(toPartnerRes.status, 200);
+  const afterPartnerDetail = await (await request('/api/admin/users/8', adminToken)).json() as any;
+  assert.equal(afterPartnerDetail.role, 'PARTNER');
+  assert.equal(afterPartnerDetail.business_name, 'Công Ty CP Kiểm Thử Tự Động');
+  assert.equal(afterPartnerDetail.tax_code, '0109999888');
+
+  // 5. Change role to PARTNER_EMPLOYEE with branch assignment
+  const toEmployeeRes = await request('/api/admin/users/8/role', adminToken, {
+    method: 'PUT',
+    body: JSON.stringify({
+      role: 'PARTNER_EMPLOYEE',
+      branch_id: branchesData.branches[0].branch_id,
+    }),
+  });
+  assert.equal(toEmployeeRes.status, 200);
+  const afterEmployeeDetail = await (await request('/api/admin/users/8', adminToken)).json() as any;
+  assert.equal(afterEmployeeDetail.role, 'PARTNER_EMPLOYEE');
+  assert.equal(Number(afterEmployeeDetail.branch_id), Number(branchesData.branches[0].branch_id));
+
+  // 6. Change role back to CUSTOMER
+  const toCustomerRes = await request('/api/admin/users/8/role', adminToken, {
+    method: 'PUT',
+    body: JSON.stringify({ role: 'CUSTOMER' }),
+  });
+  assert.equal(toCustomerRes.status, 200);
+  const afterCustomerDetail = await (await request('/api/admin/users/8', adminToken)).json() as any;
+  assert.equal(afterCustomerDetail.role, 'CUSTOMER');
+
+  // 7. Lock user
   const lockRes = await request('/api/admin/users/8/lock', adminToken, {
     method: 'POST',
     body: JSON.stringify({ reason: 'Vi phạm chính sách kiểm thử tự động' }),
@@ -88,7 +132,7 @@ test('Admin User Management: list, detail, change role, lock and unlock', async 
   const afterLockData = await afterLockRes.json() as any;
   assert.equal(afterLockData.status, 'LOCKED');
 
-  // 4. Unlock user
+  // 8. Unlock user
   const unlockRes = await request('/api/admin/users/8/unlock', adminToken, {
     method: 'POST',
   });

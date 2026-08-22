@@ -2,38 +2,43 @@
 |Đối tác|
 start
 
-repeat
-  :Xác định quy tắc chương trình khuyến mãi
-  (mức ưu đãi, điều kiện áp dụng,
-  thời gian triển khai, số lượng phát hành);
+:Thiết lập chương trình voucher mới
+(tên voucher, danh mục, giá gốc, giá bán,
+số lượng phát hành, thời gian bán & sử dụng,
+danh sách chi nhánh áp dụng, bộ sưu tập ảnh);
 
-  if (Cần điều chỉnh quy tắc\ntrước khi gửi duyệt?) then (có - A1)
-    :Cập nhật lại quy tắc chương trình;
+:Lưu chương trình ở trạng thái Bản nháp (DRAFT);
+
+repeat
+  if (Cần điều chỉnh thông tin / ảnh voucher trước khi gửi?) then (có - A1)
+    :Chỉnh sửa thông tin chương trình voucher;
+    :Cập nhật bộ sưu tập ảnh mô tả;
   endif
-repeat while (Cần tiếp tục điều chỉnh?) is (có)
-->không;
 
-repeat
-  |Đối tác|
-  :Gửi yêu cầu phê duyệt chương trình;
+  :Gửi yêu cầu phê duyệt chương trình
+  (Trạng thái: PENDING_APPROVAL);
 
-  |Doanh nghiệp|
-  :Xem xét chương trình;
+  |Doanh nghiệp (Admin)|
+  :Kiểm tra nội dung & quy tắc chương trình;
 
-  if (Doanh nghiệp phê duyệt?) then (có)
-    :Phê duyệt chương trình;
-  else (không - A2)
-    :Phản hồi lý do từ chối cho đối tác;
-
+  if (Admin phê duyệt?) then (hợp lệ)
+    :Phê duyệt chương trình (APPROVED);
+    :Chuyển trạng thái xuất bản (PUBLISHED);
+    |Doanh nghiệp (Hệ thống)|
+    :Chương trình chính thức có hiệu lực
+    và hiển thị đến khách hàng trên sàn;
+    stop
+  else (không hợp lệ - A2)
+    :Từ chối phê duyệt (REJECTED);
+    :Ghi nhận lý do phản hồi;
     |Đối tác|
-    :Điều chỉnh lại quy tắc chương trình;
+    :Xem lý do từ chối;
+    :Điều chỉnh lại nội dung & quy tắc chương trình;
   endif
-repeat while (Doanh nghiệp từ chối phê duyệt?) is (có - A2)
-->không;
+repeat while (Tiếp tục gửi duyệt lại?) is (có)
+->hủy bỏ;
 
-|Doanh nghiệp|
-:Chương trình khuyến mãi chính thức
-có hiệu lực và được cung cấp
-đến khách hàng;
+|Đối tác|
+:Hủy bỏ / Tạm dừng chương trình;
 stop
 @enduml

@@ -1,0 +1,61 @@
+@startuml
+title SQ06 - Quản lý chi nhánh cửa hàng (Branch Management)
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":BranchManagementPage" as UI
+control ":BranchController" as Ctrl
+entity ":BranchService" as Svc
+
+== 1. Lấy danh sách chi nhánh ==
+DT -> UI: openBranchesPage()
+UI -> Ctrl: getBranches()
+activate Ctrl
+Ctrl -> Svc: getBranches(partnerId)
+activate Svc
+Svc --> Ctrl: return branches
+deactivate Svc
+Ctrl --> UI: return branches
+deactivate Ctrl
+UI --> DT: displayBranchesTable(branches)
+
+== 2. Tạo chi nhánh mới ==
+DT -> UI: submitCreateBranch(branch_name, address, region, phone)
+UI -> Ctrl: createBranch({ branch_name, address, region, phone })
+activate Ctrl
+Ctrl -> Svc: createBranch(partnerId, { branch_name, address, region, phone })
+activate Svc
+Svc --> Ctrl: return branch
+deactivate Svc
+Ctrl --> UI: return { message: "Tạo chi nhánh thành công.", branch }
+deactivate Ctrl
+UI --> DT: showSuccessToast("Tạo chi nhánh thành công.")
+
+== 3. Chỉnh sửa chi nhánh ==
+DT -> UI: submitUpdateBranch(branchId, input)
+UI -> Ctrl: updateBranch(branchId, input)
+activate Ctrl
+Ctrl -> Svc: updateBranch(branchId, partnerId, input)
+activate Svc
+Svc --> Ctrl: return branch
+deactivate Svc
+Ctrl --> UI: return { message: "Cập nhật chi nhánh thành công.", branch }
+deactivate Ctrl
+UI --> DT: showSuccessToast("Cập nhật chi nhánh thành công.")
+
+== 4. Vô hiệu hóa (Xóa mềm) chi nhánh ==
+DT -> UI: confirmDeleteBranch(branchId)
+UI -> Ctrl: deleteBranch(branchId)
+activate Ctrl
+Ctrl -> Svc: deleteBranch(branchId, partnerId)
+activate Svc
+Svc --> Ctrl: return void
+deactivate Svc
+Ctrl --> UI: return { message: "Chi nhánh đã được vô hiệu hóa." }
+deactivate Ctrl
+UI --> DT: showSuccessToast("Chi nhánh đã được vô hiệu hóa.")
+
+@enduml

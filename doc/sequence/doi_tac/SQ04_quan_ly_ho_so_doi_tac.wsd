@@ -1,0 +1,54 @@
+@startuml
+title SQ04 - Quản lý hồ sơ Đối tác & Logo thương hiệu
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":PartnerProfilePage" as UI
+control ":PartnerProfileController" as Ctrl
+entity ":PartnerProfileService" as Svc
+entity ":R2Service" as Storage
+
+== 1. Xem thông tin hồ sơ Đối tác ==
+DT -> UI: openProfilePage()
+UI -> Ctrl: getProfile()
+activate Ctrl
+Ctrl -> Svc: getProfile(partnerId)
+activate Svc
+Svc --> Ctrl: return profile
+deactivate Svc
+Ctrl --> UI: return profile
+deactivate Ctrl
+UI --> DT: displayProfile(profile)
+
+== 2. Cập nhật thông tin hồ sơ Đối tác ==
+DT -> UI: submitUpdateProfile(input)
+UI -> Ctrl: updateProfile(input)
+activate Ctrl
+Ctrl -> Svc: updateProfile(partnerId, input)
+activate Svc
+Svc --> Ctrl: return profile
+deactivate Svc
+Ctrl --> UI: return { message: "Cập nhật hồ sơ thành công.", profile }
+deactivate Ctrl
+UI --> DT: showSuccessToast("Cập nhật hồ sơ thành công.")
+
+== 3. Tải lên Logo thương hiệu ==
+DT -> UI: selectLogoFile(file)
+UI -> Ctrl: uploadLogo(file)
+activate Ctrl
+Ctrl -> Storage: uploadBrandLogo(partnerId, file)
+activate Storage
+Storage --> Ctrl: return logoUrl
+deactivate Storage
+Ctrl -> Svc: updateProfile(partnerId, { brand_logo: logoUrl })
+activate Svc
+Svc --> Ctrl: return profile
+deactivate Svc
+Ctrl --> UI: return { message: "Upload logo thành công.", logo_url: logoUrl, profile }
+deactivate Ctrl
+UI --> DT: updateBrandLogoView(logoUrl)
+
+@enduml

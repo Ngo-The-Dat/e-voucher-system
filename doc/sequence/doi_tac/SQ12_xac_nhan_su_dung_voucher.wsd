@@ -1,0 +1,48 @@
+@startuml
+title SQ12 - Xác nhận sử dụng (Redeem) Voucher tại chi nhánh
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Khách hàng" as Customer
+actor "Đối tác / Nhân viên" as Staff
+boundary ":VoucherRedeemModal" as UI
+control ":RedeemController" as Ctrl
+entity ":RedeemService" as Svc
+
+Customer -> Staff: presentVoucher(voucherCode)
+Staff -> UI: clickConfirmRedeem(voucher_code, branch_id)
+UI -> Ctrl: redeemVoucher({ voucher_code, branch_id })
+activate Ctrl
+Ctrl -> Ctrl: resolvePartnerContext(userId, role)
+
+opt role === 'PARTNER_EMPLOYEE' && employeeBranchId !== branch_id
+    Ctrl --> UI: return error(403, "Nhân viên chỉ được xác nhận voucher tại chi nhánh được phân công.")
+    UI --> Staff: showErrorMessage("Sai chi nhánh công tác")
+end
+
+Ctrl -> Svc: redeemVoucher(voucherCode, branchId, partnerId)
+activate Svc
+
+alt Voucher đã sử dụng hoặc hết hạn
+    Svc --> Ctrl: throw HttpError(400, "Voucher này đã được sử dụng rồi hoặc đã hết hạn.")
+    Ctrl --> UI: return error(400, message)
+    UI --> Staff: showErrorMessage(message)
+    Staff --> Customer: notifyRedeemFailure(message)
+else Voucher còn hạn sử dụng
+    alt Chi nhánh không hợp lệ hoặc không được áp dụng
+        Svc --> Ctrl: throw HttpError(400, "Chi nhánh này không nằm trong danh sách áp dụng của voucher.")
+        Ctrl --> UI: return error(400, message)
+        UI --> Staff: showErrorMessage(message)
+    else Chi nhánh hợp lệ
+        Svc --> Ctrl: return { issued_voucher_id, voucher_code, redeemed_at: used_at, message: "Voucher đã được xác nhận sử dụng thành công" }
+        deactivate Svc
+        Ctrl --> UI: return { issued_voucher_id, voucher_code, redeemed_at, message }
+        deactivate Ctrl
+        UI --> Staff: renderRedeemSuccessModal(redeemed_at)
+        Staff -> Customer: applyDiscountAndProvideService()
+    end
+end
+
+@enduml
