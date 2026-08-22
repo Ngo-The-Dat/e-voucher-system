@@ -139,10 +139,10 @@ export default function CartSummary({
                 ))
               ) : (
                 <>
-                  <option value="PAYPAL">Ví điện tử PayPal (USD)</option>
-                  <option value="STRIPE">Thẻ Visa / Mastercard (Stripe)</option>
                   <option value="VNPAY">Cổng thanh toán VNPay</option>
-                  <option value="MOMO">Ví điện tử MoMo</option>
+                  <option value="ZALOPAY">Ví điện tử ZaloPay</option>
+                  <option value="STRIPE">Thẻ Visa / Mastercard (Stripe)</option>
+                  <option value="PAYPAL">Ví điện tử PayPal (USD)</option>
                 </>
               )}
             </select>

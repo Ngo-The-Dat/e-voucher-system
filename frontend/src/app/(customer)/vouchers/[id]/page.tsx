@@ -279,6 +279,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               priority
               src={voucher.images?.[selectedImageIndex] || voucher.thumbnail}
               alt={voucher.title}
+              unoptimized
               className="w-full h-full object-cover transition-all duration-300"
             />
             {voucher.bestSeller && (
@@ -298,7 +299,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                   selectedImageIndex === index ? "border-primary" : "border-outline-variant opacity-70 hover:opacity-100"
                 }`}
               >
-                <Image width={96} height={96} src={img} alt={`${voucher.title} ${index + 1}`} className="w-full h-full object-cover" />
+                <Image width={96} height={96} src={img} alt={`${voucher.title} ${index + 1}`} unoptimized className="w-full h-full object-cover" />
                 {selectedImageIndex === index && <div className="absolute inset-0 bg-primary/10" />}
               </button>
             ))}
