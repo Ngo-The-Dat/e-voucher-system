@@ -48,7 +48,8 @@ export function normalizePaymentMethod(method?: string): string {
   const m = method.toUpperCase();
   if (m.includes('PAYPAL')) return 'PAYPAL';
   if (m.includes('STRIPE')) return 'STRIPE';
-  if (m.includes('MOMO')) return 'MOMO';
+  if (m.includes('ZALO') || m.includes('ZALOPAY')) return 'ZALOPAY';
+  if (m.includes('MOMO')) return 'ZALOPAY';
   if (m.includes('VN') || m.includes('VNPAY')) return 'VNPAY';
   if (m.includes('VISA') || m.includes('MASTER') || m.includes('CREDIT') || m.includes('CARD')) return 'STRIPE';
   if (m.includes('BANK') || m.includes('CHUYỂN') || m.includes('TRANSFER')) return 'BANK_TRANSFER';

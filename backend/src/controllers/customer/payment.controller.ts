@@ -12,10 +12,17 @@ export interface PaymentMethodItem {
 function getAvailablePaymentMethods(): PaymentMethodItem[] {
   return [
     {
-      code: 'PAYPAL',
-      name: 'Ví điện tử PayPal (USD)',
-      description: 'Thanh toán quốc tế bảo mật qua cổng PayPal',
-      currency: 'USD',
+      code: 'VNPAY',
+      name: 'Cổng thanh toán VNPay',
+      description: 'Quét mã QR VNPay / Thẻ ATM nội địa',
+      currency: 'VND',
+      is_active: true,
+    },
+    {
+      code: 'ZALOPAY',
+      name: 'Ví điện tử ZaloPay',
+      description: 'Thanh toán quét mã QR ZaloPay / Thẻ ATM nội địa',
+      currency: 'VND',
       is_active: true,
     },
     {
@@ -26,17 +33,10 @@ function getAvailablePaymentMethods(): PaymentMethodItem[] {
       is_active: true,
     },
     {
-      code: 'VNPAY',
-      name: 'Cổng thanh toán VNPay',
-      description: 'Quét mã QR VNPay / Thẻ ATM nội địa',
-      currency: 'VND',
-      is_active: true,
-    },
-    {
-      code: 'MOMO',
-      name: 'Ví điện tử MoMo',
-      description: 'Quét mã thanh toán qua ví điện tử MoMo',
-      currency: 'VND',
+      code: 'PAYPAL',
+      name: 'Ví điện tử PayPal (USD)',
+      description: 'Thanh toán quốc tế bảo mật qua cổng PayPal',
+      currency: 'USD',
       is_active: true,
     },
   ];

@@ -88,6 +88,13 @@ export default function OrderHistoryPage() {
       const isPaypalSuccess = urlParams.get("paypal_success") === "true";
       const isStripeSuccess = urlParams.get("stripe_success") === "true";
       const sessionId = urlParams.get("session_id");
+      let pendingZaloPay: { orderId?: number; appTransId?: string } | null = null;
+      try {
+        const storedPayment = window.localStorage.getItem("pending_zalopay_payment");
+        if (storedPayment) pendingZaloPay = JSON.parse(storedPayment);
+      } catch {
+        window.localStorage.removeItem("pending_zalopay_payment");
+      }
 
       // 1. Xử lý khi Stripe redirect về
       if (isStripeSuccess && orderIdStr) {
@@ -151,69 +158,68 @@ export default function OrderHistoryPage() {
             });
         }
       }
-      // 3. Xử lý khi MoMo redirect về (nhận diện qua momo_redirect, partnerCode, hoặc mã đơn EV_ORD_)
-      const isMoMoRedirect =
-        urlParams.get("momo_redirect") === "true" ||
-        urlParams.has("partnerCode") ||
-        (urlParams.has("resultCode") && (urlParams.get("orderId")?.startsWith("EV_ORD_") || urlParams.has("transId")));
+      // 3. Xử lý khi ZaloPay redirect về (nhận diện qua apptransid, status, zalopay_redirect)
+      const appTransId = urlParams.get("apptransid") || pendingZaloPay?.appTransId || null;
+      const isZaloPayRedirect =
+        urlParams.get("zalopay_redirect") === "true" ||
+        Boolean(appTransId) ||
+        (urlParams.has("status") && urlParams.has("checksum")) ||
+        Boolean(pendingZaloPay);
 
-      if (isMoMoRedirect) {
-        const momoResultCode = urlParams.get("resultCode");
-        const momoMessage = urlParams.get("message");
-        const momoOrderId = urlParams.get("orderId") || "";
-        const momoTransId = urlParams.get("transId") || "";
-        const resultCodeNum = momoResultCode !== null ? parseInt(momoResultCode, 10) : 0;
+      if (isZaloPayRedirect) {
+        const zaloStatus = urlParams.get("status");
+        const zaloAmount = urlParams.get("amount");
+        const zaloChecksum = urlParams.get("checksum");
+        const statusNum = zaloStatus !== null ? parseInt(zaloStatus, 10) : 1;
 
         let orderId: number | null = null;
         if (orderIdStr) {
           orderId = parseInt(orderIdStr, 10);
-        } else {
-          const match = momoOrderId.match(/EV_ORD_(\d+)/);
-          if (match && match[1]) {
-            orderId = parseInt(match[1], 10);
-          } else if (urlParams.get("extraData")) {
-            try {
-              const decoded = JSON.parse(atob(urlParams.get("extraData")!));
-              if (decoded.orderId) orderId = parseInt(decoded.orderId, 10);
-            } catch {}
+        } else if (pendingZaloPay?.orderId) {
+          orderId = Number(pendingZaloPay.orderId);
+        } else if (appTransId) {
+          const parts = appTransId.split("_");
+          if (parts.length >= 2 && !isNaN(Number(parts[1]))) {
+            orderId = parseInt(parts[1], 10);
           }
         }
 
         window.history.replaceState({}, document.title, window.location.pathname);
 
         if (orderId && !isNaN(orderId)) {
-          if (resultCodeNum === 0) {
+          if (statusNum === 1 || statusNum === 0) {
             setPaypalCaptureStatus({
               status: "processing",
-              message: "Đang tự động xác thực giao dịch MoMo Sandbox và phát hành mã Voucher...",
+              message: "Đang tự động xác thực giao dịch ZaloPay Sandbox và phát hành mã Voucher...",
             });
 
             customerPaymentApi
-              .captureMoMoOrder(orderId, {
-                resultCode: resultCodeNum,
-                message: momoMessage || "Thành công",
-                orderId: momoOrderId,
-                transId: momoTransId,
+              .captureZaloPayOrder(orderId, {
+                status: statusNum,
+                apptransid: appTransId,
+                amount: zaloAmount,
+                checksum: zaloChecksum,
               })
               .then(() => {
+                window.localStorage.removeItem("pending_zalopay_payment");
                 setPaypalCaptureStatus({
                   status: "success",
-                  message: `Thanh toán MoMo cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                  message: `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
                 });
                 loadOrders();
               })
               .catch((err) => {
-                console.warn("Lỗi auto capture MoMo redirect:", err);
+                console.warn("Lỗi auto capture ZaloPay redirect:", err);
                 setPaypalCaptureStatus({
                   status: "error",
-                  message: err.message || "Không thể hoàn tất thanh toán tự động qua MoMo.",
+                  message: err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.",
                 });
                 loadOrders();
               });
           } else {
             setPaypalCaptureStatus({
               status: "error",
-              message: `Giao dịch MoMo #${orderId} không thành công: ${momoMessage || "Người dùng đã hủy giao dịch"}.`,
+              message: `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`,
             });
             loadOrders();
           }
@@ -316,7 +322,7 @@ export default function OrderHistoryPage() {
         if (paymentMethodFilter === "STRIPE" && !method.includes("STRIPE") && !method.includes("CARD") && !method.includes("VISA")) return false;
         if (paymentMethodFilter === "PAYPAL" && !method.includes("PAYPAL")) return false;
         if (paymentMethodFilter === "VNPAY" && !method.includes("VN")) return false;
-        if (paymentMethodFilter === "MOMO" && !method.includes("MOMO")) return false;
+        if (paymentMethodFilter === "ZALOPAY" && !method.includes("ZALO")) return false;
         if (paymentMethodFilter === "CARD" && !method.includes("CREDIT") && !method.includes("CARD") && !method.includes("VISA") && !method.includes("STRIPE")) return false;
       }
 
@@ -464,10 +470,10 @@ export default function OrderHistoryPage() {
               className="w-full bg-surface-lowest border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary font-body-md text-body-md text-on-surface shadow-sm cursor-pointer"
             >
               <option value="all">Tất cả phương thức thanh toán</option>
+              <option value="VNPAY">Ví VNPay</option>
+              <option value="ZALOPAY">Ví ZaloPay</option>
               <option value="STRIPE">Thẻ Quốc tế (Stripe)</option>
               <option value="PAYPAL">Ví PayPal</option>
-              <option value="VNPAY">Ví VNPay</option>
-              <option value="MOMO">Ví MoMo</option>
             </select>
           </div>
 

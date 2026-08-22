@@ -87,7 +87,7 @@ test('Payment Methods API: GET /api/customer/payments/methods is accessible', as
   assert.ok(data.payment_methods.some((m: any) => m.code === 'PAYPAL'));
   assert.ok(data.payment_methods.some((m: any) => m.code === 'STRIPE'));
   assert.ok(data.payment_methods.some((m: any) => m.code === 'VNPAY'));
-  assert.ok(data.payment_methods.some((m: any) => m.code === 'MOMO'));
+  assert.ok(data.payment_methods.some((m: any) => m.code === 'ZALOPAY'));
 });
 
 test('PayPal API: Authentication guard blocks unauthenticated requests', async () => {
