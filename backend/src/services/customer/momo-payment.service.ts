@@ -125,7 +125,7 @@ export async function createMoMoPaymentSession(
     orderId: momoOrderId,
     orderInfo,
     partnerCode: config.partnerCode,
-    redirectUrl: `${config.redirectUrl}?order_id=${orderId}&momo_redirect=true`,
+    redirectUrl: config.redirectUrl,
     requestId,
     requestType: validRequestType,
     secretKey: config.secretKey,
@@ -139,7 +139,7 @@ export async function createMoMoPaymentSession(
     amount,
     orderId: momoOrderId,
     orderInfo,
-    redirectUrl: `${config.redirectUrl}?order_id=${orderId}&momo_redirect=true`,
+    redirectUrl: config.redirectUrl,
     ipnUrl: config.ipnUrl,
     lang: 'vi',
     extraData,
@@ -381,7 +381,21 @@ export async function verifyAndCaptureMoMoOrder(
   orderId: number,
   momoParams?: any
 ) {
-  if (!orderId || isNaN(orderId)) {
+  let targetOrderId = orderId;
+  if ((!targetOrderId || isNaN(targetOrderId)) && momoParams) {
+    if (momoParams.orderId) {
+      const match = String(momoParams.orderId).match(/EV_ORD_(\d+)/);
+      if (match && match[1]) targetOrderId = Number(match[1]);
+    }
+    if ((!targetOrderId || isNaN(targetOrderId)) && momoParams.extraData) {
+      try {
+        const decoded = JSON.parse(Buffer.from(momoParams.extraData, 'base64').toString('utf-8'));
+        if (decoded.orderId) targetOrderId = Number(decoded.orderId);
+      } catch {}
+    }
+  }
+
+  if (!targetOrderId || isNaN(targetOrderId)) {
     throw { status: 400, message: 'Mã đơn hàng không hợp lệ.' };
   }
 
@@ -408,7 +422,7 @@ export async function verifyAndCaptureMoMoOrder(
        FROM orders 
        WHERE order_id = $1 AND (buyer_user_id = $2 OR recipient_user_id = $2)
        FOR UPDATE`,
-      [orderId, customerId]
+      [targetOrderId, customerId]
     );
 
     if (orderRes.rows.length === 0) {
@@ -424,14 +438,14 @@ export async function verifyAndCaptureMoMoOrder(
          FROM issued_vouchers iv
          JOIN voucher_programs vp ON vp.program_id = iv.program_id
          WHERE iv.order_item_id IN (SELECT order_item_id FROM order_items WHERE order_id = $1)`,
-        [orderId]
+        [targetOrderId]
       );
       await client.query('COMMIT');
       return {
         success: true,
         message: 'Đơn hàng đã được thanh toán hoàn tất trước đó.',
         order: {
-          order_id: orderId,
+          order_id: targetOrderId,
           created_at: order.created_at,
           total_amount: Number(order.total_amount),
           payment_method: 'MOMO',
@@ -452,7 +466,7 @@ export async function verifyAndCaptureMoMoOrder(
       `UPDATE orders 
        SET payment_status = 'PAID', order_status = 'COMPLETED', payment_method = 'MOMO'
        WHERE order_id = $1`,
-      [orderId]
+      [targetOrderId]
     );
 
     // Lấy danh sách sản phẩm trong đơn để phát hành mã voucher
@@ -468,7 +482,7 @@ export async function verifyAndCaptureMoMoOrder(
        FROM order_items oi
        JOIN voucher_programs vp ON vp.program_id = oi.program_id
        WHERE oi.order_id = $1`,
-      [orderId]
+      [targetOrderId]
     );
 
     const recipientUserId = order.recipient_user_id || order.buyer_user_id;

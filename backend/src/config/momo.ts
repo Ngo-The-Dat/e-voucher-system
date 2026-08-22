@@ -27,13 +27,13 @@ export interface MoMoConfig {
  * Lấy cấu hình MoMo từ biến môi trường (Mặc định sử dụng thông tin Sandbox chính thức của MoMo)
  */
 export function getMoMoConfig(): MoMoConfig {
-  let ipnUrl = process.env.MOMO_IPN_URL || 'https://test-payment.momo.vn/v2/gateway/api/notify';
+  let ipnUrl = process.env.MOMO_IPN_URL || 'https://vouchify.duckdns.org/api/customer/payments/momo/ipn';
   
   // Nếu cấu hình IPN là localhost/127.0.0.1, máy chủ MoMo trên Cloud sẽ không kết nối được
   // và bị treo (TCP timeout 15-30s) ở trang "Đang hoàn tất giao dịch...".
-  // Tự động dùng endpoint notify của MoMo Sandbox để MoMo phản hồi và redirect ngay lập tức!
+  // Tự động dùng endpoint notify của MoMo Sandbox hoặc domain deploy để MoMo phản hồi ngay lập tức!
   if (ipnUrl.includes('localhost') || ipnUrl.includes('127.0.0.1')) {
-    ipnUrl = 'https://test-payment.momo.vn/v2/gateway/api/notify';
+    ipnUrl = 'https://vouchify.duckdns.org/api/customer/payments/momo/ipn';
   }
 
   return {
@@ -42,7 +42,7 @@ export function getMoMoConfig(): MoMoConfig {
     secretKey: process.env.MOMO_SECRET_KEY || 'at67qH6mk8w5Y1nAyMoYKMWACiEi2bsa',
     apiEndpoint: process.env.MOMO_API_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/create',
     queryEndpoint: process.env.MOMO_QUERY_ENDPOINT || 'https://test-payment.momo.vn/v2/gateway/api/query',
-    redirectUrl: process.env.MOMO_REDIRECT_URL || 'http://localhost:3000/orders',
+    redirectUrl: process.env.MOMO_REDIRECT_URL || 'https://vouchify.duckdns.org/orders',
     ipnUrl,
   };
 }
