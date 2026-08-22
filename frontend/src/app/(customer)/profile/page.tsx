@@ -164,10 +164,17 @@ export default function CustomerProfilePage() {
         new_password: newPassword
       });
       
-      showToast("Đổi mật khẩu thành công.");
+      showToast("Đổi mật khẩu thành công. Bạn sẽ được chuyển hướng về trang Đăng nhập...");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
+      // Tự động đăng xuất sau khi đổi mật khẩu
+      setTimeout(() => {
+        customerAuthApi.logout();
+        window.dispatchEvent(new Event("customer-auth-changed"));
+        router.push("/login");
+      }, 2000);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu.");
     } finally {
