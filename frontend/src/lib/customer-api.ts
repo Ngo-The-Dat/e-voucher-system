@@ -318,6 +318,23 @@ export interface PayPalCreateOrderResponse {
   };
 }
 
+/**
+ * Kiểu dữ liệu phản hồi khi tạo phiên Stripe Checkout Session thành công
+ */
+export interface StripeCreateSessionResponse {
+  success: boolean;
+  message: string;
+  payment: {
+    order_id: number;
+    session_id: string;      // ID phiên thanh toán do Stripe cấp
+    checkout_url: string;    // URL chuyển hướng người dùng sang trang thanh toán của Stripe
+    amount_vnd: number;      // Số tiền thanh toán bằng VND
+    currency: string;        // Đơn vị tiền tệ (mặc định 'VND')
+    status: string;          // Trạng thái phiên ('OPEN')
+    created_at?: string;
+  };
+}
+
 export const customerPaymentApi = {
   getPaymentMethods: () =>
     request<{ success: boolean; payment_methods: PaymentMethodItem[] }>("/customer/payments/methods"),
@@ -347,6 +364,37 @@ export const customerPaymentApi = {
     }),
   getPayPalStatus: (orderId: number) =>
     request<any>(`/customer/payments/paypal/order/${orderId}/status`),
+
+  // ==========================================
+  // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN STRIPE SANDBOX
+  // ==========================================
+
+  /**
+   * 1. Khởi tạo phiên thanh toán Stripe Checkout và nhận URL chuyển hướng
+   */
+  createStripeSession: (orderId: number) =>
+    request<StripeCreateSessionResponse>("/customer/payments/stripe/create-checkout-session", {
+      method: "POST",
+      body: JSON.stringify({ order_id: orderId }),
+    }),
+
+  /**
+   * 2. Xác thực giao dịch thanh toán từ Stripe và phát hành mã E-Voucher
+   */
+  captureStripeOrder: (orderId: number, sessionId?: string) =>
+    request<CreateOrderResponse>("/customer/payments/stripe/capture-order", {
+      method: "POST",
+      body: JSON.stringify({
+        order_id: orderId,
+        session_id: sessionId,
+      }),
+    }),
+
+  /**
+   * 3. Tra cứu trạng thái đơn hàng Stripe
+   */
+  getStripeStatus: (orderId: number) =>
+    request<any>(`/customer/payments/stripe/order/${orderId}/status`),
 };
 
 export interface PublicVouchersFilter {

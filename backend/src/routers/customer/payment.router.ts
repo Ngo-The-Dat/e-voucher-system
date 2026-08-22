@@ -12,6 +12,7 @@
 import { Router } from 'express';
 import { getPaymentMethods } from '../../controllers/customer/payment.controller.js';
 import paypalRouter from './paypal-payment.router.js';
+import stripeRouter from './stripe-payment.router.js';
 
 const router = Router();
 
@@ -21,8 +22,10 @@ router.get('/methods', getPaymentMethods);
 // 2. Namespace cổng thanh toán PayPal (/api/customer/payments/paypal/...)
 router.use('/paypal', paypalRouter);
 
-// 3. Các cổng thanh toán khác (Stripe, VNPay, MoMo) do các thành viên khác phụ trách sẽ mount vào đây:
-// router.use('/stripe', stripeRouter);
+// 3. Namespace cổng thanh toán Stripe (/api/customer/payments/stripe/...)
+router.use('/stripe', stripeRouter);
+
+// 4. Các cổng thanh toán khác (VNPay, MoMo) do các thành viên khác phụ trách:
 // router.use('/vnpay', vnpayRouter);
 // router.use('/momo', momoRouter);
 

@@ -61,10 +61,24 @@ export default function PaymentSimulatorModal({
     approveUrl?: string;
   } | null>(null);
   const [paypalLoading, setPaypalLoading] = useState(false);
+
+  // Stripe specific state
+  const [stripeDetails, setStripeDetails] = useState<{
+    sessionId: string;
+    checkoutUrl: string;
+    amountVnd: number;
+  } | null>(null);
+  const [stripeLoading, setStripeLoading] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isPayPal = useMemo(() => {
     return (order?.paymentMethod || "").toUpperCase().includes("PAYPAL");
+  }, [order?.paymentMethod]);
+
+  const isStripe = useMemo(() => {
+    const m = (order?.paymentMethod || "").toUpperCase();
+    return m.includes("STRIPE") || m.includes("CARD") || m.includes("VISA") || m.includes("MASTER");
   }, [order?.paymentMethod]);
 
   // Khởi tạo PayPal Order khi modal mở cho đơn PayPal
@@ -99,6 +113,37 @@ export default function PaymentSimulatorModal({
         setPaypalLoading(false);
       });
   }, [isOpen, order?.orderId, isPayPal]);
+
+  // Khởi tạo Stripe Checkout Session khi modal mở cho đơn Stripe
+  useEffect(() => {
+    if (!isOpen || !order || !isStripe) {
+      setStripeDetails(null);
+      return;
+    }
+
+    setStripeDetails(null);
+    setStripeLoading(true);
+    setErrorMessage(null);
+
+    customerPaymentApi
+      .createStripeSession(order.orderId)
+      .then((res) => {
+        if (res.success && res.payment) {
+          setStripeDetails({
+            sessionId: res.payment.session_id,
+            checkoutUrl: res.payment.checkout_url,
+            amountVnd: res.payment.amount_vnd,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Lỗi khi khởi tạo đơn hàng Stripe:", err);
+        setErrorMessage(err.message || "Không thể kết nối cổng Stripe Sandbox.");
+      })
+      .finally(() => {
+        setStripeLoading(false);
+      });
+  }, [isOpen, order?.orderId, isStripe]);
 
   // Tính toán thời gian đếm ngược 5 phút
   useEffect(() => {
@@ -163,8 +208,16 @@ export default function PaymentSimulatorModal({
       setErrorMessage("Chưa nhận được đường dẫn thanh toán từ PayPal. Vui lòng thử lại.");
       return;
     }
-    // Chuyển hướng trực tiếp đến trang PayPal Checkout
     window.location.href = paypalDetails.approveUrl;
+  };
+
+  // Điều hướng người dùng sang trang Stripe Checkout
+  const handleProceedToStripe = () => {
+    if (!stripeDetails?.checkoutUrl) {
+      setErrorMessage("Chưa nhận được đường dẫn thanh toán từ Stripe. Vui lòng thử lại.");
+      return;
+    }
+    window.location.href = stripeDetails.checkoutUrl;
   };
 
   // Xử lý xác nhận thanh toán (Dành cho phương thức QR / Chuyển khoản thông thường)
@@ -202,10 +255,10 @@ export default function PaymentSimulatorModal({
 
   const paymentMethodName = isPayPal
     ? "Ví điện tử PayPal"
+    : isStripe
+    ? "Thẻ Visa / Mastercard (Stripe)"
     : order.paymentMethod === "MOMO"
     ? "Ví điện tử MoMo"
-    : order.paymentMethod === "STRIPE"
-    ? "Thẻ Quốc tế (Stripe)"
     : "Cổng thanh toán VNPay";
 
   const transferContent = `ORD${order.orderId}`;
@@ -233,10 +286,18 @@ export default function PaymentSimulatorModal({
               className={`w-10 h-10 rounded-full flex items-center justify-center ${
                 isPayPal
                   ? "bg-[#003087]/10 text-[#003087] dark:text-[#0070BA] font-black"
+                  : isStripe
+                  ? "bg-[#635BFF]/10 text-[#635BFF]"
                   : "bg-primary/10 text-primary"
               }`}
             >
-              {isPayPal ? <DollarSign className="w-5 h-5 font-bold" /> : <QrCode className="w-5 h-5" />}
+              {isPayPal ? (
+                <DollarSign className="w-5 h-5 font-bold" />
+              ) : isStripe ? (
+                <CreditCard className="w-5 h-5" />
+              ) : (
+                <QrCode className="w-5 h-5" />
+              )}
             </div>
             <div>
               <h2 className="font-title-md text-title-md font-bold text-on-surface flex items-center gap-2">
@@ -245,6 +306,8 @@ export default function PaymentSimulatorModal({
               <p className="text-xs text-on-surface-variant">
                 {isPayPal
                   ? "Cổng thanh toán quốc tế PayPal (Sandbox)"
+                  : isStripe
+                  ? "Cổng thanh toán thẻ Stripe Checkout (Sandbox)"
                   : "Mô phỏng quét mã QR thanh toán"}
               </p>
             </div>
@@ -263,7 +326,7 @@ export default function PaymentSimulatorModal({
 
         {/* Modal Body */}
         <div className="p-6 overflow-y-auto space-y-6 flex-grow">
-          {/* Success Overlay View (dành cho phương thức khác) */}
+          {/* Success Overlay View */}
           {isSuccess ? (
             <div className="py-12 flex flex-col items-center justify-center text-center space-y-4 animate-scaleUp">
               <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center shadow-lg">
@@ -325,7 +388,7 @@ export default function PaymentSimulatorModal({
                 </div>
               </div>
 
-              {/* Giao diện PayPal Sandbox Flow chuẩn */}
+              {/* Giao diện PayPal Sandbox Flow */}
               {isPayPal ? (
                 <div className="space-y-4">
                   {paypalLoading ? (
@@ -335,7 +398,6 @@ export default function PaymentSimulatorModal({
                     </div>
                   ) : (
                     <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50/50 via-sky-50/30 to-surface border border-outline-variant/60 space-y-4">
-                      {/* PayPal Header */}
                       <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
                         <div className="flex items-center gap-2">
                           <span className="text-[#003087] dark:text-[#0070BA] font-black text-2xl tracking-tight">
@@ -351,7 +413,6 @@ export default function PaymentSimulatorModal({
                         </div>
                       </div>
 
-                      {/* Số tiền quy đổi */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="p-3.5 bg-surface rounded-xl border border-outline-variant/40 shadow-sm">
                           <span className="text-xs text-on-surface-variant font-medium block">Số tiền gốc (VND)</span>
@@ -368,7 +429,6 @@ export default function PaymentSimulatorModal({
                         </div>
                       </div>
 
-                      {/* Tỷ giá quy đổi & Token */}
                       <div className="space-y-2 text-xs text-on-surface-variant pt-1">
                         <div className="flex justify-between items-center py-1 border-b border-outline-variant/20">
                           <span>Tỷ giá quy đổi:</span>
@@ -395,14 +455,80 @@ export default function PaymentSimulatorModal({
                         )}
                       </div>
 
-                      {/* Hướng dẫn thanh toán Sandbox */}
                       <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 rounded-xl border border-blue-100 dark:border-blue-900/50 text-xs text-on-surface-variant space-y-1">
                         <p className="font-bold text-[#003087] dark:text-blue-300 flex items-center gap-1.5">
                           <ShieldCheck className="w-4 h-4" /> Luồng thanh toán PayPal Sandbox:
                         </p>
                         <p>
-                          Bấm nút <strong>"Tiến hành Thanh toán qua PayPal"</strong> bên dưới để chuyển hướng đến trang web PayPal, đăng nhập bằng tài khoản Sandbox Personal (Buyer) để hoàn tất. Sau khi thanh toán, hệ thống sẽ tự động phát hành E-Voucher.
+                          Bấm nút <strong>"Tiến hành Thanh toán qua PayPal"</strong> bên dưới để chuyển hướng đến trang web PayPal, đăng nhập bằng tài khoản Sandbox Personal (Buyer) để hoàn tất.
                         </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : isStripe ? (
+                /* Giao diện Stripe Checkout Sandbox Flow */
+                <div className="space-y-4">
+                  {stripeLoading ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
+                      <RefreshCw className="w-6 h-6 animate-spin text-[#635BFF]" />
+                      <span className="text-sm font-medium">Đang tạo phiên Stripe Checkout bảo mật...</span>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-surface border border-outline-variant/60 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#635BFF] font-black text-2xl tracking-tight">
+                            stripe
+                          </span>
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950/50 text-[#635BFF] dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800">
+                            Sandbox Checkout
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-on-surface-variant font-medium">
+                          <CreditCard className="w-3.5 h-3.5 text-[#635BFF]" />
+                          <span>Visa / Mastercard / JCB</span>
+                        </div>
+                      </div>
+
+                      <div className="p-4 bg-surface rounded-xl border border-outline-variant/40 shadow-sm flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-on-surface-variant font-medium block">Tổng tiền thanh toán</span>
+                          <span className="text-2xl font-black text-[#635BFF]">
+                            {order.totalAmount.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                        <span className="text-xs px-2 py-1 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 font-bold border border-emerald-200">
+                          VND Tiền tệ
+                        </span>
+                      </div>
+
+                      {stripeDetails?.sessionId && (
+                        <div className="flex justify-between items-center py-1 text-xs text-on-surface-variant">
+                          <span>Stripe Session ID:</span>
+                          <div className="flex items-center gap-1.5 font-mono font-bold text-primary">
+                            <span className="text-[11px] truncate max-w-[200px]">{stripeDetails.sessionId}</span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopy(stripeDetails.sessionId, "session")}
+                              className="p-1 hover:bg-primary/10 rounded cursor-pointer"
+                              title="Sao chép Session ID"
+                            >
+                              {copiedField === "session" ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="p-3 bg-purple-50/60 dark:bg-purple-950/30 rounded-xl border border-purple-100 dark:border-purple-900/50 text-xs text-on-surface-variant space-y-1.5">
+                        <p className="font-bold text-[#635BFF] dark:text-purple-300 flex items-center gap-1.5">
+                          <ShieldCheck className="w-4 h-4" /> Thẻ Test Stripe Sandbox:
+                        </p>
+                        <div className="p-2 rounded bg-surface border border-outline-variant/40 space-y-1 font-mono text-[11px]">
+                          <p>• Số thẻ: <strong className="text-primary font-bold">4242 4242 4242 4242</strong></p>
+                          <p>• Hạn dùng: <span className="font-semibold">Tháng/Năm bất kỳ ở tương lai (VD: 12/28)</span></p>
+                          <p>• CVC: <span className="font-semibold">123</span> &nbsp;|&nbsp; ZIP: <span className="font-semibold">70000</span></p>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -532,7 +658,7 @@ export default function PaymentSimulatorModal({
 
             <div className="flex items-center gap-2 w-full sm:w-auto">
               {isPayPal ? (
-                /* Nút thanh toán duy nhất cho PayPal Sandbox: Chuyển hướng trực tiếp đến trang PayPal Checkout */
+                /* Nút thanh toán duy nhất cho PayPal Sandbox */
                 <button
                   type="button"
                   onClick={handleProceedToPayPal}
@@ -545,6 +671,21 @@ export default function PaymentSimulatorModal({
                 >
                   <ExternalLink className="w-4 h-4" />
                   <span>Tiến hành Thanh toán qua PayPal</span>
+                </button>
+              ) : isStripe ? (
+                /* Nút thanh toán cho Stripe Checkout Sandbox */
+                <button
+                  type="button"
+                  onClick={handleProceedToStripe}
+                  disabled={isExpired || stripeLoading || !stripeDetails?.checkoutUrl}
+                  className={`w-full sm:w-auto px-8 py-3 rounded-xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                    isExpired || !stripeDetails?.checkoutUrl
+                      ? "bg-surface-container-highest text-on-surface-variant cursor-not-allowed"
+                      : "bg-[#635BFF] hover:bg-[#5851DF] text-white hover:shadow-lg active:scale-98"
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Tiến hành Thanh toán qua Stripe</span>
                 </button>
               ) : (
                 /* Nút xác nhận cho các phương thức quét mã QR khác */

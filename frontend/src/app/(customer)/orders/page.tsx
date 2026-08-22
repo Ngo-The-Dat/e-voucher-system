@@ -80,14 +80,47 @@ export default function OrderHistoryPage() {
     window.addEventListener("focus", handleRevalidate);
     document.addEventListener("visibilitychange", handleRevalidate);
 
-    // Tự động kiểm tra và capture nếu được PayPal redirect về
+    // Tự động kiểm tra và capture nếu được PayPal hoặc Stripe redirect về
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("token");
       const orderIdStr = urlParams.get("order_id");
       const isPaypalSuccess = urlParams.get("paypal_success") === "true";
+      const isStripeSuccess = urlParams.get("stripe_success") === "true";
+      const sessionId = urlParams.get("session_id");
 
-      if (token && (orderIdStr || isPaypalSuccess)) {
+      // 1. Xử lý khi Stripe redirect về
+      if (isStripeSuccess && orderIdStr) {
+        const orderId = parseInt(orderIdStr, 10);
+        setPaypalCaptureStatus({
+          status: "processing",
+          message: "Đang tự động xác thực giao dịch Stripe và phát hành mã Voucher...",
+        });
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (orderId && !isNaN(orderId)) {
+          customerPaymentApi
+            .captureStripeOrder(orderId, sessionId || undefined)
+            .then(() => {
+              setPaypalCaptureStatus({
+                status: "success",
+                message: `Thanh toán Stripe cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+              });
+              loadOrders();
+            })
+            .catch((err) => {
+              console.warn("Lỗi auto capture Stripe redirect:", err);
+              setPaypalCaptureStatus({
+                status: "error",
+                message: err.message || "Không thể hoàn tất thanh toán tự động qua Stripe.",
+              });
+              loadOrders();
+            });
+        }
+      }
+      // 2. Xử lý khi PayPal redirect về
+      else if (token && (orderIdStr || isPaypalSuccess)) {
         const orderId = orderIdStr ? parseInt(orderIdStr, 10) : undefined;
         
         setPaypalCaptureStatus({
@@ -212,9 +245,11 @@ export default function OrderHistoryPage() {
       // 3. Payment method filter
       if (paymentMethodFilter !== "all") {
         const method = (order.payment_method || "").toUpperCase();
+        if (paymentMethodFilter === "STRIPE" && !method.includes("STRIPE") && !method.includes("CARD") && !method.includes("VISA")) return false;
+        if (paymentMethodFilter === "PAYPAL" && !method.includes("PAYPAL")) return false;
         if (paymentMethodFilter === "VNPAY" && !method.includes("VN")) return false;
         if (paymentMethodFilter === "MOMO" && !method.includes("MOMO")) return false;
-        if (paymentMethodFilter === "CARD" && !method.includes("CREDIT") && !method.includes("CARD") && !method.includes("VISA")) return false;
+        if (paymentMethodFilter === "CARD" && !method.includes("CREDIT") && !method.includes("CARD") && !method.includes("VISA") && !method.includes("STRIPE")) return false;
       }
 
       // 4. Time range filter
@@ -361,9 +396,10 @@ export default function OrderHistoryPage() {
               className="w-full bg-surface-lowest border border-outline-variant rounded-lg py-2.5 px-3 focus:outline-none focus:border-primary font-body-md text-body-md text-on-surface shadow-sm cursor-pointer"
             >
               <option value="all">Tất cả phương thức thanh toán</option>
+              <option value="STRIPE">Thẻ Quốc tế (Stripe)</option>
+              <option value="PAYPAL">Ví PayPal</option>
               <option value="VNPAY">Ví VNPay</option>
               <option value="MOMO">Ví MoMo</option>
-              <option value="CARD">Thẻ ATM / Visa / Mastercard</option>
             </select>
           </div>
 
