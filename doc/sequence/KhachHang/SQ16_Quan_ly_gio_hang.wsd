@@ -1,0 +1,87 @@
+@startuml
+title Biểu đồ tuần tự: Quan_ly_gio_hang
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Giỏ hàng (CartPage)" as UI
+control "CartController" as Controller
+entity "CartService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+
+'--- View cart ---
+KH -> UI : openCartPage()
+activate UI
+UI -> Controller : getCart(customerId)
+activate Controller
+Controller -> Service : fetchCartItems(customerId)
+activate Service
+Service -> DB : queryCart(customerId)
+activate DB
+DB --> Service : cartItems
+deactivate DB
+Service --> Controller : cartItems
+deactivate Service
+Controller --> UI : renderCart(cartItems)
+deactivate Controller
+UI --> KH : displayCart(cartItems)
+deactivate UI
+
+'--- Add item to cart ---
+KH -> UI : addItem(productId, quantity)
+activate UI
+UI -> Controller : addItemToCart(customerId, productId, quantity)
+activate Controller
+Controller -> Service : addItem(customerId, productId, quantity)
+activate Service
+Service -> DB : insertOrUpdateCartItem(...)
+activate DB
+DB --> Service : success
+deactivate DB
+Service --> Controller : success
+deactivate Service
+Controller --> UI : showAddSuccess()
+else Out of stock
+    Service --> Controller : error("OutOfStock")
+    Controller --> UI : showErrorMessage("Sản phẩm hết hàng")
+end
+UI --> KH : addItemResult
+deactivate UI
+
+'--- Update quantity ---
+KH -> UI : updateQuantity(cartItemId, newQty)
+activate UI
+UI -> Controller : updateCartItem(cartItemId, newQty)
+activate Controller
+Controller -> Service : updateItem(cartItemId, newQty)
+activate Service
+Service -> DB : updateCartItem(...)
+activate DB
+DB --> Service : success
+deactivate DB
+Service --> Controller : success
+deactivate Service
+Controller --> UI : showUpdateSuccess()
+else Quantity exceeds limit
+    Service --> Controller : error("QuantityLimit")
+    Controller --> UI : showErrorMessage("Số lượng vượt quá giới hạn")
+end
+UI --> KH : updateResult
+deactivate UI
+
+'--- Remove item ---
+KH -> UI : removeItem(cartItemId)
+activate UI
+UI -> Controller : removeCartItem(cartItemId)
+activate Controller
+Controller -> Service : deleteItem(cartItemId)
+activate Service
+Service -> DB : deleteCartItem(...)
+activate DB
+DB --> Service : success
+deactivate DB
+Service --> Controller : success
+deactivate Service
+Controller --> UI : showRemoveSuccess()
+UI --> KH : removeResult
+deactivate UI
+@enduml

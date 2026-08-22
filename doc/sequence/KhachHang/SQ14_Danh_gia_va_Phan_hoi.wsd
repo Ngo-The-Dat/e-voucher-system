@@ -1,0 +1,47 @@
+@startuml
+title Biểu đồ tuần tự: Danh_gia_va_Phan_hoi
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Đánh giá (CustomerRatingPage)" as UI
+control "RatingController" as Controller
+entity "RatingService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+
+KH -> UI : openRatingPage()
+activate UI
+UI -> Controller : getRatingForm(voucherId)
+activate Controller
+Controller -> Service : fetchVoucherDetails(voucherId)
+activate Service
+Service -> DB : queryVoucher(voucherId)
+activate DB
+DB --> Service : voucherData
+deactivate DB
+Service --> Controller : voucherData
+deactivate Service
+Controller --> UI : renderForm(voucherData)
+deactivate Controller
+UI --> KH : displayForm()
+deactivate UI
+
+KH -> UI : submitRating(rating, feedback)
+activate UI
+UI -> Controller : submitRating(voucherId, rating, feedback)
+activate Controller
+alt Valid input
+    Controller -> Service : saveRating(voucherId, rating, feedback)
+    activate Service
+    Service -> DB : insertRating(...)
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    deactivate Service
+    Controller --> UI : showSuccessMessage()
+else Invalid input
+    Controller --> UI : showValidationError()
+end
+UI --> KH : resultMessage
+deactivate UI
+@enduml

@@ -1,0 +1,61 @@
+@startuml
+title Biểu đồ tuần tự: Tao_don_hang
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Giỏ hàng (CartPage)" as UI
+control "OrderController" as Controller
+entity "OrderService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+boundary "Hệ thống thanh toán (PaymentGateway)" as Payment
+
+'--- Customer confirms order ---
+KH -> UI : clickConfirmOrder()
+activate UI
+UI -> Controller : createOrder(customerId, cartItems)
+activate Controller
+Controller -> Service : processOrder(customerId, cartItems)
+activate Service
+Service -> DB : insertOrder(...)
+activate DB
+DB --> Service : orderId
+deactivate DB
+Service --> Controller : orderId
+deactivate Service
+Controller --> UI : showOrderSummary(orderId)
+deactivate Controller
+UI --> KH : displayOrderSummary(orderId)
+deactivate UI
+
+'--- Payment step ---
+KH -> UI : proceedToPayment()
+activate UI
+UI -> Controller : initiatePayment(orderId, paymentMethod)
+activate Controller
+Controller -> Payment : requestPayment(orderId, amount)
+activate Payment
+Payment --> Controller : paymentToken
+deactivate Payment
+Controller --> UI : redirectToPaymentGateway(paymentToken)
+deactivate Controller
+UI --> KH : openPaymentGateway()
+deactivate UI
+
+'--- Payment callback ---
+Payment -> Controller : paymentResult(orderId, status)
+activate Controller
+alt Payment success
+    Controller -> Service : confirmPayment(orderId)
+    activate Service
+    Service -> DB : updateOrderStatus(orderId, 'PAID')
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    deactivate Service
+    Controller --> UI : showSuccessMessage()
+else Payment failure
+    Controller --> UI : showFailureMessage()
+end
+UI --> KH : paymentResultMessage
+@enduml
