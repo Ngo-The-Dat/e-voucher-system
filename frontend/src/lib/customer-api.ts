@@ -71,7 +71,13 @@ export const customerAuthApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
-  register: (payload: { full_name: string; email: string; phone?: string; password: string }) =>
+  register: (payload: {
+    full_name: string;
+    email?: string;
+    phone?: string;
+    password: string;
+    gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  }) =>
     request<{ message: string; token: string; user: CustomerUser }>("/customer/auth/register", {
       method: "POST",
       body: JSON.stringify(payload)

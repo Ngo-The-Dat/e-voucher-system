@@ -111,8 +111,8 @@ export default function HeroBanner() {
       <div className="relative z-10 max-w-container-max mx-auto w-full py-20 text-white">
         <div className="max-w-2xl">
           {/* Badge thương hiệu & Vị trí */}
-          <div className="flex items-center gap-3 mb-4">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-primary text-on-primary text-xs font-bold uppercase tracking-wider shadow-sm">
+          <div className="flex items-center gap-3 mb-4 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-gradient-to-r from-primary to-blue-500 text-on-primary text-xs font-bold uppercase tracking-wider shadow-lg animate-pulse-slow">
               <Sparkles className="w-3.5 h-3.5" /> Nổi bật
             </span>
             {currentBanner.brand_name && (
@@ -123,7 +123,7 @@ export default function HeroBanner() {
           </div>
 
           {/* Tiêu đề banner */}
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-blue-100 to-white mb-4 leading-tight animate-fade-in-up tracking-tight" style={{ animationDelay: '0.2s' }}>
             {currentBanner.title}
           </h1>
 
@@ -135,10 +135,10 @@ export default function HeroBanner() {
           )}
 
           {currentBanner.sale_price && (
-            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 mb-8">
-              <Tag className="w-5 h-5 text-primary-container" />
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 mb-8 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+              <Tag className="w-5 h-5 text-secondary-container animate-float" />
               <span className="text-sm text-white/80">Chỉ với:</span>
-              <span className="text-2xl font-bold text-white">
+              <span className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-amber-500">
                 {Number(currentBanner.sale_price).toLocaleString("vi-VN")} đ
               </span>
               {currentBanner.original_price && currentBanner.original_price > currentBanner.sale_price && (
@@ -150,12 +150,13 @@ export default function HeroBanner() {
           )}
 
           {/* CTAs */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
             <Link
               href={targetLink}
-              className="px-8 py-3.5 bg-primary text-on-primary rounded-xl font-semibold hover:-translate-y-0.5 hover:shadow-xl hover:bg-primary/90 transition-all cursor-pointer flex items-center gap-2 text-sm md:text-base"
+              className="px-8 py-3.5 bg-gradient-to-r from-primary via-blue-600 to-primary bg-[length:200%_auto] text-on-primary rounded-xl font-semibold hover:-translate-y-1 hover:shadow-2xl hover:shadow-primary/50 transition-all duration-300 cursor-pointer flex items-center gap-2 text-sm md:text-base animate-gradient-move relative overflow-hidden group/btn"
             >
-              Săn voucher ngay <ArrowRight className="w-4 h-4" />
+              <span className="relative z-10 flex items-center gap-2">Săn voucher ngay <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform" /></span>
+              <div className="absolute inset-0 -translate-x-full group-hover/btn:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/30 to-transparent z-0" />
             </Link>
             <Link
               href="/vouchers"

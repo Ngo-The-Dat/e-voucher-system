@@ -7,6 +7,7 @@ export interface CustomerRegisterInput {
   email: string;
   phone?: string;
   password: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
 }
 
 export interface CustomerLoginInput {
@@ -15,13 +16,14 @@ export interface CustomerLoginInput {
 }
 
 export const register = async (input: CustomerRegisterInput) => {
-  const full_name = input.full_name.trim();
-  const email = input.email.trim().toLowerCase();
+  const full_name = input.full_name?.trim();
+  let email = input.email ? input.email.trim().toLowerCase() : null;
   const phone = input.phone ? input.phone.trim() : null;
   const password = input.password;
+  const gender = input.gender || null;
 
-  if (!full_name || !email || !password) {
-    throw { status: 400, message: 'Vui lòng nhập đầy đủ họ tên, email và mật khẩu.' };
+  if (!full_name || (!email && !phone) || !password) {
+    throw { status: 400, message: 'Vui lòng nhập đầy đủ họ tên, mật khẩu và Email hoặc Số điện thoại.' };
   }
 
   if (password.length < 6) {
@@ -29,9 +31,11 @@ export const register = async (input: CustomerRegisterInput) => {
   }
 
   // 1. Kiểm tra email & phone đã được đăng ký chưa
-  const emailCheck = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
-  if (emailCheck.rows.length > 0) {
-    throw { status: 409, message: 'Email này đã được đăng ký trên hệ thống.' };
+  if (email) {
+    const emailCheck = await pool.query('SELECT user_id FROM users WHERE email = $1', [email]);
+    if (emailCheck.rows.length > 0) {
+      throw { status: 409, message: 'Email này đã được đăng ký trên hệ thống.' };
+    }
   }
 
   if (phone) {
@@ -48,10 +52,10 @@ export const register = async (input: CustomerRegisterInput) => {
   let result;
   try {
     result = await pool.query(
-      `INSERT INTO users (full_name, email, phone, password_hash, role, status)
-       VALUES ($1, $2, $3, $4, 'CUSTOMER', 'ACTIVE')
-       RETURNING user_id, full_name, email, phone, role, status, created_at`,
-      [full_name, email, phone, password_hash]
+      `INSERT INTO users (full_name, email, phone, password_hash, gender, role, status)
+       VALUES ($1, $2, $3, $4, $5, 'CUSTOMER', 'ACTIVE')
+       RETURNING user_id, full_name, email, phone, gender, role, status, created_at`,
+      [full_name, email, phone, password_hash, gender]
     );
   } catch (err: any) {
     if (err.code === '23505') {
@@ -88,23 +92,23 @@ export const register = async (input: CustomerRegisterInput) => {
 };
 
 export const login = async (input: CustomerLoginInput) => {
-  const email = input.email.trim().toLowerCase();
+  const loginIdentifier = input.email?.trim().toLowerCase();
   const password = input.password;
 
-  if (!email || !password) {
-    throw { status: 400, message: 'Vui lòng nhập email và mật khẩu.' };
+  if (!loginIdentifier || !password) {
+    throw { status: 400, message: 'Vui lòng nhập Email/Số điện thoại và mật khẩu.' };
   }
 
-  // 1. Tìm user role CUSTOMER
+  // 1. Tìm user role CUSTOMER bằng email hoặc SĐT
   const userResult = await pool.query(
     `SELECT user_id, full_name, email, phone, password_hash, role, status
      FROM users
-     WHERE email = $1 AND role = 'CUSTOMER'`,
-    [email]
+     WHERE (email = $1 OR phone = $1) AND role = 'CUSTOMER'`,
+    [loginIdentifier]
   );
 
   if (userResult.rows.length === 0) {
-    throw { status: 401, message: 'Email hoặc mật khẩu không chính xác.' };
+    throw { status: 401, message: 'Tài khoản hoặc mật khẩu không chính xác.' };
   }
 
   const user = userResult.rows[0];

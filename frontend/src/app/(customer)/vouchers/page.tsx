@@ -34,6 +34,11 @@ function VoucherCatalogContent() {
   const [maxPrice, setMaxPrice] = useState("");
   const [filterFourStars, setFilterFourStars] = useState(false);
   const [filterFiveStars, setFilterFiveStars] = useState(false);
+  
+  const [region, setRegion] = useState("");
+  const [minDiscount, setMinDiscount] = useState("");
+  const [partner, setPartner] = useState("");
+  const [isValidOnly, setIsValidOnly] = useState(false);
 
   // Apply filters on URL parameter changes
   useEffect(() => {
@@ -65,6 +70,10 @@ function VoucherCatalogContent() {
     setMaxPrice("");
     setFilterFourStars(false);
     setFilterFiveStars(false);
+    setRegion("");
+    setMinDiscount("");
+    setPartner("");
+    setIsValidOnly(false);
     setSortBy("popular");
     router.push("/vouchers");
   };
@@ -102,6 +111,44 @@ function VoucherCatalogContent() {
       if (v.rating < 5.0) return false;
     } else if (filterFourStars) {
       if (v.rating < 4.0) return false;
+    }
+
+    // 5. Region Match
+    if (region) {
+      const voucherLocs = [v.location, ...(v.locations || [])].filter(Boolean).map(l => l?.toLowerCase() || "");
+      if (voucherLocs.length > 0 && !voucherLocs.some(l => l.includes(region.toLowerCase()))) {
+        return false;
+      }
+    }
+
+    // 6. Discount Match
+    if (minDiscount) {
+      let pct = 0;
+      if (v.originalPrice && v.originalPrice > v.price) {
+        pct = ((v.originalPrice - v.price) / v.originalPrice) * 100;
+      } else if (v.discount && v.discount.includes("%")) {
+        pct = parseInt(v.discount);
+      }
+      if (pct < parseInt(minDiscount)) return false;
+    }
+
+    // 7. Partner Match
+    if (partner) {
+      const p = partner.toLowerCase().trim();
+      const vBrand = v.brand.toLowerCase();
+      const vMerchant = (v.merchant || "").toLowerCase();
+      if (!vBrand.includes(p) && !vMerchant.includes(p)) return false;
+    }
+
+    // 8. Validity Match
+    if (isValidOnly) {
+      if (v.expiryDate) {
+        const parts = v.expiryDate.split('/');
+        if (parts.length === 3) {
+          const expDate = new Date(`${parts[2]}-${parts[1]}-${parts[0]}T23:59:59`);
+          if (expDate < new Date()) return false;
+        }
+      }
     }
 
     return true;
@@ -252,6 +299,21 @@ function VoucherCatalogContent() {
               </nav>
             </div>
 
+            {/* Region Filter */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">Khu vực</h3>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-md text-label-sm focus:border-primary outline-none"
+              >
+                <option value="">Toàn quốc</option>
+                <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+              </select>
+            </div>
+
             {/* Price Filter */}
             <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
               <h3 className="font-label-md text-label-md font-bold text-on-surface">Khoảng giá</h3>
@@ -272,6 +334,47 @@ function VoucherCatalogContent() {
                   placeholder="Đến (₫)"
                 />
               </div>
+            </div>
+
+            {/* Discount Filter */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">Mức giảm</h3>
+              <select
+                value={minDiscount}
+                onChange={(e) => setMinDiscount(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-md text-label-sm focus:border-primary outline-none"
+              >
+                <option value="">Tất cả mức giảm</option>
+                <option value="10">Giảm từ 10%</option>
+                <option value="30">Giảm từ 30%</option>
+                <option value="50">Giảm từ 50%</option>
+              </select>
+            </div>
+
+            {/* Partner Filter */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">Đối tác</h3>
+              <input
+                type="text"
+                value={partner}
+                onChange={(e) => setPartner(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-md text-label-sm focus:border-primary outline-none"
+                placeholder="Nhập tên đối tác..."
+              />
+            </div>
+
+            {/* Validity Filter */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">Trạng thái</h3>
+              <label className="flex items-center gap-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={isValidOnly}
+                  onChange={(e) => setIsValidOnly(e.target.checked)}
+                  className="form-checkbox text-primary rounded border-outline-variant focus:ring-primary h-4 w-4"
+                />
+                <span className="text-label-md text-on-surface-variant font-medium">Còn hiệu lực</span>
+              </label>
             </div>
 
             {/* Rating Filter */}
