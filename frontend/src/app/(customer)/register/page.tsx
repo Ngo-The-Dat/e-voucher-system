@@ -34,7 +34,7 @@ export default function CustomerRegisterPage() {
     const isPhone = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(val.replace(/\s/g, ""));
     return isEmail || isPhone;
   };
-  const isValidPassword = password.length >= 6;
+  const isValidPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/.test(password);
   const isValidConfirm = confirmPassword === password && password.length > 0;
 
   const handleBlur = (field: keyof typeof touched) => {
@@ -225,7 +225,7 @@ export default function CustomerRegisterPage() {
                   </button>
                 </div>
                 {touched.password && !isValidPassword && (
-                  <p className="text-red-500 text-xs mt-1.5 ml-1">Mật khẩu phải chứa ít nhất 6 ký tự.</p>
+                  <p className="text-red-500 text-xs mt-1.5 ml-1">Mật khẩu phải dài tối thiểu 8 ký tự, bao gồm chữ hoa, thường, số và ký tự đặc biệt.</p>
                 )}
               </div>
 

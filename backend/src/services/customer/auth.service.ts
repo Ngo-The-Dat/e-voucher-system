@@ -26,8 +26,9 @@ export const register = async (input: CustomerRegisterInput) => {
     throw { status: 400, message: 'Vui lòng nhập đầy đủ họ tên, mật khẩu và Email hoặc Số điện thoại.' };
   }
 
-  if (password.length < 6) {
-    throw { status: 400, message: 'Mật khẩu phải chứa ít nhất 6 ký tự.' };
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  if (!passwordRegex.test(password)) {
+    throw { status: 400, message: 'Mật khẩu phải dài tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường, số và ký tự đặc biệt.' };
   }
 
   // 1. Kiểm tra email & phone đã được đăng ký chưa
