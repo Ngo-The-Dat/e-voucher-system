@@ -2,8 +2,8 @@
 const nextConfig = {
   output: "standalone",
   devIndicators: {
-    buildActivity: false, 
-    appIsrStatus: false,  
+    buildActivity: false,
+    appIsrStatus: false,
   },
   images: {
     unoptimized: true,

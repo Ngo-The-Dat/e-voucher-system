@@ -1,0 +1,69 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-13 - Tra cứu nhật ký hệ thống
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Nhật ký hệ thống\n(SystemLogsPage)" as UI
+control "LogController" as Controller
+entity "LogService" as Service
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách nhật ký mặc định ==
+QTV -> UI : openSystemLogPage()
+activate UI
+UI -> Controller : getLogs(page, limit)
+activate Controller
+Controller -> Service : getSystemLogs(filter)
+activate Service
+Service -> DB : executeQuery()
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnLogs(logs, pagination)
+deactivate Service
+Controller --> UI : returnResponse(logsData)
+deactivate Controller
+UI --> QTV : displayLogList()
+deactivate UI
+
+== 2. Tìm kiếm và Lọc nhật ký ==
+QTV -> UI : inputSearchFilter(keyword, objectType, result, dateRange)
+activate UI
+QTV -> UI : clickSearchButton()
+UI -> Controller : getLogs(searchFilter)
+activate Controller
+Controller -> Service : getSystemLogs(filter)
+activate Service
+Service -> DB : executeQuery()
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnLogs(filteredLogs)
+deactivate Service
+Controller --> UI : returnResponse(filteredLogs)
+deactivate Controller
+
+alt [logs.length == 0] (Không có bản ghi phù hợp)
+    UI --> QTV : showNotFoundMessage("Không tìm thấy kết quả phù hợp")
+else [logs.length > 0] (Có bản ghi phù hợp)
+    UI --> QTV : displayLogList(filteredLogs)
+
+    == 3. Xem chi tiết bản ghi nhật ký ==
+    QTV -> UI : selectLogDetail(logId)
+    UI -> Controller : getLogById(logId)
+    activate Controller
+    Controller -> Service : getSystemLogById(logId)
+    activate Service
+    Service -> DB : executeQuery()
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+    Service --> Controller : returnLogDetail(detail)
+    deactivate Service
+    Controller --> UI : returnResponse(logDetail)
+    deactivate Controller
+    UI --> QTV : displayLogDetailModal(old_value, new_value)
+end
+deactivate UI
+
+@enduml

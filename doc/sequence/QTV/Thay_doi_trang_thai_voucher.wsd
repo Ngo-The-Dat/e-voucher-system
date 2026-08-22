@@ -1,0 +1,75 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-08 - Thay đổi trạng thái hiển thị voucher
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý voucher\n(ManagedVouchersPage)" as UI
+control "VoucherController" as Controller
+entity "VoucherService" as Service
+entity "SystemLogService" as LogService
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách & Xem chi tiết voucher ==
+QTV -> UI : openManagedVouchersTab()
+activate UI
+UI -> Controller : getManagedVouchers(page, limit, filter)
+activate Controller
+Controller -> Service : getManagedVouchers(filter)
+activate Service
+Service -> DB : executeQuery() (SELECT FROM voucher_programs)
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnManagedVouchers(vouchers)
+deactivate Service
+Controller --> UI : returnResponse(vouchersData)
+deactivate Controller
+
+alt A1: Không tìm thấy voucher phù hợp
+    UI --> QTV : showEmptyMessage("Không tìm thấy voucher phù hợp với từ khóa.")
+else Có danh sách voucher
+    UI --> QTV : displayManagedVoucherList(vouchers)
+
+    QTV -> UI : selectVoucher(voucherId)
+    UI -> UI : evaluateVoucherLifecycle(status, remainingQty, expiryDate)
+    
+    alt A2 / A3: Kiểm tra trạng thái hiển thị nút thao tác
+        note over UI
+            - Nếu ACTIVE: hiển thị nút "Tạm ngưng bán", "Ngừng bán"
+            - Nếu PAUSED (và còn hạn/SL): hiển thị "Khôi phục mở bán", "Ngừng bán"
+            - Nếu hết SL/hạn (RB-04) hoặc STOPPED: hiển thị "Ngừng bán" / vô hiệu hóa khôi phục
+        end note
+    end
+    UI --> QTV : displayVoucherActions(availableActions)
+
+    == 2. Thực hiện thay đổi trạng thái voucher ==
+    QTV -> UI : clickChangeDisplayStatus(newStatus)
+    QTV -> UI : confirmStatusChange(reason)
+    UI -> Controller : updateVoucherStatus(voucherId, newStatus, reason)
+    activate Controller
+    Controller -> Service : updateVoucherStatus(voucherId, newStatus, reason, adminId)
+    activate Service
+
+    Service -> DB : executeQuery() (UPDATE voucher_programs SET status = $1 WHERE voucher_id = $2)
+    activate DB
+    DB --> Service : returnResult (updatedVoucher)
+    deactivate DB
+
+    Service -> LogService : logAdminAction(adminId, action, voucherId, oldValue, newValue)
+    activate LogService
+    LogService -> DB : executeQuery() (INSERT INTO system_logs)
+    activate DB
+    DB --> LogService : returnResult
+    deactivate DB
+    LogService --> Service : returnLogged
+    deactivate LogService
+
+    Service --> Controller : returnUpdatedVoucher(updatedVoucher)
+    Controller --> UI : returnResponse(updatedVoucher)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật trạng thái hiển thị voucher thành công")
+end
+deactivate UI
+
+@enduml

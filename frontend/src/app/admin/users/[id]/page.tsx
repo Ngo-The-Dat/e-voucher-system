@@ -24,7 +24,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/shared/ui/Button";
-import { adminApi, AdminUserDetail } from "@/lib/admin-api";
+import { adminApi, AdminUserDetail, AdminBranchOption } from "@/lib/admin-api";
 
 interface UserDetailState {
   id: string | number;
@@ -44,6 +44,9 @@ interface UserDetailState {
   lockReason: string | null;
   businessName?: string | null;
   taxCode?: string | null;
+  branchId?: number | null;
+  branchName?: string | null;
+  branchAddress?: string | null;
 }
 
 const getInitials = (name: string): string => {
@@ -123,9 +126,34 @@ export default function UserDetailPage() {
   const [selectedRole, setSelectedRole] = useState<"CUSTOMER" | "PARTNER" | "PARTNER_EMPLOYEE">("CUSTOMER");
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+  // State Bổ sung khi Chuyển vai trò sang Đối tác hoặc Nhân viên đối tác
+  const [businessNameInput, setBusinessNameInput] = useState("");
+  const [taxCodeInput, setTaxCodeInput] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState<string>("");
+  const [branches, setBranches] = useState<AdminBranchOption[]>([]);
+  const [branchesLoading, setBranchesLoading] = useState(false);
+
   // State Modal Khóa / Mở khóa
   const [lockModalOpen, setLockModalOpen] = useState(false);
   const [lockReasonInput, setLockReasonInput] = useState("");
+
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: fetchBranches
+   * MỤC ĐÍCH: Tải danh sách chi nhánh hoạt động để phục vụ phân quyền nhân viên đối tác.
+   * ---------------------------------------------------------------------------------------
+   */
+  const fetchBranches = useCallback(async () => {
+    try {
+      setBranchesLoading(true);
+      const branchList = await adminApi.getBranchesForAssignment();
+      setBranches(branchList);
+    } catch (err) {
+      console.error("Lỗi tải danh sách chi nhánh:", err);
+    } finally {
+      setBranchesLoading(false);
+    }
+  }, []);
 
   /**
    * ---------------------------------------------------------------------------------------
@@ -165,7 +193,11 @@ export default function UserDetailPage() {
           lockReason: res.lock_reason,
           businessName: res.business_name,
           taxCode: res.tax_code,
+          branchId: res.branch_id,
+          branchName: res.branch_name,
+          branchAddress: res.branch_address,
         });
+
         setSelectedRole(
           res.role === "PARTNER"
             ? "PARTNER"
@@ -173,6 +205,10 @@ export default function UserDetailPage() {
             ? "PARTNER_EMPLOYEE"
             : "CUSTOMER"
         );
+
+        if (res.business_name) setBusinessNameInput(res.business_name);
+        if (res.tax_code) setTaxCodeInput(res.tax_code);
+        if (res.branch_id) setSelectedBranchId(String(res.branch_id));
       }
     } catch {
       // Dự phòng nếu lỗi kết nối
@@ -193,20 +229,61 @@ export default function UserDetailPage() {
 
   useEffect(() => {
     fetchUserDetail();
-  }, [fetchUserDetail]);
+    fetchBranches();
+  }, [fetchUserDetail, fetchBranches]);
+
+  /**
+   * ---------------------------------------------------------------------------------------
+   * HÀM: handleOpenRoleConfirm
+   * MỤC ĐÍCH: Kiểm tra tính hợp lệ của các trường dữ liệu trước khi mở Modal xác nhận.
+   * ---------------------------------------------------------------------------------------
+   */
+  const handleOpenRoleConfirm = () => {
+    if (selectedRole === "PARTNER") {
+      if (!businessNameInput.trim()) {
+        toast.error("Vui lòng nhập Tên doanh nghiệp / Thương hiệu đối tác");
+        return;
+      }
+      if (!taxCodeInput.trim() || !/^[0-9]{10,13}$/.test(taxCodeInput.trim())) {
+        toast.error("Mã số thuế không hợp lệ. Vui lòng nhập từ 10 đến 13 chữ số");
+        return;
+      }
+    } else if (selectedRole === "PARTNER_EMPLOYEE") {
+      if (!selectedBranchId) {
+        toast.error("Vui lòng chọn chi nhánh làm việc cho Nhân viên đối tác");
+        return;
+      }
+    }
+    setShowConfirmModal(true);
+  };
 
   /**
    * ---------------------------------------------------------------------------------------
    * HÀM: handleConfirmRoleChange
-   * MỤC ĐÍCH: Gọi API `adminApi.changeUserRole` để cập nhật vai trò mới cho người dùng.
+   * MỤC ĐÍCH: Gọi API `adminApi.changeUserRole` để cập nhật vai trò mới và thông tin tương ứng.
    * ---------------------------------------------------------------------------------------
    */
   const handleConfirmRoleChange = async () => {
     try {
       setActionLoading(true);
-      await adminApi.changeUserRole(userId, selectedRole);
+      await adminApi.changeUserRole(userId, {
+        role: selectedRole,
+        business_name: selectedRole === "PARTNER" ? businessNameInput.trim() : undefined,
+        tax_code: selectedRole === "PARTNER" ? taxCodeInput.trim() : undefined,
+        branch_id: selectedRole === "PARTNER_EMPLOYEE" ? Number(selectedBranchId) : undefined,
+      });
+
+      // Phát sự kiện đồng bộ để các tab khác (Khách hàng/Đối tác/Nhân viên) lập tức tự động đăng xuất
+      if (typeof window !== "undefined") {
+        localStorage.setItem("auth_sync_event", String(Date.now()));
+        window.dispatchEvent(new Event("customer-auth-changed"));
+        window.dispatchEvent(new Event("storage"));
+      }
+
       const newRoleLabel = mapRole(selectedRole);
-      toast.success(`Đã cập nhật vai trò người dùng thành "${newRoleLabel}".`);
+      toast.success(
+        `Đã phân quyền thành công sang "${newRoleLabel}". Phiên làm việc cũ của người dùng đã bị vô hiệu hóa.`
+      );
       setShowConfirmModal(false);
       await fetchUserDetail();
     } catch (error: any) {
@@ -444,7 +521,18 @@ export default function UserDetailPage() {
                     Doanh nghiệp đối tác
                   </label>
                   <p className="text-sm font-medium text-slate-700">
-                    {userData.businessName} (MST: {userData.taxCode})
+                    {userData.businessName} {userData.taxCode ? `(MST: ${userData.taxCode})` : ""}
+                  </p>
+                </div>
+              )}
+
+              {userData.branchName && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-400 uppercase mb-1">
+                    Chi nhánh làm việc
+                  </label>
+                  <p className="text-sm font-medium text-slate-700">
+                    {userData.branchName} {userData.branchAddress ? `- ${userData.branchAddress}` : ""}
                   </p>
                 </div>
               )}
@@ -568,7 +656,7 @@ export default function UserDetailPage() {
               </div>
             ) : (
               /* Lựa chọn vai trò mới */
-              <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
+              <form className="space-y-5" onSubmit={(e) => e.preventDefault()}>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
                   Chọn vai trò mới
                 </label>
@@ -628,6 +716,47 @@ export default function UserDetailPage() {
                     </div>
                   </label>
 
+                  {/* Form nhập thông tin khi chọn vai trò Đối tác */}
+                  {selectedRole === "PARTNER" && (
+                    <div className="p-4 bg-amber-50/70 border border-amber-200 rounded-xl space-y-3.5 ml-7 animate-in fade-in">
+                      <div className="flex items-center gap-2 text-amber-900 font-bold text-sm">
+                        <Icon name="business" className="text-amber-700" />
+                        <span>Thông tin doanh nghiệp đối tác</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Tên doanh nghiệp / Thương hiệu <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ví dụ: Công ty TNHH Golden Gate..."
+                            value={businessNameInput}
+                            onChange={(e) => setBusinessNameInput(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none transition"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                            Mã số thuế (10 - 13 chữ số) <span className="text-rose-500">*</span>
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ví dụ: 0101234567"
+                            maxLength={13}
+                            value={taxCodeInput}
+                            onChange={(e) => setTaxCodeInput(e.target.value.replace(/[^0-9]/g, ""))}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:border-amber-500 focus:ring-1 focus:ring-amber-500 outline-none font-mono transition"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                        <Icon name="verified" className="text-emerald-600 shrink-0 text-base" />
+                        <span>Đối tác sẽ được tự động kích hoạt và phê duyệt ngay (APPROVED) để đăng nhập được ngay.</span>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Option: Nhân viên đối tác */}
                   <label
                     onClick={() => setSelectedRole("PARTNER_EMPLOYEE")}
@@ -654,15 +783,53 @@ export default function UserDetailPage() {
                       </p>
                     </div>
                   </label>
+
+                  {/* Dropdown chọn chi nhánh khi chọn vai trò Nhân viên đối tác */}
+                  {selectedRole === "PARTNER_EMPLOYEE" && (
+                    <div className="p-4 bg-rose-50/70 border border-rose-200 rounded-xl space-y-3.5 ml-7 animate-in fade-in">
+                      <div className="flex items-center gap-2 text-rose-900 font-bold text-sm">
+                        <Icon name="store" className="text-rose-700" />
+                        <span>Phân công chi nhánh làm việc</span>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                          Chọn chi nhánh <span className="text-rose-500">*</span>
+                        </label>
+                        {branchesLoading ? (
+                          <div className="py-2.5 text-xs text-slate-500 italic flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-primary"></div>
+                            <span>Đang tải danh sách chi nhánh hoạt động...</span>
+                          </div>
+                        ) : (
+                          <select
+                            value={selectedBranchId}
+                            onChange={(e) => setSelectedBranchId(e.target.value)}
+                            className="w-full px-3.5 py-2.5 bg-white border border-slate-200 rounded-xl text-sm text-slate-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 outline-none transition"
+                          >
+                            <option value="">-- Chọn chi nhánh của đối tác --</option>
+                            {branches.map((b) => (
+                              <option key={b.branch_id} value={b.branch_id}>
+                                [{b.business_name}] {b.branch_name} - {b.address}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-emerald-800 bg-emerald-50 px-3 py-2 rounded-lg border border-emerald-200">
+                        <Icon name="verified" className="text-emerald-600 shrink-0 text-base" />
+                        <span>Nhân viên sẽ được gán vào chi nhánh đã chọn và tự động phê duyệt (APPROVED) để đăng nhập được ngay.</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Box cảnh báo khi phân quyền */}
                 <div className="mt-4 flex items-start gap-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900">
                   <Icon name="warning" className="text-amber-600 text-lg shrink-0 mt-0.5" />
                   <div className="space-y-0.5 text-xs">
-                    <p className="font-bold">Lưu ý quan trọng</p>
+                    <p className="font-bold">Lưu ý bảo mật & Đăng xuất bắt buộc</p>
                     <p className="text-amber-800 leading-relaxed">
-                      Hệ thống sẽ ghi nhật ký vào system_logs. Người dùng sẽ cần đăng nhập lại để nhận token chứa vai trò mới.
+                      Khi vai trò thay đổi, toàn bộ token hiện tại của người dùng sẽ bị vô hiệu hóa ngay lập tức trên backend. Người dùng sẽ bị buộc đăng xuất khỏi hệ thống và phải đăng nhập lại để nhận token chứa vai trò mới.
                     </p>
                   </div>
                 </div>
@@ -671,8 +838,8 @@ export default function UserDetailPage() {
                 <div className="pt-4 border-t border-slate-100 mt-5 flex justify-end">
                   <Button
                     type="button"
-                    onClick={() => setShowConfirmModal(true)}
-                    disabled={actionLoading || selectedRole === userData.rawRole}
+                    onClick={handleOpenRoleConfirm}
+                    disabled={actionLoading}
                     className="bg-primary hover:bg-primary-hover text-white px-5 py-2.5 rounded-xl font-semibold text-sm"
                   >
                     <Icon name="sync" className="text-lg mr-1.5" />
@@ -697,12 +864,36 @@ export default function UserDetailPage() {
                 Xác nhận thay đổi vai trò?
               </h3>
             </div>
-            <p className="text-sm text-slate-600">
-              Bạn có chắc chắn muốn thay đổi vai trò của người dùng{" "}
-              <strong className="text-slate-900">{userData.name}</strong> từ{" "}
-              <span className="font-semibold text-slate-700">"{userData.role}"</span> sang{" "}
-              <span className="font-semibold text-primary">"{mapRole(selectedRole)}"</span> không?
-            </p>
+            <div className="space-y-3 text-sm text-slate-600">
+              <p>
+                Bạn có chắc chắn muốn thay đổi vai trò của người dùng{" "}
+                <strong className="text-slate-900">{userData.name}</strong> từ{" "}
+                <span className="font-semibold text-slate-700">"{userData.role}"</span> sang{" "}
+                <span className="font-semibold text-primary">"{mapRole(selectedRole)}"</span> không?
+              </p>
+
+              {selectedRole === "PARTNER" && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs text-slate-700">
+                  <p><strong>Doanh nghiệp:</strong> {businessNameInput.trim()}</p>
+                  <p><strong>Mã số thuế:</strong> {taxCodeInput.trim()}</p>
+                  <p className="text-emerald-700 font-semibold">• Trạng thái: Kích hoạt & Phê duyệt ngay</p>
+                </div>
+              )}
+
+              {selectedRole === "PARTNER_EMPLOYEE" && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-xs text-slate-700">
+                  <p>
+                    <strong>Chi nhánh:</strong>{" "}
+                    {branches.find((b) => String(b.branch_id) === String(selectedBranchId))?.branch_name || selectedBranchId}
+                  </p>
+                  <p className="text-emerald-700 font-semibold">• Trạng thái: Gán chi nhánh & Phê duyệt ngay</p>
+                </div>
+              )}
+
+              <div className="p-2.5 bg-amber-50 rounded-lg text-xs text-amber-800">
+                ⚠️ Người dùng sẽ bị đăng xuất ngay lập tức và cần đăng nhập lại với vai trò mới.
+              </div>
+            </div>
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
               <Button
                 variant="ghost"

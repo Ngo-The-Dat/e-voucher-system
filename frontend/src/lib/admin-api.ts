@@ -21,6 +21,8 @@ import {
   SystemLogItem,
   SystemLogDetail,
   LogsResponse,
+  AdminBranchOption,
+  ChangeUserRolePayload,
 } from "./types/admin-user";
 
 import {
@@ -254,16 +256,26 @@ export const adminApi = {
    * Method: PUT `/admin/users/:id/role`
    * 
    * @param id Mã người dùng.
-   * @param role Vai trò mới muốn gán cho tài khoản.
+   * @param data Vai trò mới hoặc object payload chứa vai trò và thông tin đối tác / chi nhánh.
    */
   changeUserRole: async (
     id: string | number,
-    role: string
+    data: string | ChangeUserRolePayload
   ): Promise<{ message: string; user_id: number; role: string }> => {
+    const payload = typeof data === "string" ? { role: data } : data;
     return adminRequest(`/admin/users/${id}/role`, {
       method: "PUT",
-      body: JSON.stringify({ role }),
+      body: JSON.stringify(payload),
     });
+  },
+
+  /**
+   * Lấy danh sách các chi nhánh đang hoạt động để phục vụ phân quyền nhân viên đối tác.
+   * Method: GET `/admin/users/branches`
+   */
+  getBranchesForAssignment: async (): Promise<AdminBranchOption[]> => {
+    const res = await adminRequest<{ branches: AdminBranchOption[] }>(`/admin/users/branches`);
+    return res.branches || [];
   },
 
   // =========================================================================

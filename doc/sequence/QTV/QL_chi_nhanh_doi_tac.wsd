@@ -1,0 +1,115 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-06 - Quản lý chi nhánh đối tác
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Chi nhánh đối tác\n(PartnerBranchesModal)" as UI
+control "PartnerController" as Controller
+entity "PartnerService" as Service
+entity "SystemLogService" as LogService
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Xem danh sách chi nhánh của đối tác ==
+QTV -> UI : openPartnerBranches(partnerId)
+activate UI
+UI -> Controller : getPartnerBranches(partnerId)
+activate Controller
+Controller -> Service : getPartnerBranches(partnerId)
+activate Service
+Service -> DB : executeQuery() (SELECT FROM branches WHERE partner_id = $1)
+activate DB
+DB --> Service : returnResult (branches)
+deactivate DB
+Service --> Controller : returnBranches(branches)
+deactivate Service
+Controller --> UI : returnResponse(branches)
+deactivate Controller
+UI --> QTV : displayBranchList(branches)
+
+== 2. Thao tác Thêm mới / Cập nhật / Xóa chi nhánh ==
+alt Thêm mới chi nhánh
+    QTV -> UI : inputBranchInfo(branchData)
+    QTV -> UI : clickCreateBranch()
+    UI -> Controller : createPartnerBranch(partnerId, branchData)
+    activate Controller
+    Controller -> Service : createPartnerBranch(partnerId, branchData, adminId)
+    activate Service
+
+    Service -> DB : executeQuery() (INSERT INTO branches)
+    activate DB
+    DB --> Service : returnResult (newBranch)
+    deactivate DB
+
+    Service -> LogService : logAdminAction(adminId, 'CREATE_BRANCH', newBranch.id)
+    activate LogService
+    LogService -> DB : executeQuery() (INSERT INTO system_logs)
+    activate DB
+    DB --> LogService : returnResult
+    deactivate DB
+    LogService --> Service : returnLogged
+    deactivate LogService
+
+    Service --> Controller : returnCreatedBranch(newBranch)
+    Controller --> UI : returnResponse(newBranch)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Thêm chi nhánh thành công")
+
+else Cập nhật chi nhánh
+    QTV -> UI : editBranchInfo(branchId, updatedData)
+    QTV -> UI : clickSaveBranch()
+    UI -> Controller : updatePartnerBranch(branchId, updatedData)
+    activate Controller
+    Controller -> Service : updatePartnerBranch(branchId, updatedData, adminId)
+    activate Service
+
+    Service -> DB : executeQuery() (UPDATE branches SET ...)
+    activate DB
+    DB --> Service : returnResult (updatedBranch)
+    deactivate DB
+
+    Service -> LogService : logAdminAction(adminId, 'UPDATE_BRANCH', branchId)
+    activate LogService
+    LogService -> DB : executeQuery() (INSERT INTO system_logs)
+    activate DB
+    DB --> LogService : returnResult
+    deactivate DB
+    LogService --> Service : returnLogged
+    deactivate LogService
+
+    Service --> Controller : returnUpdatedBranch(updatedBranch)
+    Controller --> UI : returnResponse(updatedBranch)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật chi nhánh thành công")
+
+else Xóa / Vô hiệu hóa chi nhánh
+    QTV -> UI : clickDeleteBranch(branchId)
+    UI -> Controller : deletePartnerBranch(branchId)
+    activate Controller
+    Controller -> Service : deletePartnerBranch(branchId, adminId)
+    activate Service
+
+    Service -> DB : executeQuery() (DELETE FROM branches / UPDATE status = 'INACTIVE')
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+
+    Service -> LogService : logAdminAction(adminId, 'DELETE_BRANCH', branchId)
+    activate LogService
+    LogService -> DB : executeQuery() (INSERT INTO system_logs)
+    activate DB
+    DB --> LogService : returnResult
+    deactivate DB
+    LogService --> Service : returnLogged
+    deactivate LogService
+
+    Service --> Controller : returnDeleteSuccess()
+    Controller --> UI : returnResponse({ message: "Xóa chi nhánh thành công" })
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Xóa chi nhánh thành công")
+end
+deactivate UI
+
+@enduml

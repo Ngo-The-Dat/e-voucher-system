@@ -344,20 +344,17 @@ export interface StripeCreateSessionResponse {
 }
 
 /**
- * Kiểu dữ liệu phản hồi khi tạo phiên thanh toán MoMo Sandbox thành công
+ * Kiểu dữ liệu phản hồi khi tạo phiên thanh toán thẻ ZaloPay Sandbox thành công
  */
-export interface MoMoCreatePaymentResponse {
+export interface ZaloPayCreatePaymentResponse {
   success: boolean;
   message: string;
   payment: {
     order_id: number;
-    momo_order_id: string;
-    request_id: string;
+    app_trans_id: string;
+    zp_trans_token?: string;
+    order_url: string;       // URL chuyển hướng người dùng sang trang thanh toán của ZaloPay
     amount_vnd: number;
-    pay_url: string;         // URL chuyển hướng người dùng sang trang thanh toán của MoMo
-    qr_code_url: string;     // URL mã QR để quét bằng App MoMo Test
-    deeplink?: string;       // Deeplink mở trực tiếp App MoMo trên điện thoại
-    deeplink_web_in_app?: string;
     status: string;
     created_at?: string;
   };
@@ -425,23 +422,23 @@ export const customerPaymentApi = {
     request<any>(`/customer/payments/stripe/order/${orderId}/status`),
 
   // ==========================================
-  // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN MOMO SANDBOX
+  // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN ZALOPAY SANDBOX
   // ==========================================
 
   /**
-   * 1. Khởi tạo phiên thanh toán MoMo Sandbox và nhận QR Code / URL chuyển hướng (payWithATM hoặc captureWallet)
+   * 1. Khởi tạo phiên thanh toán ZaloPay Sandbox và nhận QR Code / URL chuyển hướng
    */
-  createMoMoPayment: (orderId: number, requestType: string = 'payWithATM') =>
-    request<MoMoCreatePaymentResponse>("/customer/payments/momo/create-payment", {
+  createZaloPayPayment: (orderId: number, bankCode?: string) =>
+    request<ZaloPayCreatePaymentResponse>("/customer/payments/zalopay/create", {
       method: "POST",
-      body: JSON.stringify({ order_id: orderId, request_type: requestType }),
+      body: JSON.stringify({ order_id: orderId, bank_code: bankCode }),
     }),
 
   /**
-   * 2. Xác thực giao dịch thanh toán từ MoMo và phát hành mã E-Voucher
+   * 2. Xác thực giao dịch thanh toán từ ZaloPay và phát hành mã E-Voucher
    */
-  captureMoMoOrder: (orderId: number, params?: any) =>
-    request<CreateOrderResponse>("/customer/payments/momo/capture-order", {
+  captureZaloPayOrder: (orderId: number, params?: any) =>
+    request<CreateOrderResponse>("/customer/payments/zalopay/capture-order", {
       method: "POST",
       body: JSON.stringify({
         order_id: orderId,
@@ -450,10 +447,10 @@ export const customerPaymentApi = {
     }),
 
   /**
-   * 3. Tra cứu trạng thái đơn hàng MoMo
+   * 3. Tra cứu trạng thái đơn hàng ZaloPay
    */
-  getMoMoStatus: (orderId: number) =>
-    request<any>(`/customer/payments/momo/order/${orderId}/status`),
+  getZaloPayStatus: (orderId: number) =>
+    request<any>(`/customer/payments/zalopay/order/${orderId}/status`),
 
   // ==========================================
   // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN VNPAY SANDBOX

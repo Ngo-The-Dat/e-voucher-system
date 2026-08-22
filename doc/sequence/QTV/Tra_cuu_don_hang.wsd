@@ -1,0 +1,69 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-09 - Tra cứu đơn hàng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý đơn hàng\n(OrdersPage)" as UI
+control "OrderController" as Controller
+entity "OrderService" as Service
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách đơn hàng mặc định ==
+QTV -> UI : openOrdersPage()
+activate UI
+UI -> Controller : getOrders(page, limit)
+activate Controller
+Controller -> Service : getOrders(filter)
+activate Service
+Service -> DB : executeQuery() (SELECT FROM orders ORDER BY created_at DESC)
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnOrders(orders, pagination)
+deactivate Service
+Controller --> UI : returnResponse(ordersData)
+deactivate Controller
+UI --> QTV : displayOrderList()
+deactivate UI
+
+== 2. Tìm kiếm và Lọc đơn hàng ==
+QTV -> UI : inputSearchFilter(keyword, status, paymentStatus, dateRange)
+activate UI
+QTV -> UI : clickSearchButton()
+UI -> Controller : getOrders(searchFilter)
+activate Controller
+Controller -> Service : getOrders(filter)
+activate Service
+Service -> DB : executeQuery()
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnOrders(filteredOrders)
+deactivate Service
+Controller --> UI : returnResponse(filteredOrders)
+deactivate Controller
+
+alt A1: Không có đơn hàng phù hợp (orders.length == 0)
+    UI --> QTV : showNotFoundMessage("Không tìm thấy đơn hàng nào phù hợp với bộ lọc")
+else Có đơn hàng phù hợp (orders.length > 0)
+    UI --> QTV : displayOrderList(filteredOrders)
+
+    == 3. Xem chi tiết đơn hàng ==
+    QTV -> UI : selectOrderDetail(orderId)
+    UI -> Controller : getOrderById(orderId)
+    activate Controller
+    Controller -> Service : getOrderById(orderId)
+    activate Service
+    Service -> DB : executeQuery() (SELECT order, items, payments, vouchers)
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+    Service --> Controller : returnOrderDetail(orderDetail)
+    deactivate Service
+    Controller --> UI : returnResponse(orderDetail)
+    deactivate Controller
+    UI --> QTV : displayOrderDetailModal(customerInfo, items, paymentStatus, issuedVouchers)
+end
+deactivate UI
+
+@enduml

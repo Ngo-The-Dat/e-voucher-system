@@ -53,7 +53,7 @@ export interface AdminOrderDetail {
   created_at: string;
   /** Tổng tiền thanh toán */
   total_amount: number | string;
-  /** Phương thức thanh toán (VNPAY, MOMO, COD,...) */
+  /** Phương thức thanh toán (VNPAY, ZALOPAY, STRIPE, PAYPAL,...) */
   payment_method: string;
   /** Trạng thái thanh toán: PAID, UNPAID, REFUNDED, FAILED */
   payment_status: "PAID" | "UNPAID" | "REFUNDED" | "FAILED";

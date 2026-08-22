@@ -1,0 +1,60 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-03 - Phân quyền người dùng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Phân quyền người dùng\n(UserRoleTab)" as UI
+control "UserController" as Controller
+entity "UserService" as Service
+entity "SystemLogService" as LogService
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Chọn vai trò mới ==
+QTV -> UI : selectRoleTab()
+activate UI
+UI --> QTV : displayRoleList(CUSTOMER, PARTNER, PARTNER_EMPLOYEE)
+
+QTV -> UI : selectNewRole(newRole)
+QTV -> UI : clickUpdateRoleButton()
+UI --> QTV : displayConfirmRoleModal(newRole)
+
+alt A2: Quản trị viên hủy thao tác
+    QTV -> UI : clickCancelButton()
+    UI --> QTV : closeConfirmModal()
+else Quản trị viên xác nhận thay đổi vai trò
+    QTV -> UI : confirmRoleChange()
+    UI -> Controller : updateUserRole(userId, newRole)
+    activate Controller
+    Controller -> Service : updateUserRole(userId, newRole, adminId)
+    activate Service
+
+    Service -> DB : executeQuery() (UPDATE users SET role = $1 WHERE user_id = $2)
+    activate DB
+    DB --> Service : returnResult (updatedUser)
+    deactivate DB
+
+    Service -> LogService : logAdminAction(adminId, action, userId, oldValue, newValue)
+    activate LogService
+    LogService -> DB : executeQuery() (INSERT INTO system_logs)
+    activate DB
+    DB --> LogService : returnResult
+    deactivate DB
+    LogService --> Service : returnLogged
+    deactivate LogService
+
+    opt A1: Thu hồi phiên đăng nhập cũ (nếu đang hoạt động)
+        Service -> DB : executeQuery() (Revoke active sessions / tokens)
+        activate DB
+        DB --> Service : returnResult
+        deactivate DB
+    end
+
+    Service --> Controller : returnUpdatedRole(updatedUser)
+    Controller --> UI : returnResponse(updatedUser)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật vai trò người dùng thành công")
+end
+deactivate UI
+
+@enduml

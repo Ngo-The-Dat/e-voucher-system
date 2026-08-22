@@ -37,10 +37,39 @@ export interface AdminUserListItem {
 export interface AdminUserDetail extends AdminUserListItem {
   /** Lý do khóa tài khoản (nếu tài khoản đang ở trạng thái LOCKED) */
   lock_reason: string | null;
-  /** Tên thương hiệu/doanh nghiệp (nếu là tài khoản Đối tác) */
+  /** Tên thương hiệu/doanh nghiệp (nếu là tài khoản Đối tác hoặc Nhân viên đối tác) */
   business_name?: string | null;
-  /** Mã số thuế doanh nghiệp (nếu là tài khoản Đối tác) */
+  /** Mã số thuế doanh nghiệp (nếu là tài khoản Đối tác hoặc Nhân viên đối tác) */
   tax_code?: string | null;
+  /** Mã chi nhánh làm việc (nếu là tài khoản Nhân viên đối tác) */
+  branch_id?: number | null;
+  /** Tên chi nhánh làm việc (nếu là tài khoản Nhân viên đối tác) */
+  branch_name?: string | null;
+  /** Địa chỉ chi nhánh làm việc */
+  branch_address?: string | null;
+  /** Mã đối tác sở hữu chi nhánh */
+  branch_partner_id?: number | null;
+}
+
+/**
+ * Tùy chọn chi nhánh đang hoạt động dùng cho dropdown phân quyền nhân viên đối tác.
+ */
+export interface AdminBranchOption {
+  branch_id: number;
+  branch_name: string;
+  address: string;
+  partner_id: number;
+  business_name: string;
+}
+
+/**
+ * Dữ liệu payload khi thay đổi vai trò người dùng.
+ */
+export interface ChangeUserRolePayload {
+  role: string;
+  business_name?: string;
+  tax_code?: string;
+  branch_id?: number;
 }
 
 /**
