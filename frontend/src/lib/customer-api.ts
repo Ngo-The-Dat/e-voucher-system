@@ -127,6 +127,8 @@ export interface BackendCartItem {
   category_name?: string;
   business_name?: string;
   brand_logo?: string | null;
+  images?: string[];
+  thumbnail?: string;
   available_stock: number;
   line_total: number;
 }

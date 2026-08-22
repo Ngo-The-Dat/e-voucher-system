@@ -15,6 +15,9 @@ export interface CartItemResponse {
   display_status: string;
   category_name?: string;
   business_name?: string;
+  brand_logo?: string | null;
+  images?: string[];
+  thumbnail?: string;
   available_stock: number;
   line_total: number;
 }
@@ -89,6 +92,11 @@ export async function getCart(customerId: number): Promise<CartItemResponse[]> {
       c.category_name,
       p.business_name,
       p.brand_logo as brand_logo,
+      (
+        SELECT json_agg(vpi.image_url ORDER BY vpi.is_primary DESC, vpi.sort_order ASC)
+        FROM voucher_program_images vpi
+        WHERE vpi.program_id = vp.program_id
+      ) as images,
       (vp.issue_quantity - COALESCE((
         SELECT COUNT(iv.issued_voucher_id) 
         FROM issued_vouchers iv 
@@ -104,9 +112,14 @@ export async function getCart(customerId: number): Promise<CartItemResponse[]> {
 
   const result = await pool.query(query, [customerId]);
 
+  const defaultThumbnail = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80";
+
   return result.rows.map((row) => {
     const salePrice = Number(row.sale_price);
     const quantity = Number(row.quantity);
+    const imagesList = Array.isArray(row.images) && row.images.length > 0 ? row.images : [];
+    const thumbnail = imagesList.length > 0 ? imagesList[0] : defaultThumbnail;
+
     return {
       cart_item_id: Number(row.cart_item_id),
       program_id: Number(row.program_id),
@@ -123,6 +136,8 @@ export async function getCart(customerId: number): Promise<CartItemResponse[]> {
       category_name: row.category_name,
       business_name: row.business_name,
       brand_logo: row.brand_logo || null,
+      images: imagesList,
+      thumbnail: thumbnail,
       available_stock: Math.max(0, Number(row.available_stock)),
       line_total: salePrice * quantity
     };
