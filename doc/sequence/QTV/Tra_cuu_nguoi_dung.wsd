@@ -1,0 +1,69 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-01 - Tra cứu người dùng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý người dùng\n(UsersPage)" as UI
+control "UserController" as Controller
+entity "UserService" as Service
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách người dùng mặc định ==
+QTV -> UI : openUsersPage()
+activate UI
+UI -> Controller : getUsers(page, limit)
+activate Controller
+Controller -> Service : getUsers(filter)
+activate Service
+Service -> DB : executeQuery()
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnUsers(users, pagination)
+deactivate Service
+Controller --> UI : returnResponse(usersData)
+deactivate Controller
+UI --> QTV : displayUserList()
+deactivate UI
+
+== 2. Tìm kiếm và Lọc người dùng ==
+QTV -> UI : inputSearchFilter(keyword, role, status)
+activate UI
+QTV -> UI : clickSearchButton()
+UI -> Controller : getUsers(searchFilter)
+activate Controller
+Controller -> Service : getUsers(filter)
+activate Service
+Service -> DB : executeQuery()
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnUsers(filteredUsers)
+deactivate Service
+Controller --> UI : returnResponse(filteredUsers)
+deactivate Controller
+
+alt [users.length == 0] (Không tìm thấy người dùng phù hợp)
+    UI --> QTV : showNotFoundMessage("Không tìm thấy người dùng phù hợp")
+else [users.length > 0] (Tìm thấy người dùng phù hợp)
+    UI --> QTV : displayUserList(filteredUsers)
+
+    == 3. Xem chi tiết người dùng ==
+    QTV -> UI : selectUserDetail(userId)
+    UI -> Controller : getUserById(userId)
+    activate Controller
+    Controller -> Service : getUserById(userId)
+    activate Service
+    Service -> DB : executeQuery()
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+    Service --> Controller : returnUserDetail(detail)
+    deactivate Service
+    Controller --> UI : returnResponse(userDetail)
+    deactivate Controller
+    UI --> QTV : displayUserDetailModal(profile, role, status)
+end
+deactivate UI
+
+@enduml

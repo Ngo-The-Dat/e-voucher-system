@@ -1,0 +1,111 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-07 - Duyệt voucher
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Duyệt voucher\n(PendingVouchersPage)" as UI
+control "VoucherController" as Controller
+entity "VoucherService" as Service
+entity "SystemLogService" as LogService
+database "Cơ sở dữ liệu\n(Database)" as DB
+
+== 1. Tải danh sách voucher chờ duyệt ==
+QTV -> UI : openPendingVouchersTab()
+activate UI
+UI -> Controller : getPendingVouchers(page, limit, filter)
+activate Controller
+Controller -> Service : getPendingVouchers(filter)
+activate Service
+Service -> DB : executeQuery() (SELECT FROM voucher_programs WHERE status = 'PENDING')
+activate DB
+DB --> Service : returnResult
+deactivate DB
+Service --> Controller : returnPendingVouchers(vouchers)
+deactivate Service
+Controller --> UI : returnResponse(vouchersData)
+deactivate Controller
+
+alt A1: Không tìm thấy voucher phù hợp (vouchers.length == 0)
+    UI --> QTV : showEmptyMessage("Không tìm thấy yêu cầu duyệt voucher phù hợp với từ khóa.")
+else Có danh sách voucher chờ duyệt
+    UI --> QTV : displayPendingVoucherList(vouchers)
+
+    == 2. Xem chi tiết và Kiểm tra quy tắc nghiệp vụ ==
+    QTV -> UI : selectVoucherDetail(voucherId)
+    UI -> Controller : getPendingVoucherDetail(voucherId)
+    activate Controller
+    Controller -> Service : getPendingVoucherDetail(voucherId)
+    activate Service
+    Service -> DB : executeQuery()
+    activate DB
+    DB --> Service : returnResult
+    deactivate DB
+    Service --> Controller : returnVoucherDetail(detail)
+    deactivate Service
+    Controller --> UI : returnResponse(detail)
+    deactivate Controller
+
+    UI -> UI : validateBusinessRules(RB-02: sellingPrice < originalPrice, RB-03: validDates)
+    UI --> QTV : displayVoucherDetail(detail, validationResult)
+
+    == 3. Quyết định Duyệt hoặc Từ chối ==
+    alt Phê duyệt công bố bán (Hợp lệ)
+        QTV -> UI : clickApproveVoucherButton()
+        UI -> Controller : approveVoucher(voucherId)
+        activate Controller
+        Controller -> Service : approveVoucher(voucherId, adminId)
+        activate Service
+
+        Service -> DB : executeQuery() (UPDATE voucher_programs SET status = 'ACTIVE', approved_at = NOW())
+        activate DB
+        DB --> Service : returnResult
+        deactivate DB
+
+        Service -> LogService : logAdminAction(adminId, 'APPROVE_VOUCHER', voucherId)
+        activate LogService
+        LogService -> DB : executeQuery() (INSERT INTO system_logs)
+        activate DB
+        DB --> LogService : returnResult
+        deactivate DB
+        LogService --> Service : returnLogged
+        deactivate LogService
+
+        Service --> Controller : returnApproveSuccess()
+        Controller --> UI : returnResponse({ message: "Phê duyệt voucher thành công" })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showSuccessToast("Phê duyệt công bố bán voucher thành công")
+
+    else A2 / A3: Từ chối duyệt voucher (Vi phạm quy tắc hoặc QTV chủ động từ chối)
+        QTV -> UI : clickRejectVoucherButton()
+        UI --> QTV : displayRejectReasonModal()
+        QTV -> UI : inputRejectReasonAndConfirm(reason)
+        UI -> Controller : rejectVoucher(voucherId, reason)
+        activate Controller
+        Controller -> Service : rejectVoucher(voucherId, reason, adminId)
+        activate Service
+
+        Service -> DB : executeQuery() (UPDATE voucher_programs SET status = 'REJECTED', reject_reason = $1)
+        activate DB
+        DB --> Service : returnResult
+        deactivate DB
+
+        Service -> LogService : logAdminAction(adminId, 'REJECT_VOUCHER', voucherId)
+        activate LogService
+        LogService -> DB : executeQuery() (INSERT INTO system_logs)
+        activate DB
+        DB --> LogService : returnResult
+        deactivate DB
+        LogService --> Service : returnLogged
+        deactivate LogService
+
+        Service --> Controller : returnRejectSuccess()
+        Controller --> UI : returnResponse({ message: "Từ chối duyệt voucher thành công" })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastMessage("Đã từ chối duyệt voucher")
+    end
+end
+deactivate UI
+
+@enduml
