@@ -161,13 +161,13 @@ export default function EmployeePendingDetailPage() {
   const getStatusDisplay = (approvalStatus?: string) => {
     switch (approvalStatus) {
       case "PENDING":
-        return { label: "Chờ duyệt", color: "bg-amber-50 text-amber-700 border-amber-200/70", dot: "bg-amber-500" };
+        return { label: "Chờ duyệt", color: "bg-amber-50 text-amber-600 border-amber-200/70", dot: "bg-amber-500" };
       case "APPROVED":
-        return { label: "Đã duyệt", color: "bg-emerald-50 text-emerald-700 border-emerald-200/70", dot: "bg-emerald-500" };
+        return { label: "Đã duyệt", color: "bg-emerald-50 text-emerald-600 border-emerald-200/70", dot: "bg-emerald-500" };
       case "REJECTED":
-        return { label: "Từ chối", color: "bg-rose-50 text-rose-700 border-rose-200/70", dot: "bg-rose-500" };
+        return { label: "Từ chối", color: "bg-rose-50 text-rose-600 border-rose-200/70", dot: "bg-rose-500" };
       default:
-        return { label: approvalStatus || "Chờ duyệt", color: "bg-amber-50 text-amber-700 border-amber-200/70", dot: "bg-amber-500" };
+        return { label: approvalStatus || "Chờ duyệt", color: "bg-amber-50 text-amber-600 border-amber-200/70", dot: "bg-amber-500" };
     }
   };
 
@@ -215,36 +215,31 @@ export default function EmployeePendingDetailPage() {
   const statusConfig = getStatusDisplay(employee.approval_status);
 
   return (
-    <div className="space-y-6 max-w-5xl mx-auto pb-16">
+    <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* ─── PHẦN 1: Breadcrumb & Header Action ───────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <Link href="/admin/partners/employee-pending" className="hover:text-blue-600 transition">
               ĐỐI TÁC
             </Link>
             <span>&rsaquo;</span>
             <Link href="/admin/partners/employee-pending" className="hover:text-blue-600 transition">
-              Duyệt nhân viên đối tác
+              DUYỆT NHÂN VIÊN ĐỐI TÁC
             </Link>
             <span>&rsaquo;</span>
-            <span className="text-slate-600">Chi tiết hồ sơ #{employee.user_id}</span>
+            <span className="text-slate-600">CHI TIẾT HỒ SƠ</span>
           </div>
-          <div className="flex items-center gap-3 mt-1">
-            <Link
-              href="/admin/partners/employee-pending"
-              className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition"
-              title="Quay lại danh sách"
-            >
-              <Icon name="arrow_back" className="text-xl" />
-            </Link>
-            <h1 className="text-xl font-bold text-slate-900 flex items-center gap-2.5">
-              <span>{employee.full_name}</span>
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusConfig.color}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`}></span>
-                {statusConfig.label}
-              </span>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+              {employee.full_name}
             </h1>
+            <span
+              className={`px-3 py-1 font-bold text-xs rounded-full inline-flex items-center gap-1.5 border ${statusConfig.color}`}
+            >
+              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+              {statusConfig.label}
+            </span>
           </div>
         </div>
 
@@ -252,7 +247,7 @@ export default function EmployeePendingDetailPage() {
         <div className="flex items-center gap-2.5">
           <Link
             href="/admin/partners/employee-pending"
-            className="px-3.5 py-2 text-xs font-semibold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition shadow-sm"
+            className="px-4 py-2 border border-slate-200 bg-white text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50 transition shadow-2xs"
           >
             Quay lại
           </Link>
@@ -261,29 +256,26 @@ export default function EmployeePendingDetailPage() {
               {/* Nút Từ chối -> Mở Modal nhập lý do */}
               <Button
                 variant="outline"
+                type="button"
                 onClick={() => {
                   setRejectionReason("");
                   setRejectModalOpen(true);
                 }}
                 disabled={actionLoading}
-                className="px-4 py-2 text-xs font-semibold text-rose-600 border-rose-200 bg-white hover:bg-rose-50 hover:border-rose-300 transition rounded-xl"
+                className="bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100"
               >
-                <Icon name="close" className="text-base mr-1" />
-                <span>Từ chối</span>
+                Từ chối hồ sơ
               </Button>
 
               {/* Nút Phê duyệt -> Kích hoạt tài khoản */}
               <Button
+                type="button"
                 onClick={handleApprove}
                 disabled={actionLoading}
-                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 transition rounded-xl shadow-sm shadow-blue-500/20"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
               >
-                {actionLoading ? (
-                  <Icon name="progress_activity" className="text-base animate-spin mr-1" />
-                ) : (
-                  <Icon name="check" className="text-base mr-1" />
-                )}
-                <span>Phê duyệt hồ sơ</span>
+                <Icon name="check" className="text-base mr-1.5" />
+                {actionLoading ? "Đang xử lý..." : "Phê duyệt hồ sơ"}
               </Button>
             </>
           )}
