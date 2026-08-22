@@ -1,0 +1,73 @@
+@startuml
+title SQ09 - Quản lý bộ sưu tập ảnh Voucher (Image Gallery)
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":VoucherImageGallery" as UI
+control ":VoucherImageController" as Ctrl
+entity ":VoucherImageService" as Svc
+entity ":R2Service" as Storage
+
+== 1. Tải lên hình ảnh mới cho Voucher ==
+DT -> UI: selectImageFile(file)
+UI -> Ctrl: uploadImage(programId, file, is_primary, sort_order)
+activate Ctrl
+Ctrl -> Svc: addVoucherImage(programId, partnerId, file, requestedPrimary, sortOrder)
+activate Svc
+Svc -> Storage: uploadVoucherImage(programId, file)
+activate Storage
+Storage --> Svc: return imageUrl
+deactivate Storage
+Svc --> Ctrl: return image
+deactivate Svc
+Ctrl --> UI: return { message: "Upload ảnh voucher thành công.", image }
+deactivate Ctrl
+UI --> DT: appendImageCard(image)
+
+== 2. Thiết lập ảnh đại diện chính (Primary Image) ==
+DT -> UI: clickSetPrimary(imageId)
+UI -> Ctrl: setPrimary(programId, imageId)
+activate Ctrl
+Ctrl -> Svc: setPrimaryImage(programId, imageId, partnerId)
+activate Svc
+Svc -> Svc: getVoucherImages(programId)
+Svc --> Ctrl: return images
+deactivate Svc
+Ctrl --> UI: return { message: "Đã cập nhật ảnh chính.", images }
+deactivate Ctrl
+UI --> DT: updatePrimaryBadge(imageId)
+
+== 3. Thay đổi thứ tự sắp xếp ảnh (Reorder) ==
+DT -> UI: submitReorder(image_ids)
+UI -> Ctrl: reorder(programId, image_ids)
+activate Ctrl
+Ctrl -> Svc: reorderVoucherImages(programId, partnerId, imageIds)
+activate Svc
+Svc -> Svc: getVoucherImages(programId)
+Svc --> Ctrl: return images
+deactivate Svc
+Ctrl --> UI: return { message: "Đã cập nhật thứ tự ảnh.", images }
+deactivate Ctrl
+UI --> DT: renderReorderedGallery(images)
+
+== 4. Xóa ảnh khỏi Voucher ==
+DT -> UI: clickDelete(imageId)
+UI -> Ctrl: remove(programId, imageId)
+activate Ctrl
+Ctrl -> Svc: deleteVoucherImage(programId, imageId, partnerId)
+activate Svc
+Svc -> Storage: deleteR2Image(imageUrl)
+activate Storage
+Storage --> Svc: return void
+deactivate Storage
+Svc -> Svc: getVoucherImages(programId)
+Svc --> Ctrl: return images
+deactivate Svc
+Ctrl --> UI: return { message: "Đã xóa ảnh voucher.", images }
+deactivate Ctrl
+UI --> DT: removeImageCard(imageId)
+
+@enduml

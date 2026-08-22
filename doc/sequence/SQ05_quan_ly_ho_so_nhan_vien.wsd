@@ -1,0 +1,37 @@
+@startuml
+title SQ05 - Quản lý hồ sơ cá nhân Nhân viên đối tác
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Nhân viên đối tác" as NVDT
+boundary ":EmployeeProfilePage" as UI
+control ":PartnerEmployeeProfileController" as Ctrl
+entity ":PartnerEmployeeProfileService" as Svc
+
+== 1. Xem thông tin hồ sơ cá nhân & Chi nhánh ==
+NVDT -> UI: openEmployeeProfilePage()
+UI -> Ctrl: getProfile()
+activate Ctrl
+Ctrl -> Svc: getEmployeeProfile(userId)
+activate Svc
+Svc --> Ctrl: return employeeProfile
+deactivate Svc
+Ctrl --> UI: return employeeProfile
+deactivate Ctrl
+UI --> NVDT: displayEmployeeProfile(employeeProfile)
+
+== 2. Cập nhật thông tin cá nhân ==
+NVDT -> UI: submitUpdateProfile(full_name, phone, gender, nationality)
+UI -> Ctrl: updateProfile({ full_name, phone, gender, nationality })
+activate Ctrl
+Ctrl -> Svc: updateEmployeeProfile(userId, { full_name, phone, gender, nationality })
+activate Svc
+Svc --> Ctrl: return employeeProfile
+deactivate Svc
+Ctrl --> UI: return employeeProfile
+deactivate Ctrl
+UI --> NVDT: showSuccessToast("Cập nhật thông tin thành công.")
+
+@enduml

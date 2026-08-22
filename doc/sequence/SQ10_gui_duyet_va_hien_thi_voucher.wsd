@@ -1,0 +1,88 @@
+@startuml
+title SQ10 - Gửi duyệt và Bật/Tắt hiển thị chương trình Voucher
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":VoucherDetailPage" as UI
+control ":PartnerVoucherController" as Ctrl
+entity ":PartnerVoucherService" as Svc
+actor "Quản trị viên" as Admin
+boundary ":AdminVoucherPage" as AdminUI
+control ":AdminVoucherController" as AdminCtrl
+entity ":AdminVoucherService" as AdminSvc
+
+== 1. Gửi yêu cầu phê duyệt Voucher ==
+DT -> UI: clickSubmitForApproval()
+UI -> Ctrl: submitForApproval(programId)
+activate Ctrl
+Ctrl -> Svc: submitForApproval(programId, partnerId)
+activate Svc
+Svc --> Ctrl: return void
+deactivate Svc
+Ctrl --> UI: return { message: "Gửi yêu cầu phê duyệt thành công. Vui lòng chờ Admin xem xét." }
+deactivate Ctrl
+UI --> DT: updateStatusBadge("PENDING_APPROVAL")
+
+== 2. Quản trị viên xét duyệt chương trình Voucher ==
+Admin -> AdminUI: openPendingVouchers()
+AdminUI -> AdminCtrl: getPendingVouchers(query)
+activate AdminCtrl
+AdminCtrl -> AdminSvc: getPendingVouchers(query)
+activate AdminSvc
+AdminSvc --> AdminCtrl: return pendingVouchers
+deactivate AdminSvc
+AdminCtrl --> AdminUI: return pendingVouchers
+deactivate AdminCtrl
+
+alt Admin phê duyệt
+    Admin -> AdminUI: clickApprove(requestId)
+    AdminUI -> AdminCtrl: approveVoucher(requestId)
+    activate AdminCtrl
+    AdminCtrl -> AdminSvc: approveVoucher(requestId, adminId)
+    activate AdminSvc
+    AdminSvc --> AdminCtrl: return { success: true, message: "Phê duyệt phát hành voucher thành công" }
+    deactivate AdminSvc
+    AdminCtrl --> AdminUI: return result
+    deactivate AdminCtrl
+    AdminUI --> Admin: showToast("Phê duyệt voucher thành công.")
+else Admin từ chối
+    Admin -> AdminUI: clickReject(requestId, reason)
+    AdminUI -> AdminCtrl: rejectVoucher(requestId, reason)
+    activate AdminCtrl
+    AdminCtrl -> AdminSvc: rejectVoucher(requestId, adminId, reason)
+    activate AdminSvc
+    AdminSvc --> AdminCtrl: return { success: true, message: "Từ chối phát hành voucher thành công" }
+    deactivate AdminSvc
+    AdminCtrl --> AdminUI: return result
+    deactivate AdminCtrl
+    AdminUI --> Admin: showToast("Đã từ chối voucher.")
+end
+
+== 3. Đối tác theo dõi lịch sử & phản hồi của Admin ==
+DT -> UI: viewApprovalHistory()
+UI -> Ctrl: getApprovalStatus(programId)
+activate Ctrl
+Ctrl -> Svc: getApprovalStatus(programId, partnerId)
+activate Svc
+Svc --> Ctrl: return approvalRecord
+deactivate Svc
+Ctrl --> UI: return approvalRecord
+deactivate Ctrl
+UI --> DT: renderApprovalFeedback(approvalRecord)
+
+== 4. Bật / Tắt hiển thị voucher đã duyệt (Ẩn / Hiện) ==
+DT -> UI: toggleVisibility(display_status)
+UI -> Ctrl: updateVisibility(programId, { display_status })
+activate Ctrl
+Ctrl -> Svc: updateVisibility(programId, partnerId, display_status)
+activate Svc
+Svc --> Ctrl: return void
+deactivate Svc
+Ctrl --> UI: return { message: "Cập nhật hiển thị thành công." }
+deactivate Ctrl
+UI --> DT: updateVisibilityState(display_status)
+
+@enduml

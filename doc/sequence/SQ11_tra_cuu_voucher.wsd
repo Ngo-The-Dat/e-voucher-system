@@ -1,0 +1,53 @@
+@startuml
+title SQ11 - Tra cứu và Kiểm tra thông tin Voucher
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác / Nhân viên" as Staff
+boundary ":VoucherCheckPage" as UI
+control ":RedeemController" as Ctrl
+entity ":RedeemService" as Svc
+
+== 1. Tra cứu voucher bằng Chuỗi mã Code ==
+Staff -> UI: enterVoucherCode(code)
+UI -> Ctrl: lookupVoucher({ code })
+activate Ctrl
+Ctrl -> Ctrl: resolvePartnerContext(userId, role)
+Ctrl -> Svc: lookupVoucher(voucherCode, partnerId)
+activate Svc
+
+alt Không tìm thấy voucher
+    Svc --> Ctrl: throw HttpError(404, "Không tìm thấy voucher hoặc voucher không thuộc hệ thống của bạn.")
+    Ctrl --> UI: return error(404, message)
+    UI --> Staff: showErrorMessage("Không tìm thấy voucher")
+else Tìm thấy voucher hợp lệ
+    Svc --> Ctrl: return voucherData
+    deactivate Svc
+    Ctrl --> UI: return voucherData
+    deactivate Ctrl
+    UI --> Staff: displayVoucherDetails(voucherData)
+end
+
+== 2. Tra cứu voucher bằng Quét mã QR ==
+Staff -> UI: scanQrCode(qr_value)
+UI -> Ctrl: lookupVoucherByQr({ qr_value })
+activate Ctrl
+Ctrl -> Ctrl: resolvePartnerContext(userId, role)
+Ctrl -> Svc: lookupVoucherByQr(qrValue, partnerId)
+activate Svc
+
+alt Mã QR không tồn tại hoặc không khớp
+    Svc --> Ctrl: throw HttpError(404, "Không tìm thấy voucher từ mã QR.")
+    Ctrl --> UI: return error(404, message)
+    UI --> Staff: showErrorMessage("Mã QR không hợp lệ")
+else Tìm thấy voucher từ mã QR
+    Svc --> Ctrl: return voucherData
+    deactivate Svc
+    Ctrl --> UI: return voucherData
+    deactivate Ctrl
+    UI --> Staff: displayVoucherDetails(voucherData)
+end
+
+@enduml
