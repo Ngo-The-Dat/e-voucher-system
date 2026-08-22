@@ -111,6 +111,67 @@ export function detectRegion(address: string): 'Miền Bắc' | 'Miền Trung' |
 }
 
 /**
+ * Chuyển HTML thành văn bản thuần có cấu trúc đẹp mắt, loại bỏ toàn bộ thẻ HTML và entities
+ */
+export function htmlToCleanText(html: string | undefined): string {
+  if (!html) return '';
+  let text = html
+    // Chuyển thẻ block/ngắt dòng thành newline
+    .replace(/<\/(p|div|h1|h2|h3|h4|h5|h6|li|tr|section|article)>/gi, '\n')
+    .replace(/<br\s*[\/]?>/gi, '\n')
+    .replace(/<li>/gi, '• ')
+    // Xóa thẻ script, style
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    // Xóa tất cả các thẻ HTML còn lại
+    .replace(/<[^>]+>/g, '')
+    // Giải mã HTML entities
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&aacute;/g, 'á')
+    .replace(/&agrave;/g, 'à')
+    .replace(/&atilde;/g, 'ã')
+    .replace(/&acirc;/g, 'â')
+    .replace(/&eacute;/g, 'é')
+    .replace(/&egrave;/g, 'è')
+    .replace(/&ecirc;/g, 'ê')
+    .replace(/&iacute;/g, 'í')
+    .replace(/&igrave;/g, 'ì')
+    .replace(/&oacute;/g, 'ó')
+    .replace(/&ograve;/g, 'ò')
+    .replace(/&otilde;/g, 'õ')
+    .replace(/&ocirc;/g, 'ô')
+    .replace(/&uacute;/g, 'ú')
+    .replace(/&ugrave;/g, 'ù')
+    .replace(/&yacute;/g, 'ý')
+    .replace(/&Aacute;/g, 'Á')
+    .replace(/&Agrave;/g, 'À')
+    .replace(/&Eacute;/g, 'É')
+    .replace(/&Egrave;/g, 'È')
+    .replace(/&Oacute;/g, 'Ó')
+    .replace(/&Ograve;/g, 'Ò')
+    .replace(/&Uacute;/g, 'Ú')
+    .replace(/&Ugrave;/g, 'Ù')
+    .replace(/&Yacute;/g, 'Ý')
+    .replace(/&ndash;/g, '-')
+    .replace(/&hellip;/g, '...');
+
+  // Loại bỏ các tiêu đề tab Hotdeal lặp lại ở đầu
+  text = text.replace(/^(Thông tin chi tiết|Điểm nổi bật|Điều kiện sử dụng)\s*/i, '');
+
+  return text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join('\n\n')
+    .trim();
+}
+
+/**
  * Chuẩn hóa toàn bộ một bản ghi voucher cào được
  */
 export function normalizeScrapedVoucher(
@@ -227,15 +288,10 @@ export function normalizeScrapedVoucher(
   const contents = [];
 
   // Content 1: POLICY (Điều kiện & Chính sách)
-  const policyBody = raw.conditionsHtml && raw.conditionsHtml.length > 50
-    ? raw.conditionsHtml
-    : `<p><strong>Điều kiện sử dụng E-Voucher:</strong></p>
-       <ul>
-         <li>Thời hạn sử dụng: từ ${useStartAt.toLocaleDateString('vi-VN')} đến ${useEndAt.toLocaleDateString('vi-VN')}.</li>
-         <li>Địa điểm áp dụng: ${branchAddress}.</li>
-         <li>Áp dụng 01 voucher/ 01 người/ 01 dịch vụ. Quý khách vui lòng liên hệ hotline ${phone} để đặt lịch trước khi đến.</li>
-         <li>Voucher đã bao gồm thuế VAT theo quy định. Không quy đổi thành tiền mặt.</li>
-       </ul>`;
+  let policyBody = htmlToCleanText(raw.conditionsHtml);
+  if (!policyBody || policyBody.length < 30) {
+    policyBody = `• Thời hạn sử dụng voucher: từ ${useStartAt.toLocaleDateString('vi-VN')} đến ${useEndAt.toLocaleDateString('vi-VN')}.\n\n• Địa điểm áp dụng: ${branchAddress}.\n\n• Áp dụng 01 voucher/ 01 người/ 01 dịch vụ. Quý khách vui lòng liên hệ hotline ${phone} để đặt lịch trước khi đến.\n\n• Voucher đã bao gồm thuế VAT theo quy định. Không quy đổi thành tiền mặt.`;
+  }
 
   contents.push({
     title: `Chính Sách & Điều Kiện Sử Dụng: ${raw.title.slice(0, 80)}`,
@@ -245,9 +301,10 @@ export function normalizeScrapedVoucher(
   });
 
   // Content 2: ARTICLE / PROMOTION (Bài viết giới thiệu trải nghiệm)
-  const articleBody = raw.detailsHtml && raw.detailsHtml.length > 50
-    ? raw.detailsHtml
-    : `<p>Khám phá không gian sang trọng và dịch vụ đẳng cấp tại <strong>${brandName}</strong>. Với mức giá ưu đãi chỉ <strong>${salePrice.toLocaleString('vi-VN')}đ</strong> (giá gốc: ${originalPrice.toLocaleString('vi-VN')}đ), đây là cơ hội tuyệt vời để tận hưởng cùng gia đình và bạn bè.</p>`;
+  let articleBody = htmlToCleanText(raw.detailsHtml);
+  if (!articleBody || articleBody.length < 30) {
+    articleBody = `Khám phá không gian sang trọng và dịch vụ đẳng cấp tại ${brandName}.\n\nVới mức giá ưu đãi chỉ ${salePrice.toLocaleString('vi-VN')}đ (giá gốc: ${originalPrice.toLocaleString('vi-VN')}đ), đây là cơ hội tuyệt vời để tận hưởng cùng gia đình và bạn bè.\n\nĐến với ${brandName}, quý khách sẽ được trải nghiệm chất lượng dịch vụ chuyên nghiệp hàng đầu cùng không gian thư thái, tiện nghi.`;
+  }
 
   contents.push({
     title: `Trải Nghiệm Dịch Vụ & Điểm Nổi Bật: ${raw.title.slice(0, 80)}`,

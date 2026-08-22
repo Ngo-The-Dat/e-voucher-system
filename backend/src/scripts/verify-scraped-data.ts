@@ -44,8 +44,15 @@ async function verify() {
     GROUP BY content_type
   `);
 
-  console.log(`\n📑 Phân bố loại bài viết & chính sách (contents):`);
-  console.table(contentsByTypeRes.rows);
+  const sampleContentsRes = await pool.query(`
+    SELECT content_id, content_type, title, substring(body from 1 for 150) as body_preview
+    FROM contents
+    ORDER BY content_id DESC
+    LIMIT 6
+  `);
+
+  console.log(`\n📝 Mẫu 6 nội dung bài viết & chính sách sau khi đã làm sạch HTML:`);
+  console.table(sampleContentsRes.rows);
 
   await pool.end();
 }
