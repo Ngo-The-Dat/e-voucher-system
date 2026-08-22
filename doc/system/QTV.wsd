@@ -16,11 +16,15 @@ rectangle "Hệ thống bán voucher trực tuyến" {
   usecase "Quản lý nội dung hệ thống" as UC11
   usecase "Xem dashboard quản trị" as UC12
   usecase "Tra cứu nhật ký hệ thống" as UC13
+  usecase "Duyệt nhân viên đối tác" as UC14
+  usecase "Thay đổi thông tin hồ sơ cá nhân" as UC15
+  usecase "Đổi mật khẩu" as UC16
 
   UC2 -[hidden]left- UC1
   UC3 -[hidden]left- UC1
   UC5 -[hidden]left- UC4
   UC10 -[hidden]left- UC9
+  UC16 -[hidden]left- UC15
 }
 
 QTV -> UC1
@@ -33,8 +37,11 @@ QTV -> UC9
 QTV --> UC11
 QTV --> UC12
 QTV --> UC13
+QTV --> UC14
+QTV --> UC15
 
 UC2 ..> UC1 : <<extend>>
 UC3 ..> UC1 : <<extend>>
 UC10 ..> UC9 : <<extend>>
+UC16 ..> UC15 : <<extend>>
 @enduml

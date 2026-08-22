@@ -8,6 +8,17 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
                voucher_approval_requests, voucher_program_images, voucher_program_branches, voucher_programs,
                partner_employee_approval_requests, partner_employees, branches, categories, partner_approval_requests, partners, user_locks, users RESTART IDENTITY CASCADE;
 
+-- =========================================================================
+-- THÔNG TIN TÀI KHOẢN MẪU DÙNG ĐĂNG NHẬP / TEST HỆ THỐNG:
+-- 1. Tài khoản Quản trị viên (Admin):
+--    TK: admin@voucher.vn
+--    Pass: @Admin123
+-- 2. Tài khoản Nhân viên đối tác (Partner Employee):
+--    TK: employee_spa1@voucher.vn 
+--    Pass: 12345876
+-- (Ghi chú: Tất cả các tài khoản demo còn lại có mật khẩu mặc định là 12345876)
+-- =========================================================================
+
 -- 1. Insert users (36 rows, exactly 1 ADMIN with user_id = 1)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
 (1, 'Ngô Thế Đạt', 'admin@voucher.vn', '0901000001', '$2b$10$JITaepX2GQH3.6T2KhDIiuh4OcJulzeW80vyNF4jfdjV3JpJ5prNq', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),

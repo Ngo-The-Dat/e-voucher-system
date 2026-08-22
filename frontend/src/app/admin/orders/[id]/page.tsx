@@ -166,11 +166,17 @@ export default function OrderDetailPage() {
       return;
     }
 
+    const isUnpaid = order?.payment_status === "UNPAID";
+
     try {
       setIsCancelling(true);
       setModalError(null);
       await adminApi.cancelOrder(orderId, cancelReason.trim());
-      toast.success(`Đã hủy đơn hàng [ORD-${orderId}] thành công và hoàn tiền.`);
+      toast.success(
+        isUnpaid
+          ? `Đã hủy đơn hàng [ORD-${orderId}] thành công.`
+          : `Đã hủy đơn hàng [ORD-${orderId}] thành công và hoàn tiền mô phỏng.`
+      );
       setIsCancelModalOpen(false);
       setCancelReason("");
       await loadOrderDetail();
@@ -221,6 +227,8 @@ export default function OrderDetailPage() {
   const isGift = Boolean(order.recipient_name);
   const hasUsedVoucher = allVouchers.some((v) => v.usage_status === "USED");
 
+  const isUnpaid = order?.payment_status === "UNPAID";
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-12">
       {/* ─── PHẦN 1: Top Header & Breadcrumb ─────────────────────────────────────── */}
@@ -269,7 +277,7 @@ export default function OrderDetailPage() {
         <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl space-y-1">
           <div className="font-bold text-xs text-rose-900 flex items-center gap-1.5">
             <Icon name="cancel" className="text-base" />
-            Thông tin Hủy đơn & Hoàn tiền
+            Thông tin Hủy đơn {isUnpaid ? "" : "& Hoàn tiền"}
           </div>
           <p className="text-xs text-rose-800">
             <span className="font-semibold">Lý do hủy:</span> {order.cancel_reason || "Không có lý do"}
@@ -504,11 +512,13 @@ export default function OrderDetailPage() {
             title={
               !isEligibleForCancellation()
                 ? "Đơn hàng chứa voucher đã sử dụng, không thể hủy!"
+                : isUnpaid
+                ? "Hủy đơn hàng chưa thanh toán"
                 : "Hủy đơn hàng và hoàn tiền mô phỏng"
             }
           >
             <Icon name="cancel" className="text-base" />
-            Hủy đơn hàng & Hoàn tiền mô phỏng
+            {isUnpaid ? "Hủy đơn hàng" : "Hủy đơn hàng & Hoàn tiền mô phỏng"}
           </Button>
         )}
       </div>
@@ -517,7 +527,9 @@ export default function OrderDetailPage() {
       {isCancelModalOpen && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md p-6 space-y-4 animate-in fade-in zoom-in-95">
-            <h4 className="font-bold text-slate-900 text-base">Xác nhận Hủy đơn hàng & Hoàn tiền</h4>
+            <h4 className="font-bold text-slate-900 text-base">
+              {isUnpaid ? "Xác nhận Hủy đơn hàng" : "Xác nhận Hủy đơn hàng & Hoàn tiền mô phỏng"}
+            </h4>
             <p className="text-xs text-slate-500">
               Vui lòng nhập lý do hủy đơn hàng <span className="font-bold text-slate-800">ORD-{order.order_id}</span> của khách hàng{" "}
               <span className="font-bold text-slate-800">{order.buyer_name}</span>.
@@ -532,7 +544,11 @@ export default function OrderDetailPage() {
             <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs space-y-1">
               <div className="font-bold">Lưu ý khi xác nhận hủy đơn:</div>
               <ul className="list-disc list-inside space-y-0.5 text-[11px] text-amber-800">
-                <li>Ghi nhận hoàn tiền mô phỏng {formatCurrency(order.total_amount)}.</li>
+                {isUnpaid ? (
+                  <li>Đơn hàng chưa thanh toán, không phát sinh giao dịch hoàn tiền.</li>
+                ) : (
+                  <li>Ghi nhận hoàn tiền mô phỏng {formatCurrency(order.total_amount)}.</li>
+                )}
                 <li>Chuyển trạng thái toàn bộ voucher chưa dùng sang Đã vô hiệu.</li>
                 <li>Lưu vết thao tác vào Nhật ký hệ thống.</li>
               </ul>
@@ -565,7 +581,11 @@ export default function OrderDetailPage() {
                 disabled={isCancelling || !cancelReason.trim()}
                 className="bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-600 transition-all"
               >
-                {isCancelling ? "Đang xử lý..." : "Xác nhận Hủy & Hoàn tiền"}
+                {isCancelling
+                  ? "Đang xử lý..."
+                  : isUnpaid
+                  ? "Xác nhận Hủy đơn hàng"
+                  : "Xác nhận Hủy & Hoàn tiền mô phỏng"}
               </Button>
             </div>
           </div>

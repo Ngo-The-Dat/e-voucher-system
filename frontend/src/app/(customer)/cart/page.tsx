@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { ChevronRight } from "lucide-react";
-import { customerOrderApi, CreateOrderItemInput, getStoredCustomerToken } from "@/lib/customer-api";
+import { customerOrderApi, customerPaymentApi, CreateOrderItemInput, PaymentMethodItem, getStoredCustomerToken } from "@/lib/customer-api";
 
 import CartItemList from "@/components/customer/cart/CartItemList";
 import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
@@ -25,7 +25,26 @@ export default function CartPage() {
     return initial;
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("Ví VNPay");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState("PAYPAL");
+
+  useEffect(() => {
+    let isMounted = true;
+    customerPaymentApi
+      .getPaymentMethods()
+      .then((res) => {
+        if (isMounted && res.payment_methods && res.payment_methods.length > 0) {
+          setPaymentMethods(res.payment_methods);
+          setPaymentMethod(res.payment_methods[0].code);
+        }
+      })
+      .catch((err) => {
+        console.warn("Could not fetch payment methods:", err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const [isGift, setIsGift] = useState(false);
   const [recipientInfo, setRecipientInfo] = useState<RecipientState>({
@@ -184,6 +203,7 @@ export default function CartPage() {
             setRecipientInfo={setRecipientInfo}
             handleCheckout={handleCheckout}
             isSubmitting={isSubmitting}
+            paymentMethods={paymentMethods}
           />
         </div>
       ) : (
