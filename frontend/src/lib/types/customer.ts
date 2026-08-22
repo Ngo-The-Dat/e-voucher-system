@@ -37,6 +37,7 @@ export interface Voucher {
   guideSteps?: string[];
   terms?: string[];
   instructions?: string[];
+  availableStock?: number;
 }
 
 export interface MyVoucher {
