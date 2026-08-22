@@ -1,0 +1,66 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-03 - Phân quyền người dùng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Phân quyền người dùng\n(UserRoleTab)" as UI
+control "UserController" as Controller
+entity "UserService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Tải danh sách vai trò và thông tin phân quyền ==
+QTV -> UI : selectRoleTab()
+activate UI
+UI -> Controller : getBranchesForAssignment()
+activate Controller
+Controller -> Service : getActiveBranchesForAssignment()
+activate Service
+Service --> Controller : return branches
+deactivate Service
+Controller --> UI : 200 OK ({ branches })
+deactivate Controller
+UI --> QTV : displayRoleForm(roles, branches)
+
+== 2. Chọn vai trò mới và nhập thông tin bổ sung ==
+QTV -> UI : selectNewRole(CUSTOMER / PARTNER / PARTNER_EMPLOYEE)
+
+opt newRole == 'PARTNER'
+    QTV -> UI : inputPartnerInfo(business_name, tax_code)
+else newRole == 'PARTNER_EMPLOYEE'
+    QTV -> UI : selectBranch(branch_id)
+end
+
+QTV -> UI : clickUpdateRoleButton()
+UI -> UI : validateRoleInputs()
+UI --> QTV : displayConfirmRoleModal(newRole, extraInfo)
+
+alt A2: Quản trị viên hủy thao tác
+    QTV -> UI : clickCancelButton()
+    UI --> QTV : closeConfirmModal()
+else Quản trị viên xác nhận thay đổi vai trò
+    QTV -> UI : confirmRoleChange()
+    UI -> Controller : changeUserRole(userId, { role, business_name, tax_code, branch_id })
+    activate Controller
+    Controller -> Service : changeUserRole(userId, input, adminId)
+    activate Service
+
+    Service -> LogService : logAdminAction(adminId, 'CHANGE_USER_ROLE', userId, oldValue, newValue)
+    activate LogService
+    LogService --> Service : return void
+    deactivate LogService
+
+    opt A1: Buộc đăng xuất phiên đăng nhập hiện tại của người dùng
+        Service --> Controller : return { message, user_id, role }
+        Controller --> UI : 200 OK ({ message, user_id, role })
+        UI -> UI : triggerAuthSyncEvent() (Vô hiệu hóa phiên hoạt động)
+    end
+
+    Service --> Controller : return { message: 'Cập nhật vai trò thành công', user_id, role }
+    Controller --> UI : 200 OK ({ message, user_id, role })
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật vai trò người dùng thành công")
+end
+deactivate UI
+
+@enduml

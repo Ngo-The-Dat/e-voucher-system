@@ -1,0 +1,77 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-05 - Khóa/Mở khóa đối tác
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý đối tác\n(ManagePartnersPage)" as UI
+control "PartnerController" as Controller
+entity "PartnerService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Tải danh sách đối tác đang hoạt động ==
+QTV -> UI : openManagePartnersTab()
+activate UI
+UI -> Controller : getManagedPartners(params)
+activate Controller
+Controller -> Service : getManagedPartners(filter)
+activate Service
+Service --> Controller : return { partners, pagination }
+deactivate Service
+Controller --> UI : 200 OK ({ partners, pagination })
+deactivate Controller
+
+alt A1: Không tìm thấy đối tác phù hợp (partners.length == 0)
+    UI --> QTV : showEmptyMessage("Không tìm thấy đối tác phù hợp với bộ lọc")
+else Có danh sách đối tác
+    UI --> QTV : displayPartnerList(partners)
+
+    == 2. Thao tác Tạm khóa / Mở khóa đối tác ==
+    QTV -> UI : selectPartner(partnerId)
+    QTV -> UI : clickChangeStatusButton(newStatus)
+    UI --> QTV : displayConfirmStatusModal(newStatus)
+
+    alt A2: Quản trị viên hủy thao tác
+        QTV -> UI : clickCancelButton()
+        UI --> QTV : closeConfirmModal()
+    else Quản trị viên xác nhận thao tác
+        alt Khóa đối tác (newStatus == 'LOCKED')
+            QTV -> UI : inputReasonAndConfirm(reason)
+            UI -> Controller : lockPartner(partnerId, reason)
+            activate Controller
+            Controller -> Service : lockPartner(partnerId, reason, adminId)
+            activate Service
+
+            Service -> LogService : logAdminAction(adminId, 'LOCK_PARTNER', partnerId, reason)
+            activate LogService
+            LogService --> Service : return void
+            deactivate LogService
+
+            Service --> Controller : return { message: 'Khóa đối tác thành công', partner_id }
+            Controller --> UI : 200 OK ({ message, partner_id })
+            deactivate Service
+            deactivate Controller
+            UI --> QTV : showSuccessToast("Khóa tài khoản đối tác thành công")
+
+        else Mở khóa đối tác (newStatus == 'ACTIVE')
+            QTV -> UI : confirmUnlock()
+            UI -> Controller : unlockPartner(partnerId)
+            activate Controller
+            Controller -> Service : unlockPartner(partnerId, adminId)
+            activate Service
+
+            Service -> LogService : logAdminAction(adminId, 'UNLOCK_PARTNER', partnerId)
+            activate LogService
+            LogService --> Service : return void
+            deactivate LogService
+
+            Service --> Controller : return { message: 'Mở khóa đối tác thành công', partner_id }
+            Controller --> UI : 200 OK ({ message, partner_id })
+            deactivate Service
+            deactivate Controller
+            UI --> QTV : showSuccessToast("Mở khóa đối tác thành công")
+        end
+    end
+end
+deactivate UI
+
+@enduml

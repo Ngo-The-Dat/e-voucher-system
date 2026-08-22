@@ -7,7 +7,6 @@ boundary "Giao diện Chi tiết người dùng\n(UserDetailPage)" as UI
 control "UserController" as Controller
 entity "UserService" as Service
 entity "SystemLogService" as LogService
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Yêu cầu Khóa / Mở khóa tài khoản ==
 QTV -> UI : clickToggleStatusButton(action)
@@ -25,27 +24,13 @@ else Quản trị viên xác nhận thao tác
         Controller -> Service : lockUser(userId, reason, adminId)
         activate Service
 
-        Service -> DB : executeQuery() (UPDATE users SET status = 'LOCKED')
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
-
-        Service -> DB : executeQuery() (INSERT INTO user_locks)
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
-
         Service -> LogService : logAdminAction(adminId, 'LOCK_USER', userId, reason)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnLockSuccess()
-        Controller --> UI : returnResponse({ message: "Khóa tài khoản thành công" })
+        Service --> Controller : return { message: 'Khóa tài khoản thành công', user_id }
+        Controller --> UI : 200 OK ({ message, user_id })
         deactivate Service
         deactivate Controller
         UI --> QTV : showToastSuccess("Tài khoản đã bị khóa thành công")
@@ -57,22 +42,13 @@ else Quản trị viên xác nhận thao tác
         Controller -> Service : unlockUser(userId, adminId)
         activate Service
 
-        Service -> DB : executeQuery() (UPDATE users SET status = 'ACTIVE')
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
-
         Service -> LogService : logAdminAction(adminId, 'UNLOCK_USER', userId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnUnlockSuccess()
-        Controller --> UI : returnResponse({ message: "Mở khóa tài khoản thành công" })
+        Service --> Controller : return { message: 'Mở khóa tài khoản thành công', user_id }
+        Controller --> UI : 200 OK ({ message, user_id })
         deactivate Service
         deactivate Controller
         UI --> QTV : showToastSuccess("Mở khóa tài khoản người dùng thành công")

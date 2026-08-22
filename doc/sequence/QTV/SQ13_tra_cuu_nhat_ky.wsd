@@ -6,22 +6,17 @@ actor "Quản trị viên" as QTV
 boundary "Giao diện Nhật ký hệ thống\n(SystemLogsPage)" as UI
 control "LogController" as Controller
 entity "LogService" as Service
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Tải danh sách nhật ký mặc định ==
 QTV -> UI : openSystemLogPage()
 activate UI
-UI -> Controller : getLogs(page, limit)
+UI -> Controller : getLogs(params)
 activate Controller
 Controller -> Service : getSystemLogs(filter)
 activate Service
-Service -> DB : executeQuery()
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnLogs(logs, pagination)
+Service --> Controller : return { logs, pagination }
 deactivate Service
-Controller --> UI : returnResponse(logsData)
+Controller --> UI : 200 OK ({ logs, pagination })
 deactivate Controller
 UI --> QTV : displayLogList()
 deactivate UI
@@ -30,37 +25,29 @@ deactivate UI
 QTV -> UI : inputSearchFilter(keyword, objectType, result, dateRange)
 activate UI
 QTV -> UI : clickSearchButton()
-UI -> Controller : getLogs(searchFilter)
+UI -> Controller : getLogs(params)
 activate Controller
 Controller -> Service : getSystemLogs(filter)
 activate Service
-Service -> DB : executeQuery()
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnLogs(filteredLogs)
+Service --> Controller : return { logs, pagination }
 deactivate Service
-Controller --> UI : returnResponse(filteredLogs)
+Controller --> UI : 200 OK ({ logs, pagination })
 deactivate Controller
 
 alt [logs.length == 0] (Không có bản ghi phù hợp)
     UI --> QTV : showNotFoundMessage("Không tìm thấy kết quả phù hợp")
 else [logs.length > 0] (Có bản ghi phù hợp)
-    UI --> QTV : displayLogList(filteredLogs)
+    UI --> QTV : displayLogList(logs)
 
     == 3. Xem chi tiết bản ghi nhật ký ==
     QTV -> UI : selectLogDetail(logId)
-    UI -> Controller : getLogById(logId)
+    UI -> Controller : getLog(logId)
     activate Controller
     Controller -> Service : getSystemLogById(logId)
     activate Service
-    Service -> DB : executeQuery()
-    activate DB
-    DB --> Service : returnResult
-    deactivate DB
-    Service --> Controller : returnLogDetail(detail)
+    Service --> Controller : return logDetail
     deactivate Service
-    Controller --> UI : returnResponse(logDetail)
+    Controller --> UI : 200 OK (logDetail)
     deactivate Controller
     UI --> QTV : displayLogDetailModal(old_value, new_value)
 end

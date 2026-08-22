@@ -7,7 +7,6 @@ boundary "Giao diện Quản lý nội dung\n(ContentManagementPage)" as UI
 control "ContentController" as Controller
 entity "ContentService" as Service
 entity "SystemLogService" as LogService
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Chọn loại nội dung & Tải danh sách ==
 QTV -> UI : selectContentType(category / banner / popup / article)
@@ -16,13 +15,9 @@ UI -> Controller : getContentItems(contentType)
 activate Controller
 Controller -> Service : getContentItems(contentType)
 activate Service
-Service -> DB : executeQuery() (SELECT FROM categories / banners / popups / articles)
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnContentItems(items)
+Service --> Controller : return contentItems
 deactivate Service
-Controller --> UI : returnResponse(items)
+Controller --> UI : 200 OK (contentItems)
 deactivate Controller
 UI --> QTV : displayContentList(items)
 
@@ -34,20 +29,12 @@ alt Thêm mới mục nội dung
     activate Controller
     Controller -> Service : createContentItem(contentType, formData, adminId)
     activate Service
-    Service -> DB : executeQuery() (INSERT)
-    activate DB
-    DB --> Service : returnResult (newItem)
-    deactivate DB
     Service -> LogService : logAdminAction(adminId, 'CREATE_CONTENT', newItem.id)
     activate LogService
-    LogService -> DB : executeQuery() (INSERT INTO system_logs)
-    activate DB
-    DB --> LogService : returnResult
-    deactivate DB
-    LogService --> Service : returnLogged
+    LogService --> Service : return void
     deactivate LogService
-    Service --> Controller : returnCreatedItem(newItem)
-    Controller --> UI : returnResponse(newItem)
+    Service --> Controller : return newItem
+    Controller --> UI : 201 Created (newItem)
     deactivate Service
     deactivate Controller
     UI --> QTV : showSuccessToast("Tạo nội dung mới thành công")
@@ -59,20 +46,12 @@ else Chỉnh sửa mục nội dung
     activate Controller
     Controller -> Service : updateContentItem(contentType, itemId, updatedData, adminId)
     activate Service
-    Service -> DB : executeQuery() (UPDATE)
-    activate DB
-    DB --> Service : returnResult (updatedItem)
-    deactivate DB
     Service -> LogService : logAdminAction(adminId, 'UPDATE_CONTENT', itemId)
     activate LogService
-    LogService -> DB : executeQuery() (INSERT INTO system_logs)
-    activate DB
-    DB --> LogService : returnResult
-    deactivate DB
-    LogService --> Service : returnLogged
+    LogService --> Service : return void
     deactivate LogService
-    Service --> Controller : returnUpdatedItem(updatedItem)
-    Controller --> UI : returnResponse(updatedItem)
+    Service --> Controller : return updatedItem
+    Controller --> UI : 200 OK (updatedItem)
     deactivate Service
     deactivate Controller
     UI --> QTV : showSuccessToast("Cập nhật nội dung thành công")
@@ -84,32 +63,17 @@ else Xóa / Gỡ bỏ mục nội dung
     Controller -> Service : deleteContentItem(contentType, itemId, adminId)
     activate Service
 
-    opt Kiểm tra ràng buộc danh mục
-        Service -> DB : executeQuery() (SELECT COUNT(*) FROM vouchers WHERE category_id = $1)
-        activate DB
-        DB --> Service : returnResult (voucherCount)
-        deactivate DB
-    end
-
-    alt A1: Voucher còn nằm trong danh mục cần xóa (voucherCount > 0)
-        Service --> Controller : returnError("Không thể xóa danh mục đang chứa voucher")
-        Controller --> UI : returnResponse({ error: "Từ chối thao tác gỡ bỏ" })
+    alt A1: Voucher còn nằm trong danh mục cần xóa
+        Service --> Controller : throw Error("Không thể xóa danh mục đang chứa voucher")
+        Controller --> UI : 400 BadRequest ({ error: "Từ chối thao tác gỡ bỏ" })
         UI --> QTV : showAlertModal("Từ chối thao tác gỡ bỏ do còn voucher thuộc danh mục này")
     else Đủ điều kiện xóa nội dung
-        Service -> DB : executeQuery() (DELETE / UPDATE is_active = false)
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
         Service -> LogService : logAdminAction(adminId, 'DELETE_CONTENT', itemId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
-        Service --> Controller : returnDeleteSuccess()
-        Controller --> UI : returnResponse({ message: "Xóa nội dung thành công" })
+        Service --> Controller : return { message: 'Xóa nội dung thành công' }
+        Controller --> UI : 200 OK ({ message: "Xóa nội dung thành công" })
         UI --> QTV : showSuccessToast("Gỡ bỏ mục nội dung thành công")
     end
     deactivate Service
