@@ -376,6 +376,23 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
             </div>
           </div>
 
+          {/* Stock Display */}
+          {voucher.availableStock !== undefined && (
+            <div className="flex flex-col gap-2">
+              <span className="font-label-md text-label-md text-on-surface font-semibold flex items-center gap-2">
+                <CheckSquare className="w-5 h-5 text-emerald-500" />
+                Tình trạng kho
+              </span>
+              <div className="font-body-md text-body-md bg-surface-container-low p-4 rounded-lg border border-outline-variant/50">
+                {voucher.availableStock > 0 ? (
+                  <span className="text-emerald-600 font-bold">Còn {voucher.availableStock} sản phẩm</span>
+                ) : (
+                  <span className="text-error font-bold">Đã hết hàng</span>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Quantity Selector */}
           <div className="flex items-center justify-between border-t border-b border-outline-variant py-6 mt-2">
             <label className="font-title-md text-title-md font-semibold text-on-surface">
@@ -411,17 +428,19 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-col gap-3 mt-2">
             <button
               onClick={handleBuyNow}
-              className="w-full bg-primary hover:opacity-95 text-on-primary font-title-md text-title-md py-4 rounded-xl shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] flex justify-center items-center gap-2 cursor-pointer font-bold"
+              disabled={voucher.availableStock === 0}
+              className="w-full bg-primary hover:opacity-95 text-on-primary font-title-md text-title-md py-4 rounded-xl shadow-sm transition-all hover:shadow-md hover:-translate-y-[1px] flex justify-center items-center gap-2 cursor-pointer font-bold disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:hover:translate-y-0 disabled:bg-gray-400"
             >
               <ShoppingBag className="w-5 h-5" />
-              Mua ngay
+              {voucher.availableStock === 0 ? "Hết hàng" : "Mua ngay"}
             </button>
             <button
               onClick={handleAddToCart}
-              className="w-full border-2 border-primary text-primary hover:bg-primary-fixed font-title-md text-title-md py-4 rounded-xl transition-all flex justify-center items-center gap-2 cursor-pointer font-bold"
+              disabled={voucher.availableStock === 0}
+              className="w-full border-2 border-primary text-primary hover:bg-primary-fixed font-title-md text-title-md py-4 rounded-xl transition-all flex justify-center items-center gap-2 cursor-pointer font-bold disabled:opacity-50 disabled:border-outline-variant disabled:text-outline-variant disabled:hover:bg-transparent disabled:cursor-not-allowed"
             >
               <ShoppingCart className="w-5 h-5" />
-              Thêm vào giỏ hàng
+              {voucher.availableStock === 0 ? "Hết hàng" : "Thêm vào giỏ hàng"}
             </button>
           </div>
 
