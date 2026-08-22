@@ -42,6 +42,54 @@ export interface UserDetail extends UserListItem {
   lock_reason: string | null;
   business_name?: string | null;
   tax_code?: string | null;
+  branch_id?: number | null;
+  branch_name?: string | null;
+  branch_address?: string | null;
+  branch_partner_id?: number | null;
+}
+
+export interface ChangeUserRoleInput {
+  role: string;
+  business_name?: string;
+  tax_code?: string;
+  branch_id?: number;
+}
+
+export interface ActiveBranchOption {
+  branch_id: number;
+  branch_name: string;
+  address: string;
+  partner_id: number;
+  business_name: string;
+}
+
+/**
+ * -----------------------------------------------------------------------------------------
+ * HÀM: getActiveBranchesForAssignment
+ * MỤC ĐÍCH: Lấy danh sách các chi nhánh đang hoạt động để Admin chọn khi phân quyền nhân viên.
+ * -----------------------------------------------------------------------------------------
+ */
+export async function getActiveBranchesForAssignment(): Promise<ActiveBranchOption[]> {
+  const sql = `
+    SELECT 
+      b.branch_id, 
+      b.branch_name, 
+      b.address, 
+      p.user_id AS partner_id, 
+      p.business_name
+    FROM branches b
+    JOIN partners p ON b.partner_id = p.user_id
+    WHERE b.status = 'ACTIVE' AND p.activity_status = 'ACTIVE'
+    ORDER BY p.business_name ASC, b.branch_name ASC
+  `;
+  const result = await pool.query(sql);
+  return result.rows.map((r) => ({
+    branch_id: Number(r.branch_id),
+    branch_name: r.branch_name,
+    address: r.address,
+    partner_id: Number(r.partner_id),
+    business_name: r.business_name,
+  }));
 }
 
 /**
@@ -115,7 +163,7 @@ export async function getUsers(query: GetUsersQuery) {
 /**
  * -----------------------------------------------------------------------------------------
  * HÀM: getUserById
- * MỤC ĐÍCH: Lấy chi tiết hồ sơ người dùng kèm lý do khóa (nếu có) và thông tin doanh nghiệp.
+ * MỤC ĐÍCH: Lấy chi tiết hồ sơ người dùng kèm lý do khóa (nếu có), thông tin doanh nghiệp và chi nhánh.
  * -----------------------------------------------------------------------------------------
  */
 export async function getUserById(userId: number): Promise<UserDetail | null> {
@@ -124,10 +172,24 @@ export async function getUserById(userId: number): Promise<UserDetail | null> {
       u.user_id, u.full_name, u.email, u.phone, u.role, u.status, 
       u.gender, u.nationality, u.identity_no, u.created_at, u.last_login_at,
       ul.reason as lock_reason,
-      p.business_name, p.tax_code
+      CASE 
+        WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.business_name 
+        ELSE p.business_name 
+      END AS business_name,
+      CASE 
+        WHEN u.role = 'PARTNER_EMPLOYEE' THEN ep_partner.tax_code 
+        ELSE p.tax_code 
+      END AS tax_code,
+      pe.branch_id,
+      b.branch_name,
+      b.address AS branch_address,
+      b.partner_id AS branch_partner_id
     FROM users u
     LEFT JOIN user_locks ul ON ul.user_id = u.user_id
     LEFT JOIN partners p ON p.user_id = u.user_id
+    LEFT JOIN partner_employees pe ON pe.user_id = u.user_id
+    LEFT JOIN branches b ON b.branch_id = pe.branch_id
+    LEFT JOIN partners ep_partner ON ep_partner.user_id = b.partner_id
     WHERE u.user_id = $1
   `;
   const result = await pool.query(sql, [userId]);
@@ -252,32 +314,169 @@ export async function unlockUser(userId: number, adminId: number) {
  * -----------------------------------------------------------------------------------------
  * HÀM: changeUserRole
  * MỤC ĐÍCH: Thay đổi vai trò người dùng (CUSTOMER / PARTNER / ADMIN / PARTNER_EMPLOYEE).
+ *   - Khi chuyển sang PARTNER: Yêu cầu Tên doanh nghiệp & Mã số thuế, tạo hoặc cập nhật hồ sơ
+ *     bảng partners với trạng thái ACTIVE và tạo bản ghi duyệt APPROVED trong partner_approval_requests.
+ *   - Khi chuyển sang PARTNER_EMPLOYEE: Yêu cầu branch_id, gán chi nhánh vào bảng partner_employees
+ *     và tạo bản ghi duyệt APPROVED trong partner_employee_approval_requests.
+ *   - Khi chuyển về CUSTOMER: Xóa liên kết nhân viên chi nhánh và cập nhật trạng thái partner INACTIVE.
  * -----------------------------------------------------------------------------------------
  */
-export async function changeUserRole(userId: number, newRole: string, adminId: number) {
+export async function changeUserRole(
+  userId: number,
+  input: ChangeUserRoleInput,
+  adminId: number
+) {
+  const newRole = input.role?.trim().toUpperCase();
   const validRoles = ['CUSTOMER', 'PARTNER', 'ADMIN', 'PARTNER_EMPLOYEE'];
   if (!validRoles.includes(newRole)) {
     throw new Error('Vai trò không hợp lệ');
   }
 
-  const userRes = await pool.query('SELECT user_id, role FROM users WHERE user_id = $1', [userId]);
-  if (userRes.rows.length === 0) {
-    throw new Error('Người dùng không tồn tại');
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Kiểm tra và khóa dòng người dùng
+    const userRes = await client.query(
+      'SELECT user_id, role, full_name, email FROM users WHERE user_id = $1 FOR UPDATE',
+      [userId]
+    );
+    if (userRes.rows.length === 0) {
+      throw new Error('Người dùng không tồn tại');
+    }
+    const oldRole = userRes.rows[0].role;
+
+    // 2. Xử lý theo từng vai trò mục tiêu
+    if (newRole === 'PARTNER') {
+      const businessName = input.business_name?.trim();
+      const taxCode = input.tax_code?.trim();
+
+      if (!businessName) {
+        throw new Error('Vui lòng nhập tên doanh nghiệp / thương hiệu cho Đối tác');
+      }
+      if (!taxCode || !/^[0-9]{10,13}$/.test(taxCode)) {
+        throw new Error('Mã số thuế không hợp lệ. Mã số thuế phải gồm 10 đến 13 chữ số');
+      }
+
+      // Kiểm tra trùng mã số thuế với đối tác khác
+      const taxCheck = await client.query(
+        'SELECT user_id FROM partners WHERE tax_code = $1 AND user_id <> $2',
+        [taxCode, userId]
+      );
+      if (taxCheck.rows.length > 0) {
+        throw new Error('Mã số thuế này đã được đăng ký bởi một đối tác khác');
+      }
+
+      // Upsert vào bảng partners và kích hoạt trạng thái ACTIVE
+      await client.query(
+        `INSERT INTO partners (user_id, business_name, tax_code, activity_status)
+         VALUES ($1, $2, $3, 'ACTIVE')
+         ON CONFLICT (user_id) DO UPDATE 
+         SET business_name = EXCLUDED.business_name,
+             tax_code = EXCLUDED.tax_code,
+             activity_status = 'ACTIVE'`,
+        [userId, businessName, taxCode]
+      );
+
+      // Thêm bản ghi phê duyệt APPROVED
+      await client.query(
+        `INSERT INTO partner_approval_requests (partner_id, admin_id, reviewed_at, approval_status, admin_feedback)
+         VALUES ($1, $2, NOW(), 'APPROVED', 'Quản trị viên phân quyền trực tiếp thành Đối tác')`,
+        [userId, adminId]
+      );
+
+      // Xóa sạch liên kết nhân viên cũ nếu có
+      await client.query('DELETE FROM partner_employee_approval_requests WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM partner_employees WHERE user_id = $1', [userId]);
+
+    } else if (newRole === 'PARTNER_EMPLOYEE') {
+      const branchId = Number(input.branch_id);
+      if (!Number.isSafeInteger(branchId) || branchId <= 0) {
+        throw new Error('Vui lòng chọn chi nhánh làm việc cho Nhân viên đối tác');
+      }
+
+      // Kiểm tra chi nhánh tồn tại và đang hoạt động
+      const branchCheck = await client.query(
+        `SELECT b.branch_id, b.status, p.activity_status
+         FROM branches b
+         JOIN partners p ON b.partner_id = p.user_id
+         WHERE b.branch_id = $1`,
+        [branchId]
+      );
+      if (branchCheck.rows.length === 0) {
+        throw new Error('Chi nhánh được chọn không tồn tại');
+      }
+      if (branchCheck.rows[0].status !== 'ACTIVE' || branchCheck.rows[0].activity_status !== 'ACTIVE') {
+        throw new Error('Chi nhánh hoặc đối tác chủ quản hiện không ở trạng thái hoạt động');
+      }
+
+      // Xóa sạch bản ghi đối tác cũ nếu có
+      await client.query('DELETE FROM partner_approval_requests WHERE partner_id = $1', [userId]);
+      await client.query('DELETE FROM partners WHERE user_id = $1', [userId]);
+
+      // Upsert vào bảng partner_employees
+      await client.query(
+        `INSERT INTO partner_employees (user_id, branch_id)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id) DO UPDATE SET branch_id = EXCLUDED.branch_id`,
+        [userId, branchId]
+      );
+
+      // Thêm bản ghi phê duyệt APPROVED
+      await client.query(
+        `INSERT INTO partner_employee_approval_requests (user_id, admin_id, reviewed_at, approval_status, admin_feedback)
+         VALUES ($1, $2, NOW(), 'APPROVED', 'Quản trị viên phân quyền trực tiếp thành Nhân viên đối tác')`,
+        [userId, adminId]
+      );
+
+    } else if (newRole === 'CUSTOMER') {
+      // Xóa sạch bản ghi đối tác cũ nếu có
+      await client.query('DELETE FROM partner_approval_requests WHERE partner_id = $1', [userId]);
+      await client.query('DELETE FROM partners WHERE user_id = $1', [userId]);
+
+      // Xóa sạch bản ghi nhân viên cũ nếu có
+      await client.query('DELETE FROM partner_employee_approval_requests WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM partner_employees WHERE user_id = $1', [userId]);
+    }
+
+    // 3. Cập nhật role trong bảng users
+    await client.query('UPDATE users SET role = $1 WHERE user_id = $2', [newRole, userId]);
+
+    await client.query('COMMIT');
+
+    // 4. Ghi System Log
+    await logAdminAction({
+      userId: adminId,
+      action: 'CHANGE_USER_ROLE',
+      objectType: 'USER',
+      objectId: userId,
+      oldValue: { role: oldRole },
+      newValue: { 
+        role: newRole,
+        ...(newRole === 'PARTNER' ? { business_name: input.business_name, tax_code: input.tax_code } : {}),
+        ...(newRole === 'PARTNER_EMPLOYEE' ? { branch_id: input.branch_id } : {}),
+      },
+      result: 'SUCCESS',
+    });
+
+    return { 
+      message: 'Cập nhật vai trò thành công', 
+      user_id: userId, 
+      role: newRole 
+    };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    await logAdminAction({
+      userId: adminId,
+      action: 'CHANGE_USER_ROLE',
+      objectType: 'USER',
+      objectId: userId,
+      newValue: { role: newRole },
+      result: 'FAILED',
+    });
+    throw error;
+  } finally {
+    client.release();
   }
-  const oldRole = userRes.rows[0].role;
-
-  await pool.query('UPDATE users SET role = $1 WHERE user_id = $2', [newRole, userId]);
-
-  // Ghi System Log
-  await logAdminAction({
-    userId: adminId,
-    action: 'CHANGE_USER_ROLE',
-    objectType: 'USER',
-    objectId: userId,
-    oldValue: { role: oldRole },
-    newValue: { role: newRole },
-    result: 'SUCCESS',
-  });
-
-  return { message: 'Cập nhật vai trò thành công', user_id: userId, role: newRole };
 }
+

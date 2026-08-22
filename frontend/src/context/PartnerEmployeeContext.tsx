@@ -109,7 +109,10 @@ export function PartnerEmployeeProvider({ children }: { children: React.ReactNod
           });
         }
       } else if (err?.status === 401) {
-        // Will be redirected to login automatically
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("partner_access_token");
+          window.location.replace("/login");
+        }
       } else {
         setError({
           status: err?.status,
@@ -125,6 +128,31 @@ export function PartnerEmployeeProvider({ children }: { children: React.ReactNod
 
   useEffect(() => {
     reloadProfile();
+
+    const handleSync = () => {
+      reloadProfile();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        reloadProfile();
+      }
+    };
+
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Heartbeat check every 10s to sync auth in real-time
+    const interval = setInterval(() => {
+      reloadProfile();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
   // Hiển thị màn hình chờ trong lúc tải thông tin tài khoản nhân viên

@@ -22,25 +22,44 @@ export default function Header() {
   const [isLoggedIn, setIsLoggedIn] = useState<boolean>(false);
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
 
+  const handleLogout = () => {
+    customerAuthApi.logout();
+    localStorage.removeItem("customer_user");
+    clearCart();
+    clearMyVouchers();
+    setIsLoggedIn(false);
+    setUser(null);
+    setUserDropdownOpen(false);
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new Event("customer-auth-changed"));
+    }
+  };
+
   // Sync auth state
   const checkAuth = () => {
     if (typeof window === "undefined") return;
     const token = localStorage.getItem("customer_access_token") || localStorage.getItem("token");
     if (token) {
-      setIsLoggedIn(true);
       const storedUser = localStorage.getItem("customer_user");
       if (storedUser) {
         try {
           setUser(JSON.parse(storedUser));
+          setIsLoggedIn(true);
         } catch {
           setUser(null);
         }
       }
       customerAuthApi.getMe().then((userData) => {
+        if (!userData || userData.role !== "CUSTOMER" || userData.status !== "ACTIVE") {
+          handleLogout();
+          return;
+        }
+        setIsLoggedIn(true);
         setUser(userData);
         localStorage.setItem("customer_user", JSON.stringify(userData));
       }).catch(() => {
-        // If token expired/invalid
+        // Token invalid, role changed or session revoked
+        handleLogout();
       });
     } else {
       setIsLoggedIn(false);
@@ -53,36 +72,37 @@ export default function Header() {
   useEffect(() => {
     setIsMounted(true);
     checkAuth();
+
     const handleAuthChange = () => checkAuth();
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkAuth();
+      }
+    };
+
     window.addEventListener("customer-auth-changed", handleAuthChange);
     window.addEventListener("storage", handleAuthChange);
+    window.addEventListener("focus", handleAuthChange);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Heartbeat check every 10s to sync auth in real-time
+    const interval = setInterval(() => {
+      checkAuth();
+    }, 10000);
+
     return () => {
       window.removeEventListener("customer-auth-changed", handleAuthChange);
       window.removeEventListener("storage", handleAuthChange);
+      window.removeEventListener("focus", handleAuthChange);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
     };
   }, []);
 
-  // Sync state with url query if present
+  // Sync state on navigation
   useEffect(() => {
-    const q = searchParams.get("q");
-    if (q) setSearchQuery(q);
-    else setSearchQuery("");
-  }, [searchParams]);
-
-  const handleLogout = () => {
-    customerAuthApi.logout();
-    localStorage.removeItem("customer_user");
-    clearCart();
-    clearMyVouchers();
-    setIsLoggedIn(false);
-    setUser(null);
-    setUserDropdownOpen(false);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new Event("customer-auth-changed"));
-    }
-    router.push("/login");
-    router.refresh();
-  };
+    checkAuth();
+  }, [pathname]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

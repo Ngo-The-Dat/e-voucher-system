@@ -118,13 +118,26 @@ export async function unlockUser(req: AuthRequest, res: Response, next: NextFunc
 }
 
 /**
- * PATCH /api/admin/users/:id/role
+ * GET /api/admin/users/branches
+ * Lấy danh sách các chi nhánh đang hoạt động để phục vụ phân quyền nhân viên đối tác
+ */
+export async function getBranchesForAssignment(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const branches = await userService.getActiveBranchesForAssignment();
+    res.json({ branches });
+  } catch (error) {
+    next(error);
+  }
+}
+
+/**
+ * PUT /api/admin/users/:id/role
  * Thay đổi vai trò người dùng (CUSTOMER / PARTNER / ADMIN / PARTNER_EMPLOYEE)
  */
 export async function changeUserRole(req: AuthRequest, res: Response, next: NextFunction) {
   try {
     const userId = Number(req.params.id);
-    const { role } = req.body;
+    const { role, business_name, tax_code, branch_id } = req.body;
     const adminId = req.user?.id || 1;
 
     if (!Number.isSafeInteger(userId) || userId <= 0) {
@@ -137,14 +150,28 @@ export async function changeUserRole(req: AuthRequest, res: Response, next: Next
       return;
     }
 
-    const result = await userService.changeUserRole(userId, role.trim().toUpperCase(), adminId);
+    const result = await userService.changeUserRole(
+      userId,
+      {
+        role: role.trim().toUpperCase(),
+        business_name,
+        tax_code,
+        branch_id: branch_id ? Number(branch_id) : undefined,
+      },
+      adminId
+    );
     res.json(result);
   } catch (error: any) {
     if (error.message === 'Người dùng không tồn tại') {
       res.status(404).json({ message: error.message });
       return;
     }
-    if (error.message === 'Vai trò không hợp lệ') {
+    if (
+      error.message === 'Vai trò không hợp lệ' ||
+      error.message.includes('Vui lòng nhập') ||
+      error.message.includes('Mã số thuế') ||
+      error.message.includes('chi nhánh')
+    ) {
       res.status(400).json({ message: error.message });
       return;
     }

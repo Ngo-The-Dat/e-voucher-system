@@ -4,6 +4,7 @@ import * as userController from '../../controllers/admin/user.controller.js';
 const router = Router();
 
 router.get('/', userController.getUsers);
+router.get('/branches', userController.getBranchesForAssignment);
 router.get('/:id', userController.getUserById);
 router.post('/:id/lock', userController.lockUser);
 router.post('/:id/unlock', userController.unlockUser);
