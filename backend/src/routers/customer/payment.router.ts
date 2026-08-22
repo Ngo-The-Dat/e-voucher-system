@@ -14,6 +14,7 @@ import { getPaymentMethods } from '../../controllers/customer/payment.controller
 import paypalRouter from './paypal-payment.router.js';
 import stripeRouter from './stripe-payment.router.js';
 import momoRouter from './momo-payment.router.js';
+import vnpayRouter from './vnpay-payment.router.js';
 
 const router = Router();
 
@@ -30,6 +31,6 @@ router.use('/stripe', stripeRouter);
 router.use('/momo', momoRouter);
 
 // 5. Cổng thanh toán VNPay
-// router.use('/vnpay', vnpayRouter);
+router.use('/vnpay', vnpayRouter);
 
 export default router;

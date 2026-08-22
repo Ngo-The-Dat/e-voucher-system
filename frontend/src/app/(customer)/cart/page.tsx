@@ -17,13 +17,26 @@ export default function CartPage() {
   const { cart, updateCartQuantity, removeFromCart, refreshCart, refreshMyVouchers } = useApp();
 
   // Local page state
-  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    cart.forEach((item) => {
-      initial[item.voucher.id] = true;
-    });
-    return initial;
-  });
+  const [selectedItems, setSelectedItems] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const searchParams = new URLSearchParams(window.location.search);
+      const buyNowId = searchParams.get("buyNowId");
+
+      setSelectedItems((prev) => {
+        const nextState = { ...prev };
+        let changed = false;
+        cart.forEach((item) => {
+          if (nextState[item.voucher.id] === undefined) {
+            nextState[item.voucher.id] = buyNowId ? item.voucher.id === buyNowId : false;
+            changed = true;
+          }
+        });
+        return changed ? nextState : prev;
+      });
+    }
+  }, [cart]);
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState("PAYPAL");

@@ -448,6 +448,17 @@ export const customerPaymentApi = {
    */
   getMoMoStatus: (orderId: number) =>
     request<any>(`/customer/payments/momo/order/${orderId}/status`),
+
+  // ==========================================
+  // CÁC HÀM XỬ LÝ CỔNG THANH TOÁN VNPAY SANDBOX
+  // ==========================================
+  createVNPayPayment: (orderId: number) =>
+    request<any>("/customer/payments/vnpay/create", {
+      method: "POST",
+      body: JSON.stringify({ orderId }),
+    }),
+  verifyVNPayPayment: (params: string) =>
+    request<any>(`/customer/payments/vnpay/verify${params}`),
 };
 
 export interface PublicVouchersFilter {

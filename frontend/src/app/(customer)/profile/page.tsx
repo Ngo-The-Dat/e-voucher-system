@@ -3,8 +3,9 @@
 import { FormEvent, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
-import { Check, CircleAlert, Mail, Phone, User as UserIcon, Save, ArrowLeft, ShieldCheck, Edit2, Lock, KeyRound, Eye, EyeOff, Globe, CreditCard, Clock } from "lucide-react";
+import { Check, CircleAlert, Mail, Phone, User as UserIcon, Save, ArrowLeft, ShieldCheck, Edit2, Lock, KeyRound, Eye, EyeOff, Globe, CreditCard, Clock, ChevronDown } from "lucide-react";
 import Link from "next/link";
+import { COUNTRIES } from "@/lib/countries";
 
 export default function CustomerProfilePage() {
   const router = useRouter();
@@ -164,10 +165,17 @@ export default function CustomerProfilePage() {
         new_password: newPassword
       });
       
-      showToast("Đổi mật khẩu thành công.");
+      showToast("Đổi mật khẩu thành công. Bạn sẽ được chuyển hướng về trang Đăng nhập...");
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
+      
+      // Tự động đăng xuất sau khi đổi mật khẩu
+      setTimeout(() => {
+        customerAuthApi.logout();
+        window.dispatchEvent(new Event("customer-auth-changed"));
+        router.push("/login");
+      }, 2000);
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : "Đã xảy ra lỗi khi đổi mật khẩu.");
     } finally {
@@ -392,6 +400,9 @@ export default function CustomerProfilePage() {
                     <option value="FEMALE">Nữ</option>
                     <option value="OTHER">Khác</option>
                   </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
 
@@ -401,13 +412,21 @@ export default function CustomerProfilePage() {
                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
                     <Globe className="w-4 h-4" />
                   </div>
-                  <input
-                    type="text"
+                  <select
                     value={nationality}
                     onChange={(e) => setNationality(e.target.value)}
-                    placeholder="VD: Việt Nam"
-                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 text-gray-900 focus:outline-none focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 transition-all font-medium"
-                  />
+                    className="w-full bg-gray-50/50 border border-gray-200 rounded-xl py-3 pl-10 pr-4 text-gray-900 focus:outline-none focus:border-[#0f2c59] focus:ring-4 focus:ring-[#0f2c59]/10 transition-all font-medium appearance-none"
+                  >
+                    <option value="">-- Chọn quốc tịch --</option>
+                    {COUNTRIES.map((country) => (
+                      <option key={country} value={country}>
+                        {country}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                    <ChevronDown className="w-4 h-4" />
+                  </div>
                 </div>
               </div>
 
