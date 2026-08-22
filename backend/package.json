@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "db:init": "tsx src/scripts/initDB.ts",
+    "scrape": "tsx src/crawler/index.ts",
+    "scrape:dry": "tsx src/crawler/index.ts --dry-run",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json",
     "test": "tsx --test test/**/*.test.ts"
   },
