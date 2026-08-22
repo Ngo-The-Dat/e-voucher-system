@@ -35,7 +35,7 @@ jobs:
 
       - name: Install backend dependencies
         working-directory: ./backend
-        run: npm ci
+        run: npm install
 
       - name: Compile backend
         working-directory: ./backend
@@ -86,7 +86,7 @@ jobs:
             sudo chown -R webapp:webapp "$REMOTE_DIR"
 
             echo "Installing production dependencies..."
-            sudo -u webapp npm --prefix "$REMOTE_DIR" ci --omit=dev
+            sudo -u webapp npm --prefix "$REMOTE_DIR" install --omit=dev
 
             echo "Starting backend service..."
             sudo systemctl start "$SERVICE"
