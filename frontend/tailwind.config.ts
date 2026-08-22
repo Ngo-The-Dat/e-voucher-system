@@ -113,6 +113,22 @@ const config: Config = {
         "xs": "2px",
       },
       keyframes: {
+        fadeInUp: {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "100%": { transform: "translateX(100%)" },
+        },
+        float: {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-5px)" },
+        },
+        gradientMove: {
+          "0%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+          "100%": { backgroundPosition: "0% 50%" },
+        },
         fadeIn: {
           from: { opacity: "0" },
           to: { opacity: "1" },
@@ -137,6 +153,10 @@ const config: Config = {
         scaleUp: "scaleUp 150ms ease-out",
         slideDown: "slideDown 200ms ease-out",
         in: "enter 150ms ease-out",
+        "fade-in-up": "fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        "shimmer": "shimmer 2s infinite",
+        "float": "float 3s ease-in-out infinite",
+        "gradient-move": "gradientMove 8s ease infinite",
       },
     },
   },

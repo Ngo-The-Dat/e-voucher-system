@@ -39,7 +39,9 @@ CREATE TABLE users (
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' CONSTRAINT chk_users_status CHECK (status IN ('ACTIVE', 'LOCKED')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     last_login_at TIMESTAMP,
-    CONSTRAINT chk_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL)
+    CONSTRAINT chk_email_or_phone CHECK (email IS NOT NULL OR phone IS NOT NULL),
+    CONSTRAINT chk_users_email_format CHECK (email IS NULL OR email ~* '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'),
+    CONSTRAINT chk_users_phone_format CHECK (phone IS NULL OR phone ~ '^0[0-9]{9}$|^\+84[0-9]{9}$')
 );
 
 -- 2. Bảng partners (Đối tác)

@@ -20,7 +20,7 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
     return (
       <Link
         href={`/vouchers/${voucher.id}`}
-        className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col"
+        className="group bg-surface-container-lowest rounded-xl overflow-hidden border border-outline-variant/60 hover:border-primary/30 hover:shadow-[0_20px_40px_-15px_rgba(0,74,198,0.15)] hover:-translate-y-2 transition-all duration-500 flex flex-col relative"
       >
         <div className="relative w-full aspect-video overflow-hidden">
           <Image
@@ -70,14 +70,14 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
 
   // Standard/Home Featured styling
   return (
-    <div className="group bg-surface border border-outline-variant rounded-xl overflow-hidden shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 flex flex-col">
+    <div className="group bg-surface border border-outline-variant/60 rounded-xl overflow-hidden shadow-sm hover:shadow-[0_20px_40px_-15px_rgba(0,74,198,0.15)] hover:border-primary/30 hover:-translate-y-2 transition-all duration-500 flex flex-col relative">
       <div className="relative h-40">
         <div
           className="absolute inset-0 bg-cover bg-center"
           style={{ backgroundImage: `url('${voucher.thumbnail}')` }}
         />
         {voucher.bestSeller && (
-          <div className="absolute top-3 left-3 bg-error text-on-error px-2 py-1 rounded font-label-sm text-label-sm font-bold shadow-sm">
+          <div className="absolute top-3 left-3 bg-error text-on-error px-2 py-1 rounded font-label-sm text-label-sm font-bold shadow-lg animate-pulse-slow">
             Bán chạy
           </div>
         )}
@@ -121,9 +121,10 @@ export default function VoucherCard({ voucher, variant = "standard" }: VoucherCa
           </div>
           <Link
             href={`/vouchers/${voucher.id}`}
-            className="w-full py-2 bg-primary-container/10 text-primary border border-primary/20 rounded-lg font-label-md text-label-md font-semibold hover:bg-primary hover:text-on-primary transition-colors inline-block text-center cursor-pointer"
+            className="w-full py-2 bg-primary/5 text-primary border border-primary/20 rounded-lg font-label-md text-label-md font-bold hover:bg-primary hover:text-white hover:shadow-lg hover:shadow-primary/30 transition-all duration-300 inline-block text-center cursor-pointer relative overflow-hidden"
           >
-            Mua ngay
+            <span className="relative z-10">Mua ngay</span>
+            <div className="absolute inset-0 -translate-x-full group-hover:animate-[shimmer_1.5s_infinite] bg-gradient-to-r from-transparent via-white/20 to-transparent z-0" />
           </Link>
         </div>
       </div>

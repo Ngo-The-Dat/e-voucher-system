@@ -470,7 +470,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
         <div className="lg:col-span-2 flex flex-col gap-6">
           {/* Description */}
           {voucher.description && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
               <h2 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2">
                 <FileText className="w-5 h-5 text-primary" />
                 Mô tả Voucher
@@ -490,7 +490,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Conditions */}
           {voucher.conditions && (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
+            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
               <h2 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2">
                 <CheckSquare className="w-5 h-5 text-primary" />
                 Điều kiện sử dụng
@@ -540,7 +540,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               {programContents.map((content) => (
                 <div
                   key={content.content_id}
-                  className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]"
+                  className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300"
                 >
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary uppercase tracking-wide">
@@ -567,8 +567,9 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-col gap-6">
           {/* Location / Branches */}
           {(voucher.locations && voucher.locations.length > 0) ? (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-              <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
+            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
+              <h3 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2">
+                <Store className="w-5 h-5 text-primary" />
                 Chi nhánh áp dụng ({voucher.locations.length})
               </h3>
               <ul className="space-y-3 mb-4">
@@ -581,8 +582,9 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               </ul>
             </div>
           ) : voucher.location ? (
-            <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-              <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
+            <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
+              <h3 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2">
+                <Store className="w-5 h-5 text-primary" />
                 Chi nhánh áp dụng
               </h3>
               <p className="font-label-md text-label-md text-on-surface-variant mb-4 flex gap-2 items-start">
@@ -593,8 +595,9 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
           ) : null}
 
           {/* Cancellation Policy */}
-          <div className="bg-surface-container-lowest border border-outline-variant p-6 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)]">
-            <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold border-b border-outline-variant/40 pb-2">
+          <div className="bg-surface-container-lowest border border-outline-variant p-6 md:p-8 rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.02)] h-full hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 transition-all duration-300">
+            <h3 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2">
+              <ShieldAlert className="w-5 h-5 text-primary" />
               Chính sách hoàn hủy
             </h3>
             <p className="font-label-md text-label-md text-on-surface-variant">
@@ -604,9 +607,10 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
           {/* Guide Steps */}
           {voucher.guideSteps && (
-            <div className="bg-surface-bright border border-outline-variant p-6 rounded-2xl relative overflow-hidden">
+            <div className="bg-surface-bright border border-outline-variant p-6 md:p-8 rounded-2xl relative overflow-hidden h-full">
               <div className="absolute top-0 right-0 w-24 h-24 bg-primary-fixed rounded-bl-full -z-10 opacity-50" />
-              <h3 className="font-title-md text-title-md text-on-surface mb-4 font-bold">
+              <h3 className="font-title-md text-title-md text-on-surface mb-4 flex items-center gap-2 font-bold border-b border-outline-variant/40 pb-2 relative z-10">
+                <BookOpen className="w-5 h-5 text-primary" />
                 Hướng dẫn sử dụng
               </h3>
               <ol className="space-y-4 relative before:absolute before:inset-y-0 before:left-[11px] before:w-px before:bg-outline-variant">
