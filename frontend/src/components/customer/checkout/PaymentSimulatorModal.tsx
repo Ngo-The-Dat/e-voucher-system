@@ -70,6 +70,17 @@ export default function PaymentSimulatorModal({
   } | null>(null);
   const [stripeLoading, setStripeLoading] = useState(false);
 
+  // MoMo specific state
+  const [momoMode, setMomoMode] = useState<"atm" | "qr">("atm");
+  const [momoDetails, setMomoDetails] = useState<{
+    momoOrderId: string;
+    amountVnd: number;
+    payUrl: string;
+    qrCodeUrl: string;
+    deeplink?: string;
+  } | null>(null);
+  const [momoLoading, setMomoLoading] = useState(false);
+
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isPayPal = useMemo(() => {
@@ -79,6 +90,10 @@ export default function PaymentSimulatorModal({
   const isStripe = useMemo(() => {
     const m = (order?.paymentMethod || "").toUpperCase();
     return m.includes("STRIPE") || m.includes("CARD") || m.includes("VISA") || m.includes("MASTER");
+  }, [order?.paymentMethod]);
+
+  const isMoMo = useMemo(() => {
+    return (order?.paymentMethod || "").toUpperCase().includes("MOMO");
   }, [order?.paymentMethod]);
 
   // Khởi tạo PayPal Order khi modal mở cho đơn PayPal
@@ -144,6 +159,41 @@ export default function PaymentSimulatorModal({
         setStripeLoading(false);
       });
   }, [isOpen, order?.orderId, isStripe]);
+
+  // Khởi tạo MoMo Payment Session khi modal mở cho đơn MoMo (theo momoMode: payWithATM hoặc captureWallet)
+  useEffect(() => {
+    if (!isOpen || !order || !isMoMo) {
+      setMomoDetails(null);
+      return;
+    }
+
+    setMomoDetails(null);
+    setMomoLoading(true);
+    setErrorMessage(null);
+
+    const requestType = momoMode === "qr" ? "captureWallet" : "payWithATM";
+
+    customerPaymentApi
+      .createMoMoPayment(order.orderId, requestType)
+      .then((res) => {
+        if (res.success && res.payment) {
+          setMomoDetails({
+            momoOrderId: res.payment.momo_order_id,
+            amountVnd: res.payment.amount_vnd,
+            payUrl: res.payment.pay_url,
+            qrCodeUrl: res.payment.qr_code_url,
+            deeplink: res.payment.deeplink,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error("Lỗi khi khởi tạo đơn hàng MoMo:", err);
+        setErrorMessage(err.message || "Không thể kết nối cổng MoMo Sandbox.");
+      })
+      .finally(() => {
+        setMomoLoading(false);
+      });
+  }, [isOpen, order?.orderId, isMoMo, momoMode]);
 
   // Tính toán thời gian đếm ngược 5 phút
   useEffect(() => {
@@ -220,7 +270,16 @@ export default function PaymentSimulatorModal({
     window.location.href = stripeDetails.checkoutUrl;
   };
 
-  // Xử lý xác nhận thanh toán (Dành cho phương thức QR / Chuyển khoản thông thường)
+  // Điều hướng người dùng sang Cổng thanh toán MoMo Sandbox
+  const handleProceedToMoMo = () => {
+    if (!momoDetails?.payUrl) {
+      setErrorMessage("Chưa nhận được đường dẫn thanh toán từ MoMo. Vui lòng thử lại.");
+      return;
+    }
+    window.location.href = momoDetails.payUrl;
+  };
+
+  // Xử lý xác nhận thanh toán (Dành cho phương thức QR / Chuyển khoản thông thường hoặc Giả lập Dev Test)
   const handleSimulatePayment = async () => {
     if (!order || isExpired || isProcessing) return;
 
@@ -257,7 +316,7 @@ export default function PaymentSimulatorModal({
     ? "Ví điện tử PayPal"
     : isStripe
     ? "Thẻ Visa / Mastercard (Stripe)"
-    : order.paymentMethod === "MOMO"
+    : isMoMo
     ? "Ví điện tử MoMo"
     : "Cổng thanh toán VNPay";
 
@@ -288,6 +347,8 @@ export default function PaymentSimulatorModal({
                   ? "bg-[#003087]/10 text-[#003087] dark:text-[#0070BA] font-black"
                   : isStripe
                   ? "bg-[#635BFF]/10 text-[#635BFF]"
+                  : isMoMo
+                  ? "bg-[#A50064]/10 text-[#A50064]"
                   : "bg-primary/10 text-primary"
               }`}
             >
@@ -295,6 +356,8 @@ export default function PaymentSimulatorModal({
                 <DollarSign className="w-5 h-5 font-bold" />
               ) : isStripe ? (
                 <CreditCard className="w-5 h-5" />
+              ) : isMoMo ? (
+                <span className="font-extrabold text-sm tracking-tighter">momo</span>
               ) : (
                 <QrCode className="w-5 h-5" />
               )}
@@ -308,6 +371,8 @@ export default function PaymentSimulatorModal({
                   ? "Cổng thanh toán quốc tế PayPal (Sandbox)"
                   : isStripe
                   ? "Cổng thanh toán thẻ Stripe Checkout (Sandbox)"
+                  : isMoMo
+                  ? "Cổng thanh toán ví điện tử MoMo (Sandbox)"
                   : "Mô phỏng quét mã QR thanh toán"}
               </p>
             </div>
@@ -533,6 +598,195 @@ export default function PaymentSimulatorModal({
                     </div>
                   )}
                 </div>
+              ) : isMoMo ? (
+                /* Giao diện MoMo Sandbox Flow */
+                <div className="space-y-4">
+                  {/* Mode Selector Toggle */}
+                  <div className="flex rounded-xl bg-surface-container-high p-1 border border-outline-variant/50">
+                    <button
+                      type="button"
+                      onClick={() => setMomoMode("atm")}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        momoMode === "atm"
+                          ? "bg-[#A50064] text-white shadow-sm"
+                          : "text-on-surface-variant hover:text-on-surface"
+                      }`}
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Thẻ ATM Nội Địa (Napas Test)</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMomoMode("qr")}
+                      className={`flex-1 py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                        momoMode === "qr"
+                          ? "bg-[#A50064] text-white shadow-sm"
+                          : "text-on-surface-variant hover:text-on-surface"
+                      }`}
+                    >
+                      <QrCode className="w-3.5 h-3.5" />
+                      <span>Quét QR Ví MoMo (App Test)</span>
+                    </button>
+                  </div>
+
+                  {momoLoading ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
+                      <RefreshCw className="w-6 h-6 animate-spin text-[#A50064]" />
+                      <span className="text-sm font-medium">
+                        Đang kết nối cổng MoMo Sandbox ({momoMode === "atm" ? "Cổng thẻ ATM" : "Cổng quét QR"})...
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-pink-50/60 via-rose-50/30 to-surface border border-outline-variant/60 space-y-4">
+                      <div className="flex items-center justify-between pb-3 border-b border-outline-variant/30">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[#A50064] font-black text-2xl tracking-tight">
+                            MoMo
+                          </span>
+                          <span className="text-xs px-2.5 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/50 text-[#A50064] dark:text-pink-300 font-bold border border-pink-200 dark:border-pink-800">
+                            {momoMode === "atm" ? "Cổng Thẻ ATM Napas" : "Cổng Quét Mã QR"}
+                          </span>
+                        </div>
+                        <span className="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 font-bold border border-emerald-200">
+                          VND
+                        </span>
+                      </div>
+
+                      {/* Header Price Info */}
+                      <div className="p-3 bg-surface rounded-xl border border-outline-variant/40 shadow-sm flex items-center justify-between">
+                        <div>
+                          <span className="text-xs text-on-surface-variant font-medium block">Số tiền cần thanh toán</span>
+                          <span className="text-2xl font-black text-[#A50064]">
+                            {order.totalAmount.toLocaleString("vi-VN")} đ
+                          </span>
+                        </div>
+                        {momoDetails?.momoOrderId && (
+                          <div className="text-right">
+                            <span className="text-[11px] text-on-surface-variant block">Mã đơn MoMo</span>
+                            <span className="font-mono text-xs font-bold text-primary truncate max-w-[130px] block">
+                              {momoDetails.momoOrderId}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {momoMode === "atm" ? (
+                        /* Giao diện hướng dẫn Thẻ ATM Nội Địa Test */
+                        <div className="space-y-3">
+                          <div className="p-3.5 bg-surface rounded-xl border border-pink-200/80 shadow-sm space-y-2 text-xs">
+                            <p className="font-bold text-[#A50064] flex items-center justify-between border-b pb-2 border-outline-variant/20">
+                              <span>💳 Thông tin Thẻ ATM Test (Dùng trên Cổng MoMo):</span>
+                              <span className="text-[11px] text-on-surface-variant font-normal">Napas 247</span>
+                            </p>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                              <div className="p-2 bg-pink-50/50 rounded-lg border border-pink-100 flex justify-between items-center">
+                                <div>
+                                  <span className="text-[10px] text-on-surface-variant block font-sans">Số thẻ test:</span>
+                                  <strong className="text-primary text-xs">9704050000000001</strong>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy("9704050000000001", "card_no")}
+                                  className="p-1 hover:bg-[#A50064]/10 rounded cursor-pointer"
+                                  title="Sao chép số thẻ"
+                                >
+                                  {copiedField === "card_no" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#A50064]" />}
+                                </button>
+                              </div>
+
+                              <div className="p-2 bg-pink-50/50 rounded-lg border border-pink-100 flex justify-between items-center">
+                                <div>
+                                  <span className="text-[10px] text-on-surface-variant block font-sans">Tên chủ thẻ:</span>
+                                  <strong className="text-on-surface text-xs">NGUYEN VAN A</strong>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy("NGUYEN VAN A", "card_name")}
+                                  className="p-1 hover:bg-[#A50064]/10 rounded cursor-pointer"
+                                  title="Sao chép tên chủ thẻ"
+                                >
+                                  {copiedField === "card_name" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#A50064]" />}
+                                </button>
+                              </div>
+
+                              <div className="p-2 bg-pink-50/50 rounded-lg border border-pink-100 flex justify-between items-center">
+                                <div>
+                                  <span className="text-[10px] text-on-surface-variant block font-sans">Ngày phát hành:</span>
+                                  <strong className="text-on-surface text-xs">03/20</strong>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy("03/20", "card_date")}
+                                  className="p-1 hover:bg-[#A50064]/10 rounded cursor-pointer"
+                                  title="Sao chép ngày"
+                                >
+                                  {copiedField === "card_date" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#A50064]" />}
+                                </button>
+                              </div>
+
+                              <div className="p-2 bg-pink-50/50 rounded-lg border border-pink-100 flex justify-between items-center">
+                                <div>
+                                  <span className="text-[10px] text-on-surface-variant block font-sans">Mã OTP:</span>
+                                  <strong className="text-emerald-600 text-xs">000000</strong>
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopy("000000", "card_otp")}
+                                  className="p-1 hover:bg-[#A50064]/10 rounded cursor-pointer"
+                                  title="Sao chép OTP"
+                                >
+                                  {copiedField === "card_otp" ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-[#A50064]" />}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="p-3 bg-pink-50/70 dark:bg-pink-950/30 rounded-xl border border-pink-100 dark:border-pink-900/50 text-xs text-on-surface-variant space-y-1">
+                            <p className="font-bold text-[#A50064] dark:text-pink-300 flex items-center gap-1.5">
+                              <ShieldCheck className="w-4 h-4" /> Cách thực hiện:
+                            </p>
+                            <p className="text-[11px]">
+                              Bấm nút <strong>"Mở Cổng Nhập Thẻ ATM MoMo"</strong> bên dưới. MoMo sẽ mở danh sách ngân hàng (Vietcombank, MBBank, BIDV...) để bạn chọn và điền thông tin thẻ test ở trên.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Giao diện quét mã QR */
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
+                          <div className="md:col-span-5 flex flex-col items-center justify-center p-3 bg-white rounded-xl border border-pink-200 shadow-sm">
+                            <div className="relative w-36 h-36 bg-white rounded-lg p-1.5 flex items-center justify-center">
+                              <img
+                                src={`https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=${encodeURIComponent(
+                                  momoDetails?.payUrl || `MOMO-ORD-${order.orderId}`
+                                )}`}
+                                alt="MoMo Sandbox QR Code"
+                                className="w-full h-full object-contain"
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="w-7 h-7 rounded-full bg-[#A50064] text-white flex items-center justify-center font-bold text-[10px] shadow">
+                                  M
+                                </div>
+                              </div>
+                            </div>
+                            <span className="text-[11px] text-[#A50064] font-semibold mt-1.5 text-center">
+                              Quét bằng App MoMo Test
+                            </span>
+                          </div>
+
+                          <div className="md:col-span-7 p-3 bg-pink-50/70 dark:bg-pink-950/30 rounded-xl border border-pink-100 dark:border-pink-900/50 text-xs text-on-surface-variant space-y-2">
+                            <p className="font-bold text-[#A50064] dark:text-pink-300 flex items-center gap-1.5">
+                              <ShieldCheck className="w-4 h-4" /> Hướng dẫn Quét QR:
+                            </p>
+                            <p className="text-[11px]">
+                              Mở ứng dụng <strong>MoMo Test</strong> trên điện thoại → Quét mã QR bên cạnh → Nhập Passcode <strong>000000</strong> để thanh toán.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 /* QR Code & Transfer Details Grid cho phương thức truyền thống */
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
@@ -656,9 +910,9 @@ export default function PaymentSimulatorModal({
               Thanh toán sau
             </button>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="flex flex-wrap items-center justify-end gap-2 w-full sm:w-auto">
               {isPayPal ? (
-                /* Nút thanh toán duy nhất cho PayPal Sandbox */
+                /* Nút thanh toán cho PayPal Sandbox */
                 <button
                   type="button"
                   onClick={handleProceedToPayPal}
@@ -687,6 +941,33 @@ export default function PaymentSimulatorModal({
                   <CreditCard className="w-4 h-4" />
                   <span>Tiến hành Thanh toán qua Stripe</span>
                 </button>
+              ) : isMoMo ? (
+                /* Nút thanh toán cho MoMo Sandbox */
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  <button
+                    type="button"
+                    onClick={handleSimulatePayment}
+                    disabled={isExpired || isProcessing}
+                    className="px-3.5 py-2.5 rounded-xl font-semibold text-xs border border-[#A50064]/30 text-[#A50064] hover:bg-[#A50064]/10 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Giả lập thanh toán thành công tức thì không cần mở cổng MoMo"
+                  >
+                    {isProcessing ? "Đang xử lý..." : "⚡ Giả lập thanh toán (Dev Test)"}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleProceedToMoMo}
+                    disabled={isExpired || momoLoading || !momoDetails?.payUrl}
+                    className={`w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer ${
+                      isExpired || !momoDetails?.payUrl
+                        ? "bg-surface-container-highest text-on-surface-variant cursor-not-allowed"
+                        : "bg-[#A50064] hover:bg-[#850050] text-white hover:shadow-lg active:scale-98"
+                    }`}
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>{momoMode === "atm" ? "Mở Cổng Nhập Thẻ ATM MoMo" : "Mở Cổng Quét Mã MoMo"}</span>
+                  </button>
+                </div>
               ) : (
                 /* Nút xác nhận cho các phương thức quét mã QR khác */
                 <button

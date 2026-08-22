@@ -24,31 +24,39 @@ export function useCustomerCart() {
     try {
       setIsLoading(true);
       const res = await customerCartApi.getCart();
-      const mappedCart: CartItem[] = res.items.map((item: BackendCartItem) => ({
-        cartItemId: item.cart_item_id,
-        quantity: item.quantity,
-        availableStock: item.available_stock,
-        voucher: {
-          id: String(item.program_id),
-          title: item.program_name,
-          brand: item.business_name || "Lumina Partner",
-          brandLogo: item.brand_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
-          category: item.category_name || "Khác",
-          merchant: item.business_name || "Lumina Partner",
-          thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
-          images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
-          price: item.sale_price,
-          originalPrice: item.original_price,
-          discount: item.discount_amount ? `${Math.round((item.discount_amount / item.original_price) * 100)}%` : "0%",
-          discountBadge: item.discount_amount ? `Giảm ${Math.round((item.discount_amount / item.original_price) * 100)}%` : undefined,
-          rating: 4.8,
-          reviewsCount: 0,
-          soldCount: "0",
-          image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
-          expiryDate: item.use_end_at ? new Date(item.use_end_at).toLocaleDateString("vi-VN") : "31/12/2026",
-          description: item.program_name
-        }
-      }));
+      const defaultThumbnail = "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80";
+      const mappedCart: CartItem[] = res.items.map((item: BackendCartItem) => {
+        const voucherImages = (item.images && item.images.length > 0)
+          ? item.images
+          : (item.thumbnail ? [item.thumbnail] : [defaultThumbnail]);
+        const thumbnail = item.thumbnail || voucherImages[0] || defaultThumbnail;
+
+        return {
+          cartItemId: item.cart_item_id,
+          quantity: item.quantity,
+          availableStock: item.available_stock,
+          voucher: {
+            id: String(item.program_id),
+            title: item.program_name,
+            brand: item.business_name || "Lumina Partner",
+            brandLogo: item.brand_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
+            category: item.category_name || "Khác",
+            merchant: item.business_name || "Lumina Partner",
+            thumbnail: thumbnail,
+            images: voucherImages,
+            price: item.sale_price,
+            originalPrice: item.original_price,
+            discount: item.discount_amount ? `${Math.round((item.discount_amount / item.original_price) * 100)}%` : "0%",
+            discountBadge: item.discount_amount ? `Giảm ${Math.round((item.discount_amount / item.original_price) * 100)}%` : undefined,
+            rating: 4.8,
+            reviewsCount: 0,
+            soldCount: "0",
+            image: thumbnail,
+            expiryDate: item.use_end_at ? new Date(item.use_end_at).toLocaleDateString("vi-VN") : "31/12/2026",
+            description: item.program_name
+          }
+        };
+      });
       setCart(mappedCart);
       return true;
     } catch (e) {

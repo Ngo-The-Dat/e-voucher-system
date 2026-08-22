@@ -78,7 +78,7 @@ export default function CartItemList({
                 <Image
                   width={128}
                   height={96}
-                  src={voucher.thumbnail}
+                  src={voucher.thumbnail || voucher.images?.[0] || "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"}
                   alt={voucher.title}
                   className="w-full h-full object-cover"
                 />

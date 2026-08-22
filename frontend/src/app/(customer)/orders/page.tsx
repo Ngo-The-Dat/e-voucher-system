@@ -151,6 +151,55 @@ export default function OrderHistoryPage() {
             });
         }
       }
+      // 3. Xử lý khi MoMo redirect về
+      else if (urlParams.get("momo_redirect") === "true" && orderIdStr) {
+        const orderId = parseInt(orderIdStr, 10);
+        const momoResultCode = urlParams.get("resultCode");
+        const momoMessage = urlParams.get("message");
+        const momoOrderId = urlParams.get("orderId");
+        const momoTransId = urlParams.get("transId");
+        const resultCodeNum = momoResultCode !== null ? parseInt(momoResultCode, 10) : 0;
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        if (resultCodeNum === 0) {
+          setPaypalCaptureStatus({
+            status: "processing",
+            message: "Đang tự động xác thực giao dịch MoMo Sandbox và phát hành mã Voucher...",
+          });
+
+          if (orderId && !isNaN(orderId)) {
+            customerPaymentApi
+              .captureMoMoOrder(orderId, {
+                resultCode: resultCodeNum,
+                message: momoMessage || "Thành công",
+                orderId: momoOrderId,
+                transId: momoTransId,
+              })
+              .then(() => {
+                setPaypalCaptureStatus({
+                  status: "success",
+                  message: `Thanh toán MoMo cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                });
+                loadOrders();
+              })
+              .catch((err) => {
+                console.warn("Lỗi auto capture MoMo redirect:", err);
+                setPaypalCaptureStatus({
+                  status: "error",
+                  message: err.message || "Không thể hoàn tất thanh toán tự động qua MoMo.",
+                });
+                loadOrders();
+              });
+          }
+        } else {
+          setPaypalCaptureStatus({
+            status: "error",
+            message: `Giao dịch MoMo #${orderId} không thành công: ${momoMessage || "Người dùng đã hủy giao dịch"}.`,
+          });
+          loadOrders();
+        }
+      }
     }
 
     return () => {
