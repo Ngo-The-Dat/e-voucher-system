@@ -129,7 +129,7 @@ export async function createZaloPayOrder(
   const appTransId = `${datePrefix}_${orderId}_${timeNow.toString().slice(-6)}`;
   const appUser = `user_${customerId}`;
   const amount = Math.round(Number(order.total_amount));
-  const description = `Lumina Marketplace - Thanh toan don hang #${orderId}`;
+  const description = `Vouchify Marketplace - Thanh toan don hang #${orderId}`;
 
   // Gắn thông tin giao dịch vào URL để frontend nhận diện được redirect.
   const redirectUrl = new URL(config.redirectUrl);
