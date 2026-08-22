@@ -151,24 +151,43 @@ export default function OrderHistoryPage() {
             });
         }
       }
-      // 3. Xử lý khi MoMo redirect về
-      else if (urlParams.get("momo_redirect") === "true" && orderIdStr) {
-        const orderId = parseInt(orderIdStr, 10);
+      // 3. Xử lý khi MoMo redirect về (nhận diện qua momo_redirect, partnerCode, hoặc mã đơn EV_ORD_)
+      const isMoMoRedirect =
+        urlParams.get("momo_redirect") === "true" ||
+        urlParams.has("partnerCode") ||
+        (urlParams.has("resultCode") && (urlParams.get("orderId")?.startsWith("EV_ORD_") || urlParams.has("transId")));
+
+      if (isMoMoRedirect) {
         const momoResultCode = urlParams.get("resultCode");
         const momoMessage = urlParams.get("message");
-        const momoOrderId = urlParams.get("orderId");
-        const momoTransId = urlParams.get("transId");
+        const momoOrderId = urlParams.get("orderId") || "";
+        const momoTransId = urlParams.get("transId") || "";
         const resultCodeNum = momoResultCode !== null ? parseInt(momoResultCode, 10) : 0;
+
+        let orderId: number | null = null;
+        if (orderIdStr) {
+          orderId = parseInt(orderIdStr, 10);
+        } else {
+          const match = momoOrderId.match(/EV_ORD_(\d+)/);
+          if (match && match[1]) {
+            orderId = parseInt(match[1], 10);
+          } else if (urlParams.get("extraData")) {
+            try {
+              const decoded = JSON.parse(atob(urlParams.get("extraData")!));
+              if (decoded.orderId) orderId = parseInt(decoded.orderId, 10);
+            } catch {}
+          }
+        }
 
         window.history.replaceState({}, document.title, window.location.pathname);
 
-        if (resultCodeNum === 0) {
-          setPaypalCaptureStatus({
-            status: "processing",
-            message: "Đang tự động xác thực giao dịch MoMo Sandbox và phát hành mã Voucher...",
-          });
+        if (orderId && !isNaN(orderId)) {
+          if (resultCodeNum === 0) {
+            setPaypalCaptureStatus({
+              status: "processing",
+              message: "Đang tự động xác thực giao dịch MoMo Sandbox và phát hành mã Voucher...",
+            });
 
-          if (orderId && !isNaN(orderId)) {
             customerPaymentApi
               .captureMoMoOrder(orderId, {
                 resultCode: resultCodeNum,
@@ -191,13 +210,13 @@ export default function OrderHistoryPage() {
                 });
                 loadOrders();
               });
+          } else {
+            setPaypalCaptureStatus({
+              status: "error",
+              message: `Giao dịch MoMo #${orderId} không thành công: ${momoMessage || "Người dùng đã hủy giao dịch"}.`,
+            });
+            loadOrders();
           }
-        } else {
-          setPaypalCaptureStatus({
-            status: "error",
-            message: `Giao dịch MoMo #${orderId} không thành công: ${momoMessage || "Người dùng đã hủy giao dịch"}.`,
-          });
-          loadOrders();
         }
       }
     }
