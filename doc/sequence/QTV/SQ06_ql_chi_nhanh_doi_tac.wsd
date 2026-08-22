@@ -7,7 +7,6 @@ boundary "Giao diện Chi nhánh đối tác\n(PartnerBranchesModal)" as UI
 control "PartnerController" as Controller
 entity "PartnerService" as Service
 entity "SystemLogService" as LogService
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Xem danh sách chi nhánh của đối tác ==
 QTV -> UI : openPartnerBranches(partnerId)
@@ -16,13 +15,9 @@ UI -> Controller : getPartnerBranches(partnerId)
 activate Controller
 Controller -> Service : getPartnerBranches(partnerId)
 activate Service
-Service -> DB : executeQuery() (SELECT FROM branches WHERE partner_id = $1)
-activate DB
-DB --> Service : returnResult (branches)
-deactivate DB
-Service --> Controller : returnBranches(branches)
+Service --> Controller : return branches
 deactivate Service
-Controller --> UI : returnResponse(branches)
+Controller --> UI : 200 OK ({ branches })
 deactivate Controller
 UI --> QTV : displayBranchList(branches)
 
@@ -35,22 +30,13 @@ alt Thêm mới chi nhánh
     Controller -> Service : createPartnerBranch(partnerId, branchData, adminId)
     activate Service
 
-    Service -> DB : executeQuery() (INSERT INTO branches)
-    activate DB
-    DB --> Service : returnResult (newBranch)
-    deactivate DB
-
     Service -> LogService : logAdminAction(adminId, 'CREATE_BRANCH', newBranch.id)
     activate LogService
-    LogService -> DB : executeQuery() (INSERT INTO system_logs)
-    activate DB
-    DB --> LogService : returnResult
-    deactivate DB
-    LogService --> Service : returnLogged
+    LogService --> Service : return void
     deactivate LogService
 
-    Service --> Controller : returnCreatedBranch(newBranch)
-    Controller --> UI : returnResponse(newBranch)
+    Service --> Controller : return newBranch
+    Controller --> UI : 201 Created (newBranch)
     deactivate Service
     deactivate Controller
     UI --> QTV : showSuccessToast("Thêm chi nhánh thành công")
@@ -58,54 +44,36 @@ alt Thêm mới chi nhánh
 else Cập nhật chi nhánh
     QTV -> UI : editBranchInfo(branchId, updatedData)
     QTV -> UI : clickSaveBranch()
-    UI -> Controller : updatePartnerBranch(branchId, updatedData)
+    UI -> Controller : updatePartnerBranch(partnerId, branchId, updatedData)
     activate Controller
-    Controller -> Service : updatePartnerBranch(branchId, updatedData, adminId)
+    Controller -> Service : updatePartnerBranch(partnerId, branchId, updatedData, adminId)
     activate Service
-
-    Service -> DB : executeQuery() (UPDATE branches SET ...)
-    activate DB
-    DB --> Service : returnResult (updatedBranch)
-    deactivate DB
 
     Service -> LogService : logAdminAction(adminId, 'UPDATE_BRANCH', branchId)
     activate LogService
-    LogService -> DB : executeQuery() (INSERT INTO system_logs)
-    activate DB
-    DB --> LogService : returnResult
-    deactivate DB
-    LogService --> Service : returnLogged
+    LogService --> Service : return void
     deactivate LogService
 
-    Service --> Controller : returnUpdatedBranch(updatedBranch)
-    Controller --> UI : returnResponse(updatedBranch)
+    Service --> Controller : return updatedBranch
+    Controller --> UI : 200 OK (updatedBranch)
     deactivate Service
     deactivate Controller
     UI --> QTV : showSuccessToast("Cập nhật chi nhánh thành công")
 
 else Xóa / Vô hiệu hóa chi nhánh
     QTV -> UI : clickDeleteBranch(branchId)
-    UI -> Controller : deletePartnerBranch(branchId)
+    UI -> Controller : deletePartnerBranch(partnerId, branchId)
     activate Controller
-    Controller -> Service : deletePartnerBranch(branchId, adminId)
+    Controller -> Service : deletePartnerBranch(partnerId, branchId, adminId)
     activate Service
-
-    Service -> DB : executeQuery() (DELETE FROM branches / UPDATE status = 'INACTIVE')
-    activate DB
-    DB --> Service : returnResult
-    deactivate DB
 
     Service -> LogService : logAdminAction(adminId, 'DELETE_BRANCH', branchId)
     activate LogService
-    LogService -> DB : executeQuery() (INSERT INTO system_logs)
-    activate DB
-    DB --> LogService : returnResult
-    deactivate DB
-    LogService --> Service : returnLogged
+    LogService --> Service : return void
     deactivate LogService
 
-    Service --> Controller : returnDeleteSuccess()
-    Controller --> UI : returnResponse({ message: "Xóa chi nhánh thành công" })
+    Service --> Controller : return { message: 'Xóa chi nhánh thành công', branch_id }
+    Controller --> UI : 200 OK ({ message, branch_id })
     deactivate Service
     deactivate Controller
     UI --> QTV : showSuccessToast("Xóa chi nhánh thành công")

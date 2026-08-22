@@ -6,22 +6,17 @@ actor "Quản trị viên" as QTV
 boundary "Giao diện Quản lý người dùng\n(UsersPage)" as UI
 control "UserController" as Controller
 entity "UserService" as Service
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Tải danh sách người dùng mặc định ==
 QTV -> UI : openUsersPage()
 activate UI
-UI -> Controller : getUsers(page, limit)
+UI -> Controller : getUsers(params)
 activate Controller
 Controller -> Service : getUsers(filter)
 activate Service
-Service -> DB : executeQuery()
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnUsers(users, pagination)
+Service --> Controller : return { users, pagination }
 deactivate Service
-Controller --> UI : returnResponse(usersData)
+Controller --> UI : 200 OK ({ users, pagination })
 deactivate Controller
 UI --> QTV : displayUserList()
 deactivate UI
@@ -30,37 +25,29 @@ deactivate UI
 QTV -> UI : inputSearchFilter(keyword, role, status)
 activate UI
 QTV -> UI : clickSearchButton()
-UI -> Controller : getUsers(searchFilter)
+UI -> Controller : getUsers(params)
 activate Controller
 Controller -> Service : getUsers(filter)
 activate Service
-Service -> DB : executeQuery()
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnUsers(filteredUsers)
+Service --> Controller : return { users, pagination }
 deactivate Service
-Controller --> UI : returnResponse(filteredUsers)
+Controller --> UI : 200 OK ({ users, pagination })
 deactivate Controller
 
 alt [users.length == 0] (Không tìm thấy người dùng phù hợp)
     UI --> QTV : showNotFoundMessage("Không tìm thấy người dùng phù hợp")
 else [users.length > 0] (Tìm thấy người dùng phù hợp)
-    UI --> QTV : displayUserList(filteredUsers)
+    UI --> QTV : displayUserList(users)
 
     == 3. Xem chi tiết người dùng ==
     QTV -> UI : selectUserDetail(userId)
-    UI -> Controller : getUserById(userId)
+    UI -> Controller : getUser(userId)
     activate Controller
     Controller -> Service : getUserById(userId)
     activate Service
-    Service -> DB : executeQuery()
-    activate DB
-    DB --> Service : returnResult
-    deactivate DB
-    Service --> Controller : returnUserDetail(detail)
+    Service --> Controller : return userDetail
     deactivate Service
-    Controller --> UI : returnResponse(userDetail)
+    Controller --> UI : 200 OK (userDetail)
     deactivate Controller
     UI --> QTV : displayUserDetailModal(profile, role, status)
 end

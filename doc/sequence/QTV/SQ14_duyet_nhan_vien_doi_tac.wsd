@@ -7,22 +7,17 @@ boundary "Giao diện Duyệt nhân viên\n(EmployeeApprovalsPage)" as UI
 control "EmployeeApprovalController" as Controller
 entity "EmployeeApprovalService" as Service
 entity "SystemLogService" as LogService
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Tải danh sách hồ sơ nhân viên chờ duyệt ==
 QTV -> UI : openEmployeeApprovalsTab()
 activate UI
-UI -> Controller : getPendingEmployeeApprovals(page, limit, filter)
+UI -> Controller : getPendingEmployees(params)
 activate Controller
 Controller -> Service : getPendingEmployeeApprovals(filter)
 activate Service
-Service -> DB : executeQuery() (SELECT FROM partner_employees WHERE status = 'PENDING')
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnPendingEmployees(employees)
+Service --> Controller : return { employees, pagination }
 deactivate Service
-Controller --> UI : returnResponse(employeesData)
+Controller --> UI : 200 OK ({ employees, pagination })
 deactivate Controller
 
 alt A1: Không có hồ sơ chờ duyệt (employees.length == 0)
@@ -32,17 +27,13 @@ else Có hồ sơ nhân viên chờ duyệt (employees.length > 0)
 
     == 2. Xem chi tiết hồ sơ nhân viên ==
     QTV -> UI : selectEmployeeDetail(approvalId)
-    UI -> Controller : getPendingEmployeeDetail(approvalId)
+    UI -> Controller : getPendingEmployee(approvalId)
     activate Controller
     Controller -> Service : getPendingEmployeeDetail(approvalId)
     activate Service
-    Service -> DB : executeQuery()
-    activate DB
-    DB --> Service : returnResult
-    deactivate DB
-    Service --> Controller : returnEmployeeDetail(detail)
+    Service --> Controller : return employeeDetail
     deactivate Service
-    Controller --> UI : returnResponse(detail)
+    Controller --> UI : 200 OK (employeeDetail)
     deactivate Controller
     UI --> QTV : displayEmployeeDetailModal(detail)
 
@@ -54,22 +45,13 @@ else Có hồ sơ nhân viên chờ duyệt (employees.length > 0)
         Controller -> Service : approveEmployee(approvalId, adminId)
         activate Service
 
-        Service -> DB : executeQuery() (UPDATE partner_employees SET status = 'ACTIVE', approved_at = NOW())
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
-
         Service -> LogService : logAdminAction(adminId, 'APPROVE_EMPLOYEE', approvalId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnApproveSuccess()
-        Controller --> UI : returnResponse({ message: "Phê duyệt nhân viên thành công" })
+        Service --> Controller : return { message: 'Phê duyệt nhân viên chi nhánh thành công', employee_id: approvalId }
+        Controller --> UI : 200 OK ({ message, employee_id })
         deactivate Service
         deactivate Controller
         UI --> QTV : showSuccessToast("Phê duyệt hồ sơ nhân viên đối tác thành công")
@@ -83,22 +65,13 @@ else Có hồ sơ nhân viên chờ duyệt (employees.length > 0)
         Controller -> Service : rejectEmployee(approvalId, reason, adminId)
         activate Service
 
-        Service -> DB : executeQuery() (UPDATE partner_employees SET status = 'REJECTED', reject_reason = $1)
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
-
         Service -> LogService : logAdminAction(adminId, 'REJECT_EMPLOYEE', approvalId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnRejectSuccess()
-        Controller --> UI : returnResponse({ message: "Từ chối hồ sơ nhân viên thành công" })
+        Service --> Controller : return { message: 'Từ chối duyệt nhân viên chi nhánh thành công', employee_id: approvalId, reason }
+        Controller --> UI : 200 OK ({ message, employee_id, reason })
         deactivate Service
         deactivate Controller
         UI --> QTV : showToastMessage("Đã từ chối hồ sơ nhân viên đối tác")

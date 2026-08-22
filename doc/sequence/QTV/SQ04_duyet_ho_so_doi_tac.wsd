@@ -7,22 +7,17 @@ boundary "Giao diện Duyệt hồ sơ đối tác\n(PendingPartnersPage)" as UI
 control "PartnerController" as Controller
 entity "PartnerService" as Service
 entity "SystemLogService" as LogService
-database "Cơ sở dữ liệu\n(Database)" as DB
 
 == 1. Tải danh sách hồ sơ đối tác chờ duyệt ==
 QTV -> UI : openPendingPartnersTab()
 activate UI
-UI -> Controller : getPendingPartners(page, limit, filter)
+UI -> Controller : getPendingPartners(params)
 activate Controller
 Controller -> Service : getPendingPartners(filter)
 activate Service
-Service -> DB : executeQuery() (SELECT FROM partners WHERE status = 'PENDING')
-activate DB
-DB --> Service : returnResult
-deactivate DB
-Service --> Controller : returnPendingPartners(partners)
+Service --> Controller : return { partners, pagination }
 deactivate Service
-Controller --> UI : returnResponse(partnersData)
+Controller --> UI : 200 OK ({ partners, pagination })
 deactivate Controller
 
 alt A1: Không có hồ sơ chờ duyệt (partners.length == 0)
@@ -32,44 +27,31 @@ else Có hồ sơ chờ duyệt (partners.length > 0)
 
     == 2. Xem chi tiết hồ sơ đối tác ==
     QTV -> UI : selectPartnerDetail(partnerId)
-    UI -> Controller : getPendingPartnerDetail(partnerId)
+    UI -> Controller : getPendingPartner(partnerId)
     activate Controller
-    Controller -> Service : getPendingPartnerDetail(partnerId)
+    Controller -> Service : getPendingPartnerById(partnerId)
     activate Service
-    Service -> DB : executeQuery()
-    activate DB
-    DB --> Service : returnResult
-    deactivate DB
-    Service --> Controller : returnPartnerDetail(detail)
+    Service --> Controller : return partnerDetail
     deactivate Service
-    Controller --> UI : returnResponse(detail)
+    Controller --> UI : 200 OK (partnerDetail)
     deactivate Controller
     UI --> QTV : displayPartnerDetailModal(detail)
 
     == 3. Quyết định phê duyệt hoặc từ chối ==
     alt Phê duyệt hồ sơ đối tác
         QTV -> UI : clickApproveButton()
-        UI -> Controller : approvePartnerRegistration(partnerId)
+        UI -> Controller : approvePartner(partnerId)
         activate Controller
-        Controller -> Service : approvePartnerRegistration(partnerId, adminId)
+        Controller -> Service : approvePartner(partnerId, adminId)
         activate Service
-
-        Service -> DB : executeQuery() (UPDATE partners SET status = 'ACTIVE', approved_at = NOW())
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
 
         Service -> LogService : logAdminAction(adminId, 'APPROVE_PARTNER', partnerId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnApproveSuccess()
-        Controller --> UI : returnResponse({ message: "Phê duyệt đối tác thành công" })
+        Service --> Controller : return { message: 'Phê duyệt đối tác thành công', partner_id }
+        Controller --> UI : 200 OK ({ message, partner_id })
         deactivate Service
         deactivate Controller
         UI --> QTV : showSuccessToast("Phê duyệt hồ sơ đối tác thành công")
@@ -78,27 +60,18 @@ else Có hồ sơ chờ duyệt (partners.length > 0)
         QTV -> UI : clickRejectButton()
         UI --> QTV : displayRejectReasonModal()
         QTV -> UI : inputRejectReasonAndConfirm(reason)
-        UI -> Controller : rejectPartnerRegistration(partnerId, reason)
+        UI -> Controller : rejectPartner(partnerId, reason)
         activate Controller
-        Controller -> Service : rejectPartnerRegistration(partnerId, reason, adminId)
+        Controller -> Service : rejectPartner(partnerId, reason, adminId)
         activate Service
-
-        Service -> DB : executeQuery() (UPDATE partners SET status = 'REJECTED', reject_reason = $1)
-        activate DB
-        DB --> Service : returnResult
-        deactivate DB
 
         Service -> LogService : logAdminAction(adminId, 'REJECT_PARTNER', partnerId)
         activate LogService
-        LogService -> DB : executeQuery() (INSERT INTO system_logs)
-        activate DB
-        DB --> LogService : returnResult
-        deactivate DB
-        LogService --> Service : returnLogged
+        LogService --> Service : return void
         deactivate LogService
 
-        Service --> Controller : returnRejectSuccess()
-        Controller --> UI : returnResponse({ message: "Từ chối hồ sơ đối tác thành công" })
+        Service --> Controller : return { message: 'Từ chối đối tác và gửi email thông báo thành công', partner_id }
+        Controller --> UI : 200 OK ({ message, partner_id })
         deactivate Service
         deactivate Controller
         UI --> QTV : showToastMessage("Hồ sơ đối tác đã bị từ chối")
