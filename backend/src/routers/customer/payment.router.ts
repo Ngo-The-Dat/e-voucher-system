@@ -13,7 +13,7 @@ import { Router } from 'express';
 import { getPaymentMethods } from '../../controllers/customer/payment.controller.js';
 import paypalRouter from './paypal-payment.router.js';
 import stripeRouter from './stripe-payment.router.js';
-import momoRouter from './momo-payment.router.js';
+import zalopayRouter from './zalopay-payment.router.js';
 import vnpayRouter from './vnpay-payment.router.js';
 
 const router = Router();
@@ -27,10 +27,10 @@ router.use('/paypal', paypalRouter);
 // 3. Namespace cổng thanh toán Stripe (/api/customer/payments/stripe/...)
 router.use('/stripe', stripeRouter);
 
-// 4. Namespace cổng thanh toán MoMo (/api/customer/payments/momo/...)
-router.use('/momo', momoRouter);
+// 4. Namespace cổng thanh toán ZaloPay (/api/customer/payments/zalopay/...)
+router.use('/zalopay', zalopayRouter);
 
-// 5. Cổng thanh toán VNPay
+// 5. Cổng thanh toán VNPay (/api/customer/payments/vnpay/...)
 router.use('/vnpay', vnpayRouter);
 
 export default router;
