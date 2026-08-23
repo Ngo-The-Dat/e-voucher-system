@@ -11,6 +11,13 @@ export interface RecipientState {
   phone: string;
 }
 
+export interface RecipientErrors {
+  full_name?: string;
+  email?: string;
+  phone?: string;
+  contact?: string;
+}
+
 interface CartSummaryProps {
   activeCartItemsLength: number;
   subtotal: number;
@@ -21,6 +28,8 @@ interface CartSummaryProps {
   setIsGift: (isGift: boolean) => void;
   recipientInfo: RecipientState;
   setRecipientInfo: React.Dispatch<React.SetStateAction<RecipientState>>;
+  recipientErrors?: RecipientErrors;
+  setRecipientErrors?: React.Dispatch<React.SetStateAction<RecipientErrors>>;
   handleCheckout: () => void;
   isSubmitting?: boolean;
   paymentMethods?: PaymentMethodItem[];
@@ -36,10 +45,22 @@ export default function CartSummary({
   setIsGift,
   recipientInfo,
   setRecipientInfo,
+  recipientErrors = {},
+  setRecipientErrors,
   handleCheckout,
   isSubmitting = false,
   paymentMethods,
 }: CartSummaryProps) {
+  const clearError = (field: keyof RecipientErrors) => {
+    if (setRecipientErrors) {
+      setRecipientErrors((prev) => ({
+        ...prev,
+        [field]: undefined,
+        contact: undefined,
+      }));
+    }
+  };
+
   return (
     <div className="lg:col-span-4 lg:sticky lg:top-[128px] h-fit">
       <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 shadow-[0_4px_12px_-2px_rgba(0,0,0,0.05)] flex flex-col gap-4">
@@ -63,7 +84,12 @@ export default function CartSummary({
               <input
                 type="checkbox"
                 checked={isGift}
-                onChange={(e) => setIsGift(e.target.checked)}
+                onChange={(e) => {
+                  setIsGift(e.target.checked);
+                  if (!e.target.checked && setRecipientErrors) {
+                    setRecipientErrors({});
+                  }
+                }}
                 className="w-4 h-4 rounded border-outline-variant text-primary focus:ring-primary cursor-pointer"
               />
               <Gift className="w-4 h-4 text-primary" />
@@ -75,6 +101,13 @@ export default function CartSummary({
                 <p className="text-xs text-on-surface-variant font-medium">
                   Voucher phát hành sẽ được gán quyền sở hữu trực tiếp cho người nhận.
                 </p>
+
+                {recipientErrors.contact && (
+                  <div className="p-2.5 rounded bg-error-container/30 border border-error text-error text-xs font-medium">
+                    ⚠️ {recipientErrors.contact}
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">
                     Họ và tên người nhận <span className="text-error">*</span>
@@ -82,13 +115,24 @@ export default function CartSummary({
                   <input
                     type="text"
                     value={recipientInfo.full_name}
-                    onChange={(e) =>
-                      setRecipientInfo((prev) => ({ ...prev, full_name: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setRecipientInfo((prev) => ({ ...prev, full_name: e.target.value }));
+                      clearError("full_name");
+                    }}
                     placeholder="Nguyễn Văn A"
-                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                    className={`w-full bg-surface-bright border rounded-md px-3 py-1.5 text-sm outline-none transition-colors ${
+                      recipientErrors.full_name
+                        ? "border-error focus:border-error ring-1 ring-error/30"
+                        : "border-outline-variant focus:border-primary"
+                    }`}
                   />
+                  {recipientErrors.full_name && (
+                    <p className="text-error text-xs mt-1 font-medium flex items-center gap-1">
+                      <span>•</span> {recipientErrors.full_name}
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">
                     Email người nhận
@@ -96,13 +140,24 @@ export default function CartSummary({
                   <input
                     type="email"
                     value={recipientInfo.email}
-                    onChange={(e) =>
-                      setRecipientInfo((prev) => ({ ...prev, email: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setRecipientInfo((prev) => ({ ...prev, email: e.target.value }));
+                      clearError("email");
+                    }}
                     placeholder="nguyenvana@example.com"
-                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                    className={`w-full bg-surface-bright border rounded-md px-3 py-1.5 text-sm outline-none transition-colors ${
+                      recipientErrors.email || recipientErrors.contact
+                        ? "border-error focus:border-error ring-1 ring-error/30"
+                        : "border-outline-variant focus:border-primary"
+                    }`}
                   />
+                  {recipientErrors.email && (
+                    <p className="text-error text-xs mt-1 font-medium flex items-center gap-1">
+                      <span>•</span> {recipientErrors.email}
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <label className="block text-xs font-semibold text-on-surface mb-1">
                     Số điện thoại người nhận
@@ -110,12 +165,22 @@ export default function CartSummary({
                   <input
                     type="tel"
                     value={recipientInfo.phone}
-                    onChange={(e) =>
-                      setRecipientInfo((prev) => ({ ...prev, phone: e.target.value }))
-                    }
+                    onChange={(e) => {
+                      setRecipientInfo((prev) => ({ ...prev, phone: e.target.value }));
+                      clearError("phone");
+                    }}
                     placeholder="0912345678"
-                    className="w-full bg-surface-bright border border-outline-variant rounded-md px-3 py-1.5 text-sm outline-none focus:border-primary"
+                    className={`w-full bg-surface-bright border rounded-md px-3 py-1.5 text-sm outline-none transition-colors ${
+                      recipientErrors.phone || recipientErrors.contact
+                        ? "border-error focus:border-error ring-1 ring-error/30"
+                        : "border-outline-variant focus:border-primary"
+                    }`}
                   />
+                  {recipientErrors.phone && (
+                    <p className="text-error text-xs mt-1 font-medium flex items-center gap-1">
+                      <span>•</span> {recipientErrors.phone}
+                    </p>
+                  )}
                 </div>
               </div>
             )}

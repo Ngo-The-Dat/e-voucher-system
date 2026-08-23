@@ -8,7 +8,7 @@ import { ChevronRight } from "lucide-react";
 import { customerOrderApi, customerPaymentApi, CreateOrderItemInput, PaymentMethodItem, getStoredCustomerToken } from "@/lib/customer-api";
 
 import CartItemList from "@/components/customer/cart/CartItemList";
-import CartSummary, { RecipientState } from "@/components/customer/cart/CartSummary";
+import CartSummary, { RecipientState, RecipientErrors } from "@/components/customer/cart/CartSummary";
 import EmptyCart from "@/components/customer/cart/EmptyCart";
 import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
@@ -65,6 +65,7 @@ export default function CartPage() {
     email: "",
     phone: "",
   });
+  const [recipientErrors, setRecipientErrors] = useState<RecipientErrors>({});
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [createdPaymentOrder, setCreatedPaymentOrder] = useState<PaymentSimulatorOrder | null>(null);
@@ -94,6 +95,41 @@ export default function CartPage() {
     });
   };
 
+  const validateGiftRecipient = (): boolean => {
+    const errors: RecipientErrors = {};
+    const name = recipientInfo.full_name.trim();
+    const email = recipientInfo.email.trim();
+    const phone = recipientInfo.phone.trim();
+
+    if (!name) {
+      errors.full_name = "Vui lòng nhập họ và tên người nhận.";
+    } else if (name.length < 2) {
+      errors.full_name = "Họ và tên người nhận phải có ít nhất 2 ký tự.";
+    }
+
+    if (!email && !phone) {
+      errors.contact = "Vui lòng nhập ít nhất Email hoặc Số điện thoại để gửi quà tặng.";
+    }
+
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        errors.email = "Địa chỉ email không hợp lệ (ví dụ: nguyenvana@example.com).";
+      }
+    }
+
+    if (phone) {
+      const cleanPhone = phone.replace(/\s+/g, "");
+      const phoneRegex = /^(0|\+84)[0-9]{9,10}$/;
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.phone = "Số điện thoại không hợp lệ (gồm 10 chữ số, ví dụ: 0912345678).";
+      }
+    }
+
+    setRecipientErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
   const handleCheckout = async () => {
     const itemsToCheckout = cart.filter((item) => selectedItems[item.voucher.id]);
     if (itemsToCheckout.length === 0) {
@@ -102,12 +138,8 @@ export default function CartPage() {
     }
 
     if (isGift) {
-      if (!recipientInfo.full_name.trim()) {
-        alert("Vui lòng nhập tên người nhận khi mua làm quà tặng.");
-        return;
-      }
-      if (!recipientInfo.email.trim() && !recipientInfo.phone.trim()) {
-        alert("Vui lòng nhập Email hoặc Số điện thoại người nhận.");
+      const isValid = validateGiftRecipient();
+      if (!isValid) {
         return;
       }
     }
@@ -158,8 +190,12 @@ export default function CartPage() {
       });
       setIsPaymentModalOpen(true);
     } catch (err: any) {
-      if (err.message) {
-        alert(err.message);
+      let rawMsg = err?.message || "";
+      // Lọc bỏ các thông báo kỹ thuật, đường dẫn localhost hoặc lỗi kết nối
+      if (rawMsg.includes("localhost") || rawMsg.includes("fetch failed") || rawMsg.includes("HTTP")) {
+        alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối và thử lại sau.");
+      } else if (rawMsg) {
+        alert(rawMsg);
       } else {
         alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
       }
@@ -214,6 +250,8 @@ export default function CartPage() {
             setIsGift={setIsGift}
             recipientInfo={recipientInfo}
             setRecipientInfo={setRecipientInfo}
+            recipientErrors={recipientErrors}
+            setRecipientErrors={setRecipientErrors}
             handleCheckout={handleCheckout}
             isSubmitting={isSubmitting}
             paymentMethods={paymentMethods}
