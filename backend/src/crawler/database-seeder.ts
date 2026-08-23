@@ -260,24 +260,40 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
   let popupCounter = 100;
   let contentCounter = 100;
 
+  const partnerMap = new Map<string, number>();
+  const branchMap = new Map<string, number>();
+
   for (const v of vouchers) {
-    const currentUserId = ++userCounter;
-    const currentBranchId = ++branchCounter;
     const currentProgramId = ++programCounter;
     const currentBannerId = ++bannerCounter;
     const currentPopupId = ++popupCounter;
 
     const escapeSql = (str: string) => str.replace(/'/g, "''");
 
-    // 1. User & Partner
-    lines.push(`-- Partner: ${escapeSql(v.partner.business_name)}`);
-    lines.push(`INSERT INTO users (user_id, full_name, email, phone, password_hash, role, status) VALUES (${currentUserId}, '${escapeSql(v.partner.business_name)}', '${escapeSql(v.partner.email)}', '${v.partner.phone}', '${DEFAULT_PASSWORD_HASH}', 'PARTNER', 'ACTIVE') ON CONFLICT (email) DO NOTHING;`);
-    lines.push(`INSERT INTO partners (user_id, business_name, tax_code, activity_status, brand_logo, representative_title) VALUES (${currentUserId}, '${escapeSql(v.partner.business_name)}', '${v.partner.tax_code}', 'ACTIVE', '${escapeSql(v.partner.brand_logo)}', 'Giám đốc') ON CONFLICT (tax_code) DO NOTHING;`);
-    lines.push(`INSERT INTO partner_approval_requests (partner_id, admin_id, approval_status, admin_feedback) VALUES (${currentUserId}, 1, 'APPROVED', 'Duyệt tự động');`);
+    // 1. User & Partner (Tái sử dụng nếu đối tác đã được ghi nhận trước đó)
+    let currentUserId: number;
+    if (partnerMap.has(v.partner.tax_code)) {
+      currentUserId = partnerMap.get(v.partner.tax_code)!;
+    } else {
+      currentUserId = ++userCounter;
+      partnerMap.set(v.partner.tax_code, currentUserId);
+      lines.push(`-- Partner: ${escapeSql(v.partner.business_name)}`);
+      lines.push(`INSERT INTO users (user_id, full_name, email, phone, password_hash, role, status) VALUES (${currentUserId}, '${escapeSql(v.partner.business_name)}', '${escapeSql(v.partner.email)}', '${v.partner.phone}', '${DEFAULT_PASSWORD_HASH}', 'PARTNER', 'ACTIVE') ON CONFLICT (email) DO NOTHING;`);
+      lines.push(`INSERT INTO partners (user_id, business_name, tax_code, activity_status, brand_logo, representative_title) VALUES (${currentUserId}, '${escapeSql(v.partner.business_name)}', '${v.partner.tax_code}', 'ACTIVE', '${escapeSql(v.partner.brand_logo)}', 'Giám đốc') ON CONFLICT (tax_code) DO NOTHING;`);
+      lines.push(`INSERT INTO partner_approval_requests (partner_id, admin_id, approval_status, admin_feedback) VALUES (${currentUserId}, 1, 'APPROVED', 'Duyệt tự động');`);
+    }
 
-    // 2. Branch
+    // 2. Branch (Tái sử dụng nếu chi nhánh đã tồn tại)
     const b = v.branches[0];
-    lines.push(`INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES (${currentBranchId}, ${currentUserId}, '${escapeSql(b.branch_name)}', '${escapeSql(b.address)}', '${b.region}', '${b.phone}', 'ACTIVE');`);
+    const branchKey = `${currentUserId}:${b.branch_name}`;
+    let currentBranchId: number;
+    if (branchMap.has(branchKey)) {
+      currentBranchId = branchMap.get(branchKey)!;
+    } else {
+      currentBranchId = ++branchCounter;
+      branchMap.set(branchKey, currentBranchId);
+      lines.push(`INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES (${currentBranchId}, ${currentUserId}, '${escapeSql(b.branch_name)}', '${escapeSql(b.address)}', '${b.region}', '${b.phone}', 'ACTIVE');`);
+    }
 
     // 3. Voucher Program
     lines.push(`INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status) VALUES (${currentProgramId}, ${currentUserId}, ${v.category_id}, '${escapeSql(v.program_name)}', ${v.original_price}, ${v.sale_price}, ${v.issue_quantity}, '${v.sale_start_at.toISOString()}', '${v.sale_end_at.toISOString()}', '${v.use_start_at.toISOString()}', '${v.use_end_at.toISOString()}', '${v.display_status}');`);
@@ -293,7 +309,7 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
 
     // 6. Banner
     if (v.banner) {
-      lines.push(`INSERT INTO banners (banner_id, program_id, title, image_url, target_url, display_position, display_from, display_to, status) VALUES (${currentBannerId}, ${currentProgramId}, '${escapeSql(v.banner.title)}', '/vouchers/${currentProgramId}', '${v.banner.display_position}', '${v.banner.display_from.toISOString()}', '${v.banner.display_to.toISOString()}', 'ACTIVE');`);
+      lines.push(`INSERT INTO banners (banner_id, program_id, title, image_url, target_url, display_position, display_from, display_to, status) VALUES (${currentBannerId}, ${currentProgramId}, '${escapeSql(v.banner.title)}', '${escapeSql(v.banner.image_url)}', '/vouchers/${currentProgramId}', '${v.banner.display_position}', '${v.banner.display_from.toISOString()}', '${v.banner.display_to.toISOString()}', 'ACTIVE');`);
     }
 
     // 7. Popup
