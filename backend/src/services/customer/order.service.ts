@@ -158,10 +158,26 @@ export async function createCustomerOrder(buyerUserId: number, payload: CreateOr
 
     // 2. Xác định người nhận (Recipient) nếu là quà tặng
     let recipientUserId = buyerUserId;
-    if (is_gift && recipient_info && (recipient_info.email || recipient_info.phone)) {
+    if (is_gift) {
+      if (!recipient_info || !recipient_info.full_name || !recipient_info.full_name.trim()) {
+        throw { status: 400, message: 'Vui lòng nhập họ và tên người nhận khi mua quà tặng.' };
+      }
+
       const email = recipient_info.email ? recipient_info.email.trim() : null;
       const phone = recipient_info.phone ? recipient_info.phone.trim() : null;
-      const fullName = recipient_info.full_name ? recipient_info.full_name.trim() : 'Người nhận quà';
+      const fullName = recipient_info.full_name.trim();
+
+      if (!email && !phone) {
+        throw { status: 400, message: 'Vui lòng nhập ít nhất Email hoặc Số điện thoại người nhận.' };
+      }
+
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        throw { status: 400, message: 'Địa chỉ email người nhận không hợp lệ.' };
+      }
+
+      if (phone && !/^(0|\+84)[0-9]{9,10}$/.test(phone.replace(/\s+/g, ''))) {
+        throw { status: 400, message: 'Số điện thoại người nhận không hợp lệ.' };
+      }
 
       let userCheckQuery = `SELECT user_id FROM users WHERE (1=0`;
       const userCheckParams: any[] = [];
