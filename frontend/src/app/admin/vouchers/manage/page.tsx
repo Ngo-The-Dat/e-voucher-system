@@ -146,7 +146,7 @@ export default function ManageVouchersPage() {
             <Icon name="search" className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
             <Input
               type="text"
-              placeholder="Tìm theo tên voucher, đối tác, mã số thuế hoặc mã chương trình..."
+              placeholder="Tìm theo mã chương trình hoặc tên chương trình..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-[40px] pl-10 pr-4 border-slate-200 rounded-xl"

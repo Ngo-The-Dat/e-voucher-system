@@ -1,0 +1,84 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-11 - Quản lý nội dung hệ thống
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý nội dung\n(ContentManagementPage)" as UI
+control "ContentController" as Controller
+entity "ContentService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Chọn loại nội dung & Tải danh sách ==
+QTV -> UI : selectContentType(category / banner / popup / article)
+activate UI
+UI -> Controller : getContentItems(contentType)
+activate Controller
+Controller -> Service : getContentItems(contentType)
+activate Service
+Service --> Controller : return contentItems
+deactivate Service
+Controller --> UI : 200 OK (contentItems)
+deactivate Controller
+UI --> QTV : displayContentList(items)
+
+== 2. Thao tác Quản lý nội dung (Thêm / Sửa / Xóa) ==
+alt Thêm mới mục nội dung
+    QTV -> UI : inputContentData(formData)
+    QTV -> UI : clickSaveContent()
+    UI -> Controller : createContentItem(contentType, formData)
+    activate Controller
+    Controller -> Service : createContentItem(contentType, formData, adminId)
+    activate Service
+    Service -> LogService : logAdminAction(adminId, 'CREATE_CONTENT', newItem.id)
+    activate LogService
+    LogService --> Service : return void
+    deactivate LogService
+    Service --> Controller : return newItem
+    Controller --> UI : 201 Created (newItem)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Tạo nội dung mới thành công")
+
+else Chỉnh sửa mục nội dung
+    QTV -> UI : editContentData(itemId, updatedData)
+    QTV -> UI : clickUpdateContent()
+    UI -> Controller : updateContentItem(contentType, itemId, updatedData)
+    activate Controller
+    Controller -> Service : updateContentItem(contentType, itemId, updatedData, adminId)
+    activate Service
+    Service -> LogService : logAdminAction(adminId, 'UPDATE_CONTENT', itemId)
+    activate LogService
+    LogService --> Service : return void
+    deactivate LogService
+    Service --> Controller : return updatedItem
+    Controller --> UI : 200 OK (updatedItem)
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật nội dung thành công")
+
+else Xóa / Gỡ bỏ mục nội dung
+    QTV -> UI : clickDeleteContent(itemId)
+    UI -> Controller : deleteContentItem(contentType, itemId)
+    activate Controller
+    Controller -> Service : deleteContentItem(contentType, itemId, adminId)
+    activate Service
+
+    alt A1: Voucher còn nằm trong danh mục cần xóa
+        Service --> Controller : throw Error("Không thể xóa danh mục đang chứa voucher")
+        Controller --> UI : 400 BadRequest ({ error: "Từ chối thao tác gỡ bỏ" })
+        UI --> QTV : showAlertModal("Từ chối thao tác gỡ bỏ do còn voucher thuộc danh mục này")
+    else Đủ điều kiện xóa nội dung
+        Service -> LogService : logAdminAction(adminId, 'DELETE_CONTENT', itemId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+        Service --> Controller : return { message: 'Xóa nội dung thành công' }
+        Controller --> UI : 200 OK ({ message: "Xóa nội dung thành công" })
+        UI --> QTV : showSuccessToast("Gỡ bỏ mục nội dung thành công")
+    end
+    deactivate Service
+    deactivate Controller
+end
+deactivate UI
+
+@enduml

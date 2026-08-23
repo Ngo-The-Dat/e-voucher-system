@@ -1,0 +1,56 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-09 - Tra cứu đơn hàng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý đơn hàng\n(OrdersPage)" as UI
+control "OrderController" as Controller
+entity "OrderService" as Service
+
+== 1. Tải danh sách đơn hàng mặc định ==
+QTV -> UI : openOrdersPage()
+activate UI
+UI -> Controller : getOrders(params)
+activate Controller
+Controller -> Service : getOrders(filter)
+activate Service
+Service --> Controller : return { orders, pagination, stats }
+deactivate Service
+Controller --> UI : 200 OK ({ orders, pagination, stats })
+deactivate Controller
+UI --> QTV : displayOrderList()
+deactivate UI
+
+== 2. Tìm kiếm và Lọc đơn hàng ==
+QTV -> UI : inputSearchFilter(keyword, status, paymentStatus, dateRange)
+activate UI
+QTV -> UI : clickSearchButton()
+UI -> Controller : getOrders(params)
+activate Controller
+Controller -> Service : getOrders(filter)
+activate Service
+Service --> Controller : return { orders, pagination, stats }
+deactivate Service
+Controller --> UI : 200 OK ({ orders, pagination, stats })
+deactivate Controller
+
+alt A1: Không có đơn hàng phù hợp (orders.length == 0)
+    UI --> QTV : showNotFoundMessage("Không tìm thấy đơn hàng nào phù hợp với bộ lọc")
+else Có đơn hàng phù hợp (orders.length > 0)
+    UI --> QTV : displayOrderList(orders)
+
+    == 3. Xem chi tiết đơn hàng ==
+    QTV -> UI : selectOrderDetail(orderId)
+    UI -> Controller : getOrder(orderId)
+    activate Controller
+    Controller -> Service : getOrderById(orderId)
+    activate Service
+    Service --> Controller : return orderDetail
+    deactivate Service
+    Controller --> UI : 200 OK (orderDetail)
+    deactivate Controller
+    UI --> QTV : displayOrderDetailModal(customerInfo, items, paymentStatus, issuedVouchers)
+end
+deactivate UI
+
+@enduml

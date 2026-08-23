@@ -1,0 +1,70 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-08 - Thay đổi trạng thái hiển thị voucher
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Quản lý voucher\n(ManagedVouchersPage)" as UI
+control "VoucherController" as Controller
+entity "VoucherService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Tải danh sách & Xem chi tiết voucher ==
+QTV -> UI : openManagedVouchersTab()
+activate UI
+UI -> Controller : getManagedVouchers(params)
+activate Controller
+Controller -> Service : getManagedVouchers(filter)
+activate Service
+Service --> Controller : return { vouchers, pagination }
+deactivate Service
+Controller --> UI : 200 OK ({ vouchers, pagination })
+deactivate Controller
+
+alt A1: Không tìm thấy voucher phù hợp
+    UI --> QTV : showEmptyMessage("Không tìm thấy voucher phù hợp với từ khóa.")
+else Có danh sách voucher
+    UI --> QTV : displayManagedVoucherList(vouchers)
+
+    QTV -> UI : selectVoucher(programId)
+    UI -> Controller : getManagedVoucher(programId)
+    activate Controller
+    Controller -> Service : getManagedVoucherById(programId)
+    activate Service
+    Service --> Controller : return voucherDetail
+    deactivate Service
+    Controller --> UI : 200 OK (voucherDetail)
+    deactivate Controller
+
+    UI -> UI : evaluateVoucherLifecycle(status, remainingQty, expiryDate)
+    
+    alt A2 / A3: Kiểm tra trạng thái hiển thị nút thao tác
+        note over UI
+            - Nếu PUBLISHED: hiển thị nút "Tạm ngưng bán (HIDDEN)", "Ngừng bán (ENDED)"
+            - Nếu HIDDEN (và còn hạn/SL): hiển thị "Khôi phục mở bán (PUBLISHED)", "Ngừng bán (ENDED)"
+            - Nếu hết SL/hạn (RB-04) hoặc ENDED: hiển thị "Ngừng bán" / vô hiệu hóa khôi phục
+        end note
+    end
+    UI --> QTV : displayVoucherActions(availableActions)
+
+    == 2. Thực hiện thay đổi trạng thái voucher ==
+    QTV -> UI : clickChangeDisplayStatus(newStatus)
+    QTV -> UI : confirmStatusChange(reason)
+    UI -> Controller : updateVoucherStatus(programId, newStatus)
+    activate Controller
+    Controller -> Service : updateVoucherStatus(programId, newStatus, reason, adminId)
+    activate Service
+
+    Service -> LogService : logAdminAction(adminId, 'UPDATE_VOUCHER_STATUS', programId, oldValue, newValue)
+    activate LogService
+    LogService --> Service : return void
+    deactivate LogService
+
+    Service --> Controller : return { message, program_id, display_status }
+    Controller --> UI : 200 OK ({ message, program_id, display_status })
+    deactivate Service
+    deactivate Controller
+    UI --> QTV : showSuccessToast("Cập nhật trạng thái hiển thị voucher thành công")
+end
+deactivate UI
+
+@enduml

@@ -56,7 +56,8 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
   const offset = (page - 1) * limit;
 
-  const conditions: string[] = [];
+  // Điều kiện bắt buộc: Tài khoản phải có role PARTNER
+  const conditions: string[] = ["u.role = 'PARTNER'"];
   const params: any[] = [];
   let paramIdx = 1;
 
@@ -69,15 +70,12 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
     conditions.push(`COALESCE(par.approval_status, 'PENDING') = 'PENDING'`);
   }
 
-  // Tìm kiếm từ khóa đa trường
+  // Tìm kiếm theo tên doanh nghiệp hoặc người đại diện
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
       p.business_name ILIKE $${paramIdx} OR
-      p.tax_code ILIKE $${paramIdx} OR
-      u.full_name ILIKE $${paramIdx} OR
-      u.email ILIKE $${paramIdx} OR
-      u.phone ILIKE $${paramIdx}
+      u.full_name ILIKE $${paramIdx}
     )`);
     params.push(s);
     paramIdx++;
@@ -200,7 +198,7 @@ export async function getPendingPartnerById(partnerId: number) {
       ORDER BY par.submitted_at DESC, par.approval_request_id DESC
       LIMIT 1
     ) par ON TRUE
-    WHERE p.user_id = $1
+    WHERE p.user_id = $1 AND u.role = 'PARTNER'
   `;
   const res = await pool.query(query, [partnerId]);
   if (res.rows.length === 0) return null;
@@ -505,8 +503,8 @@ export async function getManagedPartners(filter: GetPartnersFilter = {}) {
   const limit = Math.max(1, Math.min(100, Number(filter.limit) || 10));
   const offset = (page - 1) * limit;
 
-  // Điều kiện bắt buộc: Chỉ lấy đối tác đã được duyệt (APPROVED)
-  const conditions: string[] = ["par.approval_status = 'APPROVED'"];
+  // Điều kiện bắt buộc: Chỉ lấy đối tác có vai trò PARTNER và đã được duyệt (APPROVED)
+  const conditions: string[] = ["u.role = 'PARTNER'", "par.approval_status = 'APPROVED'"];
   const params: any[] = [];
   let paramIdx = 1;
 
@@ -640,7 +638,7 @@ export async function getManagedPartnerById(partnerId: number) {
       ORDER BY par.submitted_at DESC, par.approval_request_id DESC
       LIMIT 1
     ) par ON TRUE
-    WHERE p.user_id = $1 AND par.approval_status = 'APPROVED'
+    WHERE p.user_id = $1 AND u.role = 'PARTNER' AND par.approval_status = 'APPROVED'
   `;
   const partnerRes = await pool.query(partnerQuery, [partnerId]);
   if (partnerRes.rows.length === 0) return null;

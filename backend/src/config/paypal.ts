@@ -135,7 +135,7 @@ export async function createPayPalRestOrder(
           landing_page: 'LOGIN',
           shipping_preference: 'NO_SHIPPING',
           user_action: 'CONTINUE',
-          brand_name: 'Lumina E-Voucher',
+          brand_name: 'Vouchify E-Voucher',
         },
       }),
       signal: AbortSignal.timeout(6000),

@@ -42,6 +42,24 @@ export default function AdminProfilePage() {
       return;
     }
 
+    if (phone.trim()) {
+      const cleanPhone = phone.trim().replace(/\s/g, "");
+      const isPhoneValid = /^(0|\+84)[3|5|7|8|9][0-9]{8}$/.test(cleanPhone);
+      if (!isPhoneValid) {
+        toast.error("Số điện thoại không hợp lệ (yêu cầu 10 chữ số, bắt đầu bằng 03, 05, 07, 08, 09 hoặc +84).");
+        return;
+      }
+    }
+
+    if (identityNo.trim()) {
+      const cleanIdentity = identityNo.trim();
+      const isIdentityValid = /^([0-9]{9}|[0-9]{12})$/.test(cleanIdentity);
+      if (!isIdentityValid) {
+        toast.error("Số CCCD / CMND không hợp lệ (yêu cầu 9 chữ số CMND hoặc 12 chữ số CCCD).");
+        return;
+      }
+    }
+
     setIsSavingProfile(true);
     try {
       await updateProfile({
@@ -263,7 +281,9 @@ export default function AdminProfilePage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Số điện thoại</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                Số điện thoại <span className="text-slate-400 font-normal">(10 chữ số)</span>
+              </label>
               <input
                 type="tel"
                 value={phone}
@@ -274,7 +294,9 @@ export default function AdminProfilePage() {
             </div>
 
             <div>
-              <label className="text-xs font-medium text-slate-600 block mb-1">Số CCCD / CMND</label>
+              <label className="text-xs font-medium text-slate-600 block mb-1">
+                Số CCCD / CMND <span className="text-slate-400 font-normal">(9 hoặc 12 chữ số)</span>
+              </label>
               <input
                 type="text"
                 value={identityNo}

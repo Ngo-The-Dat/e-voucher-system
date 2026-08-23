@@ -26,7 +26,7 @@ export default function PartnerShellLayout({ children }: { children: React.React
     setIsAuthed(true);
   }, [router]);
 
-  if (!isAuthed || isLoading) {
+  if (!isAuthed || (isLoading && !profile && !error)) {
     return (
       <div className="min-h-screen w-full flex items-center justify-center bg-background">
         <div className="flex items-center gap-3 text-on-surface-variant font-medium text-base">

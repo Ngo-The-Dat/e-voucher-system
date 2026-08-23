@@ -13,7 +13,7 @@ import { Branch } from "@/lib/types/partner-profile";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import VoucherImageGallery, { GalleryImageItem } from "@/components/partner/voucher/VoucherImageGallery";
 
-const VOUCHER_STATUS_SYNC_INTERVAL_MS = 10_000;
+const VOUCHER_STATUS_SYNC_INTERVAL_MS = 3_000;
 
 const toGalleryItems = (images: VoucherImage[]): GalleryImageItem[] => images.map((image) => ({
   id: image.id,

@@ -9,10 +9,10 @@ export default function Footer() {
             href="/"
             className="font-headline-lg text-headline-lg font-black text-primary dark:text-inverse-primary"
           >
-            Lumina Marketplace
+            Vouchify Marketplace
           </Link>
           <p className="font-body-md text-body-md text-on-surface-variant dark:text-surface-variant">
-            © 2026 Lumina Marketplace. Nền tảng voucher hàng đầu Việt Nam.
+            © 2026 Vouchify Marketplace. Nền tảng voucher hàng đầu Việt Nam.
           </p>
         </div>
         <div className="flex flex-col gap-3">

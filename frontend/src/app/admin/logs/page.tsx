@@ -181,7 +181,7 @@ export default function SystemLogsPage() {
                     setSearchTerm(e.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder="Tìm hành động, người dùng, mã ID..."
+                  placeholder="Tìm theo mã ID, người thực hiện, hành động..."
                   className="w-full h-[38px] pl-9 pr-3 text-xs border-slate-200 rounded-xl"
                 />
               </div>

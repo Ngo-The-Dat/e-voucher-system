@@ -1,0 +1,82 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-14 - Duyệt hồ sơ nhân viên đối tác
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Duyệt nhân viên\n(EmployeeApprovalsPage)" as UI
+control "EmployeeApprovalController" as Controller
+entity "EmployeeApprovalService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Tải danh sách hồ sơ nhân viên chờ duyệt ==
+QTV -> UI : openEmployeeApprovalsTab()
+activate UI
+UI -> Controller : getPendingEmployees(params)
+activate Controller
+Controller -> Service : getPendingEmployeeApprovals(filter)
+activate Service
+Service --> Controller : return { employees, pagination }
+deactivate Service
+Controller --> UI : 200 OK ({ employees, pagination })
+deactivate Controller
+
+alt A1: Không có hồ sơ chờ duyệt (employees.length == 0)
+    UI --> QTV : showEmptyMessage("Không có hồ sơ chờ duyệt")
+else Có hồ sơ nhân viên chờ duyệt (employees.length > 0)
+    UI --> QTV : displayPendingEmployeeList(employees)
+
+    == 2. Xem chi tiết hồ sơ nhân viên ==
+    QTV -> UI : selectEmployeeDetail(approvalId)
+    UI -> Controller : getPendingEmployee(approvalId)
+    activate Controller
+    Controller -> Service : getPendingEmployeeDetail(approvalId)
+    activate Service
+    Service --> Controller : return employeeDetail
+    deactivate Service
+    Controller --> UI : 200 OK (employeeDetail)
+    deactivate Controller
+    UI --> QTV : displayEmployeeDetailModal(detail)
+
+    == 3. Quyết định phê duyệt hoặc từ chối ==
+    alt Phê duyệt hồ sơ nhân viên
+        QTV -> UI : clickApproveEmployee()
+        UI -> Controller : approveEmployee(approvalId)
+        activate Controller
+        Controller -> Service : approveEmployee(approvalId, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'APPROVE_EMPLOYEE', approvalId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Phê duyệt nhân viên chi nhánh thành công', employee_id: approvalId }
+        Controller --> UI : 200 OK ({ message, employee_id })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showSuccessToast("Phê duyệt hồ sơ nhân viên đối tác thành công")
+
+    else A2 / A3: Từ chối hồ sơ nhân viên (hoặc thiếu thông tin)
+        QTV -> UI : clickRejectEmployee()
+        UI --> QTV : displayRejectReasonModal()
+        QTV -> UI : inputRejectReasonAndConfirm(reason)
+        UI -> Controller : rejectEmployee(approvalId, reason)
+        activate Controller
+        Controller -> Service : rejectEmployee(approvalId, reason, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'REJECT_EMPLOYEE', approvalId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Từ chối duyệt nhân viên chi nhánh thành công', employee_id: approvalId, reason }
+        Controller --> UI : 200 OK ({ message, employee_id, reason })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastMessage("Đã từ chối hồ sơ nhân viên đối tác")
+    end
+end
+deactivate UI
+
+@enduml

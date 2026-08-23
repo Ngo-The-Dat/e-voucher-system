@@ -59,6 +59,10 @@ export default function CartItemList({
         {cart.map((item) => {
           const voucher = item.voucher;
           const isChecked = !!selectedItems[voucher.id];
+          const stock = item.availableStock ?? voucher.availableStock;
+          const isOutOfStock = stock !== undefined && stock <= 0;
+          const isAtMaxStock = stock !== undefined && item.quantity >= stock;
+
           return (
             <div
               key={voucher.id}
@@ -90,10 +94,17 @@ export default function CartItemList({
                     <h3 className="font-title-md text-title-md text-on-surface line-clamp-2 leading-tight">
                       {voucher.title}
                     </h3>
-                    <p className="font-label-sm text-label-sm text-on-surface-variant mt-1 flex items-center gap-1">
-                      <Ticket className="w-3.5 h-3.5" />
-                      {voucher.category}
-                    </p>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <p className="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+                        <Ticket className="w-3.5 h-3.5" />
+                        {voucher.category}
+                      </p>
+                      {stock !== undefined && (
+                        <span className={`text-xs ${isOutOfStock ? "text-error font-bold" : "text-on-surface-variant font-medium"}`}>
+                          {isOutOfStock ? "(Đã hết hàng)" : `(Còn ${stock})`}
+                        </span>
+                      )}
+                    </div>
                     {item.selectedDate && (
                       <p className="text-xs text-text-muted mt-1">
                         Ngày sử dụng: {item.selectedDate}
@@ -124,19 +135,36 @@ export default function CartItemList({
                   <div className="flex items-center bg-surface-container rounded-md border border-outline-variant h-9">
                     <button
                       onClick={() => updateCartQuantity(voucher.id, item.quantity - 1)}
-                      className="w-9 h-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-l-md cursor-pointer"
+                      disabled={item.quantity <= 1 || isOutOfStock}
+                      aria-label="Decrease quantity"
+                      className="w-9 h-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-l-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface-variant"
                     >
                       <Minus className="w-4 h-4" />
                     </button>
                     <input
-                      type="text"
-                      readOnly
-                      value={item.quantity}
-                      className="w-10 h-full text-center border-none bg-transparent font-label-md text-label-md text-on-surface p-0 focus:ring-0"
+                      aria-label="Quantity"
+                      type="number"
+                      min="1"
+                      max={stock !== undefined ? stock : undefined}
+                      disabled={isOutOfStock}
+                      value={isOutOfStock ? 0 : item.quantity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (isNaN(val) || val < 1) {
+                          updateCartQuantity(voucher.id, 1);
+                        } else if (stock !== undefined && val > stock) {
+                          updateCartQuantity(voucher.id, stock);
+                        } else {
+                          updateCartQuantity(voucher.id, val);
+                        }
+                      }}
+                      className="w-12 h-full text-center border-none bg-transparent font-label-md text-label-md text-on-surface p-0 focus:ring-0 no-spinner disabled:text-outline disabled:cursor-not-allowed"
                     />
                     <button
                       onClick={() => updateCartQuantity(voucher.id, item.quantity + 1)}
-                      className="w-9 h-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-r-md cursor-pointer"
+                      disabled={isOutOfStock || isAtMaxStock}
+                      aria-label="Increase quantity"
+                      className="w-9 h-full flex items-center justify-center text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors rounded-r-md cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-on-surface-variant"
                     >
                       <Plus className="w-4 h-4" />
                     </button>

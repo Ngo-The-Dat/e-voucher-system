@@ -1,0 +1,82 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-04 - Duyệt hồ sơ đối tác
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Duyệt hồ sơ đối tác\n(PendingPartnersPage)" as UI
+control "PartnerController" as Controller
+entity "PartnerService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Tải danh sách hồ sơ đối tác chờ duyệt ==
+QTV -> UI : openPendingPartnersTab()
+activate UI
+UI -> Controller : getPendingPartners(params)
+activate Controller
+Controller -> Service : getPendingPartners(filter)
+activate Service
+Service --> Controller : return { partners, pagination }
+deactivate Service
+Controller --> UI : 200 OK ({ partners, pagination })
+deactivate Controller
+
+alt A1: Không có hồ sơ chờ duyệt (partners.length == 0)
+    UI --> QTV : showEmptyMessage("Không có hồ sơ đối tác nào đang chờ phê duyệt")
+else Có hồ sơ chờ duyệt (partners.length > 0)
+    UI --> QTV : displayPendingPartnerList(partners)
+
+    == 2. Xem chi tiết hồ sơ đối tác ==
+    QTV -> UI : selectPartnerDetail(partnerId)
+    UI -> Controller : getPendingPartner(partnerId)
+    activate Controller
+    Controller -> Service : getPendingPartnerById(partnerId)
+    activate Service
+    Service --> Controller : return partnerDetail
+    deactivate Service
+    Controller --> UI : 200 OK (partnerDetail)
+    deactivate Controller
+    UI --> QTV : displayPartnerDetailModal(detail)
+
+    == 3. Quyết định phê duyệt hoặc từ chối ==
+    alt Phê duyệt hồ sơ đối tác
+        QTV -> UI : clickApproveButton()
+        UI -> Controller : approvePartner(partnerId)
+        activate Controller
+        Controller -> Service : approvePartner(partnerId, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'APPROVE_PARTNER', partnerId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Phê duyệt đối tác thành công', partner_id }
+        Controller --> UI : 200 OK ({ message, partner_id })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showSuccessToast("Phê duyệt hồ sơ đối tác thành công")
+
+    else A2 / A3: Từ chối hồ sơ đối tác (hoặc thiếu thông tin)
+        QTV -> UI : clickRejectButton()
+        UI --> QTV : displayRejectReasonModal()
+        QTV -> UI : inputRejectReasonAndConfirm(reason)
+        UI -> Controller : rejectPartner(partnerId, reason)
+        activate Controller
+        Controller -> Service : rejectPartner(partnerId, reason, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'REJECT_PARTNER', partnerId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Từ chối đối tác và gửi email thông báo thành công', partner_id }
+        Controller --> UI : 200 OK ({ message, partner_id })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastMessage("Hồ sơ đối tác đã bị từ chối")
+    end
+end
+deactivate UI
+
+@enduml

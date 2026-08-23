@@ -38,10 +38,10 @@ export function useCustomerCart() {
           voucher: {
             id: String(item.program_id),
             title: item.program_name,
-            brand: item.business_name || "Lumina Partner",
+            brand: item.business_name || "Vouchify Partner",
             brandLogo: item.brand_logo || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80",
             category: item.category_name || "Khác",
-            merchant: item.business_name || "Lumina Partner",
+            merchant: item.business_name || "Vouchify Partner",
             thumbnail: thumbnail,
             images: voucherImages,
             price: item.sale_price,
@@ -105,7 +105,7 @@ export function useCustomerCart() {
   useEffect(() => {
     fetchBackendCart().then((success) => {
       if (!success) {
-        const savedCart = localStorage.getItem("lumina_cart");
+        const savedCart = localStorage.getItem("vouchify_cart");
         if (savedCart) {
           try {
             setCart(JSON.parse(savedCart));
@@ -118,7 +118,7 @@ export function useCustomerCart() {
 
     fetchBackendMyVouchers().then((success) => {
       if (!success) {
-        const savedMyVouchers = localStorage.getItem("lumina_my_vouchers");
+        const savedMyVouchers = localStorage.getItem("vouchify_my_vouchers");
         if (savedMyVouchers) {
           try {
             setMyVouchers(JSON.parse(savedMyVouchers));
@@ -150,23 +150,44 @@ export function useCustomerCart() {
     }
 
     setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((item) => item.voucher.id === voucher.id);
+      const existingIndex = prevCart.findIndex((item) => String(item.voucher.id) === String(voucher.id));
       const newCart = [...prevCart];
+      const stock = voucher.availableStock;
 
       if (existingIndex > -1) {
-        newCart[existingIndex].quantity += quantity;
+        const targetQty = newCart[existingIndex].quantity + quantity;
+        const currentStock = stock ?? newCart[existingIndex].availableStock ?? newCart[existingIndex].voucher.availableStock;
+        const finalQty = currentStock !== undefined ? Math.min(targetQty, Math.max(1, currentStock)) : targetQty;
+        newCart[existingIndex] = {
+          ...newCart[existingIndex],
+          quantity: finalQty,
+          availableStock: currentStock,
+          voucher: {
+            ...newCart[existingIndex].voucher,
+            availableStock: currentStock,
+          },
+        };
       } else {
-        newCart.push({ voucher, quantity, selectedDate });
+        const finalQty = stock !== undefined ? Math.min(quantity, Math.max(1, stock)) : quantity;
+        newCart.push({
+          voucher: {
+            ...voucher,
+            availableStock: stock,
+          },
+          quantity: finalQty,
+          selectedDate,
+          availableStock: stock,
+        });
       }
 
-      localStorage.setItem("lumina_cart", JSON.stringify(newCart));
+      localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
     });
   }, [fetchBackendCart]);
 
   const removeFromCart = useCallback(async (voucherId: string) => {
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
-    const itemToRemove = cart.find((item) => item.voucher.id === voucherId);
+    const itemToRemove = cart.find((item) => String(item.voucher.id) === String(voucherId));
 
     if (token && itemToRemove?.cartItemId) {
       try {
@@ -179,8 +200,8 @@ export function useCustomerCart() {
     }
 
     setCart((prevCart) => {
-      const newCart = prevCart.filter((item) => item.voucher.id !== voucherId);
-      localStorage.setItem("lumina_cart", JSON.stringify(newCart));
+      const newCart = prevCart.filter((item) => String(item.voucher.id) !== String(voucherId));
+      localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
     });
   }, [cart, fetchBackendCart]);
@@ -192,7 +213,12 @@ export function useCustomerCart() {
     }
 
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
-    const itemToUpdate = cart.find((item) => item.voucher.id === voucherId);
+    const itemToUpdate = cart.find((item) => String(item.voucher.id) === String(voucherId));
+    const effectiveStock = itemToUpdate?.availableStock ?? itemToUpdate?.voucher?.availableStock;
+
+    if (effectiveStock !== undefined && quantity > effectiveStock) {
+      quantity = Math.max(1, effectiveStock);
+    }
 
     if (token && itemToUpdate?.cartItemId) {
       try {
@@ -211,9 +237,9 @@ export function useCustomerCart() {
 
     setCart((prevCart) => {
       const newCart = prevCart.map((item) =>
-        item.voucher.id === voucherId ? { ...item, quantity } : item
+        String(item.voucher.id) === String(voucherId) ? { ...item, quantity } : item
       );
-      localStorage.setItem("lumina_cart", JSON.stringify(newCart));
+      localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
     });
   }, [cart, fetchBackendCart, removeFromCart]);
@@ -259,12 +285,12 @@ export function useCustomerCart() {
 
     setMyVouchers((prev) => {
       const updated = [...newPurchasedVouchers, ...prev];
-      localStorage.setItem("lumina_my_vouchers", JSON.stringify(updated));
+      localStorage.setItem("vouchify_my_vouchers", JSON.stringify(updated));
       return updated;
     });
 
     setCart([]);
-    localStorage.setItem("lumina_cart", JSON.stringify([]));
+    localStorage.setItem("vouchify_cart", JSON.stringify([]));
   }, [cart, fetchBackendMyVouchers]);
 
   const markAsUsed = useCallback((myVoucherId: string) => {
@@ -284,19 +310,19 @@ export function useCustomerCart() {
         }
         return v;
       });
-      localStorage.setItem("lumina_my_vouchers", JSON.stringify(updated));
+      localStorage.setItem("vouchify_my_vouchers", JSON.stringify(updated));
       return updated;
     });
   }, []);
 
   const clearCart = useCallback(() => {
     setCart([]);
-    localStorage.removeItem("lumina_cart");
+    localStorage.removeItem("vouchify_cart");
   }, []);
 
   const clearMyVouchers = useCallback(() => {
     setMyVouchers([]);
-    localStorage.removeItem("lumina_my_vouchers");
+    localStorage.removeItem("vouchify_my_vouchers");
   }, []);
 
   return {

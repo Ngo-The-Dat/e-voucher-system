@@ -1,0 +1,191 @@
+% !TeX program = xelatex
+\documentclass{beamer}
+\usetheme{Madrid}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T5]{fontenc}
+  \usepackage[utf8]{inputenc}
+\else
+  \usepackage{fontspec}
+  \setsansfont{Inter}
+\fi
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{positioning,shapes.geometric}
+
+% Title slide
+\title[E-Voucher System]{E-Voucher System -- Hệ thống bán voucher giảm giá trực tuyến}
+\subtitle{Báo cáo Đồ án Môn học Thương mại Điện tử}
+\author[Nhóm sinh viên]{Nguyễn Bình An, Lưu Ngô Quốc Bảo, Ngô Thế Đạt, Nguyễn Trọng Tín}
+\institute[HCMUS]{Trường Đại học Khoa học Tự nhiên -- ĐHQG-HCM}
+\date{Tháng \the\month~năm \the\year}
+
+\begin{document}
+
+%--- Title page ---
+\begin{frame}
+  \titlepage
+\end{frame}
+
+%--- Thành viên ---
+\begin{frame}{Thành viên thực hiện}
+\begin{center}
+\begin{tabular}{>{\bfseries}l l}
+MSSV & Họ và tên \\
+\midrule
+23127340 & Ngô Thế Đạt (Nhóm trưởng) \\
+23127149 & Nguyễn Bình An \\
+23127327 & Lưu Ngô Quốc Bảo \\
+23127498 & Nguyễn Trọng Tín \\
+\end{tabular}
+\end{center}
+\end{frame}
+
+%--- Vai trò trong hệ thống ---
+\begin{frame}{Các vai trò trong hệ thống}
+\begin{itemize}
+  \item \textbf{Khách hàng (Customer)}: Tìm kiếm, lọc voucher, quản lý giỏ hàng, thanh toán trực tuyến, quản lý kho voucher cá nhân, đánh giá \& bình luận.
+  \item \textbf{Đối tác (Partner)}: Đăng ký doanh nghiệp, quản lý danh sách chi nhánh, quản lý nhân viên, tạo và phát hành các chương trình voucher, xem báo cáo doanh thu.
+  \item \textbf{Nhân viên đối tác (Partner Employee)}: Phụ trách từng chi nhánh, sử dụng camera quét mã QR / Barcode để tra cứu và khấu trừ (Redeem) voucher tại quầy.
+  \item \textbf{Quản trị viên (Admin)}: Kiểm duyệt đối tác, quản lý người dùng, quản lý đơn hàng \& voucher toàn sàn, quản trị nội dung CMS (Category, Banner, Popup, Bài viết), xem nhật ký hệ thống.
+\end{itemize}
+\end{frame}
+
+%--- Kiến trúc tổng quan ---
+\begin{frame}{Kiến trúc tổng quan hệ thống}
+\begin{figure}
+  \centering
+  \begin{tikzpicture}[
+    scale=0.78,
+    transform shape,
+    box/.style={draw, rounded corners=3pt, align=center, font=\small, inner sep=5pt, line width=0.6pt},
+    arrow/.style={<->, >=stealth, thick},
+    labelstyle/.style={font=\tiny, fill=white, inner sep=1.5pt, rounded corners=1pt}
+  ]
+    % Hàng trên: 3 tầng chính (tăng khoảng cách ngang)
+    \node[box, fill=blue!12, minimum width=2.6cm, minimum height=1.3cm] (frontend) at (0, 2.3) {
+      \textbf{Frontend Client}\\[2pt]
+      \scriptsize Next.js 16 / React 18\\
+      \scriptsize Tailwind CSS
+    };
+
+    \node[box, fill=orange!12, minimum width=2.6cm, minimum height=1.3cm] (api) at (5.0, 2.3) {
+      \textbf{API Server}\\[2pt]
+      \scriptsize Node.js / Express 5\\
+      \scriptsize TypeScript REST API
+    };
+
+    \node[box, fill=green!12, minimum width=2.5cm, minimum height=1.3cm] (db) at (9.6, 2.3) {
+      \textbf{Database}\\[2pt]
+      \scriptsize PostgreSQL\\
+      \scriptsize Connection Pool
+    };
+    
+    % Hàng dưới: Payment & External Services
+    \node[box, fill=yellow!18, minimum width=3.2cm, minimum height=1.3cm] (payments) at (2.4, -0.6) {
+      \textbf{Cổng thanh toán}\\[2pt]
+      \scriptsize Stripe $\cdot$ PayPal\\
+      \scriptsize VNPay $\cdot$ ZaloPay
+    };
+
+    \node[box, fill=purple!12, minimum width=3.2cm, minimum height=1.3cm] (services) at (7.6, -0.6) {
+      \textbf{Dịch vụ đám mây}\\[2pt]
+      \scriptsize AWS S3 (Media Storage)\\
+      \scriptsize Nodemailer (SMTP Email)
+    };
+
+    % Các đường nối mũi tên kèm nhãn có nền trắng tránh đè
+    \draw[arrow] (frontend) -- (api) node[midway, labelstyle] {HTTPS / JSON};
+    \draw[arrow] (api) -- (db) node[midway, labelstyle] {SQL};
+    \draw[arrow] (api.south -| payments.north) -- (payments.north) node[midway, labelstyle, left=2pt] {SDK / Webhook};
+    \draw[arrow] (api.south -| services.north) -- (services.north) node[midway, labelstyle, right=2pt] {API / S3 SDK};
+  \end{tikzpicture}
+  \vspace{0.2cm}
+  \caption{Mô hình kiến trúc 3 lớp kết hợp các dịch vụ đám mây và cổng thanh toán}
+\end{figure}
+\end{frame}
+
+%--- Công nghệ và stack ---
+\begin{frame}{Công nghệ \& Công cụ phát triển}
+\begin{columns}
+  \column{0.5\textwidth}
+  \textbf{Frontend}
+  \begin{itemize}
+    \item \textbf{Framework}: Next.js 16 (React 18, SSR \& App Router)
+    \item \textbf{Styling}: Tailwind CSS, Lucide Icons, Sonner toast
+    \item \textbf{Tiện ích QR}: \texttt{qrcode.react}, \texttt{@zxing/browser} (quét QR từ Camera)
+    \item \textbf{UI Drag-Drop}: \texttt{@dnd-kit} (sắp xếp CMS)
+  \end{itemize}
+  \column{0.5\textwidth}
+  \textbf{Backend \& Hạ tầng}
+  \begin{itemize}
+    \item \textbf{Runtime}: Node.js (TypeScript, ES Modules)
+    \item \textbf{Framework}: Express 5
+    \item \textbf{Database}: PostgreSQL (kết nối qua Connection Pool)
+    \item \textbf{Lưu trữ media}: AWS S3 Bucket
+    \item \textbf{Bảo mật}: JWT, Bcrypt, Helmet, CORS, Rate Limit
+    \item \textbf{Email}: Nodemailer (SMTP OTP \& thông báo)
+  \end{itemize}
+\end{columns}
+\end{frame}
+
+%--- Đa dạng Cổng thanh toán ---
+\begin{frame}{Cổng thanh toán tích hợp (Multi-Payment Gateways)}
+\begin{itemize}
+  \item Hỗ trợ đa dạng phương thức thanh toán trong nước và quốc tế:
+    \begin{itemize}
+      \item \textbf{Stripe}: Thanh toán thẻ quốc tế Visa / MasterCard / JCB (hỗ trợ Stripe Elements \& Webhook).
+      \item \textbf{PayPal}: Thanh toán qua cổng thanh toán quốc tế PayPal SDK / Capture Order.
+      \item \textbf{VNPay}: Cổng thanh toán nội địa qua VNPay Sandbox (ATM nội địa / Internet Banking / VNPAY-QR).
+      \item \textbf{ZaloPay}: Cổng thanh toán ví điện tử ZaloPay Sandbox (quét mã QR / Gateway Redirect).
+    \end{itemize}
+  \item \textbf{Quy trình xử lý}: Tạo đơn hàng $\rightarrow$ Khởi tạo phiên thanh toán $\rightarrow$ Xử lý Redirect/Capture/Webhook $\rightarrow$ Cập nhật trạng thái \& tự động phát hành mã E-Voucher.
+\end{itemize}
+\end{frame}
+
+%--- Tính năng nổi bật ---
+\begin{frame}{Tính năng nổi bật của đồ án}
+\begin{itemize}
+  \item \textbf{Quy trình Redeem Voucher hoàn chỉnh}:
+    \begin{itemize}
+      \item Khách hàng mở mã QR/Barcode của voucher trong kho cá nhân.
+      \item Nhân viên chi nhánh dùng camera thiết bị quét mã để kiểm tra tính hợp lệ và thực hiện khấu trừ trực tiếp.
+    \end{itemize}
+  \item \textbf{Quản lý chi nhánh \& phân quyền nhân viên}:
+    \begin{itemize}
+      \item Đối tác tạo nhiều chi nhánh và gán nhân viên phụ trách từng chi nhánh cụ thể.
+    \end{itemize}
+  \item \textbf{Hệ thống Quản trị nội dung CMS linh hoạt}:
+    \begin{itemize}
+      \item Admin quản lý và kéo-thả sắp xếp Danh mục (Categories), Banners, Popups quảng cáo, Bài viết tin tức (Articles).
+    \end{itemize}
+  \item \textbf{Đánh giá \& Đơn hàng}: Đánh giá sao, bình luận voucher, quản lý lịch sử đơn hàng chi tiết.
+\end{itemize}
+\end{frame}
+
+%--- Thông tin hosting / VPS ---
+\begin{frame}{Môi trường triển khai \& Vận hành (Deployment)}
+\begin{itemize}
+  \item \textbf{Frontend}: Next.js Standalone Build phục vụ qua Node.js server hoặc nền tảng Vercel / Cloud.
+  \item \textbf{Backend API}: Triển khai trên máy chủ ảo \textbf{VPS Linux (Ubuntu)}, quản lý tiến trình bằng \textbf{PM2} / \textbf{Docker}.
+  \item \textbf{Web Server \& Proxy}: \textbf{Nginx Reverse Proxy} định tuyến traffic, cân bằng tải, nén Gzip và bảo mật SSL/TLS (Let's Encrypt / Certbot).
+  \item \textbf{Cơ sở dữ liệu}: PostgreSQL Server có sao lưu định kỳ, tối ưu hóa qua Connection Pooling.
+  \item \textbf{Lưu trữ tệp tin tĩnh}: Phân phối hình ảnh Banner, Voucher qua dịch vụ đám mây \textbf{AWS S3}.
+\end{itemize}
+\end{frame}
+
+%--- Kết quả ---
+\begin{frame}{Kết quả}
+\begin{itemize}
+  \item \textbf{Kết quả đạt được}:
+    \begin{itemize}
+      \item Xây dựng thành công sàn thương mại điện tử E-Voucher hoàn chỉnh với 4 phân hệ vai trò rõ ràng.
+      \item Tích hợp thành công 4 cổng thanh toán (Stripe, PayPal, VNPay, ZaloPay).
+      \item Vận hành trơn tru quy trình phát hành $\rightarrow$ mua $\rightarrow$ thanh toán $\rightarrow$ đổi voucher qua QR code.
+    \end{itemize}
+\end{itemize}
+\end{frame}
+
+\end{document}
+

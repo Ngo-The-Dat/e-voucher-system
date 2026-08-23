@@ -80,7 +80,7 @@ export default function CustomerLoginPage() {
         
         <div className="relative z-10">
           <Link href="/" className="text-3xl font-bold text-white tracking-tight flex items-center gap-2">
-            Lumina Marketplace
+            Vouchify Marketplace
           </Link>
           <div className="mt-20 text-white max-w-lg">
             <h2 className="text-4xl font-bold leading-tight mb-6">
@@ -114,7 +114,7 @@ export default function CustomerLoginPage() {
         </div>
         
         <div className="relative z-10 text-blue-200/60 text-sm">
-          &copy; {new Date().getFullYear()} Lumina Marketplace. All rights reserved.
+          &copy; {new Date().getFullYear()} Vouchify Marketplace. All rights reserved.
         </div>
       </div>
 
@@ -124,7 +124,7 @@ export default function CustomerLoginPage() {
           {/* Mobile Brand (visible only on mobile) */}
           <div className="lg:hidden text-center mb-10">
             <Link href="/" className="text-3xl font-bold text-[#0f2c59] tracking-tight inline-block">
-              Lumina
+              Vouchify
             </Link>
           </div>
 

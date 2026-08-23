@@ -30,7 +30,7 @@ export default function RegisterStep3Password({
       <div>
         <h3 className="text-base font-bold text-on-surface">Tạo mật khẩu tài khoản</h3>
         <p className="text-on-surface-variant mt-0.5">
-          Mật khẩu sẽ được sử dụng để đăng nhập vào Hệ thống Quản lý Đối tác Lumina.
+          Mật khẩu sẽ được sử dụng để đăng nhập vào Hệ thống Quản lý Đối tác Vouchify.
         </p>
       </div>
 

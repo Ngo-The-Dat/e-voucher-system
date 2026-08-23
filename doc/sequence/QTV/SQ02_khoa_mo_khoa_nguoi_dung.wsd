@@ -1,0 +1,59 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-02 - Khóa/Mở khóa tài khoản người dùng
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Chi tiết người dùng\n(UserDetailPage)" as UI
+control "UserController" as Controller
+entity "UserService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Yêu cầu Khóa / Mở khóa tài khoản ==
+QTV -> UI : clickToggleStatusButton(action)
+activate UI
+UI --> QTV : displayConfirmModal(requireReason)
+
+alt A1: Quản trị viên hủy thao tác
+    QTV -> UI : clickCancelButton()
+    UI --> QTV : closeConfirmModal()
+else Quản trị viên xác nhận thao tác
+    alt Thao tác Khóa tài khoản (status: ACTIVE -> LOCKED)
+        QTV -> UI : inputReasonAndConfirm(reason)
+        UI -> Controller : lockUser(userId, reason)
+        activate Controller
+        Controller -> Service : lockUser(userId, reason, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'LOCK_USER', userId, reason)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Khóa tài khoản thành công', user_id }
+        Controller --> UI : 200 OK ({ message, user_id })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastSuccess("Tài khoản đã bị khóa thành công")
+
+    else Thao tác Mở khóa tài khoản (status: LOCKED -> ACTIVE)
+        QTV -> UI : confirmUnlock()
+        UI -> Controller : unlockUser(userId)
+        activate Controller
+        Controller -> Service : unlockUser(userId, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'UNLOCK_USER', userId)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { message: 'Mở khóa tài khoản thành công', user_id }
+        Controller --> UI : 200 OK ({ message, user_id })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showToastSuccess("Mở khóa tài khoản người dùng thành công")
+    end
+end
+deactivate UI
+
+@enduml

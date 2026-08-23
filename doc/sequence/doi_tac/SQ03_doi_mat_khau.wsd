@@ -1,0 +1,56 @@
+@startuml
+title SQ03 - Đổi mật khẩu tài khoản (Đối tác & Nhân viên đối tác)
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Người dùng\n(Đối tác / Nhân viên)" as User
+boundary ":ChangePasswordModal" as UI
+
+alt Người dùng là Đối tác
+    control ":PartnerProfileController" as Ctrl
+    entity ":PartnerProfileService" as Svc
+
+    User -> UI: submitChangePassword(old_password, new_password, confirm_password)
+    UI -> Ctrl: changePassword({ old_password, new_password })
+    activate Ctrl
+    Ctrl -> Svc: changePassword(partnerId, old_password, new_password)
+    activate Svc
+
+    alt Mật khẩu cũ không chính xác
+        Svc --> Ctrl: throw HttpError(400, "Mật khẩu cũ không đúng.")
+        Ctrl --> UI: return error(400, "Mật khẩu cũ không đúng.")
+        UI --> User: showErrorMessage("Mật khẩu cũ không chính xác")
+    else Mật khẩu cũ chính xác
+        Svc --> Ctrl: return void
+        deactivate Svc
+        Ctrl --> UI: return { message: "Đổi mật khẩu thành công." }
+        deactivate Ctrl
+        UI --> User: showSuccessToast("Đổi mật khẩu thành công.")
+    end
+
+else Người dùng là Nhân viên đối tác
+    control ":PartnerEmployeeProfileController" as EmpCtrl
+    entity ":PartnerEmployeeProfileService" as EmpSvc
+
+    User -> UI: submitChangePassword(old_password, new_password, confirm_password)
+    UI -> EmpCtrl: changePassword({ old_password, new_password })
+    activate EmpCtrl
+    EmpCtrl -> EmpSvc: changeEmployeePassword(userId, old_password, new_password)
+    activate EmpSvc
+
+    alt Mật khẩu cũ không chính xác
+        EmpSvc --> EmpCtrl: throw HttpError(400, "Mật khẩu cũ không chính xác.")
+        EmpCtrl --> UI: return error(400, message)
+        UI --> User: showErrorMessage(message)
+    else Mật khẩu cũ chính xác
+        EmpSvc --> EmpCtrl: return void
+        deactivate EmpSvc
+        EmpCtrl --> UI: return { message: "Đổi mật khẩu thành công." }
+        deactivate EmpCtrl
+        UI --> User: showSuccessToast("Đổi mật khẩu thành công.")
+    end
+end
+
+@enduml

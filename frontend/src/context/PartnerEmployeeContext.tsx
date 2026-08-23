@@ -45,9 +45,11 @@ export function PartnerEmployeeProvider({ children }: { children: React.ReactNod
   const [error, setError] = useState<EmployeeAccountError | null>(null);
 
   /** Tải thông tin hồ sơ nhân viên từ endpoint `/partner/employee/profile` */
-  const reloadProfile = async () => {
-    setIsLoading(true);
-    setError(null);
+  const fetchEmployeeProfile = async (showLoading: boolean = false) => {
+    if (showLoading) {
+      setIsLoading(true);
+      setError(null);
+    }
     try {
       const data = await partnerApi.getEmployeeProfile();
       if (data.status === "LOCKED") {
@@ -78,6 +80,7 @@ export function PartnerEmployeeProvider({ children }: { children: React.ReactNod
         setProfile(null);
         return;
       }
+      setError(null);
       setProfile(data);
     } catch (err: any) {
       console.error("Failed to load employee profile", err);
@@ -108,27 +111,64 @@ export function PartnerEmployeeProvider({ children }: { children: React.ReactNod
             message: msg || "Tài khoản nhân viên chưa được cấp quyền truy cập.",
           });
         }
+        setProfile(null);
       } else if (err?.status === 401) {
-        // Will be redirected to login automatically
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("partner_access_token");
+          window.location.replace("/login");
+        }
+        setProfile(null);
       } else {
-        setError({
-          status: err?.status,
-          type: "error",
-          message: err?.message || "Không thể kết nối đến máy chủ.",
-        });
+        if (showLoading) {
+          setError({
+            status: err?.status,
+            type: "error",
+            message: err?.message || "Không thể kết nối đến máy chủ.",
+          });
+          setProfile(null);
+        }
       }
-      setProfile(null);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
     }
   };
 
+  const reloadProfile = async () => fetchEmployeeProfile(true);
+  const syncProfile = async () => fetchEmployeeProfile(false);
+
   useEffect(() => {
-    reloadProfile();
+    void reloadProfile();
+
+    const handleSync = () => {
+      void syncProfile();
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        void syncProfile();
+      }
+    };
+
+    window.addEventListener("focus", handleSync);
+    window.addEventListener("storage", handleSync);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Heartbeat check every 10s to sync auth in real-time silently
+    const interval = setInterval(() => {
+      void syncProfile();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      window.removeEventListener("storage", handleSync);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, []);
 
-  // Hiển thị màn hình chờ trong lúc tải thông tin tài khoản nhân viên
-  if (isLoading) {
+  // Hiển thị màn hình chờ trong lúc tải dữ liệu ban đầu
+  if (isLoading && !profile && !error) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-background min-h-screen">
         <div className="flex items-center gap-3 text-on-surface-variant font-medium text-lg">

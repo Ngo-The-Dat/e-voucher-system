@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import PartnerTopAppBar from "@/components/partner/layout/PartnerTopAppBar";
 import Icon from "@/components/shared/ui/Icon";
 import StatusBadge from "@/components/shared/ui/StatusBadge";
@@ -26,10 +26,11 @@ const TABS = [
 ];
 
 export default function ProfilePage() {
-  const { profile, isLoading, setProfile, reload, save } = usePartnerProfile();
+  const { profile: serverProfile, isLoading, reload, save } = usePartnerProfile();
   const { refreshPartner } = usePartnerContext();
   const { validate } = usePartnerProfileValidation();
 
+  const [profile, setProfile] = useState<PartnerProfile | null>(serverProfile);
   const [activeTab, setActiveTab] = useState("all");
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
@@ -40,7 +41,29 @@ export default function ProfilePage() {
   const [isBranchModalOpen, setIsBranchModalOpen] = useState(false);
   const [editingBranch, setEditingBranch] = useState<Branch | null>(null);
 
-  if (isLoading || !profile) {
+  // Sync server profile without clobbering in-progress form edits
+  useEffect(() => {
+    if (serverProfile) {
+      setProfile((prev) => {
+        if (!prev) return serverProfile;
+        if (hasUnsavedChanges) {
+          return {
+            ...prev,
+            branches: serverProfile.branches,
+            approvalStatus: serverProfile.approvalStatus,
+            activityStatus: serverProfile.activityStatus,
+            legalInfo: {
+              ...prev.legalInfo,
+              verificationStatus: serverProfile.legalInfo.verificationStatus,
+            },
+          };
+        }
+        return serverProfile;
+      });
+    }
+  }, [serverProfile, hasUnsavedChanges]);
+
+  if (isLoading && !profile) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-background min-h-screen">
         <div className="flex items-center gap-3 text-on-surface-variant font-medium text-lg">
@@ -50,6 +73,8 @@ export default function ProfilePage() {
       </div>
     );
   }
+
+  if (!profile) return null;
 
   // --- Change handlers ---
   const handleLogoChange = (value: string) => {
@@ -174,15 +199,15 @@ export default function ProfilePage() {
               profile.legalInfo.verificationStatus === "verified"
                 ? "active"
                 : profile.legalInfo.verificationStatus === "rejected"
-                ? "rejected"
-                : "pending"
+                  ? "rejected"
+                  : "pending"
             }
             label={
               profile.legalInfo.verificationStatus === "verified"
                 ? "Hồ sơ đã xác minh"
                 : profile.legalInfo.verificationStatus === "rejected"
-                ? "Hồ sơ bị từ chối"
-                : "Hồ sơ chờ xác minh"
+                  ? "Hồ sơ bị từ chối"
+                  : "Hồ sơ chờ xác minh"
             }
           />
         </div>
@@ -198,11 +223,10 @@ export default function ProfilePage() {
                 <li key={tab.id}>
                   <button
                     onClick={() => setActiveTab(tab.id)}
-                    className={`inline-flex items-center gap-2 pb-3.5 pt-1 border-b-2 font-semibold transition-colors ${
-                      isSelected
+                    className={`inline-flex items-center gap-2 pb-3.5 pt-1 border-b-2 font-semibold transition-colors ${isSelected
                         ? "border-primary text-primary font-bold"
                         : "border-transparent text-on-surface-variant hover:text-on-surface hover:border-outline-variant"
-                    }`}
+                      }`}
                   >
                     <Icon name={tab.icon} className="text-[20px]" />
                     <span>{tab.label}</span>

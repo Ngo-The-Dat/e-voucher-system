@@ -1,0 +1,58 @@
+@startuml
+title Biểu đồ tuần tự: UC-ADM-10 - Hủy đơn hàng và hoàn tiền
+
+autonumber
+actor "Quản trị viên" as QTV
+boundary "Giao diện Chi tiết đơn hàng\n(OrderDetailModal)" as UI
+control "OrderController" as Controller
+entity "OrderService" as Service
+entity "SystemLogService" as LogService
+
+== 1. Kiểm tra điều kiện hủy đơn ==
+QTV -> UI : openOrderDetail(orderId)
+activate UI
+UI -> Controller : getOrder(orderId)
+activate Controller
+Controller -> Service : getOrderById(orderId)
+activate Service
+Service --> Controller : return orderDetail
+deactivate Service
+Controller --> UI : 200 OK (orderDetail)
+deactivate Controller
+
+UI -> UI : checkRefundPolicy(RB-14: status != 'CANCELLED' && vouchers != 'USED')
+
+alt A1: Đơn hàng không đủ điều kiện hủy (Voucher đã sử dụng / Đã hủy)
+    UI --> QTV : disableCancelButton("Đơn hàng không đủ điều kiện hủy do voucher đã sử dụng")
+else Đơn hàng đủ điều kiện hủy
+    UI --> QTV : enableCancelButton()
+
+    == 2. Xác nhận và thực hiện hủy đơn hàng ==
+    QTV -> UI : clickCancelOrderButton()
+    UI --> QTV : displayCancelReasonModal()
+
+    alt A2: Quản trị viên hủy thao tác
+        QTV -> UI : clickDismissButton()
+        UI --> QTV : closeCancelModal()
+    else Quản trị viên xác nhận hủy đơn
+        QTV -> UI : inputCancelReasonAndConfirm(reason)
+        UI -> Controller : cancelOrder(orderId, reason)
+        activate Controller
+        Controller -> Service : cancelOrderAndRefund(orderId, reason, adminId)
+        activate Service
+
+        Service -> LogService : logAdminAction(adminId, 'CANCEL_ORDER', orderId, reason)
+        activate LogService
+        LogService --> Service : return void
+        deactivate LogService
+
+        Service --> Controller : return { success: true, message, order_id, order_status: 'CANCELLED', payment_status: 'REFUNDED' }
+        Controller --> UI : 200 OK ({ success, message, order_id, order_status, payment_status })
+        deactivate Service
+        deactivate Controller
+        UI --> QTV : showSuccessToast("Hủy đơn hàng và ghi nhận hoàn tiền mô phỏng thành công")
+    end
+end
+deactivate UI
+
+@enduml

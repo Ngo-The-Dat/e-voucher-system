@@ -36,13 +36,13 @@ export const sendPartnerRegistrationOtp: OtpEmailSender = async (email, otp, exp
   }
 
   const user = process.env.GMAIL_USER!.trim();
-  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Lumina Partner';
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Vouchify Partner';
 
   try {
     await mailTransporter.sendMail({
       from: { name: fromName, address: user },
       to: email,
-      subject: 'Mã xác thực đăng ký đối tác Lumina',
+      subject: 'Mã xác thực đăng ký đối tác Vouchify',
       text: [
         `Mã OTP đăng ký tài khoản đối tác của bạn là: ${otp}`,
         `Mã có hiệu lực trong ${expiresInMinutes} phút.`,
@@ -50,7 +50,7 @@ export const sendPartnerRegistrationOtp: OtpEmailSender = async (email, otp, exp
       ].join('\n\n'),
       html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
-          <h2 style="color:#6750a4">Xác thực đăng ký Lumina Partner</h2>
+          <h2 style="color:#6750a4">Xác thực đăng ký Vouchify Partner</h2>
           <p>Mã OTP đăng ký tài khoản đối tác của bạn là:</p>
           <div style="font-size:32px;font-weight:700;letter-spacing:8px;padding:16px 20px;background:#f3f0ff;border-radius:12px;text-align:center">${otp}</div>
           <p>Mã có hiệu lực trong <strong>${expiresInMinutes} phút</strong>.</p>
@@ -82,21 +82,21 @@ export const sendForgotPasswordOtp: OtpEmailSender = async (email, otp, expiresI
   }
 
   const user = process.env.GMAIL_USER!.trim();
-  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Lumina Marketplace';
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Vouchify Marketplace';
 
   try {
     await mailTransporter.sendMail({
       from: { name: fromName, address: user },
       to: email,
-      subject: 'Mã xác thực khôi phục mật khẩu Lumina',
+      subject: 'Mã xác thực khôi phục mật khẩu Vouchify',
       text: [
-        `Mã OTP khôi phục mật khẩu tài khoản Lumina của bạn là: ${otp}`,
+        `Mã OTP khôi phục mật khẩu tài khoản Vouchify của bạn là: ${otp}`,
         `Mã có hiệu lực trong ${expiresInMinutes} phút.`,
         'Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng bỏ qua email này để đảm bảo an toàn cho tài khoản.',
       ].join('\n\n'),
       html: `
         <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
-          <h2 style="color:#0f2c59">Khôi phục mật khẩu Lumina</h2>
+          <h2 style="color:#0f2c59">Khôi phục mật khẩu Vouchify</h2>
           <p>Mã OTP khôi phục mật khẩu của bạn là:</p>
           <div style="font-size:32px;font-weight:700;letter-spacing:8px;padding:16px 20px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;text-align:center">${otp}</div>
           <p>Mã có hiệu lực trong <strong>${expiresInMinutes} phút</strong>.</p>

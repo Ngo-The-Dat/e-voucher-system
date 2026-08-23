@@ -2,35 +2,36 @@
 |Đối tác|
 start
 
-if (Đã triển khai chương trình\nkhuyến mãi nào?) then (chưa - A1)
-  :Không có dữ liệu để xem xét;
+:Truy cập Dashboard & Báo cáo thống kê;
+
+|Hệ thống|
+:Tổng hợp dữ liệu kinh doanh của đối tác:
+- Thống kê tổng quan: tổng số chương trình voucher,
+  số lượng voucher đã bán, số lượng voucher đã sử dụng,
+  tổng doanh thu đạt được
+- Thống kê chi tiết: doanh thu, số phát hành, số đã bán,
+  số đã sử dụng, tỷ lệ quy đổi theo từng chương trình;
+
+|Đối tác|
+if (Đã có dữ liệu chương trình voucher?) then (chưa)
+  :Hiển thị thông báo chưa có dữ liệu;
   stop
-else (có)
-  :Tổng hợp kết quả kinh doanh
-  của từng chương trình trong kỳ theo dõi
-  (doanh thu, số lượng voucher phát hành,
-  số lượng voucher đã tiêu thụ);
+else (đã có dữ liệu)
+  :Xem biểu đồ & bảng phân tích hiệu suất kinh doanh;
+  :Đối chiếu kết quả đạt được với mục tiêu, kỳ vọng đã đặt ra;
+  :Xác định chương trình đang mang lại hiệu quả tốt
+  và chương trình chưa đạt kỳ vọng;
 
-  :Đối chiếu kết quả đạt được
-  với mục tiêu, kỳ vọng đã đặt ra
-  khi xây dựng từng chương trình;
+  :Quyết định định hướng kinh doanh tiếp theo;
 
-  :Xác định chương trình đang mang lại
-  hiệu quả tốt và chương trình
-  chưa đạt kỳ vọng;
-
-  :Quyết định hướng xử lý tiếp theo
-  cho từng chương trình;
-
-  switch (Hướng xử lý?)
-  case (tiếp tục duy trì)
-    :Tiếp tục duy trì chương trình;
-  case (điều chỉnh quy tắc)
-    :Điều chỉnh quy tắc chương trình;
-  case (dừng triển khai)
-    :Dừng triển khai chương trình;
+  switch (Định hướng kinh doanh?)
+  case (tiếp tục theo dõi)
+    :Tiếp tục duy trì theo dõi hiệu quả;
+  case (xây dựng ưu đãi mới)
+    :Lập kế hoạch tạo chương trình voucher mới;
   endswitch
 endif
 
 stop
 @enduml
+

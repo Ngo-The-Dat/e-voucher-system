@@ -1,0 +1,37 @@
+@startuml
+title SQ13 - Báo cáo thống kê hiệu quả kinh doanh & Dashboard
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":PartnerDashboardPage" as UI
+control ":PartnerDashboardController" as Ctrl
+entity ":PartnerDashboardService" as Svc
+
+== 1. Lấy số liệu thống kê tổng quan (Dashboard Overview) ==
+DT -> UI: openDashboardOverview()
+UI -> Ctrl: getOverview()
+activate Ctrl
+Ctrl -> Svc: getOverview(partnerId)
+activate Svc
+Svc --> Ctrl: return { total_programs, pending_approval, active_programs, total_sold, total_redeemed, total_revenue }
+deactivate Svc
+Ctrl --> UI: return { total_programs, pending_approval, active_programs, total_sold, total_redeemed, total_revenue }
+deactivate Ctrl
+UI --> DT: renderKpiCardsAndOverviewCharts(overviewData)
+
+== 2. Lấy thống kê chi tiết theo từng chương trình Voucher ==
+DT -> UI: selectVoucherReport(program_id)
+UI -> Ctrl: getVoucherStats(program_id)
+activate Ctrl
+Ctrl -> Svc: getVoucherStats(partnerId, programId)
+activate Svc
+Svc --> Ctrl: return rows
+deactivate Svc
+Ctrl --> UI: return rows
+deactivate Ctrl
+UI --> DT: displayVoucherStatsTable(rows)
+
+@enduml

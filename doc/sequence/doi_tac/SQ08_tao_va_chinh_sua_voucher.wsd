@@ -1,0 +1,56 @@
+@startuml
+title SQ08 - Tạo mới và Chỉnh sửa chương trình Voucher
+
+autonumber
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+
+actor "Đối tác" as DT
+boundary ":VoucherCreateOrEditPage" as UI
+control ":PartnerVoucherController" as Ctrl
+entity ":PartnerVoucherService" as Svc
+
+== 1. Tải danh mục ngành hàng để hiển thị form tạo ==
+DT -> UI: openCreateVoucherPage()
+UI -> Ctrl: getCategories()
+activate Ctrl
+Ctrl -> Svc: getActiveCategories()
+activate Svc
+Svc --> Ctrl: return categories
+deactivate Svc
+Ctrl --> UI: return categories
+deactivate Ctrl
+UI --> DT: displayCategoryOptions(categories)
+
+== 2. Tạo chương trình voucher mới (DRAFT) ==
+DT -> UI: submitCreateVoucher(input)
+UI -> Ctrl: createVoucherProgram(input)
+activate Ctrl
+Ctrl -> Svc: createVoucherProgram(partnerId, input)
+activate Svc
+Svc --> Ctrl: return program
+deactivate Svc
+Ctrl --> UI: return { message: "Tạo chương trình voucher thành công.", program }
+deactivate Ctrl
+UI --> DT: showSuccessToastAndRedirect(program.program_id)
+
+== 3. Chỉnh sửa chương trình voucher ==
+DT -> UI: submitUpdateVoucher(programId, input)
+UI -> Ctrl: updateVoucherProgram(programId, input)
+activate Ctrl
+Ctrl -> Svc: updateVoucherProgram(programId, partnerId, input)
+activate Svc
+
+alt Chương trình không ở trạng thái DRAFT
+    Svc --> Ctrl: throw HttpError(400, "Chỉ có thể chỉnh sửa khi chương trình ở trạng thái DRAFT.")
+    Ctrl --> UI: return error(400, message)
+    UI --> DT: showErrorMessage(message)
+else Chương trình ở trạng thái DRAFT
+    Svc --> Ctrl: return program
+    deactivate Svc
+    Ctrl --> UI: return { message: "Cập nhật chương trình voucher thành công.", program }
+    deactivate Ctrl
+    UI --> DT: showSuccessToast("Cập nhật chương trình voucher thành công.")
+end
+
+@enduml

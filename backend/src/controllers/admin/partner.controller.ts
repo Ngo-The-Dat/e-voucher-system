@@ -274,9 +274,17 @@ export async function createBranch(req: AuthRequest, res: Response, next: NextFu
       return;
     }
 
+    if (phone !== undefined && phone !== null && typeof phone === 'string' && phone.trim() !== '') {
+      const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+      if (!/^[0-9+]{8,15}$/.test(cleanPhone)) {
+        res.status(400).json({ message: 'Số điện thoại chi nhánh không hợp lệ (phải từ 8 đến 15 ký tự số).' });
+        return;
+      }
+    }
+
     const branch = await partnerService.createBranch(
       partnerId,
-      { branch_name: branch_name.trim(), address: address.trim(), region, phone, status },
+      { branch_name: branch_name.trim(), address: address.trim(), region, phone: phone ? phone.trim() : '', status },
       adminId
     );
     res.status(201).json(branch);
@@ -305,6 +313,15 @@ export async function updateBranch(req: AuthRequest, res: Response, next: NextFu
     }
 
     const { branch_name, address, region, phone, status } = req.body;
+
+    if (phone !== undefined && phone !== null && typeof phone === 'string' && phone.trim() !== '') {
+      const cleanPhone = phone.trim().replace(/[\s-]/g, '');
+      if (!/^[0-9+]{8,15}$/.test(cleanPhone)) {
+        res.status(400).json({ message: 'Số điện thoại chi nhánh không hợp lệ (phải từ 8 đến 15 ký tự số).' });
+        return;
+      }
+    }
+
     const updated = await partnerService.updateBranch(
       partnerId,
       branchId,
@@ -312,7 +329,7 @@ export async function updateBranch(req: AuthRequest, res: Response, next: NextFu
         branch_name: branch_name ? branch_name.trim() : undefined,
         address: address ? address.trim() : undefined,
         region,
-        phone,
+        phone: phone !== undefined ? (phone ? phone.trim() : '') : undefined,
         status,
       },
       adminId

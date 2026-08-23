@@ -17,20 +17,26 @@ export interface PartnerAccountError {
 export function usePartnerProfile() {
   const [profile, setProfile] = useState<PartnerProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
   const [error, setError] = useState<PartnerAccountError | null>(null);
 
-  const reload = useCallback(async () => {
+  const fetchProfile = useCallback(async (showLoading: boolean = false) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("partner_access_token");
       if (!token) {
-        setIsLoading(false);
+        if (showLoading) setIsLoading(false);
         setProfile(null);
         setError(null);
         return;
       }
     }
-    setIsLoading(true);
-    setError(null);
+    if (showLoading) {
+      setIsLoading(true);
+      setError(null);
+    } else {
+      setIsSyncing(true);
+    }
+
     try {
       const data = await partnerApi.getProfile();
       if (data.activityStatus === "LOCKED") {
@@ -61,6 +67,7 @@ export function usePartnerProfile() {
         setProfile(null);
         return;
       }
+      setError(null);
       setProfile(data);
     } catch (err: any) {
       console.error("Failed to load partner profile", err);
@@ -91,31 +98,66 @@ export function usePartnerProfile() {
             message: msg || "Tài khoản đối tác chưa được cấp quyền truy cập.",
           });
         }
+        setProfile(null);
       } else if (err?.status === 401) {
-        // Handled by redirectToPartnerLogin
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("partner_access_token");
+          window.location.replace("/login");
+        }
+        setProfile(null);
       } else {
-        setError({
-          status: err?.status,
-          type: "error",
-          message: err?.message || "Không thể kết nối đến máy chủ.",
-        });
+        if (showLoading) {
+          setError({
+            status: err?.status,
+            type: "error",
+            message: err?.message || "Không thể kết nối đến máy chủ.",
+          });
+          setProfile(null);
+        }
       }
-      setProfile(null);
     } finally {
-      setIsLoading(false);
+      if (showLoading) {
+        setIsLoading(false);
+      }
+      setIsSyncing(false);
     }
   }, []);
 
+  const reload = useCallback(() => fetchProfile(true), [fetchProfile]);
+  const sync = useCallback(() => fetchProfile(false), [fetchProfile]);
+
   useEffect(() => {
     void reload();
-  }, [reload]);
+
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void sync();
+      }
+    };
+
+    window.addEventListener("focus", syncWhenVisible);
+    window.addEventListener("storage", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+
+    // Heartbeat check every 10s to sync auth in real-time silently
+    const interval = setInterval(() => {
+      void sync();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener("focus", syncWhenVisible);
+      window.removeEventListener("storage", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+      clearInterval(interval);
+    };
+  }, [reload, sync]);
 
   const save = useCallback(async (updated: PartnerProfile) => {
     await partnerApi.updateProfile(updated);
     setProfile(updated);
   }, []);
 
-  return { profile, isLoading, error, setProfile, reload, save };
+  return { profile, isLoading, isSyncing, error, setProfile, reload, sync, save };
 }
 
 export const useProfile = usePartnerProfile;

@@ -103,12 +103,12 @@ export default function Sidebar({
           >
             <Link href="/admin" className="flex items-center gap-3 overflow-hidden">
               <div className="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center text-white font-bold text-xl shadow-sm shrink-0">
-                L
+                V
               </div>
               {!isCollapsed && (
                 <div className="min-w-0 transition-opacity duration-200">
                   <h1 className="font-bold text-slate-900 text-lg leading-tight truncate">
-                    Lumina Admin
+                    Vouchify Admin
                   </h1>
                   <p className="text-text-muted text-xs truncate">Hệ thống quản trị Sàn</p>
                 </div>
