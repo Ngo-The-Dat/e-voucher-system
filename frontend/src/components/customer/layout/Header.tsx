@@ -322,7 +322,6 @@ export default function Header() {
                     onClick={() => handleCategoryClick(cat.name)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#0f2c59] transition-colors cursor-pointer"
                   >
-                    <cat.icon className="w-5 h-5 text-gray-400" />
                     <span className="font-medium text-body-md truncate">{cat.name}</span>
                   </button>
                 )) : (
@@ -490,7 +489,6 @@ export default function Header() {
                   }}
                   className="flex items-center gap-2 py-2.5 px-3 text-left text-label-sm border border-gray-100 rounded-lg bg-gray-50 hover:bg-[#0f2c59]/5 hover:text-[#0f2c59] hover:border-[#0f2c59]/20 transition-colors cursor-pointer"
                 >
-                  <cat.icon className="w-4 h-4 text-gray-500 shrink-0" />
                   <span className="truncate">{cat.name}</span>
                 </button>
               ))}
