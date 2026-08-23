@@ -137,6 +137,25 @@ export default function CartPage() {
       return;
     }
 
+    const outOfStockItem = itemsToCheckout.find((item) => {
+      const stock = item.availableStock ?? item.voucher.availableStock;
+      return stock !== undefined && stock <= 0;
+    });
+    if (outOfStockItem) {
+      alert(`Sản phẩm "${outOfStockItem.voucher.title}" đã hết hàng. Vui lòng bỏ chọn hoặc xóa khỏi giỏ hàng.`);
+      return;
+    }
+
+    const overStockItem = itemsToCheckout.find((item) => {
+      const stock = item.availableStock ?? item.voucher.availableStock;
+      return stock !== undefined && item.quantity > stock;
+    });
+    if (overStockItem) {
+      const stock = overStockItem.availableStock ?? overStockItem.voucher.availableStock;
+      alert(`Sản phẩm "${overStockItem.voucher.title}" vượt quá số lượng tồn kho (chỉ còn ${stock} sản phẩm). Vui lòng điều chỉnh lại số lượng.`);
+      return;
+    }
+
     if (isGift) {
       const isValid = validateGiftRecipient();
       if (!isValid) {
@@ -190,7 +209,7 @@ export default function CartPage() {
       });
       setIsPaymentModalOpen(true);
     } catch (err: any) {
-      let rawMsg = err?.message || "";
+      const rawMsg = err?.message || "";
       // Lọc bỏ các thông báo kỹ thuật, đường dẫn localhost hoặc lỗi kết nối
       if (rawMsg.includes("localhost") || rawMsg.includes("fetch failed") || rawMsg.includes("HTTP")) {
         alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối và thử lại sau.");

@@ -150,13 +150,34 @@ export function useCustomerCart() {
     }
 
     setCart((prevCart) => {
-      const existingIndex = prevCart.findIndex((item) => item.voucher.id === voucher.id);
+      const existingIndex = prevCart.findIndex((item) => String(item.voucher.id) === String(voucher.id));
       const newCart = [...prevCart];
+      const stock = voucher.availableStock;
 
       if (existingIndex > -1) {
-        newCart[existingIndex].quantity += quantity;
+        const targetQty = newCart[existingIndex].quantity + quantity;
+        const currentStock = stock ?? newCart[existingIndex].availableStock ?? newCart[existingIndex].voucher.availableStock;
+        const finalQty = currentStock !== undefined ? Math.min(targetQty, Math.max(1, currentStock)) : targetQty;
+        newCart[existingIndex] = {
+          ...newCart[existingIndex],
+          quantity: finalQty,
+          availableStock: currentStock,
+          voucher: {
+            ...newCart[existingIndex].voucher,
+            availableStock: currentStock,
+          },
+        };
       } else {
-        newCart.push({ voucher, quantity, selectedDate });
+        const finalQty = stock !== undefined ? Math.min(quantity, Math.max(1, stock)) : quantity;
+        newCart.push({
+          voucher: {
+            ...voucher,
+            availableStock: stock,
+          },
+          quantity: finalQty,
+          selectedDate,
+          availableStock: stock,
+        });
       }
 
       localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
@@ -166,7 +187,7 @@ export function useCustomerCart() {
 
   const removeFromCart = useCallback(async (voucherId: string) => {
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
-    const itemToRemove = cart.find((item) => item.voucher.id === voucherId);
+    const itemToRemove = cart.find((item) => String(item.voucher.id) === String(voucherId));
 
     if (token && itemToRemove?.cartItemId) {
       try {
@@ -179,7 +200,7 @@ export function useCustomerCart() {
     }
 
     setCart((prevCart) => {
-      const newCart = prevCart.filter((item) => item.voucher.id !== voucherId);
+      const newCart = prevCart.filter((item) => String(item.voucher.id) !== String(voucherId));
       localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
     });
@@ -192,7 +213,12 @@ export function useCustomerCart() {
     }
 
     const token = typeof window !== "undefined" ? (localStorage.getItem("customer_access_token") || localStorage.getItem("token")) : null;
-    const itemToUpdate = cart.find((item) => item.voucher.id === voucherId);
+    const itemToUpdate = cart.find((item) => String(item.voucher.id) === String(voucherId));
+    const effectiveStock = itemToUpdate?.availableStock ?? itemToUpdate?.voucher?.availableStock;
+
+    if (effectiveStock !== undefined && quantity > effectiveStock) {
+      quantity = Math.max(1, effectiveStock);
+    }
 
     if (token && itemToUpdate?.cartItemId) {
       try {
@@ -211,7 +237,7 @@ export function useCustomerCart() {
 
     setCart((prevCart) => {
       const newCart = prevCart.map((item) =>
-        item.voucher.id === voucherId ? { ...item, quantity } : item
+        String(item.voucher.id) === String(voucherId) ? { ...item, quantity } : item
       );
       localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
