@@ -10,12 +10,15 @@ import {
   Search,
   Ticket,
   Monitor,
+  SearchX,
+  Loader2,
   Utensils,
   Plane,
   Sparkles,
-  SearchX,
-  Loader2
+  Dumbbell,
+  GraduationCap
 } from "lucide-react";
+import { customerCatalogApi, CustomerCategory } from "@/lib/customer-api";
 
 function VoucherCatalogContent() {
   const router = useRouter();
@@ -45,6 +48,17 @@ function VoucherCatalogContent() {
     setSearchInput(queryParam);
     setSelectedCategory(categoryParam || "Tất cả");
   }, [queryParam, categoryParam]);
+
+  const [dbCategories, setDbCategories] = useState<CustomerCategory[]>([]);
+  useEffect(() => {
+    let isMounted = true;
+    customerCatalogApi.getCategories().then((res) => {
+      if (isMounted) {
+        setDbCategories(res.categories || []);
+      }
+    }).catch(console.error);
+    return () => { isMounted = false; };
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,12 +196,21 @@ function VoucherCatalogContent() {
     return 0;
   });
 
+  const getCategoryIcon = (name: string) => {
+    if (name.includes("Ẩm thực") || name.includes("Buffet")) return Utensils;
+    if (name.includes("Spa") || name.includes("Làm đẹp") || name.includes("Massage") || name.includes("Nail") || name.includes("Nha khoa")) return Sparkles;
+    if (name.includes("Khách sạn") || name.includes("Tour")) return Plane;
+    if (name.includes("Thể thao") || name.includes("Gym")) return Dumbbell;
+    if (name.includes("Khóa học")) return GraduationCap;
+    return Ticket;
+  };
+
   const sidebarCategories = [
     { name: "Tất cả", Icon: Ticket },
-    { name: "Điện tử", Icon: Monitor },
-    { name: "Ẩm thực", Icon: Utensils },
-    { name: "Du lịch", Icon: Plane },
-    { name: "Làm đẹp", Icon: Sparkles }
+    ...dbCategories.map(c => ({
+      name: c.category_name,
+      Icon: getCategoryIcon(c.category_name)
+    }))
   ];
 
   return (

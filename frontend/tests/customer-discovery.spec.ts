@@ -38,8 +38,8 @@ test.describe('Voucher Discovery (BR-CUS-03, 04)', () => {
     test('TC03_Filter_By_Category: Lọc theo danh mục', async ({ page }) => {
       await page.goto(`${baseUrl}/vouchers`);
       
-      // Bấm vào một danh mục (ví dụ Đồ uống)
-      const categoryBtn = page.locator('button:has-text("Đồ uống")').first();
+      // Bấm vào một danh mục (ví dụ Ẩm thực & Nhà hàng)
+      const categoryBtn = page.locator('button:has-text("Ẩm thực & Nhà hàng")').first();
       if (await categoryBtn.isVisible()) {
         await categoryBtn.click();
         await expect(page).toHaveURL(/.*category_id=/);

@@ -28,21 +28,21 @@ const CATEGORY_META_MAP: Record<string, CategoryMeta> = {
     image:
       "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80"
   },
-  "Làm đẹp & Spa": {
+  "Spa & Làm đẹp": {
     icon: Sparkles,
     bgClass: "bg-tertiary-container",
     iconClass: "text-on-tertiary-container",
     image:
       "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=800&auto=format&fit=crop&q=80"
   },
-  "Du lịch & Khách sạn": {
+  "Khách sạn & Resort": {
     icon: Plane,
     bgClass: "bg-secondary-container",
     iconClass: "text-on-secondary-container",
     image:
       "https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=800&auto=format&fit=crop&q=80"
   },
-  "Giải trí & Sự kiện": {
+  "Khu Vui Chơi & Giải Trí": {
     icon: Ticket,
     bgClass: "bg-primary-container",
     iconClass: "text-on-primary-container",
