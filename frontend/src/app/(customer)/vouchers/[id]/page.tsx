@@ -177,10 +177,28 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     : null;
 
   const handleAddToCart = () => {
+    if (voucher.availableStock !== undefined && voucher.availableStock <= 0) {
+      alert("Sản phẩm đã hết hàng.");
+      return;
+    }
+    if (voucher.availableStock !== undefined && quantity > voucher.availableStock) {
+      alert(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
+      setQuantity(voucher.availableStock);
+      return;
+    }
     addToCart(voucher, quantity);
   };
 
   const handleBuyNow = () => {
+    if (voucher.availableStock !== undefined && voucher.availableStock <= 0) {
+      alert("Sản phẩm đã hết hàng.");
+      return;
+    }
+    if (voucher.availableStock !== undefined && quantity > voucher.availableStock) {
+      alert(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
+      setQuantity(voucher.availableStock);
+      return;
+    }
     addToCart(voucher, quantity);
     router.push(`/cart?buyNowId=${voucher.id}`);
   };
@@ -401,9 +419,10 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
             </label>
             <div className="flex items-center border border-outline-variant rounded-lg overflow-hidden bg-surface-bright">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+                disabled={quantity <= 1 || (voucher.availableStock !== undefined && voucher.availableStock <= 0)}
                 aria-label="Decrease quantity"
-                className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
                 <Minus className="w-4 h-4" />
               </button>
@@ -411,14 +430,29 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 aria-label="Quantity"
                 type="number"
                 min="1"
-                value={quantity}
-                onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-12 h-10 text-center border-none focus:ring-0 font-label-md text-label-md text-on-surface bg-transparent"
+                max={voucher.availableStock !== undefined ? voucher.availableStock : undefined}
+                disabled={voucher.availableStock !== undefined && voucher.availableStock <= 0}
+                value={voucher.availableStock !== undefined && voucher.availableStock <= 0 ? 0 : quantity}
+                onChange={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (isNaN(val) || val < 1) {
+                    setQuantity(1);
+                  } else if (voucher.availableStock !== undefined && val > voucher.availableStock) {
+                    setQuantity(voucher.availableStock);
+                  } else {
+                    setQuantity(val);
+                  }
+                }}
+                className="w-12 h-10 text-center border-none focus:ring-0 font-label-md text-label-md text-on-surface bg-transparent no-spinner disabled:text-outline disabled:cursor-not-allowed"
               />
               <button
-                onClick={() => setQuantity(quantity + 1)}
+                onClick={() => {
+                  const maxStock = voucher.availableStock !== undefined ? voucher.availableStock : 9999;
+                  setQuantity((prev) => Math.min(maxStock, prev + 1));
+                }}
+                disabled={voucher.availableStock !== undefined && (voucher.availableStock <= 0 || quantity >= voucher.availableStock)}
                 aria-label="Increase quantity"
-                className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer"
+                className="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
               >
                 <Plus className="w-4 h-4" />
               </button>
