@@ -23,12 +23,20 @@ INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender
 (1, 'Ngô Thế Đạt', 'admin@voucher.vn', '0901000001', '$2b$10$JITaepX2GQH3.6T2KhDIiuh4OcJulzeW80vyNF4jfdjV3JpJ5prNq', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
 (2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00');
 
--- 2. Insert standard categories (4 categories)
+-- 2. Insert standard categories (12 rich categories)
 INSERT INTO categories (category_id, category_name, description, status) VALUES
-(1, 'Ẩm thực & Nhà hàng', 'Voucher giảm giá ăn uống tại nhà hàng, quán cafe', 'ACTIVE'),
-(2, 'Làm đẹp & Spa', 'Dịch vụ chăm sóc sức khỏe, dịch vụ thư giãn spa', 'ACTIVE'),
-(3, 'Du lịch & Khách sạn', 'Voucher nghỉ dưỡng khách sạn, tour du lịch', 'ACTIVE'),
-(4, 'Giải trí & Sự kiện', 'Vé xem phim, khu vui chơi, nghe nhạc', 'ACTIVE');
+(1, 'Ẩm thực & Nhà hàng', 'Voucher giảm giá ăn uống tại nhà hàng, quán ăn, món ngon đặc sản', 'ACTIVE'),
+(2, 'Buffet Thượng Hạng', 'Buffet lẩu nướng, buffet hải sản cao cấp', 'ACTIVE'),
+(3, 'Ẩm thực Chay', 'Buffet chay thanh tịnh, ẩm thực chay thuần tự nhiên', 'ACTIVE'),
+(4, 'Spa & Làm đẹp', 'Dịch vụ chăm sóc da mặt, trẻ hóa da, thẩm mỹ viện', 'ACTIVE'),
+(5, 'Massage & Trị liệu', 'Massage body, foot, đả thông kinh lạc cổ vai gáy', 'ACTIVE'),
+(6, 'Chăm sóc Tóc & Nail', 'Gội đầu dưỡng sinh, salon tóc, làm móng nghệ thuật', 'ACTIVE'),
+(7, 'Nha khoa Thẩm mỹ', 'Cạo vôi, tẩy trắng răng, bọc răng sứ, nha khoa gia đình', 'ACTIVE'),
+(8, 'Khách sạn & Resort', 'Nghỉ dưỡng khách sạn và resort cao cấp toàn quốc', 'ACTIVE'),
+(9, 'Tour Du lịch', 'Tour du lịch khám phá trong và ngoài nước trọn gói', 'ACTIVE'),
+(10, 'Khu Vui Chơi & Giải Trí', 'Công viên nước, khu vui chơi liên hợp, vé xem phim, giải trí', 'ACTIVE'),
+(11, 'Thể thao & Gym / Yoga', 'Thẻ tập thể hình, yoga, rèn luyện sức khỏe', 'ACTIVE'),
+(12, 'Khóa học & Đào tạo', 'Lớp học kỹ năng mềm, ngoại ngữ, nghệ thuật', 'ACTIVE');
 
 /*
 -- =========================================================================

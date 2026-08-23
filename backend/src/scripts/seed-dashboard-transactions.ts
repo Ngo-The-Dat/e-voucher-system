@@ -130,35 +130,35 @@ async function seedTransactions() {
     DELETE FROM orders;
   `);
 
-  // 6. Danh sách các mốc thời gian trải dài:
-  // - Hôm nay: 2026-08-22 (nhiều khung giờ)
-  // - Tuần này: 2026-08-17 -> 2026-08-21
-  // - Tuần trước: 2026-08-10 -> 2026-08-16
-  // - Tháng trước / đầu tháng: 2026-07-15 -> 2026-08-09
+  // 6. Danh sách các mốc thời gian trải dài theo thời gian hiện tại
+  const now = new Date();
+  const formatSqlDate = (d: Date) => d.toISOString().replace('T', ' ').substring(0, 19);
+  const addHours = (d: Date, h: number) => new Date(d.getTime() + h * 3600000);
+  const addDays = (d: Date, days: number) => new Date(d.getTime() + days * 86400000);
+
   const timeTemplates = [
-    // Hôm nay (2026-08-22)
-    { date: '2026-08-22 14:15:00', status: 'PAID', count: 8 },
-    { date: '2026-08-22 11:30:00', status: 'PAID', count: 6 },
-    { date: '2026-08-22 09:00:00', status: 'PAID', count: 5 },
-    { date: '2026-08-22 16:00:00', status: 'UNPAID', count: 2 },
-    // Hôm qua (2026-08-21)
-    { date: '2026-08-21 19:20:00', status: 'PAID', count: 7 },
-    { date: '2026-08-21 12:45:00', status: 'PAID', count: 6 },
-    // Tuần này (2026-08-17 -> 2026-08-20)
-    { date: '2026-08-20 18:30:00', status: 'PAID', count: 8 },
-    { date: '2026-08-19 14:10:00', status: 'PAID', count: 7 },
-    { date: '2026-08-18 20:00:00', status: 'PAID', count: 6 },
-    { date: '2026-08-17 10:15:00', status: 'PAID', count: 8 },
-    // Tuần trước (2026-08-10 -> 2026-08-16)
-    { date: '2026-08-15 15:30:00', status: 'PAID', count: 9 },
-    { date: '2026-08-14 11:00:00', status: 'PAID', count: 8 },
-    { date: '2026-08-12 16:45:00', status: 'PAID', count: 7 },
-    { date: '2026-08-10 09:30:00', status: 'PAID', count: 6 },
-    // Tháng trước (2026-07-20 -> 2026-08-05)
-    { date: '2026-08-05 13:00:00', status: 'PAID', count: 8 },
-    { date: '2026-08-01 10:20:00', status: 'PAID', count: 7 },
-    { date: '2026-07-28 17:15:00', status: 'PAID', count: 8 },
-    { date: '2026-07-22 14:00:00', status: 'PAID', count: 6 },
+    // Hôm nay (Live Today)
+    { date: formatSqlDate(addHours(now, -1)), status: 'PAID', count: 8 },
+    { date: formatSqlDate(addHours(now, -3)), status: 'PAID', count: 6 },
+    { date: formatSqlDate(addHours(now, -5)), status: 'PAID', count: 5 },
+    { date: formatSqlDate(addHours(now, -2)), status: 'UNPAID', count: 2 },
+    // Hôm qua
+    { date: formatSqlDate(addDays(now, -1)), status: 'PAID', count: 13 },
+    // Tuần này (2 - 4 ngày trước)
+    { date: formatSqlDate(addDays(now, -2)), status: 'PAID', count: 8 },
+    { date: formatSqlDate(addDays(now, -3)), status: 'PAID', count: 7 },
+    { date: formatSqlDate(addDays(now, -4)), status: 'PAID', count: 6 },
+    { date: formatSqlDate(addDays(now, -5)), status: 'PAID', count: 8 },
+    // Tuần trước (7 - 13 ngày trước)
+    { date: formatSqlDate(addDays(now, -7)), status: 'PAID', count: 9 },
+    { date: formatSqlDate(addDays(now, -9)), status: 'PAID', count: 8 },
+    { date: formatSqlDate(addDays(now, -11)), status: 'PAID', count: 7 },
+    { date: formatSqlDate(addDays(now, -13)), status: 'PAID', count: 6 },
+    // Tháng trước (15 - 30 ngày trước)
+    { date: formatSqlDate(addDays(now, -18)), status: 'PAID', count: 8 },
+    { date: formatSqlDate(addDays(now, -22)), status: 'PAID', count: 7 },
+    { date: formatSqlDate(addDays(now, -26)), status: 'PAID', count: 8 },
+    { date: formatSqlDate(addDays(now, -30)), status: 'PAID', count: 6 },
   ];
 
   const paymentMethods = ['MOMO', 'VNPAY', 'CREDIT_CARD', 'ZALOPAY'];

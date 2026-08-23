@@ -14,23 +14,41 @@ import { normalizeScrapedVoucher } from './normalizer.js';
 import { saveVouchersToDatabase, exportToSqlSeed } from './database-seeder.js';
 import type { NormalizedVoucherProgram, RawScrapedVoucher } from './types.js';
 
-// Danh sách danh mục cào trên Hotdeal ứng với category_id trong Database
+// Danh sách danh mục cào trên Hotdeal ứng với 12 category_id trong Database
 const CATEGORIES = [
   // 1. Ẩm thực & Nhà hàng
   { slug: 'an-uong', id: 1, name: 'Ẩm thực & Nhà hàng' },
-  { slug: 'buffet', id: 1, name: 'Ẩm thực - Buffet' },
   { slug: 'nha-hang-sang-trong', id: 1, name: 'Ẩm thực - Nhà Hàng Sang Trọng' },
-  // 2. Làm đẹp & Spa
-  { slug: 'spa-lam-dep', id: 2, name: 'Làm đẹp & Spa' },
-  { slug: 'massage-cap-doi', id: 2, name: 'Làm đẹp - Massage' },
-  { slug: 'cham-soc-da', id: 2, name: 'Làm đẹp - Chăm Sóc Da' },
-  // 3. Du lịch & Khách sạn
-  { slug: 'khach-san-da-lat', id: 3, name: 'Du lịch - Khách Sạn Đà Lạt' },
-  { slug: 'khach-san-vung-tau', id: 3, name: 'Du lịch - Khách Sạn Vũng Tàu' },
-  { slug: 'khach-san-phan-thiet', id: 3, name: 'Du lịch - Resort Phan Thiết' },
-  { slug: 'khach-san-nha-trang', id: 3, name: 'Du lịch - Resort Nha Trang' },
-  // 4. Giải trí & Sự kiện
-  { slug: 'khu-vui-choi', id: 4, name: 'Giải trí - Khu Vui Chơi' },
+  // 2. Buffet Thượng Hạng
+  { slug: 'buffet-am-thuc', id: 2, name: 'Buffet Thượng Hạng' },
+  { slug: 'buffet', id: 2, name: 'Buffet' },
+  // 3. Ẩm thực Chay
+  { slug: 'buffet-chay', id: 3, name: 'Ẩm thực Chay' },
+  // 4. Spa & Làm đẹp
+  { slug: 'spa-lam-dep', id: 4, name: 'Spa & Làm đẹp' },
+  { slug: 'cham-soc-da', id: 4, name: 'Chăm Sóc Da & Trẻ Hóa' },
+  // 5. Massage & Trị liệu
+  { slug: 'massage-body-massage-foot', id: 5, name: 'Massage Nam Nữ & Trị Liệu' },
+  { slug: 'massage-cap-doi', id: 5, name: 'Massage Cặp Đôi' },
+  // 6. Chăm sóc Tóc & Nail
+  { slug: 'hair-salon-va-cham-soc-toc', id: 6, name: 'Chăm Sóc Tóc & Salon' },
+  { slug: 'cat-toc-goi-dau-massage', id: 6, name: 'Cắt Tóc & Gội Đầu Dưỡng Sinh' },
+  // 7. Nha khoa Thẩm mỹ
+  { slug: 'nha-khoa', id: 7, name: 'Nha Khoa Thẩm Mỹ' },
+  // 8. Khách sạn & Resort
+  { slug: 'hotel-resort', id: 8, name: 'Khách Sạn & Resort' },
+  { slug: 'khach-san-da-lat', id: 8, name: 'Khách Sạn Đà Lạt' },
+  { slug: 'khach-san-vung-tau', id: 8, name: 'Khách Sạn Vũng Tàu' },
+  { slug: 'khach-san-nha-trang', id: 8, name: 'Resort Nha Trang' },
+  // 9. Tour Du lịch
+  { slug: 'du-lich', id: 9, name: 'Tour Du Lịch' },
+  // 10. Khu Vui Chơi & Giải Trí
+  { slug: 'khu-vui-choi', id: 10, name: 'Khu Vui Chơi & Giải Trí' },
+  // 11. Thể thao & Gym / Yoga
+  { slug: 'phong-tap-gym-vn', id: 11, name: 'Thể Thao & Phòng Tập Gym' },
+  { slug: 'yoga', id: 11, name: 'Tập Yoga & Thiền' },
+  // 12. Khóa học & Đào tạo
+  { slug: 'dao-tao-vn', id: 12, name: 'Khóa Học & Đào Tạo' },
 ];
 
 async function main() {

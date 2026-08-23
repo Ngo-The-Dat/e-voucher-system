@@ -16,9 +16,14 @@ async function test() {
   console.log('\n--- KPI TUẦN NÀY (THIS WEEK) ---');
   console.table(weekOverview.stats.map(s => ({ title: s.title, value: s.value, change: s.change, trend: s.trend })));
 
-  console.log('\n🏬 === TEST PARTNER DASHBOARD (Partner ID 3 - Khách sạn Đệ Nhất) ===');
-  const partnerOverview = await getOverview(3);
-  console.table(partnerOverview);
+  const firstPartnerRes = await pool.query(`SELECT user_id, business_name FROM partners ORDER BY user_id ASC LIMIT 1`);
+  if (firstPartnerRes.rows.length > 0) {
+    const partnerId = Number(firstPartnerRes.rows[0].user_id);
+    const partnerName = firstPartnerRes.rows[0].business_name;
+    console.log(`\n🏬 === TEST PARTNER DASHBOARD (Partner ID ${partnerId} - ${partnerName}) ===`);
+    const partnerOverview = await getOverview(partnerId);
+    console.table(partnerOverview);
+  }
 
   await pool.end();
 }
