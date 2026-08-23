@@ -1,6 +1,7 @@
 import pool from "../config/db.js";
 import fs from "fs";
 import path from "path";
+import { seedPendingApprovals } from "./seed-pending-approvals.js";
 
 async function initDatabase() {
     // 1. Tạo bảng cấu trúc Database
@@ -43,6 +44,9 @@ async function initDatabase() {
         SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), (SELECT COALESCE(MAX(popup_id), 1) FROM popups));
         SELECT setval(pg_get_serial_sequence('contents', 'content_id'), (SELECT COALESCE(MAX(content_id), 1) FROM contents));
     `);
+
+    // 5. Nạp dữ liệu mẫu chờ duyệt cho Admin (Đối tác, Nhân viên, Voucher)
+    await seedPendingApprovals();
 
     await pool.end();
 }

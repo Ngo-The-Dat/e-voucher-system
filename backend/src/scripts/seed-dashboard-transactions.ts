@@ -5,6 +5,7 @@
  */
 
 import pool from '../config/db.js';
+import { seedPendingApprovals } from './seed-pending-approvals.js';
 
 // Mật khẩu mặc định: 12345876
 const DEFAULT_HASH = '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW';
@@ -287,6 +288,7 @@ async function seedTransactions() {
   `);
 
   console.log('🎉 Hoàn thành nạp dữ liệu giao dịch mẫu thành công!');
+  await seedPendingApprovals();
   await pool.end();
 }
 
