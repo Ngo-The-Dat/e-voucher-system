@@ -2,15 +2,15 @@
 const nextConfig = {
   output: "standalone",
   devIndicators: {
-    buildActivity: false, 
-    appIsrStatus: false,  
+    buildActivity: false,
+    appIsrStatus: false,
   },
   images: {
     unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
-      { protocol: "https", hostname: "static.hotdeal.vn" },
+      { protocol: "https", hostname: "**.unsplash.com" },
       { protocol: "https", hostname: "**.r2.dev" },
       { protocol: "https", hostname: "static.hotdeal.vn" },
       { protocol: "https", hostname: "oms.hotdeal.vn" },
