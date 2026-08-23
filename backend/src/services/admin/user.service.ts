@@ -107,10 +107,10 @@ export async function getUsers(query: GetUsersQuery) {
   const params: any[] = [];
   let paramIndex = 1;
 
-  // Lọc theo từ khóa tìm kiếm
+  // Lọc theo từ khóa tìm kiếm (chỉ tìm theo họ tên hoặc email)
   if (query.search && query.search.trim()) {
     const searchPattern = `%${query.search.trim()}%`;
-    conditions.push(`(full_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex} OR phone ILIKE $${paramIndex})`);
+    conditions.push(`(full_name ILIKE $${paramIndex} OR email ILIKE $${paramIndex})`);
     params.push(searchPattern);
     paramIndex++;
   }

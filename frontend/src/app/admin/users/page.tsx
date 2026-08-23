@@ -187,7 +187,7 @@ export default function UserManagementPage() {
                     setSearch(e.target.value);
                     setCurrentPage(1);
                   }}
-                  placeholder="Tìm theo tên đăng nhập, email hoặc số điện thoại..."
+                  placeholder="Tìm theo tên người dùng hoặc email..."
                   className="w-full h-[38px] pl-10 pr-4 bg-slate-50/50 border border-slate-200 rounded-xl text-sm placeholder:text-slate-400 text-slate-800 focus:bg-white transition"
                 />
               </div>

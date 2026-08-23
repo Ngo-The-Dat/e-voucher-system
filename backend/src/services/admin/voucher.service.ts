@@ -61,15 +61,12 @@ export async function getPendingVouchers(filter: GetPendingVouchersFilter = {}) 
   const params: any[] = [];
   let paramIdx = 1;
 
+  // Tìm kiếm theo mã yêu cầu hoặc tên chương trình
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
-      vp.program_name ILIKE $${paramIdx} OR
-      p.business_name ILIKE $${paramIdx} OR
-      p.tax_code ILIKE $${paramIdx} OR
-      u.full_name ILIKE $${paramIdx} OR
       var.approval_request_id::text ILIKE $${paramIdx} OR
-      vp.program_id::text ILIKE $${paramIdx}
+      vp.program_name ILIKE $${paramIdx}
     )`);
     params.push(s);
     paramIdx++;
@@ -474,13 +471,12 @@ export async function getManagedVouchers(filter: GetManagedVouchersFilter = {}) 
   const params: any[] = [];
   let paramIdx = 1;
 
+  // Tìm kiếm theo mã chương trình hoặc tên chương trình
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     baseConditions.push(`(
-      vp.program_name ILIKE $${paramIdx} OR
-      p.business_name ILIKE $${paramIdx} OR
-      p.tax_code ILIKE $${paramIdx} OR
-      vp.program_id::text ILIKE $${paramIdx}
+      vp.program_id::text ILIKE $${paramIdx} OR
+      vp.program_name ILIKE $${paramIdx}
     )`);
     params.push(s);
     paramIdx++;

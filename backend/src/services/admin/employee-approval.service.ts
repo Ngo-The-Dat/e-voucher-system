@@ -73,16 +73,12 @@ export async function getPendingEmployees(filter: GetEmployeesFilter = {}) {
     conditions.push(`COALESCE(pear.approval_status, 'PENDING') = 'PENDING'`);
   }
 
-  // Tìm kiếm từ khóa theo nhiều tiêu chí
+  // Tìm kiếm theo tên nhân viên hoặc tên doanh nghiệp đối tác
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
       u.full_name ILIKE $${paramIdx} OR
-      u.email ILIKE $${paramIdx} OR
-      u.phone ILIKE $${paramIdx} OR
-      u.identity_no ILIKE $${paramIdx} OR
-      p.business_name ILIKE $${paramIdx} OR
-      b.branch_name ILIKE $${paramIdx}
+      p.business_name ILIKE $${paramIdx}
     )`);
     params.push(s);
     paramIdx++;

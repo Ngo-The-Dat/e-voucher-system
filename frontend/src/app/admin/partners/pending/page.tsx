@@ -136,12 +136,12 @@ export default function PendingPartnersPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Ô Tìm kiếm với nhãn FormField */}
           <div>
-            <FormField label="Tên doanh nghiệp / ĐT / Email">
+            <FormField label="Tìm kiếm đối tác">
               <div className="relative">
                 <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
                 <Input
                   type="text"
-                  placeholder="Nhập tên doanh nghiệp, MST, người đại diện..."
+                  placeholder="Nhập tên doanh nghiệp hoặc người đại diện..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);

@@ -151,6 +151,15 @@ export default function ManagePartnerDetailPage() {
    */
   const handleSaveBranch = async () => {
     if (!branchForm.branch_name.trim() || !branchForm.address.trim()) return;
+
+    if (branchForm.phone.trim()) {
+      const cleanPhone = branchForm.phone.trim().replace(/[\s-]/g, "");
+      if (!/^[0-9+]{8,15}$/.test(cleanPhone)) {
+        toast.error("Số điện thoại chi nhánh không hợp lệ (phải từ 8 đến 15 ký tự số).");
+        return;
+      }
+    }
+
     setActionLoading(true);
     try {
       if (editingBranch) {
@@ -672,7 +681,7 @@ export default function ManagePartnerDetailPage() {
                   </select>
                 </FormField>
 
-                <FormField label="Số điện thoại">
+                <FormField label="Số điện thoại (8 - 15 chữ số)">
                   <Input
                     type="text"
                     placeholder="e.g. 02439349999..."

@@ -70,15 +70,12 @@ export async function getPendingPartners(filter: GetPartnersFilter = {}) {
     conditions.push(`COALESCE(par.approval_status, 'PENDING') = 'PENDING'`);
   }
 
-  // Tìm kiếm từ khóa đa trường
+  // Tìm kiếm theo tên doanh nghiệp hoặc người đại diện
   if (filter.search && filter.search.trim()) {
     const s = `%${filter.search.trim()}%`;
     conditions.push(`(
       p.business_name ILIKE $${paramIdx} OR
-      p.tax_code ILIKE $${paramIdx} OR
-      u.full_name ILIKE $${paramIdx} OR
-      u.email ILIKE $${paramIdx} OR
-      u.phone ILIKE $${paramIdx}
+      u.full_name ILIKE $${paramIdx}
     )`);
     params.push(s);
     paramIdx++;

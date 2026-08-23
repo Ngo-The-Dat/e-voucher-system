@@ -140,12 +140,12 @@ export default function EmployeePendingApprovalsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Ô Tìm kiếm với nhãn FormField */}
           <div>
-            <FormField label="Tìm kiếm nhân viên / Đối tác / Chi nhánh">
+            <FormField label="Tìm kiếm nhân viên đối tác">
               <div className="relative">
                 <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
                 <Input
                   type="text"
-                  placeholder="Họ tên, email, SĐT, CCCD, tên đối tác..."
+                  placeholder="Nhập tên nhân viên hoặc tên doanh nghiệp..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);

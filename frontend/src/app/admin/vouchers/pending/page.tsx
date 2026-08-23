@@ -100,7 +100,7 @@ export default function PendingVouchersPage() {
           <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg z-10" />
           <Input
             type="text"
-            placeholder="Tìm theo tên voucher, đối tác, mã số thuế hoặc mã yêu cầu..."
+            placeholder="Tìm theo mã yêu cầu hoặc tên chương trình..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-[38px] pl-9 pr-3 border-slate-200 rounded-xl"
