@@ -11,8 +11,8 @@ control ":PartnerEmployeeMgmtController" as Ctrl
 entity ":PartnerEmployeeMgmtService" as Svc
 actor "Quản trị viên" as Admin
 boundary ":AdminEmployeeApprovalPage" as AdminUI
-control ":EmployeeApprovalController" as AdminCtrl
-entity ":EmployeeApprovalService" as AdminSvc
+control ":AdminEmployeeApprovalController" as AdminCtrl
+entity ":AdminEmployeeApprovalService" as AdminSvc
 
 == 1. Lấy danh sách nhân viên chi nhánh ==
 DT -> UI: openEmployeeListPage()

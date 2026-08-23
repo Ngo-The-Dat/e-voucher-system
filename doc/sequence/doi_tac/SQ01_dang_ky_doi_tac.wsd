@@ -10,7 +10,6 @@ boundary ":RegisterPage" as UI
 control ":PartnerAuthController" as Ctrl
 entity ":PartnerAuthService" as AuthSvc
 entity ":RegistrationOtpService" as OtpSvc
-entity ":OtpEmailService" as MailSvc
 actor "Quản trị viên" as Admin
 boundary ":AdminPartnerPage" as AdminUI
 control ":AdminPartnerController" as AdminCtrl
@@ -42,10 +41,11 @@ activate Ctrl
 Ctrl -> AuthSvc: checkRegistrationAvailability({ email, identity_no, tax_code })
 Ctrl -> OtpSvc: requestRegistrationOtp(email)
 activate OtpSvc
-OtpSvc -> MailSvc: sendPartnerRegistrationOtp(email, code, expireMinutes)
-activate MailSvc
-MailSvc --> DT: receiveEmail(code)
-deactivate MailSvc
+note right of OtpSvc
+  Nội bộ gọi sendPartnerRegistrationOtp(email, code, expiresInMinutes)
+  để gửi mail OTP đến Đối tác
+end note
+OtpSvc --> DT: [Email] receiveEmail(code)
 OtpSvc --> Ctrl: return { challenge_id, expires_in, resend_after }
 deactivate OtpSvc
 Ctrl --> UI: return { challenge_id, expires_in, resend_after }
@@ -96,7 +96,7 @@ deactivate AdminCtrl
 
 alt Admin phê duyệt hồ sơ
     Admin -> AdminUI: clickApprove()
-    AdminUI -> AdminCtrl: approvePartner(partnerId, adminId)
+    AdminUI -> AdminCtrl: approvePartner(partnerId)
     activate AdminCtrl
     AdminCtrl -> AdminSvc: approvePartner(partnerId, adminId)
     activate AdminSvc
@@ -107,7 +107,7 @@ alt Admin phê duyệt hồ sơ
     AdminUI --> Admin: showToast("Phê duyệt thành công")
 else Admin từ chối hồ sơ
     Admin -> AdminUI: clickReject(reason)
-    AdminUI -> AdminCtrl: rejectPartner(partnerId, reason, adminId)
+    AdminUI -> AdminCtrl: rejectPartner(partnerId, reason)
     activate AdminCtrl
     AdminCtrl -> AdminSvc: rejectPartner(partnerId, reason, adminId)
     activate AdminSvc

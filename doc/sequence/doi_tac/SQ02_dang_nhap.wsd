@@ -20,12 +20,20 @@ alt Người dùng không tồn tại hoặc sai mật khẩu
     AuthSvc --> Ctrl: throw HttpError(401, "Email hoặc mật khẩu không đúng.")
     Ctrl --> UI: return error(401, "Email hoặc mật khẩu không đúng.")
     UI --> User: showErrorMessage("Email hoặc mật khẩu không đúng.")
-else role == 'PARTNER_EMPLOYEE' && (!user.branch_id || user.branch_status != 'ACTIVE')
+else role == 'PARTNER_EMPLOYEE' && !user.branch_id
+    AuthSvc --> Ctrl: throw HttpError(403, "Nhân viên chưa được gán vào chi nhánh nào.")
+    Ctrl --> UI: return error(403, message)
+    UI --> User: showErrorMessage(message)
+else role == 'PARTNER_EMPLOYEE' && user.branch_status != 'ACTIVE'
     AuthSvc --> Ctrl: throw HttpError(403, "Chi nhánh được phân công đã bị vô hiệu hóa.")
     Ctrl --> UI: return error(403, message)
     UI --> User: showErrorMessage(message)
-else user.approval_status == 'PENDING' || user.approval_status == 'REJECTED'
+else user.approval_status == 'PENDING'
     AuthSvc --> Ctrl: throw HttpError(403, "Tài khoản đang chờ được Admin phê duyệt.")
+    Ctrl --> UI: return error(403, message)
+    UI --> User: showErrorMessage(message)
+else user.approval_status == 'REJECTED'
+    AuthSvc --> Ctrl: throw HttpError(403, "Tài khoản đã bị từ chối. Vui lòng liên hệ hỗ trợ.")
     Ctrl --> UI: return error(403, message)
     UI --> User: showErrorMessage(message)
 else user.status == 'LOCKED' || user.activity_status == 'LOCKED'
