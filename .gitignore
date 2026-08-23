@@ -38,3 +38,4 @@ scratch/
 backend/scratch/
 frontend/scratch/
 *.scratch.*
+doc/testing/playwright/
