@@ -80,7 +80,7 @@ export default function OrderHistoryPage() {
     window.addEventListener("focus", handleRevalidate);
     document.addEventListener("visibilitychange", handleRevalidate);
 
-    // Tự động kiểm tra và capture nếu được PayPal hoặc Stripe redirect về
+    // Tự động kiểm tra và capture nếu được PayPal, Stripe hoặc ZaloPay redirect về
     if (typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
       const token = urlParams.get("token");
@@ -158,15 +158,14 @@ export default function OrderHistoryPage() {
             });
         }
       }
-      // 3. Xử lý khi ZaloPay redirect về (nhận diện qua apptransid, status, zalopay_redirect)
-      const appTransId = urlParams.get("apptransid") || pendingZaloPay?.appTransId || null;
-      const isZaloPayRedirect =
+      // 3. Xử lý khi ZaloPay redirect về (CHỈ kích hoạt khi thực sự có tham số redirect từ cổng ZaloPay trong URL)
+      else if (
         urlParams.get("zalopay_redirect") === "true" ||
-        Boolean(appTransId) ||
-        (urlParams.has("status") && urlParams.has("checksum")) ||
-        Boolean(pendingZaloPay);
-
-      if (isZaloPayRedirect) {
+        urlParams.has("apptransid") ||
+        (urlParams.has("status") && urlParams.has("checksum"))
+      ) {
+        const urlAppTransId = urlParams.get("apptransid");
+        const appTransId = urlAppTransId || pendingZaloPay?.appTransId || null;
         const zaloStatus = urlParams.get("status");
         const zaloAmount = urlParams.get("amount");
         const zaloChecksum = urlParams.get("checksum");
@@ -201,7 +200,6 @@ export default function OrderHistoryPage() {
                 checksum: zaloChecksum,
               })
               .then(() => {
-                window.localStorage.removeItem("pending_zalopay_payment");
                 setPaypalCaptureStatus({
                   status: "success",
                   message: `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
@@ -215,15 +213,24 @@ export default function OrderHistoryPage() {
                   message: err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.",
                 });
                 loadOrders();
+              })
+              .finally(() => {
+                window.localStorage.removeItem("pending_zalopay_payment");
               });
           } else {
+            window.localStorage.removeItem("pending_zalopay_payment");
             setPaypalCaptureStatus({
               status: "error",
               message: `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`,
             });
             loadOrders();
           }
+        } else {
+          window.localStorage.removeItem("pending_zalopay_payment");
         }
+      } else {
+        // Dọn dẹp an toàn các pending storage cũ nếu vào trang bình thường
+        window.localStorage.removeItem("pending_zalopay_payment");
       }
     }
 
@@ -294,6 +301,70 @@ export default function OrderHistoryPage() {
       isFailedOrExpired,
       remainingSecs,
       formattedRemaining,
+    };
+  };
+
+  // Helper chuẩn hóa thông tin và nhãn hiển thị theo từng phương thức thanh toán
+  const getPaymentMethodInfo = (method?: string) => {
+    const m = (method || "").toUpperCase();
+    if (m.includes("PAYPAL")) {
+      return {
+        code: "PAYPAL",
+        name: "PayPal",
+        fullName: "Ví điện tử PayPal",
+        pendingLabel: "Chờ thanh toán PayPal",
+        stampLabel: "CHỜ THANH TOÁN PAYPAL",
+        actionLabel: "Tiếp tục thanh toán PayPal",
+      };
+    }
+    if (m.includes("ZALO") || m.includes("ZALOPAY")) {
+      return {
+        code: "ZALOPAY",
+        name: "ZaloPay",
+        fullName: "Ví điện tử ZaloPay",
+        pendingLabel: "Chờ thanh toán ZaloPay",
+        stampLabel: "CHỜ THANH TOÁN ZALOPAY",
+        actionLabel: "Tiếp tục thanh toán ZaloPay",
+      };
+    }
+    if (m.includes("STRIPE") || m.includes("CARD") || m.includes("VISA") || m.includes("MASTER") || m.includes("CREDIT")) {
+      return {
+        code: "STRIPE",
+        name: "Thẻ quốc tế (Stripe)",
+        fullName: "Thẻ Visa / Mastercard (Stripe)",
+        pendingLabel: "Chờ thanh toán thẻ Stripe",
+        stampLabel: "CHỜ THANH TOÁN STRIPE",
+        actionLabel: "Tiếp tục thanh toán qua Stripe",
+      };
+    }
+    if (m.includes("TRANSFER") || m.includes("BANK") || m.includes("CHUYỂN")) {
+      return {
+        code: "BANK_TRANSFER",
+        name: "Chuyển khoản QR",
+        fullName: "Chuyển khoản ngân hàng (VietQR)",
+        pendingLabel: "Chờ chuyển khoản ngân hàng",
+        stampLabel: "CHỜ CHUYỂN KHOẢN",
+        actionLabel: "Xem mã QR chuyển khoản",
+      };
+    }
+    if (m.includes("CASH") || m.includes("TIỀN MẶT")) {
+      return {
+        code: "CASH",
+        name: "Tiền mặt",
+        fullName: "Thanh toán tiền mặt",
+        pendingLabel: "Chờ thanh toán tiền mặt",
+        stampLabel: "CHỜ THU TIỀN",
+        actionLabel: "Xem thông tin đơn hàng",
+      };
+    }
+    // Mặc định là VNPay
+    return {
+      code: "VNPAY",
+      name: "VNPay",
+      fullName: "Cổng thanh toán VNPay",
+      pendingLabel: "Chờ thanh toán VNPay",
+      stampLabel: "CHỜ THANH TOÁN VNPAY",
+      actionLabel: "Tiếp tục thanh toán VNPay",
     };
   };
 
@@ -531,6 +602,7 @@ export default function OrderHistoryPage() {
             const isExpanded = expandedOrderId === order.order_id;
             const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
             const state = getOrderState(order);
+            const methodInfo = getPaymentMethodInfo(order.payment_method);
 
             return (
               <div
@@ -572,7 +644,7 @@ export default function OrderHistoryPage() {
                         ) : state.isPendingActive ? (
                           <span className="bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1 border border-amber-300/40">
                             <Clock className="w-3.5 h-3.5 animate-pulse" />
-                            Chờ thanh toán (Còn {state.formattedRemaining})
+                            {methodInfo.pendingLabel} (Còn {state.formattedRemaining})
                           </span>
                         ) : (
                           <span className="bg-error-container text-on-error-container px-3 py-1 rounded-full font-label-sm text-label-sm font-bold inline-flex items-center gap-1">
@@ -597,7 +669,7 @@ export default function OrderHistoryPage() {
                         className="px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex items-center gap-2 cursor-pointer shadow-sm"
                       >
                         <QrCode className="w-4 h-4" />
-                        <span>Tiếp tục thanh toán</span>
+                        <span>{methodInfo.actionLabel}</span>
                       </button>
                     )}
 
@@ -659,7 +731,7 @@ export default function OrderHistoryPage() {
                             : state.isPaid
                             ? "ĐÃ THANH TOÁN"
                             : state.isPendingActive
-                            ? "CHỜ THANH TOÁN"
+                            ? methodInfo.stampLabel
                             : "THANH TOÁN THẤT BÀI"}
                         </div>
 
@@ -677,7 +749,7 @@ export default function OrderHistoryPage() {
                             <p className="text-xs text-text-muted font-bold">PHƯƠNG THỨC THANH TOÁN</p>
                             <p className="font-semibold text-on-surface flex items-center gap-1 mt-0.5">
                               <CreditCard className="w-4 h-4 text-primary" />
-                              {order.payment_method || "VNPay"}
+                              {methodInfo.fullName}
                             </p>
                           </div>
                           <div>
@@ -718,7 +790,7 @@ export default function OrderHistoryPage() {
                             className="bg-primary text-on-primary px-5 py-2.5 rounded-lg font-label-md text-label-md font-bold hover:opacity-95 transition-all shadow-sm inline-flex items-center gap-2 cursor-pointer"
                           >
                             <QrCode className="w-4 h-4" />
-                            Tiếp tục quét mã thanh toán
+                            {methodInfo.actionLabel}
                           </button>
                         )}
                       </div>
