@@ -10,7 +10,7 @@ import { seedPendingApprovals } from './seed-pending-approvals.js';
 // Mật khẩu mặc định: 12345876
 const DEFAULT_HASH = '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW';
 
-async function seedTransactions() {
+export async function seedTransactions() {
   console.log('🚀 Bắt đầu khởi tạo dữ liệu giao dịch mẫu cho Dashboard...');
 
   // 1. Lấy danh sách Partner, Branch và Voucher Program thực tế hiện có trong DB
@@ -288,11 +288,18 @@ async function seedTransactions() {
   `);
 
   console.log('🎉 Hoàn thành nạp dữ liệu giao dịch mẫu thành công!');
-  await seedPendingApprovals();
-  await pool.end();
 }
 
-seedTransactions().catch((err) => {
-  console.error('Lỗi seed transactions:', err);
-  process.exit(1);
-});
+// Cho phép chạy trực tiếp từ CLI
+if (process.argv[1]?.includes('seed-dashboard-transactions')) {
+  seedTransactions()
+    .then(async () => {
+      await seedPendingApprovals();
+      await pool.end();
+      process.exit(0);
+    })
+    .catch((err) => {
+      console.error('Lỗi seed transactions:', err);
+      process.exit(1);
+    });
+}
