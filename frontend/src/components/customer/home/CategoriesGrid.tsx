@@ -131,30 +131,13 @@ export default function CategoriesGrid() {
               <button
                 key={cat.category_id || index}
                 onClick={() => handleCategorySearch(cat.category_name)}
-                className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer text-left w-full h-56 flex flex-col justify-end p-6 border border-outline-variant/30 hover:-translate-y-1 bg-surface-container"
+                className="group relative rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer text-left w-full h-auto p-5 border border-outline-variant hover:border-primary bg-surface"
               >
-                {/* Background image & gradient overlay */}
-                {meta.image && (
-                  <>
-                    <div
-                      className="absolute inset-0 bg-cover bg-center group-hover:scale-110 transition-transform duration-700"
-                      style={{ backgroundImage: `url('${meta.image}')` }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                  </>
-                )}
-
-                {/* Content */}
-                <div className="relative z-10">
-                  <div
-                    className={`${meta.bgClass} ${meta.iconClass} p-3 rounded-xl inline-flex mb-3 backdrop-blur-md shadow-sm group-hover:scale-110 transition-transform`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <h3 className="font-title-md text-title-md text-white font-bold mb-1 line-clamp-1">
+                <div className="relative z-10 flex flex-col justify-center h-full">
+                  <h3 className="font-title-md text-title-md text-on-surface font-bold mb-1 group-hover:text-primary transition-colors line-clamp-2">
                     {cat.category_name}
                   </h3>
-                  <p className="font-label-sm text-xs text-white/70 line-clamp-1">
+                  <p className="font-label-sm text-xs text-on-surface-variant line-clamp-1">
                     {countText}
                   </p>
                 </div>

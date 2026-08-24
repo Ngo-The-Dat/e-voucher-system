@@ -5,7 +5,7 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { Search, ShoppingCart, Bell, Menu, X, LogIn, UserPlus, LogOut, User, Ticket, Utensils, Plane, Monitor, Sparkles, Gamepad2, ShoppingBag, ChevronDown, List, KeyRound, UserCircle } from "lucide-react";
-import { customerAuthApi, CustomerUser } from "@/lib/customer-api";
+import { customerAuthApi, CustomerUser, customerCatalogApi } from "@/lib/customer-api";
 import RegisterTypeModal from "@/components/customer/auth/RegisterTypeModal";
 
 export default function Header() {
@@ -99,6 +99,36 @@ export default function Header() {
     };
   }, []);
 
+  const [categories, setCategories] = useState<{ id: number; name: string; icon: any }[]>([]);
+  
+  useEffect(() => {
+    let isMounted = true;
+    const fetchCategories = async () => {
+      try {
+        const data = await customerCatalogApi.getCategories();
+        if (isMounted && data && data.categories) {
+          const mapped = data.categories.map((cat: any) => {
+            let Icon = Sparkles;
+            const nameLower = cat.category_name ? cat.category_name.toLowerCase() : "";
+            if (nameLower.includes('ẩm thực') || nameLower.includes('buffet') || nameLower.includes('chay')) Icon = Utensils;
+            else if (nameLower.includes('du lịch') || nameLower.includes('khách sạn') || nameLower.includes('tour')) Icon = Plane;
+            else if (nameLower.includes('spa') || nameLower.includes('làm đẹp') || nameLower.includes('nha khoa') || nameLower.includes('nail')) Icon = Sparkles;
+            else if (nameLower.includes('giải trí') || nameLower.includes('vui chơi')) Icon = Gamepad2;
+            else if (nameLower.includes('điện tử')) Icon = Monitor;
+            else if (nameLower.includes('mua sắm')) Icon = ShoppingBag;
+            else if (nameLower.includes('khóa học') || nameLower.includes('đào tạo')) Icon = Monitor; // Using Monitor as fallback for courses
+            return { id: cat.category_id, name: cat.category_name, icon: Icon };
+          });
+          setCategories(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      }
+    };
+    fetchCategories();
+    return () => { isMounted = false; };
+  }, []);
+
   // Sync state on navigation
   useEffect(() => {
     checkAuth();
@@ -120,16 +150,6 @@ export default function Header() {
   };
 
   const cartItemsCount = cart.length;
-
-  const categories = [
-    { name: "Điện tử", icon: Monitor },
-    { name: "Ẩm thực", icon: Utensils },
-    { name: "Du lịch", icon: Plane },
-    { name: "Làm đẹp", icon: Sparkles },
-    { name: "Giải trí", icon: Gamepad2 },
-    { name: "Mua sắm", icon: ShoppingBag }
-  ];
-
   return (
     <header className="top-0 sticky z-50 w-full flex flex-col shadow-sm transition-all">
       {/* Top tier (Deep Blue Background) */}
@@ -296,16 +316,17 @@ export default function Header() {
               
               {/* Dropdown Menu */}
               <div className={`absolute top-full left-0 w-64 bg-white shadow-xl rounded-b-xl border border-gray-100 py-2 transition-all duration-200 origin-top-left ${isCategoryOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
-                {categories.map((cat) => (
+                {categories.length > 0 ? categories.map((cat) => (
                   <button
-                    key={cat.name}
+                    key={cat.id}
                     onClick={() => handleCategoryClick(cat.name)}
                     className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 hover:text-[#0f2c59] transition-colors cursor-pointer"
                   >
-                    <cat.icon className="w-5 h-5 text-gray-400" />
-                    <span className="font-medium text-body-md">{cat.name}</span>
+                    <span className="font-medium text-body-md truncate">{cat.name}</span>
                   </button>
-                ))}
+                )) : (
+                   <div className="px-4 py-3 text-sm text-gray-500">Đang tải...</div>
+                )}
               </div>
             </div>
 
@@ -461,15 +482,14 @@ export default function Header() {
             <div className="grid grid-cols-2 gap-2">
               {categories.map((cat) => (
                 <button
-                  key={cat.name}
+                  key={cat.id}
                   onClick={() => {
                     handleCategoryClick(cat.name);
                     setMobileMenuOpen(false);
                   }}
                   className="flex items-center gap-2 py-2.5 px-3 text-left text-label-sm border border-gray-100 rounded-lg bg-gray-50 hover:bg-[#0f2c59]/5 hover:text-[#0f2c59] hover:border-[#0f2c59]/20 transition-colors cursor-pointer"
                 >
-                  <cat.icon className="w-4 h-4 text-gray-500" />
-                  <span>{cat.name}</span>
+                  <span className="truncate">{cat.name}</span>
                 </button>
               ))}
             </div>

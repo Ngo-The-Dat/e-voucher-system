@@ -338,6 +338,7 @@ export default function PaymentSimulatorModal({
       const res = await customerOrderApi.payOrder(order.orderId, order.paymentMethod);
 
       if (res && res.success) {
+        window.localStorage.removeItem("pending_zalopay_payment");
         setIsSuccess(true);
         if (onPaymentSuccess) {
           onPaymentSuccess(res.order?.vouchers || []);
@@ -354,6 +355,7 @@ export default function PaymentSimulatorModal({
   };
 
   const handlePayLater = () => {
+    window.localStorage.removeItem("pending_zalopay_payment");
     onClose();
     router.push("/orders");
   };
