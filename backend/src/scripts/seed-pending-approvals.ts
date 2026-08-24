@@ -136,6 +136,120 @@ export async function seedPendingApprovals() {
         region: 'Miền Nam',
         phone: '02873022226'
       }
+    },
+    {
+      fullName: 'Nguyễn Thành Đạt',
+      email: 'partner.lotteria@demo.vn',
+      phone: '0901234007',
+      identityNo: '079090001007',
+      businessName: 'Công ty TNHH Lotteria Việt Nam',
+      taxCode: '0304892111',
+      licenseNo: '0304892111',
+      licenseDate: '2015-04-10',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP.HCM',
+      repTitle: 'Giám đốc Vận hành Chuỗi',
+      logo: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400',
+      branch: {
+        name: 'Lotteria - Chi nhánh Lê Duẩn',
+        address: '34 Lê Duẩn, Bến Nghé, Quận 1, TP.HCM',
+        region: 'Miền Nam',
+        phone: '19006778'
+      }
+    },
+    {
+      fullName: 'Phan Thị Mai',
+      email: 'partner.marukame@demo.vn',
+      phone: '0901234008',
+      identityNo: '079090001008',
+      businessName: 'Công ty TNHH Udon Marukame Việt Nam',
+      taxCode: '0312445889',
+      licenseNo: '0312445889',
+      licenseDate: '2017-06-20',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP.HCM',
+      repTitle: 'Bếp trưởng & Quản lý',
+      logo: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400',
+      branch: {
+        name: 'Marukame Udon - Chi nhánh Bến Thành',
+        address: '215 Lý Tự Trọng, Bến Thành, Quận 1, TP.HCM',
+        region: 'Miền Nam',
+        phone: '02862700888'
+      }
+    },
+    {
+      fullName: 'Vũ Đức Thịnh',
+      email: 'partner.starbucks@demo.vn',
+      phone: '0901234009',
+      identityNo: '079090001009',
+      businessName: 'Công ty TNHH Thực phẩm Ý Tưởng Việt (Starbucks)',
+      taxCode: '0311902888',
+      licenseNo: '0311902888',
+      licenseDate: '2018-09-15',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP.HCM',
+      repTitle: 'Trưởng phòng Phát triển Đối tác',
+      logo: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=400',
+      branch: {
+        name: 'Starbucks Coffee - New World Hotel',
+        address: '76 Lê Lai, Phường Bến Thành, Quận 1, TP.HCM',
+        region: 'Miền Nam',
+        phone: '02838237999'
+      }
+    },
+    {
+      fullName: 'Trần Văn Cường',
+      email: 'partner.elitefitness@demo.vn',
+      phone: '0901234010',
+      identityNo: '079090001010',
+      businessName: 'Công ty Cổ phần Elite Active Fitness & Spa',
+      taxCode: '0104112233',
+      licenseNo: '0104112233',
+      licenseDate: '2019-12-05',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP. Hà Nội',
+      repTitle: 'Tổng Giám đốc Điều hành',
+      logo: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=400',
+      branch: {
+        name: 'Elite Fitness - Vincom Bà Triệu',
+        address: 'Tầng 6, Tháp C, Vincom Center, 191 Bà Triệu, Hà Nội',
+        region: 'Miền Bắc',
+        phone: '02473066668'
+      }
+    },
+    {
+      fullName: 'Lê Thị Bích Liên',
+      email: 'partner.jwmarriott@demo.vn',
+      phone: '0901234011',
+      identityNo: '079090001011',
+      businessName: 'Khách sạn 5 Sao JW Marriott & Resort',
+      taxCode: '0102998877',
+      licenseNo: '0102998877',
+      licenseDate: '2014-08-22',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP. Hà Nội',
+      repTitle: 'Giám đốc Ẩm thực & Dịch vụ F&B',
+      logo: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
+      branch: {
+        name: 'JW Marriott Hotel Hanoi',
+        address: 'Số 8 Đỗ Đức Dục, Mễ Trì, Nam Từ Liêm, Hà Nội',
+        region: 'Miền Bắc',
+        phone: '02438335588'
+      }
+    },
+    {
+      fullName: 'Đinh Quang Minh',
+      email: 'partner.sunworld@demo.vn',
+      phone: '0901234012',
+      identityNo: '079090001012',
+      businessName: 'Tập đoàn Sun World Du Lịch & Giải Trí',
+      taxCode: '0401889922',
+      licenseNo: '0401889922',
+      licenseDate: '2016-11-30',
+      licensePlace: 'Sở Kế hoạch & Đầu tư TP. Đà Nẵng',
+      repTitle: 'Phó Tổng Giám đốc Vận hành',
+      logo: 'https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?w=400',
+      branch: {
+        name: 'Sun World Ba Na Hills Đà Nẵng',
+        address: 'Thôn An Sơn, Xã Hòa Ninh, Huyện Hòa Vang, Đà Nẵng',
+        region: 'Miền Trung',
+        phone: '0905766777'
+      }
     }
   ];
 
@@ -200,10 +314,10 @@ export async function seedPendingApprovals() {
   console.log(`✅ Đã tạo thành công ${pendingPartnersData.length} đối tác chờ duyệt (PENDING).`);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 2. TẠO 6 NHÂN VIÊN ĐỐI TÁC CHỜ DUYỆT (PENDING PARTNER EMPLOYEES)
+  // 2. TẠO 12 NHÂN VIÊN ĐỐI TÁC CHỜ DUYỆT (PENDING PARTNER EMPLOYEES)
   // ─────────────────────────────────────────────────────────────────────────────
   // Lấy các chi nhánh thực tế từ DB để liên kết nhân viên
-  const allBranchesRes = await pool.query(`SELECT branch_id, partner_id FROM branches ORDER BY branch_id ASC LIMIT 10`);
+  const allBranchesRes = await pool.query(`SELECT branch_id, partner_id FROM branches ORDER BY branch_id ASC LIMIT 20`);
   const availableBranches = allBranchesRes.rows;
 
   const pendingEmployeesData = [
@@ -254,6 +368,54 @@ export async function seedPendingApprovals() {
       identityNo: '079198001239',
       gender: 'MALE',
       branchIndex: 5
+    },
+    {
+      fullName: 'Nguyễn Thành Đạt',
+      email: 'emp.dat.nguyen@partner.vn',
+      phone: '0987111007',
+      identityNo: '079198001240',
+      gender: 'MALE',
+      branchIndex: 6
+    },
+    {
+      fullName: 'Phan Thị Mai',
+      email: 'emp.mai.phan@partner.vn',
+      phone: '0987111008',
+      identityNo: '079198001241',
+      gender: 'FEMALE',
+      branchIndex: 7
+    },
+    {
+      fullName: 'Vũ Đức Thịnh',
+      email: 'emp.thinh.vu@partner.vn',
+      phone: '0987111009',
+      identityNo: '079198001242',
+      gender: 'MALE',
+      branchIndex: 8
+    },
+    {
+      fullName: 'Trần Văn Cường',
+      email: 'emp.cuong.tran@partner.vn',
+      phone: '0987111010',
+      identityNo: '079198001243',
+      gender: 'MALE',
+      branchIndex: 9
+    },
+    {
+      fullName: 'Lê Thị Bích Liên',
+      email: 'emp.lien.le@partner.vn',
+      phone: '0987111011',
+      identityNo: '079198001244',
+      gender: 'FEMALE',
+      branchIndex: 10
+    },
+    {
+      fullName: 'Đinh Quang Minh',
+      email: 'emp.minh.dinh@partner.vn',
+      phone: '0987111012',
+      identityNo: '079198001245',
+      gender: 'MALE',
+      branchIndex: 11
     }
   ];
 
@@ -300,7 +462,7 @@ export async function seedPendingApprovals() {
   console.log(`✅ Đã tạo thành công ${pendingEmployeesData.length} nhân viên đối tác chờ duyệt (PENDING).`);
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // 3. TẠO 6 VOUCHER PROGRAMS CHỜ DUYỆT (PENDING VOUCHERS)
+  // 3. TẠO 12 VOUCHER PROGRAMS CHỜ DUYỆT (PENDING VOUCHERS)
   // ─────────────────────────────────────────────────────────────────────────────
   // Lấy danh sách đối tác đang ACTIVE để gán voucher chờ duyệt
   const activePartnersRes = await pool.query(`
@@ -366,6 +528,60 @@ export async function seedPendingApprovals() {
       quantity: 1000,
       image: 'https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?w=800',
       description: 'Trọn gói vé vào cổng và không giới hạn tất cả các trò chơi cảm giác mạnh, vịnh trượt nước kỳ thú tại thiên đường giải trí VinWonders.'
+    },
+    {
+      name: 'Lotteria - Combo Gà Rán Giòn Cay & Burger Tôm Kèm Nước Ngọt',
+      categoryId: 1, // Ẩm thực & Nhà hàng
+      originalPrice: 150000,
+      salePrice: 99000,
+      quantity: 300,
+      image: 'https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=800',
+      description: 'Combo bữa ăn tiện lợi ngon miệng gồm gà rán sốt cay đặc trưng, burger tôm tươi giòn và nước giải khát Pepsi mát lạnh.'
+    },
+    {
+      name: 'Marukame Udon - Thưởng Thức Tô Mỳ Udon Thịt Bò Trứng Lòng Đào',
+      categoryId: 1, // Ẩm thực & Nhà hàng
+      originalPrice: 120000,
+      salePrice: 79000,
+      quantity: 250,
+      image: 'https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=800',
+      description: 'Mỳ Udon tươi nhào nặn tại chỗ kết hợp thịt bò Mỹ hầm mềm, nước dùng dashi thanh ngọt và trứng onsen béo ngậy chuẩn Nhật.'
+    },
+    {
+      name: 'Starbucks Coffee - E-Voucher Thưởng Thức Trà & Cà Phê Mùa Lễ Hội 150K',
+      categoryId: 1, // Ẩm thực & Nhà hàng
+      originalPrice: 150000,
+      salePrice: 119000,
+      quantity: 400,
+      image: 'https://images.unsplash.com/photo-1509042239860-f550ce710b93?w=800',
+      description: 'Phiếu quà tặng điện tử áp dụng cho toàn bộ đồ uống đá xay Frappuccino, cold brew và bánh ngọt đặc trưng tại Starbucks.'
+    },
+    {
+      name: 'Elite Fitness - Thẻ Hội Viên VIP 1 Tháng Trọn Gói Phòng Gym & Hồ Bơi',
+      categoryId: 11, // Thể thao & Gym / Yoga
+      originalPrice: 2200000,
+      salePrice: 890000,
+      quantity: 100,
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800',
+      description: 'Tận hưởng tiện ích phòng gym 5 sao, hồ bơi bốn mùa, lớp nhảy Zumba, Boxing và phòng xông hơi ướt hiện đại.'
+    },
+    {
+      name: 'JW Marriott Hotel - Tiệc Trà Chiều Sang Trọng Chuẩn Phong Cách Quý Tộc',
+      categoryId: 1, // Ẩm thực & Nhà hàng
+      originalPrice: 850000,
+      salePrice: 550000,
+      quantity: 120,
+      image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800',
+      description: 'Set trà chiều quý tộc gồm các loại bánh canape mặn, bánh ngọt Pháp, scone kèm mứt dâu tây thượng hạng tại The Lounge.'
+    },
+    {
+      name: 'Sun World Ba Na Hills - Vé Cáp Treo & Khám Phá Cầu Vàng Đà Nẵng',
+      categoryId: 10, // Khu Vui Chơi & Giải Trí
+      originalPrice: 900000,
+      salePrice: 650000,
+      quantity: 500,
+      image: 'https://images.unsplash.com/photo-1513889961551-628c1e5e2ee9?w=800',
+      description: 'Vé cáp treo khứ hồi đạt nhiều kỷ lục thế giới, tự do chiêm ngưỡng Cầu Vàng, Làng Pháp và tham gia 105 trò chơi tại Fantasy Park.'
     }
   ];
 
@@ -430,6 +646,149 @@ export async function seedPendingApprovals() {
     );
   }
   console.log(`✅ Đã tạo thành công ${pendingVouchersData.length} chương trình voucher chờ duyệt (PENDING_APPROVAL).`);
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // 4. TẠO MỚI ĐỐI TÁC VÀ VOUCHER VỚI CÁC TRẠNG THÁI KHÁC NHAU (LOCKED, INACTIVE, HIDDEN, OUT_OF_STOCK, EXPIRED)
+  // ─────────────────────────────────────────────────────────────────────────────
+  console.log('🚀 Bổ sung thêm các đối tác & voucher mới có trạng thái LOCKED, INACTIVE, HIDDEN, OUT_OF_STOCK, EXPIRED...');
+
+  // 4.1 Tạo 2 đối tác mới (1 LOCKED, 1 INACTIVE)
+  const extraPartners = [
+    {
+      fullName: 'Vũ Quốc Khóa',
+      email: 'partner_locked_demo@voucher.vn',
+      phone: '0909999001',
+      identityNo: '079099001001',
+      businessName: 'Công ty TNHH Dịch vụ Thương mại Khóa Mẫu',
+      taxCode: '0319999001',
+      activityStatus: 'LOCKED',
+      userStatus: 'LOCKED',
+      branchName: 'Chi nhánh Khóa Mẫu - Quận 1',
+      branchAddress: '123 Nguyễn Thị Minh Khai, Phường Bến Thành, Quận 1, TP.HCM'
+    },
+    {
+      fullName: 'Hoàng Văn Ngưng',
+      email: 'partner_inactive_demo@voucher.vn',
+      phone: '0909999002',
+      identityNo: '079099001002',
+      businessName: 'Công ty Cổ phần Giải pháp Tạm Ngưng Mẫu',
+      taxCode: '0319999002',
+      activityStatus: 'INACTIVE',
+      userStatus: 'ACTIVE',
+      branchName: 'Chi nhánh Tạm Ngưng Mẫu - Cầu Giấy',
+      branchAddress: '456 Cầu Giấy, Phường Quan Hoa, Quận Cầu Giấy, Hà Nội'
+    }
+  ];
+
+  const createdExtraPartnerIds: number[] = [];
+
+  for (const ep of extraPartners) {
+    let epUserId: number;
+    const existing = await pool.query('SELECT user_id FROM users WHERE email = $1', [ep.email]);
+    if (existing.rows.length > 0) {
+      epUserId = Number(existing.rows[0].user_id);
+    } else {
+      const res = await pool.query(
+        `INSERT INTO users (full_name, email, phone, password_hash, role, status, gender, nationality, identity_no, created_at)
+         VALUES ($1, $2, $3, $4, 'PARTNER', $5, 'OTHER', 'Việt Nam', $6, $7)
+         RETURNING user_id`,
+        [ep.fullName, ep.email, ep.phone, DEFAULT_HASH, ep.userStatus, ep.identityNo, formatSqlDate(now)]
+      );
+      epUserId = Number(res.rows[0].user_id);
+    }
+    createdExtraPartnerIds.push(epUserId);
+
+    await pool.query(
+      `INSERT INTO partners (user_id, business_name, tax_code, activity_status, registered_at, business_license_no, license_issue_date, license_issue_place, representative_title, brand_logo)
+       VALUES ($1, $2, $3, $4, $5, $6, '2020-01-01', 'Sở Kế hoạch & Đầu tư', 'Giám đốc', 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=400')
+       ON CONFLICT (user_id) DO UPDATE SET
+         activity_status = EXCLUDED.activity_status,
+         business_name = EXCLUDED.business_name`,
+      [epUserId, ep.businessName, ep.taxCode, ep.activityStatus, formatSqlDate(now), ep.taxCode]
+    );
+
+    await pool.query(
+      `INSERT INTO branches (partner_id, branch_name, address, region, phone, status)
+       VALUES ($1, $2, $3, 'Miền Nam', $4, 'ACTIVE')
+       RETURNING branch_id`,
+      [epUserId, ep.branchName, ep.branchAddress, ep.phone]
+    );
+
+    // Đảm bảo có partner_approval_requests trạng thái APPROVED để xuất hiện trong Managed Partners
+    await pool.query('DELETE FROM partner_approval_requests WHERE partner_id = $1', [epUserId]);
+    await pool.query(
+      `INSERT INTO partner_approval_requests (partner_id, submitted_at, reviewed_at, approval_status, admin_id)
+       VALUES ($1, $2, $2, 'APPROVED', 1)`,
+      [epUserId, formatSqlDate(now)]
+    );
+  }
+
+  // 4.2 Tạo các voucher mới với trạng thái HIDDEN, DRAFT, ENDED
+  const extraVouchers = [
+    {
+      name: 'Voucher Trải Nghiệm Thử Nghiệm Mẫu (Trạng thái Ẩn)',
+      categoryId: 1,
+      originalPrice: 200000,
+      salePrice: 150000,
+      quantity: 100,
+      status: 'HIDDEN',
+      saleStart: formatSqlDate(now),
+      saleEnd: formatSqlDate(addDays(now, 30)),
+      useStart: formatSqlDate(now),
+      useEnd: formatSqlDate(addDays(now, 60))
+    },
+    {
+      name: 'Voucher Bản Nháp Đang Soạn Mẫu (Trạng thái Bản nháp)',
+      categoryId: 2,
+      originalPrice: 300000,
+      salePrice: 199000,
+      quantity: 50,
+      status: 'DRAFT',
+      saleStart: formatSqlDate(now),
+      saleEnd: formatSqlDate(addDays(now, 30)),
+      useStart: formatSqlDate(now),
+      useEnd: formatSqlDate(addDays(now, 60))
+    },
+    {
+      name: 'Voucher Khuyến Mãi Năm Trước Mẫu (Trạng thái Đã kết thúc / Hết hạn)',
+      categoryId: 1,
+      originalPrice: 500000,
+      salePrice: 250000,
+      quantity: 50,
+      status: 'ENDED',
+      saleStart: '2025-01-01 00:00:00',
+      saleEnd: '2025-06-01 00:00:00',
+      useStart: '2025-01-01 00:00:00',
+      useEnd: '2025-07-01 00:00:00'
+    }
+  ];
+
+  const firstPartnerId = activePartners[0] ? Number(activePartners[0].partner_id) : createdExtraPartnerIds[0];
+  const firstBranchId = activePartners[0] ? Number(activePartners[0].branch_id) : 1;
+
+  for (const ev of extraVouchers) {
+    const progRes = await pool.query(
+      `INSERT INTO voucher_programs (partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING program_id`,
+      [firstPartnerId, ev.categoryId, ev.name, ev.originalPrice, ev.salePrice, ev.quantity, ev.saleStart, ev.saleEnd, ev.useStart, ev.useEnd, ev.status]
+    );
+    const progId = Number(progRes.rows[0].program_id);
+
+    await pool.query(
+      `INSERT INTO voucher_program_branches (program_id, branch_id)
+       VALUES ($1, $2)
+       ON CONFLICT (program_id, branch_id) DO NOTHING`,
+      [progId, firstBranchId]
+    );
+
+    await pool.query(
+      `INSERT INTO contents (program_id, content_type, title, body, status)
+       VALUES ($1, 'ARTICLE', $2, 'Nội dung mô tả voucher mẫu kiểm thử trạng thái.', 'ACTIVE')`,
+      [progId, ev.name]
+    );
+  }
+  console.log(`✅ Đã tạo thành công ${extraPartners.length} đối tác mới và ${extraVouchers.length} voucher mới với đa dạng trạng thái.`);
 
   // Cập nhật reset sequences
   await pool.query(`

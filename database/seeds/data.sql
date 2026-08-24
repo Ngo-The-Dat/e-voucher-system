@@ -18,10 +18,16 @@ TRUNCATE TABLE system_logs, contents, popups, banners, order_cancellations,
 --    Pass: 12345876
 -- =========================================================================
 
--- 1. Insert core system users (Admin + Customer)
+-- 1. Insert core system users (Admin + Customer + Locked Accounts for testing)
 INSERT INTO users (user_id, full_name, email, phone, password_hash, role, gender, identity_no, nationality, status, created_at) VALUES
 (1, 'Ngô Thế Đạt', 'admin@voucher.vn', '0901000001', '$2b$10$JITaepX2GQH3.6T2KhDIiuh4OcJulzeW80vyNF4jfdjV3JpJ5prNq', 'ADMIN', 'MALE', '001090000001', 'Việt Nam', 'ACTIVE', '2026-01-01 08:00:00'),
-(2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00');
+(2, 'Trần Thị Thu Hà', 'thuha@gmail.com', '0904000004', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'FEMALE', '001195000002', 'Việt Nam', 'ACTIVE', '2026-01-01 08:30:00'),
+(991, 'Vũ Đình Khóa', 'locked_user@gmail.com', '0909000991', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'CUSTOMER', 'MALE', '001090000991', 'Việt Nam', 'LOCKED', '2026-01-10 09:00:00'),
+(992, 'Công ty TNHH Khóa Mẫu', 'locked_partner@demo.vn', '0909000992', '$2b$10$mhm5mMiiPXKJx8JrARS/wemVunACuQI2Ug6ezweTw2jB8Z2fQ92zW', 'PARTNER', 'MALE', '001090000992', 'Việt Nam', 'LOCKED', '2026-01-10 10:00:00');
+
+INSERT INTO user_locks (user_id, reason) VALUES
+(991, 'Vi phạm chính sách thanh toán voucher nhiều lần.'),
+(992, 'Tạm khóa để kiểm tra đối soát công nợ chi nhánh.');
 
 -- 2. Insert standard categories (12 rich categories)
 INSERT INTO categories (category_id, category_name, description, status) VALUES
