@@ -1,0 +1,164 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+skinparam defaultFontName "Segoe UI"
+skinparam roundCorner 10
+
+skinparam actor {
+  BackgroundColor #EDE7F6
+  BorderColor #5E35B1
+}
+
+skinparam usecase {
+  BackgroundColor #FFFFFF
+  BorderColor #455A64
+  ArrowColor #37474F
+}
+
+' =============================================================================
+' 1. TÁC NHÂN HỆ THỐNG (ACTORS)
+' =============================================================================
+actor "Khách hàng" as KH
+actor "Quản trị viên" as QTV
+actor "Đối tác" as DT
+actor "Nhân viên đối tác" as NVDT
+actor "User" as User
+
+KH --|> User
+QTV --|> User
+DT --|> User
+NVDT --|> User
+
+' =============================================================================
+' 2. MÀN HÌNH KHÁCH HÀNG
+' =============================================================================
+rectangle "Màn hình Khách hàng" #E1F5FE {
+  usecase "Đăng nhập" as UC_Login
+  usecase "Đăng ký tài khoản" as KH_UC01
+  usecase "Xác thực OTP" as KH_UC012
+  usecase "Quên mật khẩu" as KH_UC022
+  usecase "Đổi mật khẩu" as KH_UC023
+  usecase "Cập nhật hồ sơ cá nhân" as KH_UC024
+  usecase "Tìm kiếm voucher" as KH_UC03
+  usecase "Xem chi tiết voucher" as KH_UC04
+  usecase "Quản lý giỏ hàng" as KH_UC05
+  usecase "Tạo đơn hàng" as KH_UC06
+  usecase "Nhận voucher đã mua" as KH_UC07
+  usecase "Đánh giá và phản hồi" as KH_UC08
+}
+
+' =============================================================================
+' 3. MÀN HÌNH QUẢN TRỊ VIÊN
+' =============================================================================
+rectangle "Màn hình Quản trị viên" #FFF8E1 {
+  usecase "Tra cứu người dùng" as ADM_UC1
+  usecase "Khóa/Mở khóa tài khoản người dùng" as ADM_UC2
+  usecase "Phân quyền người dùng" as ADM_UC3
+  usecase "Duyệt hồ sơ đối tác" as ADM_UC4
+  usecase "Khóa/Mở khóa đối tác" as ADM_UC5
+  usecase "Quản lý chi nhánh đối tác" as ADM_UC6
+  usecase "Duyệt voucher" as ADM_UC7
+  usecase "Thay đổi trạng thái hiển thị voucher" as ADM_UC8
+  usecase "Tra cứu đơn hàng" as ADM_UC9
+  usecase "Hủy đơn hàng và hoàn tiền" as ADM_UC10
+  usecase "Quản lý nội dung hệ thống" as ADM_UC11
+  usecase "Xem dashboard quản trị" as ADM_UC12
+  usecase "Tra cứu nhật ký hệ thống" as ADM_UC13
+  usecase "Duyệt nhân viên đối tác" as ADM_UC14
+  usecase "Thay đổi thông tin hồ sơ cá nhân" as ADM_UC15
+  usecase "Đổi mật khẩu" as ADM_UC16
+
+  ADM_UC2 -[hidden]left- ADM_UC1
+  ADM_UC3 -[hidden]left- ADM_UC1
+  ADM_UC5 -[hidden]left- ADM_UC4
+  ADM_UC10 -[hidden]left- ADM_UC9
+  ADM_UC16 -[hidden]left- ADM_UC15
+}
+
+' =============================================================================
+' 4. MÀN HÌNH ĐỐI TÁC
+' =============================================================================
+rectangle "Màn hình Đối tác" #E8F5E9 {
+  usecase "Đăng ký tài khoản đối tác" as DT_UC01
+  usecase "Quản lý hồ sơ đối tác" as DT_UC02
+  usecase "Quản lý chi nhánh" as DT_UC03
+  usecase "Quản lý nhân viên đối tác" as DT_UC04
+  usecase "Quản lý hồ sơ cá nhân nhân viên" as DT_UC05
+  usecase "Tạo voucher mới" as DT_UC06
+  usecase "Quản lý voucher" as DT_UC07
+  usecase "Chỉnh sửa voucher" as DT_UC08
+  usecase "Gửi duyệt voucher" as DT_UC09
+  usecase "Kiểm tra voucher" as DT_UC10
+  usecase "Xác nhận sử dụng voucher" as DT_UC11
+  usecase "Xem báo cáo thống kê" as DT_UC12
+}
+
+' =============================================================================
+' 5. LIÊN KẾT TÁC NHÂN
+' =============================================================================
+User --> UC_Login
+KH --> KH_UC01
+DT --> DT_UC01
+
+' =============================================================================
+' 6. CÁC EXTEND TỪ ĐĂNG NHẬP SANG CÁC USE CASE MÀN HÌNH
+' =============================================================================
+' Nhánh sang Màn hình Khách hàng
+UC_Login ..> KH_UC022 : <<extend>>
+UC_Login ..> KH_UC023 : <<extend>>
+UC_Login ..> KH_UC024 : <<extend>>
+UC_Login ..> KH_UC03 : <<extend>>
+UC_Login ..> KH_UC04 : <<extend>>
+UC_Login ..> KH_UC05 : <<extend>>
+UC_Login ..> KH_UC06 : <<extend>>
+UC_Login ..> KH_UC07 : <<extend>>
+UC_Login ..> KH_UC08 : <<extend>>
+
+' Nhánh sang Màn hình Quản trị viên
+UC_Login ..> ADM_UC1 : <<extend>>
+UC_Login ..> ADM_UC4 : <<extend>>
+UC_Login ..> ADM_UC5 : <<extend>>
+UC_Login ..> ADM_UC6 : <<extend>>
+UC_Login ..> ADM_UC7 : <<extend>>
+UC_Login ..> ADM_UC8 : <<extend>>
+UC_Login ..> ADM_UC9 : <<extend>>
+UC_Login ..> ADM_UC11 : <<extend>>
+UC_Login ..> ADM_UC12 : <<extend>>
+UC_Login ..> ADM_UC13 : <<extend>>
+UC_Login ..> ADM_UC14 : <<extend>>
+UC_Login ..> ADM_UC15 : <<extend>>
+
+' Nhánh sang Màn hình Đối tác
+UC_Login ..> DT_UC02 : <<extend>>
+UC_Login ..> DT_UC03 : <<extend>>
+UC_Login ..> DT_UC04 : <<extend>>
+UC_Login ..> DT_UC05 : <<extend>>
+UC_Login ..> DT_UC06 : <<extend>>
+UC_Login ..> DT_UC07 : <<extend>>
+UC_Login ..> DT_UC10 : <<extend>>
+UC_Login ..> DT_UC11 : <<extend>>
+UC_Login ..> DT_UC12 : <<extend>>
+
+' =============================================================================
+' 7. QUAN HỆ NỘI BỘ (GIỮ NGUYÊN GỐC TỪ 3 FILE)
+' =============================================================================
+' Khách hàng
+KH_UC01 ..> KH_UC012 : <<include>>
+KH_UC022 ..> KH_UC012 : <<include>>
+
+' Quản trị viên
+ADM_UC2 ..> ADM_UC1 : <<extend>>
+ADM_UC3 ..> ADM_UC1 : <<extend>>
+ADM_UC10 ..> ADM_UC9 : <<extend>>
+ADM_UC16 ..> ADM_UC15 : <<extend>>
+
+' Đối tác
+DT_UC08 ..> DT_UC06 : <<extend>>
+DT_UC09 ..> DT_UC06 : <<extend>>
+DT_UC08 ..> DT_UC09 : <<extend>>
+DT_UC08 ..> DT_UC07 : <<extend>>
+DT_UC09 ..> DT_UC07 : <<extend>>
+DT_UC11 ..> DT_UC10 : <<include>>
+
+@enduml
