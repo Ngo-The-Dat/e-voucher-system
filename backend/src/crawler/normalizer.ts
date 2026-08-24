@@ -8,7 +8,23 @@ import type {
   NormalizedVoucherProgram,
   NormalizedPartner,
   NormalizedBranch,
+  NormalizedReview,
 } from './types.js';
+
+/**
+ * Chuyển chuỗi tiếng Việt thành slug không dấu an toàn
+ */
+export function generateSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[đĐ]/g, 'd')
+    .replace(/[^a-z0-9\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-');
+}
 
 /**
  * Chuyển chuỗi giá tiền thành số nguyên hợp lệ
@@ -182,6 +198,90 @@ export function htmlToCleanText(html: string | undefined): string {
 }
 
 /**
+ * Trích xuất và chuẩn hóa tên thương hiệu từ dữ liệu thô cào được hoặc tiêu đề deal
+ */
+export function extractBrandName(rawPartnerName: string | undefined, title: string, index: number): string {
+  let brand = rawPartnerName ? rawPartnerName.trim() : '';
+
+  // Xóa ký tự đầu dòng như gạch đầu dòng, dấu hai chấm, bullet
+  brand = brand.replace(/^[\s•\-\:\—\–\.\,]+/, '').trim();
+
+  // Danh sách các từ khóa cho thấy chuỗi này là một câu điều kiện/nội dung chứ không phải tên thương hiệu
+  const invalidKeywords = [
+    'áp dụng cho',
+    'voucher áp dụng',
+    'thời hạn sử dụng',
+    'thời hạn',
+    'điều kiện',
+    'quy định',
+    'chính sách',
+    'hotline',
+    'đặt chỗ',
+    'thanh toán',
+    'không áp dụng',
+    'khách hàng',
+    'đối với',
+    'tham khảo menu',
+    'xuất hóa đơn',
+    'liên hệ',
+  ];
+
+  const isInvalid = !brand ||
+    brand.length < 2 ||
+    brand.length > 70 ||
+    invalidKeywords.some((kw) => brand.toLowerCase().includes(kw));
+
+  if (isInvalid) {
+    // Tự động trích xuất tên thương hiệu từ tiêu đề Deal
+    const titleClean = title.replace(/^[\s•\-\:\—\–]+/, '').trim();
+    if (titleClean.includes(' - ')) {
+      brand = titleClean.split(' - ')[0].trim();
+    } else if (titleClean.includes(' – ')) {
+      brand = titleClean.split(' – ')[0].trim();
+    } else if (titleClean.includes(':')) {
+      brand = titleClean.split(':')[0].trim();
+    } else if (titleClean.includes('|')) {
+      brand = titleClean.split('|')[0].trim();
+    } else {
+      const words = titleClean.split(/\s+/);
+      brand = words.slice(0, Math.min(words.length, 4)).join(' ');
+    }
+  }
+
+  // Dọn dẹp khoảng trắng và ký tự thừa
+  brand = brand.replace(/^[\s•\-\:\—\–\.\,]+/, '').replace(/[\s•\-\:\—\–\.\,]+$/, '').trim();
+
+  // Giới hạn tối đa 60 ký tự
+  if (brand.length > 60) {
+    brand = brand.slice(0, 60).trim();
+  }
+
+  return brand || `Thương Hiệu Ưu Đãi ${index + 1}`;
+}
+
+/**
+ * Chuẩn hóa tên danh mục về các ngành hàng chuẩn chính thức
+ */
+export function normalizeCategoryName(rawName?: string): string {
+  if (!rawName) return 'Ẩm thực';
+  const lower = rawName.toLowerCase().trim();
+
+  if (lower.includes('buffet')) return 'Buffet';
+  if (lower.includes('nha khoa') || lower.includes('tẩy trắng') || lower.includes('cạo vôi') || lower.includes('trám răng') || lower.includes('răng')) return 'Nha khoa';
+  if (lower.includes('massage')) return 'Massage body/ massage foot';
+  if (lower.includes('tóc') || lower.includes('salon') || lower.includes('gội đầu')) return 'Chăm Sóc Tóc';
+  if (lower.includes('spa') || lower.includes('làm đẹp') || lower.includes('nail') || lower.includes('móng') || lower.includes('chăm sóc da') || lower.includes('chăm sóc cơ thể') || lower.includes('điều trị')) return 'Spa & Làm đẹp';
+  if (lower.includes('khách sạn') || lower.includes('resort') || lower.includes('hotel')) return 'Hotel & Resort';
+  if (lower.includes('du lịch') || lower.includes('tour')) return 'Du Lịch';
+  if (lower.includes('vui chơi') || lower.includes('giải trí') || lower.includes('thể thao') || lower.includes('gym') || lower.includes('yoga')) return 'Giải trí & Thể thao';
+  if (lower.includes('đào tạo') || lower.includes('khóa học') || lower.includes('học')) return 'Đào tạo';
+  if (lower.includes('sức khỏe') || lower.includes('y tế') || lower.includes('phòng khám') || lower.includes('bệnh viện')) return 'Sức Khỏe & Thể Thao';
+  if (lower.includes('ẩm thực') || lower.includes('nhà hàng') || lower.includes('ăn uống') || lower.includes('bánh') || lower.includes('quà tặng')) return 'Ẩm thực';
+
+  return 'Ẩm thực';
+}
+
+/**
  * Chuẩn hóa toàn bộ một bản ghi voucher cào được
  */
 export function normalizeScrapedVoucher(
@@ -195,39 +295,78 @@ export function normalizeScrapedVoucher(
     originalPrice = Math.round((salePrice * 1.3) / 1000) * 1000; // Đảm bảo original_price > sale_price
   }
 
-  // 2. Chuẩn hóa thương hiệu & Chi nhánh
-  let brandName = raw.partnerNameRaw;
-  if (!brandName || brandName.length < 3) {
-    // Tách tên từ tiêu đề deal nếu chưa có
-    const parts = raw.title.split(' - ');
-    brandName = parts.length > 1 ? parts[0].trim() : `Thương Hiệu Ưu Đãi ${index + 1}`;
+  // 2. Chuẩn hóa thương hiệu & Chi nhánh từ dữ liệu cào thực tế
+  const brandName = extractBrandName(raw.partnerNameRaw, raw.title, index);
+  const defaultPhone = normalizePhone(raw.phoneRaw, brandName, index);
+
+  const branches: NormalizedBranch[] = [];
+
+  if (raw.branchesRaw && raw.branchesRaw.length > 0) {
+    for (const b of raw.branchesRaw) {
+      let bAddress = b.address ? b.address.replace(/^[\s•\-\:\—\–]+/, '').trim() : '';
+      if (bAddress.length > 400) {
+        bAddress = bAddress.slice(0, 400).trim();
+      }
+
+      let bName = b.branchName ? b.branchName.trim() : `${brandName} - Chi Nhánh Trung Tâm`;
+      if (!bName.toLowerCase().includes(brandName.toLowerCase()) && bName !== 'Chi Nhánh Trung Tâm') {
+        bName = `${brandName} - ${bName}`;
+      }
+      if (bName.length > 150) {
+        bName = bName.slice(0, 150).trim();
+      }
+
+      const bPhone = b.phone ? normalizePhone(b.phone, bName, index) : defaultPhone;
+      const bRegion = detectRegion(bAddress);
+
+      branches.push({
+        branch_name: bName,
+        address: bAddress,
+        region: bRegion,
+        phone: bPhone,
+      });
+    }
   }
 
-  const branchAddress = raw.addressRaw && raw.addressRaw.length > 8
-    ? raw.addressRaw
-    : `Tầng 1, Tòa nhà Landmark, Số 720A Điện Biên Phủ, Phường 22, Bình Thạnh, TP.HCM`;
+  // Nếu không có branchesRaw thì dùng addressRaw cào được từ trang
+  if (branches.length === 0) {
+    let rawAddress = raw.addressRaw ? raw.addressRaw.replace(/^[\s•\-\:\—\–]+/, '').trim() : '';
+    if (!rawAddress || rawAddress.length < 5) {
+      rawAddress = `${brandName}, TP. Hồ Chí Minh`;
+    }
+    if (rawAddress.length > 400) {
+      rawAddress = rawAddress.slice(0, 400).trim();
+    }
 
-  const branchName = raw.branchNameRaw || `${brandName} - Chi Nhánh Trung Tâm`;
-  const region = detectRegion(branchAddress);
-  const phone = normalizePhone(raw.phoneRaw, brandName, index);
+    let branchName = raw.branchNameRaw ? raw.branchNameRaw.trim() : `${brandName} - Chi Nhánh Trung Tâm`;
+    if (branchName.length > 150) {
+      branchName = branchName.slice(0, 150).trim();
+    }
+
+    const region = detectRegion(rawAddress);
+    branches.push({
+      branch_name: branchName,
+      address: rawAddress,
+      region,
+      phone: defaultPhone,
+    });
+  }
+
+  const businessName = brandName.toLowerCase().startsWith('công ty')
+    ? brandName.slice(0, 120)
+    : `Công ty TNHH ${brandName}`.slice(0, 120);
+
   const taxCode = generateTaxCode(brandName, index);
   const email = generateEmail(brandName, index);
 
-  const branch: NormalizedBranch = {
-    branch_name: branchName,
-    address: branchAddress,
-    region,
-    phone,
-  };
-
   const partner: NormalizedPartner = {
-    business_name: `Công ty TNHH ${brandName}`,
+    business_name: businessName,
     tax_code: taxCode,
     email,
-    phone,
+    phone: defaultPhone,
     brand_logo: raw.primaryImage || 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&auto=format&fit=crop&q=80',
     representative_title: 'Giám đốc Điều hành',
-    branches: [branch],
+    branches: branches,
   };
 
   // 3. Chuẩn hóa ngày tháng (Năm hiện tại hệ thống là 2026)
@@ -296,11 +435,13 @@ export function normalizeScrapedVoucher(
 
   // 7. Chuẩn hóa Contents (POLICY, ARTICLE, GUIDE)
   const contents = [];
+  const mainAddress = branches.length > 0 ? branches[0].address : `${brandName}, TP. Hồ Chí Minh`;
+  const mainPhone = branches.length > 0 ? branches[0].phone : defaultPhone;
 
   // Content 1: POLICY (Điều kiện & Chính sách)
   let policyBody = htmlToCleanText(raw.conditionsHtml);
   if (!policyBody || policyBody.length < 30) {
-    policyBody = `• Thời hạn sử dụng voucher: từ ${useStartAt.toLocaleDateString('vi-VN')} đến ${useEndAt.toLocaleDateString('vi-VN')}.\n\n• Địa điểm áp dụng: ${branchAddress}.\n\n• Áp dụng 01 voucher/ 01 người/ 01 dịch vụ. Quý khách vui lòng liên hệ hotline ${phone} để đặt lịch trước khi đến.\n\n• Voucher đã bao gồm thuế VAT theo quy định. Không quy đổi thành tiền mặt.`;
+    policyBody = `• Thời hạn sử dụng voucher: từ ${useStartAt.toLocaleDateString('vi-VN')} đến ${useEndAt.toLocaleDateString('vi-VN')}.\n\n• Địa điểm áp dụng: ${mainAddress}.\n\n• Áp dụng 01 voucher/ 01 người/ 01 dịch vụ. Quý khách vui lòng liên hệ hotline ${mainPhone} để đặt lịch trước khi đến.\n\n• Voucher đã bao gồm thuế VAT theo quy định. Không quy đổi thành tiền mặt.`;
   }
 
   contents.push({
@@ -323,8 +464,85 @@ export function normalizeScrapedVoucher(
     status: 'ACTIVE' as const,
   });
 
+  const cleanCategory = normalizeCategoryName(raw.categoryName);
+
+  // 8. Chuẩn hóa Bình luận & Đánh giá (Reviews & Feedback)
+  const reviews: NormalizedReview[] = [];
+  const sampleCustomerNames = [
+    'Nguyễn Thu Hà', 'Trần Minh Tuấn', 'Lê Hoàng Long', 'Phạm Thanh Thảo',
+    'Vũ Đức Anh', 'Đỗ Hải Yến', 'Bùi Gia Huy', 'Hoàng Ngọc Mai',
+    'Đặng Tiến Dũng', 'Ngô Phương Linh', 'Trịnh Quốc Bảo', 'Dương Thúy Hằng'
+  ];
+
+  if (raw.reviewsRaw && raw.reviewsRaw.length > 0) {
+    for (let rIdx = 0; rIdx < raw.reviewsRaw.length; rIdx++) {
+      const r = raw.reviewsRaw[rIdx];
+      const custName = r.authorName || sampleCustomerNames[(index + rIdx) % sampleCustomerNames.length];
+      const custEmail = `cust.${generateSlug(custName)}.${(index + rIdx) % 100}@gmail.com`;
+      const submittedAt = new Date(Date.now() - ((rIdx + 1) * 3 + (index % 5)) * 24 * 60 * 60 * 1000);
+      reviews.push({
+        customer_name: custName,
+        customer_email: custEmail,
+        rating: r.rating || 5,
+        review_content: r.content.slice(0, 500),
+        submitted_at: submittedAt,
+      });
+    }
+  } else {
+    // Tạo 2-3 đánh giá chân thực dựa trên ngành hàng động của voucher
+    const catLower = cleanCategory.toLowerCase();
+    let catReviews = [
+      `Dịch vụ tại ${brandName} rất tốt và chuyên nghiệp. Đặt mua và quét mã voucher tiện lợi, nhân viên hỗ trợ nhiệt tình.`,
+      `Trải nghiệm tuyệt vời tại ${brandName}, chất lượng dịch vụ đúng như mô tả trong chương trình ưu đãi ${cleanCategory}. Rất đáng tiền!`,
+      `Đã sử dụng voucher tại ${brandName} và rất hài lòng, sẽ tiếp tục ủng hộ thương hiệu trong các chương trình tới.`
+    ];
+
+    if (catLower.includes('buffet') || catLower.includes('ẩm thực') || catLower.includes('ăn') || catLower.includes('nhà hàng') || catLower.includes('quà tặng')) {
+      catReviews = [
+        `Đồ ăn tại ${brandName} rất tươi ngon, nêm nếm vừa miệng và phục vụ nhiệt tình. Mua voucher tiết kiệm được nhiều.`,
+        `Không gian ${brandName} ấm cúng, món ăn trình bày đẹp mắt. Quét mã voucher nhanh chóng, rất hài lòng!`,
+        `Đã rủ cả gia đình đi ăn cuối tuần tại ${brandName}. Sẽ tiếp tục ủng hộ thương hiệu trong các chương trình tới!`
+      ];
+    } else if (catLower.includes('spa') || catLower.includes('làm đẹp') || catLower.includes('da') || catLower.includes('massage') || catLower.includes('tóc') || catLower.includes('nail')) {
+      catReviews = [
+        `Dịch vụ tại ${brandName} cực kỳ chuyên nghiệp, kỹ thuật viên tay nghề cao và tư vấn tận tâm.`,
+        `Không gian thơm mùi tinh dầu rất thư giãn. Dùng voucher được chăm sóc trọn gói chu đáo không phát sinh thêm chi phí.`,
+        `Trải nghiệm rất ưng ý tại ${brandName}, phòng ốc sạch sẽ riêng tư. 10/10 điểm!`
+      ];
+    } else if (catLower.includes('nha khoa') || catLower.includes('răng')) {
+      catReviews = [
+        `Bác sĩ tại ${brandName} thao tác nhẹ nhàng, êm ái không hề bị ê buốt. Phòng khám vô trùng tuyệt đối.`,
+        `Dịch vụ tại ${brandName} rất sạch sẽ, tư vấn nhiệt tình và không phụ thu thêm phí gì.`,
+        `Cơ sở vật chất hiện đại, bác sĩ tận tâm giải thích rõ ràng từng bước. Rất hài lòng!`
+      ];
+    } else if (catLower.includes('khách sạn') || catLower.includes('resort') || catLower.includes('hotel') || catLower.includes('du lịch') || catLower.includes('tour')) {
+      catReviews = [
+        `Phòng nghỉ tại ${brandName} sạch sẽ, tiện nghi đầy đủ, nhân viên hỗ trợ nhiệt tình chu đáo.`,
+        `Check-in bằng mã voucher nhanh gọn trong 2 phút. Trải nghiệm kỳ nghỉ tuyệt vời cùng gia đình!`,
+        `Dịch vụ đúng như mô tả, lịch trình linh hoạt và hỗ trợ khách hàng rất tốt.`
+      ];
+    }
+
+    const numReviews = 2 + (index % 2); // 2 hoặc 3 review mỗi voucher
+    for (let rIdx = 0; rIdx < numReviews; rIdx++) {
+      const custName = sampleCustomerNames[(index * 2 + rIdx) % sampleCustomerNames.length];
+      const custEmail = `cust.${generateSlug(custName)}.${(index + rIdx) % 100}@gmail.com`;
+      const rating = (index + rIdx) % 7 === 0 ? 4 : 5;
+      const submittedAt = new Date(Date.now() - ((rIdx + 1) * 4 + (index % 7)) * 24 * 60 * 60 * 1000);
+      reviews.push({
+        customer_name: custName,
+        customer_email: custEmail,
+        rating,
+        review_content: catReviews[rIdx % catReviews.length],
+        submitted_at: submittedAt,
+      });
+    }
+  }
+
   return {
     program_name: raw.title,
+    category_name: cleanCategory,
+    category_description: `Voucher ưu đãi hấp dẫn ngành hàng ${cleanCategory}`,
     category_id: raw.categoryId,
     original_price: originalPrice,
     sale_price: salePrice,
@@ -336,9 +554,10 @@ export function normalizeScrapedVoucher(
     display_status: 'PUBLISHED',
     images,
     partner,
-    branches: [branch],
+    branches: branches,
     banner,
     popup,
     contents,
+    reviews,
   };
 }

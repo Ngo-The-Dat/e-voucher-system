@@ -604,13 +604,26 @@ export async function seedPendingApprovals() {
     const saleEnd = formatSqlDate(addDays(now, 60));
     const useStart = formatSqlDate(now);
     const useEnd = formatSqlDate(addDays(now, 90));
+    const catNameMap: Record<number, string> = {
+      1: 'Ẩm thực',
+      2: 'Buffet',
+      4: 'Spa & Làm đẹp',
+      7: 'Nha khoa',
+      10: 'Giải trí & Thể thao',
+      11: 'Giải trí & Thể thao',
+    };
+    const targetCatName = catNameMap[v.categoryId] || 'Ẩm thực';
+    const catRes = await pool.query(`SELECT category_id FROM categories WHERE category_name = $1 LIMIT 1`, [targetCatName]);
+    const resolvedCatId = catRes.rows.length > 0
+      ? Number(catRes.rows[0].category_id)
+      : (await pool.query(`SELECT category_id FROM categories LIMIT 1`)).rows[0]?.category_id || 1;
 
     // Thêm voucher_programs với display_status = 'PENDING_APPROVAL'
     const progRes = await pool.query(
       `INSERT INTO voucher_programs (partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'PENDING_APPROVAL')
        RETURNING program_id`,
-      [partnerId, v.categoryId, v.name, v.originalPrice, v.salePrice, v.quantity, saleStart, saleEnd, useStart, useEnd]
+      [partnerId, resolvedCatId, v.name, v.originalPrice, v.salePrice, v.quantity, saleStart, saleEnd, useStart, useEnd]
     );
     const programId = Number(progRes.rows[0].program_id);
 
