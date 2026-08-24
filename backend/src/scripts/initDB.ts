@@ -13,19 +13,52 @@ async function initDatabase() {
     await pool.query(sql);
     console.log("✅ Cấu trúc Database đã được khởi tạo thành công.");
 
-    console.log("🚀 [2/5] Nạp dữ liệu cơ sở (Admin, Base Customers & 12 Danh mục thực tế)...");
+    console.log("🚀 [2/5] Nạp tài khoản hệ thống cơ sở (Admin & Sample Customers)...");
     sql = fs.readFileSync(
         path.join(process.cwd(), "../database/seeds/data.sql"),
         "utf-8"
     );
     await pool.query(sql);
-    console.log("✅ Dữ liệu cơ sở đã được nạp thành công.");
+    console.log("✅ Dữ liệu tài khoản cơ sở đã được nạp thành công.");
 
-    console.log("🚀 [3/5] Nạp dữ liệu Voucher cào thực tế (119 Vouchers, Đối tác, Chi nhánh, Banners, Popups)...");
+    console.log("🚀 [3/5] Nạp dữ liệu Voucher & Danh mục cào thực tế (Categories, Đối tác, Chi nhánh, Vouchers, Banners, Popups)...");
     const scrapedSqlPath = path.join(process.cwd(), "../database/seeds/scraped_vouchers.sql");
     if (fs.existsSync(scrapedSqlPath)) {
-        const scrapedSql = fs.readFileSync(scrapedSqlPath, "utf-8");
+        let scrapedSql = fs.readFileSync(scrapedSqlPath, "utf-8");
         if (scrapedSql.trim().length > 0) {
+            // Tự động chuẩn hóa độ dài các trường chuỗi đảm bảo tuân thủ ràng buộc VARCHAR của PostgreSQL DDL
+            scrapedSql = scrapedSql
+                .replace(
+                    /INSERT INTO users \((user_id, full_name, [^)]+)\) VALUES \((\d+), '((?:''|[^'])*)',/g,
+                    (match, cols, id, name) => {
+                        const safeName = name.length > 150 ? name.slice(0, 150) : name;
+                        return `INSERT INTO users (${cols}) VALUES (${id}, '${safeName}',`;
+                    }
+                )
+                .replace(
+                    /INSERT INTO partners \((user_id, business_name, [^)]+)\) VALUES \((\d+), '((?:''|[^'])*)',/g,
+                    (match, cols, id, name) => {
+                        const safeName = name.length > 255 ? name.slice(0, 255) : name;
+                        return `INSERT INTO partners (${cols}) VALUES (${id}, '${safeName}',`;
+                    }
+                )
+                .replace(
+                    /INSERT INTO branches \((branch_id, partner_id, branch_name, address, region, [^)]+)\) VALUES \((\d+), (\d+), '((?:''|[^'])*)', '((?:''|[^'])*)', '((?:''|[^'])*)',/g,
+                    (match, cols, branchId, partnerId, branchName, address, region) => {
+                        const safeBranchName = branchName.length > 255 ? branchName.slice(0, 255) : branchName;
+                        const safeAddress = address.length > 500 ? address.slice(0, 500) : address;
+                        const safeRegion = region.length > 150 ? region.slice(0, 150) : region;
+                        return `INSERT INTO branches (${cols}) VALUES (${branchId}, ${partnerId}, '${safeBranchName}', '${safeAddress}', '${safeRegion}',`;
+                    }
+                )
+                .replace(
+                    /INSERT INTO voucher_programs \((program_id, partner_id, category_id, program_name, [^)]+)\) VALUES \((\d+), (\d+), (\d+), '((?:''|[^'])*)',/g,
+                    (match, cols, progId, partId, catId, progName) => {
+                        const safeProgName = progName.length > 255 ? progName.slice(0, 255) : progName;
+                        return `INSERT INTO voucher_programs (${cols}) VALUES (${progId}, ${partId}, ${catId}, '${safeProgName}',`;
+                    }
+                );
+
             await pool.query(scrapedSql);
             console.log("✅ Dữ liệu voucher cào thực tế từ scraped_vouchers.sql đã được nạp thành công.");
         }
@@ -55,6 +88,12 @@ async function initDatabase() {
         SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), (SELECT COALESCE(MAX(popup_id), 1) FROM popups));
         SELECT setval(pg_get_serial_sequence('contents', 'content_id'), (SELECT COALESCE(MAX(content_id), 1) FROM contents));
         SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), (SELECT COALESCE(MAX(log_id), 1) FROM system_logs));
+    `);
+
+    // Tự động dọn dẹp các danh mục không có bất kỳ voucher nào
+    await pool.query(`
+        DELETE FROM categories 
+        WHERE category_id NOT IN (SELECT DISTINCT category_id FROM voucher_programs);
     `);
 
     console.log("===============================================================");

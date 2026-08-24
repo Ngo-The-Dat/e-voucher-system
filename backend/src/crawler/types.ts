@@ -1,13 +1,24 @@
-/**
- * @file types.ts
- * @description Type definitions cho module cào dữ liệu (Crawler) của hệ thống E-Voucher.
- */
+export interface ScrapedCategory {
+  categoryId?: number;
+  slug: string;
+  name: string;
+  description?: string;
+  sourcePlatform?: string;
+  url: string;
+}
+
+export interface RawScrapedBranch {
+  branchName?: string;
+  address: string;
+  phone?: string;
+}
 
 export interface RawScrapedVoucher {
+  sourcePlatform?: 'HOTDEAL' | 'DEALTODAY' | 'KLOOK' | string;
   sourceUrl: string;
   categorySlug: string;
   categoryName: string;
-  categoryId: number;
+  categoryId?: number;
   title: string;
   originalPriceRaw: string;
   salePriceRaw: string;
@@ -19,9 +30,26 @@ export interface RawScrapedVoucher {
   partnerNameRaw?: string;
   branchNameRaw?: string;
   addressRaw?: string;
+  branchesRaw?: RawScrapedBranch[];
   phoneRaw?: string;
   useStartAtRaw?: string;
   useEndAtRaw?: string;
+  reviewsRaw?: RawScrapedReview[];
+}
+
+export interface RawScrapedReview {
+  authorName?: string;
+  rating?: number;
+  content: string;
+  submittedAtRaw?: string;
+}
+
+export interface NormalizedReview {
+  customer_name: string;
+  customer_email: string;
+  rating: number;
+  review_content: string;
+  submitted_at: Date;
 }
 
 export interface NormalizedBranch {
@@ -43,7 +71,9 @@ export interface NormalizedPartner {
 
 export interface NormalizedVoucherProgram {
   program_name: string;
-  category_id: number;
+  category_name: string;
+  category_description?: string;
+  category_id?: number;
   original_price: number;
   sale_price: number;
   issue_quantity: number;
@@ -83,6 +113,7 @@ export interface NormalizedVoucherProgram {
     content_type: 'POLICY' | 'ARTICLE' | 'PROMOTION' | 'GUIDE';
     status: 'ACTIVE' | 'INACTIVE';
   }>;
+  reviews: NormalizedReview[];
 }
 
 export interface CrawlOptions {
