@@ -3,7 +3,7 @@
  * @description Trích xuất dữ liệu voucher, thương hiệu, chi nhánh, hình ảnh, điều khoản từ HTML của website Hotdeal.
  */
 
-import type { RawScrapedVoucher, ScrapedCategory } from './types.js';
+import type { RawScrapedVoucher, ScrapedCategory, RawScrapedReview } from './types.js';
 
 const USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 

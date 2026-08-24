@@ -387,6 +387,7 @@ export async function seedPendingApprovals() {
     const saleStart = formatSqlDate(now);
     const saleEnd = formatSqlDate(addDays(now, 60));
     const useStart = formatSqlDate(now);
+    const useEnd = formatSqlDate(addDays(now, 90));
     const catNameMap: Record<number, string> = {
       1: 'Ẩm thực',
       2: 'Buffet',

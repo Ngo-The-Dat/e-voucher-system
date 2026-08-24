@@ -8,6 +8,7 @@ import type {
   NormalizedVoucherProgram,
   NormalizedPartner,
   NormalizedBranch,
+  NormalizedReview,
 } from './types.js';
 
 /**
