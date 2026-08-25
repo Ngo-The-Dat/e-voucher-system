@@ -343,6 +343,16 @@ export default function Header() {
                 Khám phá
               </Link>
               <Link
+                href="/articles"
+                className={`font-label-md transition-colors h-full flex items-center border-b-2 ${
+                  pathname.startsWith("/articles")
+                    ? "text-[#0f2c59] border-[#0f2c59] font-bold"
+                    : "text-gray-600 border-transparent hover:text-[#0f2c59]"
+                }`}
+              >
+                Bài viết
+              </Link>
+              <Link
                 href="/my-vouchers"
                 className={`font-label-md transition-colors h-full flex items-center border-b-2 ${
                   pathname.startsWith("/my-vouchers")
@@ -437,6 +447,15 @@ export default function Header() {
               }`}
             >
               Khám phá
+            </Link>
+            <Link
+              href="/articles"
+              onClick={() => setMobileMenuOpen(false)}
+              className={`py-3 px-4 rounded-lg flex items-center gap-3 ${
+                pathname.startsWith("/articles") ? "bg-[#0f2c59]/5 text-[#0f2c59] font-bold" : "text-gray-700"
+              }`}
+            >
+              Bài viết
             </Link>
             <Link
               href="/profile"
