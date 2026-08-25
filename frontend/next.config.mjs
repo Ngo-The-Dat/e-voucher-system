@@ -6,7 +6,7 @@ const nextConfig = {
     appIsrStatus: false,
   },
   images: {
-    unoptimized: true,
+    // unoptimized: true,
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "images.unsplash.com" },
