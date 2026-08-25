@@ -33,17 +33,19 @@ UI -> Controller : addItemToCart(customerId, productId, quantity)
 activate Controller
 Controller -> Service : addItem(customerId, productId, quantity)
 activate Service
-Service -> DB : insertOrUpdateCartItem(...)
-activate DB
-DB --> Service : success
-deactivate DB
-Service --> Controller : success
-deactivate Service
-Controller --> UI : showAddSuccess()
+alt Thêm thành công
+    Service -> DB : insertOrUpdateCartItem(...)
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    Controller --> UI : showAddSuccess()
 else Out of stock
     Service --> Controller : error("OutOfStock")
     Controller --> UI : showErrorMessage("Sản phẩm hết hàng")
 end
+deactivate Service
+deactivate Controller
 UI --> KH : addItemResult
 deactivate UI
 
@@ -54,17 +56,19 @@ UI -> Controller : updateCartItem(cartItemId, newQty)
 activate Controller
 Controller -> Service : updateItem(cartItemId, newQty)
 activate Service
-Service -> DB : updateCartItem(...)
-activate DB
-DB --> Service : success
-deactivate DB
-Service --> Controller : success
-deactivate Service
-Controller --> UI : showUpdateSuccess()
+alt Cập nhật thành công
+    Service -> DB : updateCartItem(...)
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    Controller --> UI : showUpdateSuccess()
 else Quantity exceeds limit
     Service --> Controller : error("QuantityLimit")
     Controller --> UI : showErrorMessage("Số lượng vượt quá giới hạn")
 end
+deactivate Service
+deactivate Controller
 UI --> KH : updateResult
 deactivate UI
 
@@ -82,6 +86,7 @@ deactivate DB
 Service --> Controller : success
 deactivate Service
 Controller --> UI : showRemoveSuccess()
+deactivate Controller
 UI --> KH : removeResult
 deactivate UI
 @enduml
