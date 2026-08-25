@@ -168,7 +168,7 @@ CREATE TABLE orders (
     recipient_user_id BIGINT REFERENCES users(user_id),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     total_amount DECIMAL(18,2) NOT NULL CONSTRAINT chk_orders_total_amount CHECK (total_amount >= 0),
-    payment_method VARCHAR(50) NOT NULL CONSTRAINT chk_orders_payment_method CHECK (payment_method IN ('STRIPE', 'VNPAY', 'ZALOPAY', 'MOMO', 'PAYPAL', 'CREDIT_CARD', 'BANK_TRANSFER', 'CASH')),
+    payment_method VARCHAR(50) NOT NULL CONSTRAINT chk_orders_payment_method CHECK (payment_method IN ('STRIPE', 'VNPAY', 'ZALOPAY', 'PAYPAL')),
     payment_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_payment_status CHECK (payment_status IN ('UNPAID', 'PAID', 'FAILED', 'REFUNDED')),
     order_status VARCHAR(30) NOT NULL CONSTRAINT chk_orders_order_status CHECK (order_status IN ('PENDING', 'CANCELLED', 'COMPLETED'))
 );
@@ -273,7 +273,7 @@ CREATE TABLE contents (
     program_id BIGINT NOT NULL REFERENCES voucher_programs(program_id),
     title VARCHAR(255) NOT NULL,
     body TEXT NOT NULL,
-    content_type VARCHAR(30) NOT NULL CONSTRAINT chk_contents_content_type CHECK (content_type IN ('POLICY', 'ARTICLE', 'PROMOTION', 'GUIDE')),
+    content_type VARCHAR(30) NOT NULL CONSTRAINT chk_contents_content_type CHECK (content_type IN ('POLICY', 'ARTICLE')),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP,
     status VARCHAR(20) NOT NULL CONSTRAINT chk_contents_status CHECK (status IN ('ACTIVE', 'INACTIVE'))

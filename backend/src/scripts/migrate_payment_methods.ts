@@ -6,7 +6,7 @@ async function migrate() {
     await pool.query(`
       ALTER TABLE orders DROP CONSTRAINT IF EXISTS chk_orders_payment_method;
       ALTER TABLE orders ADD CONSTRAINT chk_orders_payment_method 
-        CHECK (payment_method IN ('STRIPE', 'VNPAY', 'ZALOPAY', 'MOMO', 'PAYPAL', 'CREDIT_CARD', 'BANK_TRANSFER', 'CASH'));
+        CHECK (payment_method IN ('STRIPE', 'VNPAY', 'ZALOPAY', 'PAYPAL'));
     `);
     const constraint = await pool.query(`
       SELECT pg_get_constraintdef(oid) AS definition
