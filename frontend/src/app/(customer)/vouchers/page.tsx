@@ -21,7 +21,7 @@ import {
 } from "lucide-react";
 import { customerCatalogApi, CustomerCategory } from "@/lib/customer-api";
 
-const ITEMS_PER_PAGE = 9;
+const ITEMS_PER_PAGE = 24;
 
 function VoucherCatalogContent() {
   const router = useRouter();

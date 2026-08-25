@@ -13,7 +13,7 @@ export interface GetPublicVouchersFilter {
 
 export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(filter.limit) || 12));
+  const limit = Math.max(1, Number(filter.limit) || 12);
   const offset = (page - 1) * limit;
 
   const conditions: string[] = ["vp.display_status = 'PUBLISHED'"];
