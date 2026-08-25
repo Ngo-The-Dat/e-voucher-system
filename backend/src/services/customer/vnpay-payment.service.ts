@@ -57,7 +57,7 @@ export async function createVNPayPaymentUrl(
   date.setMinutes(date.getMinutes() + 5);
   const expireDate = formatDate(date);
 
-  const amount = Number(order.total_amount) * 100;
+  const amount = Math.round(Number(order.total_amount) * 100);
   
   let vnp_Params: Record<string, string | number> = {};
   vnp_Params['vnp_Version'] = '2.1.0';

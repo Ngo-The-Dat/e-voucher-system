@@ -7,7 +7,6 @@ export async function createVNPayPayment(req: Request, res: Response): Promise<v
     const customerId = Number((req as any).user?.id);
     const { orderId } = req.body;
     
-    // Fallback if req.ip is undefined or format is weird. VNPay requires a valid IP.
     let ipAddr = req.headers['x-forwarded-for'] || 
                  req.socket.remoteAddress || 
                  '127.0.0.1';
@@ -17,8 +16,16 @@ export async function createVNPayPayment(req: Request, res: Response): Promise<v
     }
     
     // IPAddr shouldn't be ::1 for vnpay, must be IPv4 or IPv6 standard format without port.
-    if (ipAddr === '::1') {
-      ipAddr = '127.0.0.1';
+    if (typeof ipAddr === 'string') {
+      if (ipAddr === '::1') {
+        ipAddr = '127.0.0.1';
+      }
+      if (ipAddr.includes(',')) {
+        ipAddr = ipAddr.split(',')[0].trim();
+      }
+      if (ipAddr.includes('::ffff:')) {
+        ipAddr = ipAddr.replace('::ffff:', '');
+      }
     }
 
     const result = await createVNPayPaymentUrl(customerId, Number(orderId), ipAddr);

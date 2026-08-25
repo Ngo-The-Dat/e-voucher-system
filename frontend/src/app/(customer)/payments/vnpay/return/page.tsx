@@ -16,12 +16,8 @@ function VNPayReturnContent() {
 
   useEffect(() => {
     const verifyPayment = async () => {
-      // Reconstruct query string
-      const params = new URLSearchParams();
-      searchParams.forEach((value, key) => {
-        params.append(key, value);
-      });
-      const queryString = params.toString() ? `?${params.toString()}` : "";
+      // Use raw window.location.search to prevent URLSearchParams from re-encoding spaces to '+' incorrectly
+      const queryString = window?.location?.search || "";
 
       if (!queryString) {
         setStatus("error");

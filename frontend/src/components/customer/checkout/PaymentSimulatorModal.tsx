@@ -816,7 +816,7 @@ export default function PaymentSimulatorModal({
                         <div className="p-2 rounded bg-surface border border-outline-variant/40 space-y-1 font-mono text-[11px]">
                           <p>• Số thẻ: <strong className="text-primary font-bold">9704198526191432198</strong></p>
                           <p>• Tên chủ thẻ: <span className="font-semibold">NGUYEN VAN A</span></p>
-                          <p>• Ngày phát hành: <span className="font-semibold">10/18</span></p>
+                          <p>• Ngày phát hành: <span className="font-semibold">07/15</span></p>
                           <p>• Mật khẩu OTP: <span className="font-semibold">123456</span></p>
                         </div>
                       </div>
