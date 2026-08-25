@@ -71,12 +71,23 @@ export const customerAuthApi = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
+  requestRegistrationOtp: (payload: { email: string }) =>
+    request<{ challenge_id: string; expires_in: number; resend_after: number }>("/customer/auth/request-registration-otp", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
+  verifyRegistrationOtp: (payload: { email: string; challenge_id: string; code: string }) =>
+    request<{ verified: boolean; challenge_id: string }>("/customer/auth/verify-registration-otp", {
+      method: "POST",
+      body: JSON.stringify(payload)
+    }),
   register: (payload: {
     full_name: string;
     email?: string;
     phone?: string;
     password: string;
     gender?: 'MALE' | 'FEMALE' | 'OTHER';
+    challenge_id?: string;
   }) =>
     request<{ message: string; token: string; user: CustomerUser }>("/customer/auth/register", {
       method: "POST",

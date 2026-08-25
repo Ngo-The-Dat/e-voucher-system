@@ -3,6 +3,26 @@ import type { AuthRequest } from '../../middlewares/auth.middleware.js';
 import * as authService from '../../services/customer/auth.service.js';
 import { sendHttpError } from '../../utils/http-error.js';
 
+export const requestRegistrationOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email } = req.body;
+    const result = await authService.requestRegistrationOtp(email);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};
+
+export const verifyRegistrationOtp = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { email, challenge_id, code } = req.body;
+    const result = await authService.verifyRegistrationOtp(email, challenge_id, code);
+    res.status(200).json(result);
+  } catch (err) {
+    sendHttpError(res, err);
+  }
+};
+
 export const register = async (req: Request, res: Response): Promise<void> => {
   try {
     const result = await authService.register(req.body);

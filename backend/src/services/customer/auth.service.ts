@@ -8,12 +8,41 @@ export interface CustomerRegisterInput {
   phone?: string;
   password: string;
   gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  challenge_id?: string;
 }
 
 export interface CustomerLoginInput {
   email: string;
   password: string;
 }
+
+import * as regOtpService from './registration-otp.service.js';
+
+export const requestRegistrationOtp = async (emailOrPhone: string) => {
+  const normalizedStr = emailOrPhone.trim().toLowerCase();
+  if (!normalizedStr) {
+    throw { status: 400, message: 'Vui lòng cung cấp email hoặc số điện thoại.' };
+  }
+
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedStr);
+
+  if (isEmail) {
+    const emailCheck = await pool.query('SELECT user_id FROM users WHERE email = $1', [normalizedStr]);
+    if (emailCheck.rows.length > 0) throw { status: 409, message: 'Email này đã được đăng ký trên hệ thống.' };
+  } else {
+    const phoneCheck = await pool.query('SELECT user_id FROM users WHERE phone = $1', [normalizedStr]);
+    if (phoneCheck.rows.length > 0) throw { status: 409, message: 'Số điện thoại này đã được đăng ký trên hệ thống.' };
+  }
+
+  return await regOtpService.requestRegistrationOtp(normalizedStr);
+};
+
+export const verifyRegistrationOtp = async (email: string, challengeId: string, code: string) => {
+  if (!email || !challengeId || !code) {
+    throw { status: 400, message: 'Thiếu thông tin xác thực OTP.' };
+  }
+  return await regOtpService.verifyRegistrationOtp(email, challengeId, code);
+};
 
 export const register = async (input: CustomerRegisterInput) => {
   const full_name = input.full_name?.trim();
@@ -49,6 +78,10 @@ export const register = async (input: CustomerRegisterInput) => {
   // 2. Hash mật khẩu
   const password_hash = await bcrypt.hash(password, 10);
 
+  if (email && input.challenge_id) {
+    regOtpService.beginOtpConsumption(email, input.challenge_id);
+  }
+
   // 3. Thêm user mới với role CUSTOMER
   let result;
   try {
@@ -58,7 +91,14 @@ export const register = async (input: CustomerRegisterInput) => {
        RETURNING user_id, full_name, email, phone, gender, role, status, created_at`,
       [full_name, email, phone, password_hash, gender]
     );
+
+    if (email && input.challenge_id) {
+      regOtpService.completeOtpConsumption(email, input.challenge_id);
+    }
   } catch (err: any) {
+    if (email && input.challenge_id) {
+      regOtpService.releaseOtpConsumption(email, input.challenge_id);
+    }
     if (err.code === '23505') {
       if (err.constraint?.includes('phone')) {
         throw { status: 409, message: 'Số điện thoại này đã được sử dụng.' };
