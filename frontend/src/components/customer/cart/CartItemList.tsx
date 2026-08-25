@@ -1,9 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Trash2, Ticket, X, Minus, Plus } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import { CartItem } from "@/hooks/useCustomerCart";
+import Pagination from "@/components/shared/ui/Pagination";
 import Image from "next/image";
+
+const CART_ITEMS_PER_PAGE = 4;
 
 interface CartItemListProps {
   cart: CartItem[];
@@ -24,6 +28,20 @@ export default function CartItemList({
   removeFromCart,
   updateCartQuantity,
 }: CartItemListProps) {
+  const [currentPage, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(cart.length / CART_ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [cart.length, totalPages, currentPage]);
+
+  const paginatedCart = cart.slice(
+    (currentPage - 1) * CART_ITEMS_PER_PAGE,
+    currentPage * CART_ITEMS_PER_PAGE
+  );
+
   const selectAllChecked = cart.length > 0 && cart.every((item) => selectedItems[item.voucher.id]);
 
   return (
@@ -56,7 +74,7 @@ export default function CartItemList({
 
       {/* Items List */}
       <div className="flex flex-col gap-4">
-        {cart.map((item) => {
+        {paginatedCart.map((item) => {
           const voucher = item.voucher;
           const isChecked = !!selectedItems[voucher.id];
           const stock = item.availableStock ?? voucher.availableStock;
@@ -175,6 +193,20 @@ export default function CartItemList({
           );
         })}
       </div>
+
+      {/* Cart Pagination */}
+      {cart.length > CART_ITEMS_PER_PAGE && (
+        <div className="rounded-lg overflow-hidden shadow-sm border border-outline-variant">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={cart.length}
+            itemsPerPage={CART_ITEMS_PER_PAGE}
+            onPageChange={(page) => setCurrentPage(page)}
+            itemName="sản phẩm"
+          />
+        </div>
+      )}
     </div>
   );
 }

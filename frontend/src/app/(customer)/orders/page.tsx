@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { customerOrderApi, customerPaymentApi, CustomerOrder } from "@/lib/customer-api";
 import notify from "@/lib/notify";
+import Pagination from "@/components/shared/ui/Pagination";
 import {
   ChevronRight,
   ShoppingBag,
@@ -24,11 +25,16 @@ import {
 } from "lucide-react";
 import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
+const ITEMS_PER_PAGE = 5;
+
 export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Trạng thái tự động xử lý khi PayPal redirect về
   const [paypalCaptureStatus, setPaypalCaptureStatus] = useState<{
@@ -45,6 +51,11 @@ export default function OrderHistoryPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   const [timeRangeFilter, setTimeRangeFilter] = useState<string>("all");
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusTab, searchTerm, paymentMethodFilter, timeRangeFilter]);
 
   const loadOrders = async () => {
     try {
@@ -431,6 +442,12 @@ export default function OrderHistoryPage() {
     });
   }, [orders, statusTab, searchTerm, paymentMethodFilter, timeRangeFilter, currentTime]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ITEMS_PER_PAGE));
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const pendingCount = useMemo(
     () => orders.filter((o) => getOrderState(o).isPendingActive).length,
     [orders, currentTime]
@@ -613,7 +630,7 @@ export default function OrderHistoryPage() {
         </div>
       ) : filteredOrders.length > 0 ? (
         <div className="flex flex-col gap-6">
-          {filteredOrders.map((order) => {
+          {paginatedOrders.map((order) => {
             const isExpanded = expandedOrderId === order.order_id;
             const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
             const state = getOrderState(order);
@@ -815,6 +832,21 @@ export default function OrderHistoryPage() {
               </div>
             );
           })}
+
+          {/* Pagination */}
+          <div className="rounded-xl overflow-hidden shadow-sm border border-outline-variant/30">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredOrders.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              itemName="đơn hàng"
+            />
+          </div>
         </div>
       ) : (
         /* Empty State */

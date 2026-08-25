@@ -15,6 +15,7 @@ import {
 import notify from "@/lib/notify";
 import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
+import Pagination from "@/components/shared/ui/Pagination";
 import {
   AlertTriangle,
   ChevronRight,
@@ -41,6 +42,8 @@ import {
   MessageSquarePlus,
 } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+
+const REVIEWS_PER_PAGE = 4;
 
 export default function VoucherDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -71,6 +74,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
   const [reviewsList, setReviewsList] = useState<any[]>([]);
   const [reviewsSummary, setReviewsSummary] = useState<{ total_reviews: number; average_rating: number } | null>(null);
   const [isLoadingReviews, setIsLoadingReviews] = useState<boolean>(true);
+  const [reviewPage, setReviewPage] = useState<number>(1);
 
   const fetchReviews = useCallback(async () => {
     const programId = Number(id);
@@ -242,6 +246,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setReviewRating(5);
       setHasComplaint(false);
       setComplaintContent("");
+      setReviewPage(1);
 
       // Reload reviews and recheck eligibility
       await fetchReviews();
@@ -253,6 +258,12 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       setIsSubmittingReview(false);
     }
   };
+
+  const totalReviewPages = Math.max(1, Math.ceil(reviewsList.length / REVIEWS_PER_PAGE));
+  const paginatedReviews = reviewsList.slice(
+    (reviewPage - 1) * REVIEWS_PER_PAGE,
+    reviewPage * REVIEWS_PER_PAGE
+  );
 
   return (
     <main className="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop py-8 flex flex-col gap-12">
@@ -924,7 +935,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
                 <span>Đang tải danh sách đánh giá...</span>
               </div>
             ) : reviewsList && reviewsList.length > 0 ? (
-              reviewsList.map((rev, index) => (
+              paginatedReviews.map((rev, index) => (
                 <div
                   key={rev.review_id || index}
                   className="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant/50 shadow-sm flex flex-col gap-3"
@@ -977,6 +988,20 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
               </p>
             )}
           </div>
+
+          {/* Reviews Pagination */}
+          {reviewsList.length > REVIEWS_PER_PAGE && (
+            <div className="mt-6 rounded-xl overflow-hidden shadow-sm border border-outline-variant/30">
+              <Pagination
+                currentPage={reviewPage}
+                totalPages={totalReviewPages}
+                totalItems={reviewsList.length}
+                itemsPerPage={REVIEWS_PER_PAGE}
+                onPageChange={(page) => setReviewPage(page)}
+                itemName="đánh giá"
+              />
+            </div>
+          )}
         </div>
       </section>
 
