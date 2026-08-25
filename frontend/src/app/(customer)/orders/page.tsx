@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { customerOrderApi, customerPaymentApi, CustomerOrder } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 import {
   ChevronRight,
   ShoppingBag,
@@ -110,18 +111,22 @@ export default function OrderHistoryPage() {
           customerPaymentApi
             .captureStripeOrder(orderId, sessionId || undefined)
             .then(() => {
+              const msg = `Thanh toán Stripe cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
               setPaypalCaptureStatus({
                 status: "success",
-                message: `Thanh toán Stripe cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                message: msg,
               });
+              notify.success(msg);
               loadOrders();
             })
             .catch((err) => {
               console.warn("Lỗi auto capture Stripe redirect:", err);
+              const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua Stripe.";
               setPaypalCaptureStatus({
                 status: "error",
-                message: err.message || "Không thể hoàn tất thanh toán tự động qua Stripe.",
+                message: errMsg,
               });
+              notify.error(err, "Thanh toán Stripe không thành công.");
               loadOrders();
             });
         }
@@ -142,18 +147,22 @@ export default function OrderHistoryPage() {
           customerPaymentApi
             .capturePayPalOrder(orderId, token)
             .then(() => {
+              const msg = `Thanh toán PayPal cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
               setPaypalCaptureStatus({
                 status: "success",
-                message: `Thanh toán PayPal cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                message: msg,
               });
+              notify.success(msg);
               loadOrders();
             })
             .catch((err) => {
               console.warn("Lỗi auto capture PayPal redirect:", err);
+              const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua PayPal.";
               setPaypalCaptureStatus({
                 status: "error",
-                message: err.message || "Không thể hoàn tất thanh toán tự động qua PayPal.",
+                message: errMsg,
               });
+              notify.error(err, "Thanh toán PayPal không thành công.");
               loadOrders();
             });
         }
@@ -200,18 +209,22 @@ export default function OrderHistoryPage() {
                 checksum: zaloChecksum,
               })
               .then(() => {
+                const msg = `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
                 setPaypalCaptureStatus({
                   status: "success",
-                  message: `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                  message: msg,
                 });
+                notify.success(msg);
                 loadOrders();
               })
               .catch((err) => {
                 console.warn("Lỗi auto capture ZaloPay redirect:", err);
+                const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.";
                 setPaypalCaptureStatus({
                   status: "error",
-                  message: err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.",
+                  message: errMsg,
                 });
+                notify.error(err, "Thanh toán ZaloPay không thành công.");
                 loadOrders();
               })
               .finally(() => {
@@ -219,10 +232,12 @@ export default function OrderHistoryPage() {
               });
           } else {
             window.localStorage.removeItem("pending_zalopay_payment");
+            const failMsg = `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`;
             setPaypalCaptureStatus({
               status: "error",
-              message: `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`,
+              message: failMsg,
             });
+            notify.error(failMsg);
             loadOrders();
           }
         } else {

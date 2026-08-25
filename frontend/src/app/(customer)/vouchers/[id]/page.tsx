@@ -12,6 +12,7 @@ import {
   customerReviewApi,
   CheckReviewEligibilityResponse,
 } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 import Image from "next/image";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
 import {
@@ -178,11 +179,11 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const handleAddToCart = () => {
     if (voucher.availableStock !== undefined && voucher.availableStock <= 0) {
-      alert("Sản phẩm đã hết hàng.");
+      notify.error("Sản phẩm này hiện đã hết hàng.");
       return;
     }
     if (voucher.availableStock !== undefined && quantity > voucher.availableStock) {
-      alert(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
+      notify.warning(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
       setQuantity(voucher.availableStock);
       return;
     }
@@ -191,11 +192,11 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
 
   const handleBuyNow = () => {
     if (voucher.availableStock !== undefined && voucher.availableStock <= 0) {
-      alert("Sản phẩm đã hết hàng.");
+      notify.error("Sản phẩm này hiện đã hết hàng.");
       return;
     }
     if (voucher.availableStock !== undefined && quantity > voucher.availableStock) {
-      alert(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
+      notify.warning(`Số lượng chọn vượt quá số lượng tồn kho (chỉ còn ${voucher.availableStock} sản phẩm).`);
       setQuantity(voucher.availableStock);
       return;
     }
@@ -207,13 +208,13 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
     e.preventDefault();
 
     if (!currentUser) {
-      alert("Vui lòng đăng nhập để gửi đánh giá.");
+      notify.warning("Vui lòng đăng nhập để gửi đánh giá.");
       router.push(`/login?redirect=/vouchers/${id}`);
       return;
     }
 
     if (reviewEligibility && !reviewEligibility.hasPurchased) {
-      alert("Bạn chưa mua sản phẩm này nên không thể gửi đánh giá.");
+      notify.warning("Bạn chưa mua sản phẩm này nên không thể gửi đánh giá.");
       return;
     }
 
@@ -227,6 +228,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       });
 
       setReviewSubmitSuccess(true);
+      notify.success("Cảm ơn bạn! Đánh giá và phản hồi của bạn đã được ghi nhận thành công.");
       const authorName = currentUser?.full_name || "Khách hàng";
       addReview(
         voucher.id,
@@ -246,7 +248,7 @@ export default function VoucherDetailPage({ params }: { params: Promise<{ id: st
       const updated = await customerReviewApi.checkEligibility(id);
       setReviewEligibility(updated);
     } catch (err: any) {
-      alert(err.message || "Lỗi khi gửi đánh giá. Vui lòng thử lại.");
+      notify.error(err, "Lỗi khi gửi đánh giá. Vui lòng thử lại.");
     } finally {
       setIsSubmittingReview(false);
     }

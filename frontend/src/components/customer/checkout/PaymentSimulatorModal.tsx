@@ -19,6 +19,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { customerOrderApi, customerPaymentApi } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 
 export interface PaymentSimulatorOrder {
   orderId: number;
@@ -282,6 +283,7 @@ export default function PaymentSimulatorModal({
   const handleCopy = (text: string, fieldName: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(fieldName);
+    notify.success(`Đã sao chép ${fieldName} vào bộ nhớ tạm!`);
     setTimeout(() => {
       setCopiedField(null);
     }, 2000);

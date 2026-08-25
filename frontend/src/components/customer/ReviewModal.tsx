@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Star, X, CheckCircle2, AlertCircle, MessageSquarePlus } from "lucide-react";
+import notify from "@/lib/notify";
 
 interface ReviewModalProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export default function ReviewModal({
       reviewContent.trim(),
       hasComplaint ? complaintContent.trim() : ""
     );
+    notify.success("Cảm ơn bạn! Đánh giá và phản hồi đã được ghi nhận thành công.");
     setIsSubmitted(true);
   };
 
