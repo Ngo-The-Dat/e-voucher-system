@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import Pagination from "@/components/shared/ui/Pagination";
 import {
   BookOpen,
   Calendar,
@@ -13,6 +14,8 @@ import {
   ChevronRight
 } from "lucide-react";
 import { customerContentApi, CustomerContent } from "@/lib/customer-api";
+
+const ITEMS_PER_PAGE = 6;
 
 const TYPE_CONFIG: Record<
   string,
@@ -51,6 +54,13 @@ export default function CustomerArticlesPage() {
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [selectedArticle, setSelectedArticle] = useState<CustomerContent | null>(null);
 
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedType, searchQuery]);
+
   useEffect(() => {
     let isMounted = true;
     customerContentApi
@@ -88,6 +98,12 @@ export default function CustomerArticlesPage() {
       return matchType && matchSearch;
     });
   }, [contents, selectedType, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredContents.length / ITEMS_PER_PAGE));
+  const paginatedContents = filteredContents.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   return (
     <div className="min-h-screen bg-background pb-24">
@@ -206,59 +222,76 @@ export default function CustomerArticlesPage() {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredContents.map((article) => {
-              const typeCfg =
-                TYPE_CONFIG[article.content_type] || TYPE_CONFIG.ARTICLE;
-              const formattedDate = new Date(
-                article.created_at
-              ).toLocaleDateString("vi-VN");
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {paginatedContents.map((article) => {
+                const typeCfg =
+                  TYPE_CONFIG[article.content_type] || TYPE_CONFIG.ARTICLE;
+                const formattedDate = new Date(
+                  article.created_at
+                ).toLocaleDateString("vi-VN");
 
-              return (
-                <div
-                  key={article.content_id}
-                  className="bg-surface rounded-2xl border border-outline-variant/40 p-6 flex flex-col justify-between hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer"
-                  onClick={() => setSelectedArticle(article)}
-                >
-                  <div>
-                    {/* Badge & Date */}
-                    <div className="flex items-center justify-between gap-2 mb-4">
-                      <span
-                        className={`text-xs font-semibold px-3 py-1 rounded-full ${typeCfg.bg} ${typeCfg.text}`}
-                      >
-                        {typeCfg.label}
-                      </span>
-                      <span className="text-xs text-on-surface-variant flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" /> {formattedDate}
-                      </span>
+                return (
+                  <div
+                    key={article.content_id}
+                    className="bg-surface rounded-2xl border border-outline-variant/40 p-6 flex flex-col justify-between hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group cursor-pointer"
+                    onClick={() => setSelectedArticle(article)}
+                  >
+                    <div>
+                      {/* Badge & Date */}
+                      <div className="flex items-center justify-between gap-2 mb-4">
+                        <span
+                          className={`text-xs font-semibold px-3 py-1 rounded-full ${typeCfg.bg} ${typeCfg.text}`}
+                        >
+                          {typeCfg.label}
+                        </span>
+                        <span className="text-xs text-on-surface-variant flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" /> {formattedDate}
+                        </span>
+                      </div>
+
+                      {/* Brand Name */}
+                      {article.brand_name && (
+                        <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                          <Building2 className="w-3.5 h-3.5" /> {article.brand_name}
+                        </p>
+                      )}
+
+                      {/* Title */}
+                      <h3 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors mb-3 line-clamp-2 leading-snug">
+                        {article.title}
+                      </h3>
+
+                      {/* Excerpt */}
+                      <p className="text-sm text-on-surface-variant line-clamp-3 mb-6 leading-relaxed">
+                        {article.body}
+                      </p>
                     </div>
 
-                    {/* Brand Name */}
-                    {article.brand_name && (
-                      <p className="text-xs font-semibold text-primary uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                        <Building2 className="w-3.5 h-3.5" /> {article.brand_name}
-                      </p>
-                    )}
-
-                    {/* Title */}
-                    <h3 className="text-lg font-bold text-on-surface group-hover:text-primary transition-colors mb-3 line-clamp-2 leading-snug">
-                      {article.title}
-                    </h3>
-
-                    {/* Excerpt */}
-                    <p className="text-sm text-on-surface-variant line-clamp-3 mb-6 leading-relaxed">
-                      {article.body}
-                    </p>
+                    <div className="pt-4 border-t border-outline-variant/20 flex items-center justify-between text-primary font-semibold text-sm">
+                      <span>Đọc chi tiết</span>
+                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="pt-4 border-t border-outline-variant/20 flex items-center justify-between text-primary font-semibold text-sm">
-                    <span>Đọc chi tiết</span>
-                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* Pagination */}
+            <div className="mt-8 rounded-2xl overflow-hidden shadow-sm border border-outline-variant/30">
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredContents.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={(page) => {
+                  setCurrentPage(page);
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                itemName="bài viết"
+              />
+            </div>
+          </>
         )}
       </div>
 

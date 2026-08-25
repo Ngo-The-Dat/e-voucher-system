@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 import { useApp } from "@/context/AppContext";
 import VoucherCard from "@/components/customer/cards/VoucherCard";
+import Pagination from "@/components/shared/ui/Pagination";
 import {
   ChevronRight,
   Search,
@@ -19,6 +20,8 @@ import {
   GraduationCap
 } from "lucide-react";
 import { customerCatalogApi, CustomerCategory } from "@/lib/customer-api";
+
+const ITEMS_PER_PAGE = 9;
 
 function VoucherCatalogContent() {
   const router = useRouter();
@@ -43,11 +46,20 @@ function VoucherCatalogContent() {
   const [partner, setPartner] = useState("");
   const [isValidOnly, setIsValidOnly] = useState(false);
 
-  // Apply filters on URL parameter changes
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Apply filters on URL parameter changes & reset page
   useEffect(() => {
     setSearchInput(queryParam);
     setSelectedCategory(categoryParam || "Tất cả");
+    setCurrentPage(1);
   }, [queryParam, categoryParam]);
+
+  // Reset page when local filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [minPrice, maxPrice, filterFourStars, filterFiveStars, region, minDiscount, partner, isValidOnly, sortBy]);
 
   const [dbCategories, setDbCategories] = useState<CustomerCategory[]>([]);
   useEffect(() => {
@@ -196,6 +208,12 @@ function VoucherCatalogContent() {
     return 0;
   });
 
+  const totalPages = Math.max(1, Math.ceil(sortedVouchers.length / ITEMS_PER_PAGE));
+  const paginatedVouchers = sortedVouchers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const getCategoryIcon = (name: string) => {
     if (name.includes("Ẩm thực") || name.includes("Buffet")) return Utensils;
     if (name.includes("Spa") || name.includes("Làm đẹp") || name.includes("Massage") || name.includes("Nail") || name.includes("Nha khoa")) return Sparkles;
@@ -259,88 +277,57 @@ function VoucherCatalogContent() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              className="w-full bg-surface-bright border border-outline-variant rounded-lg py-3 pl-12 pr-4 text-body-md focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-              placeholder="Tìm theo tên voucher hoặc tên đối tác..."
+              placeholder="Tìm kiếm theo tên voucher, món ăn, dịch vụ hoặc thương hiệu..."
+              className="w-full pl-12 pr-4 py-3 bg-surface-bright border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:border-primary outline-none"
             />
           </div>
           <button
             type="submit"
-            className="bg-primary text-on-primary font-label-md text-label-md px-8 py-3 rounded-lg hover:shadow-md hover:opacity-90 transition-all whitespace-nowrap flex items-center justify-center gap-2 cursor-pointer"
+            className="px-6 py-3 bg-primary text-on-primary font-label-md text-label-md font-bold rounded-lg hover:opacity-90 transition-opacity whitespace-nowrap cursor-pointer shadow-sm"
           >
             Tìm kiếm
           </button>
         </form>
       </section>
 
-      {/* Layout Grid */}
-      <div className="flex flex-col lg:flex-row gap-8">
+      {/* Main Two-Column Layout */}
+      <div className="flex flex-col md:flex-row gap-8 items-start">
         {/* Sidebar Filters */}
-        <aside className="w-full lg:w-64 flex-shrink-0 bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant self-start lg:sticky lg:top-[112px] z-20 lg:max-h-[calc(100vh-136px)] lg:overflow-y-auto no-scrollbar">
-          <div className="p-6 border-b border-outline-variant flex justify-between items-center">
-            <div>
-              <h2 className="font-title-md text-title-md font-bold text-on-surface">
-                Bộ lọc tìm kiếm
-              </h2>
-              <p className="text-label-sm text-outline mt-1">Tối ưu lựa chọn của bạn</p>
-            </div>
-            {(minPrice || maxPrice || filterFourStars || filterFiveStars) && (
-              <button
-                onClick={clearAllFilters}
-                className="text-error font-label-sm text-label-sm hover:underline cursor-pointer"
-              >
-                Xóa lọc
-              </button>
-            )}
+        <aside className="w-full md:w-64 flex-shrink-0 bg-surface-container-lowest p-6 rounded-xl border border-outline-variant shadow-sm flex flex-col gap-6">
+          <div className="flex items-center justify-between pb-4 border-b border-outline-variant">
+            <h2 className="font-title-md text-title-md font-bold text-on-surface">Bộ lọc tìm kiếm</h2>
           </div>
-          <div className="p-6 flex flex-col gap-6">
-            {/* Categories */}
-            <div>
-              <h3 className="font-label-md text-label-md font-bold text-on-surface mb-3">
-                Danh mục
-              </h3>
-              <nav className="flex flex-col gap-2">
-                {sidebarCategories.map((cat) => {
-                  const isActive = selectedCategory === cat.name;
-                  const Icon = cat.Icon;
-                  return (
-                    <button
-                      key={cat.name}
-                      onClick={() => handleCategorySelect(cat.name)}
-                      className={`flex items-center gap-3 rounded-lg px-4 py-3 text-left w-full transition-all cursor-pointer ${
-                        isActive
-                          ? "bg-primary-container text-on-primary-container font-semibold"
-                          : "text-on-surface-variant hover:bg-surface-container-high"
-                      }`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      <span className="font-label-md text-label-md">
-                        {cat.name === "Tất cả" ? "Tất cả Voucher" : cat.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </nav>
-            </div>
 
-            {/* Region Filter */}
-            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
-              <h3 className="font-label-md text-label-md font-bold text-on-surface">Khu vực</h3>
-              <select
-                value={region}
-                onChange={(e) => setRegion(e.target.value)}
-                className="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-md text-label-sm focus:border-primary outline-none"
-              >
-                <option value="">Toàn quốc</option>
-                <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                <option value="Hà Nội">Hà Nội</option>
-                <option value="Đà Nẵng">Đà Nẵng</option>
-              </select>
+          {/* Categories Filter */}
+          <div className="flex flex-col gap-3">
+            <h3 className="font-label-md text-label-md font-bold text-on-surface">Danh mục</h3>
+            <div className="flex flex-col gap-1">
+              {sidebarCategories.map((cat) => {
+                const isSelected = selectedCategory === cat.name;
+                const IconComponent = cat.Icon;
+                return (
+                  <button
+                    key={cat.name}
+                    onClick={() => handleCategorySelect(cat.name)}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg font-label-md text-label-md transition-colors text-left cursor-pointer ${
+                      isSelected
+                        ? "bg-[#0f2c59]/10 text-[#0f2c59] font-bold"
+                        : "text-on-surface-variant hover:bg-surface-container-high"
+                    }`}
+                  >
+                    <IconComponent className="w-4 h-4" />
+                    <span>{cat.name}</span>
+                  </button>
+                );
+              })}
             </div>
+          </div>
 
-            {/* Price Filter */}
+          <div className="flex flex-col gap-4">
+            {/* Price Range Filter */}
             <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
               <h3 className="font-label-md text-label-md font-bold text-on-surface">Khoảng giá</h3>
-              <div className="flex gap-2 items-center">
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   value={minPrice}
@@ -357,6 +344,21 @@ function VoucherCatalogContent() {
                   placeholder="Đến (₫)"
                 />
               </div>
+            </div>
+
+            {/* Region Filter */}
+            <div className="flex flex-col gap-3 pt-4 border-t border-outline-variant">
+              <h3 className="font-label-md text-label-md font-bold text-on-surface">Khu vực</h3>
+              <select
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                className="w-full px-3 py-2 bg-surface-bright border border-outline-variant rounded-md text-label-sm focus:border-primary outline-none"
+              >
+                <option value="">Toàn quốc</option>
+                <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                <option value="Hà Nội">Hà Nội</option>
+                <option value="Đà Nẵng">Đà Nẵng</option>
+              </select>
             </div>
 
             {/* Discount Filter */}
@@ -470,11 +472,28 @@ function VoucherCatalogContent() {
           )}
 
           {sortedVouchers.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {sortedVouchers.map((voucher) => (
-                <VoucherCard key={voucher.id} voucher={voucher} variant="grid" />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {paginatedVouchers.map((voucher) => (
+                  <VoucherCard key={voucher.id} voucher={voucher} variant="grid" />
+                ))}
+              </div>
+
+              {/* Pagination */}
+              <div className="rounded-xl overflow-hidden shadow-sm border border-outline-variant/30">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={sortedVouchers.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  itemName="voucher"
+                />
+              </div>
+            </>
           ) : (
             /* Empty State */
             <div className="flex-1 flex flex-col items-center justify-center bg-surface-container-low rounded-2xl border border-outline-variant p-8 md:p-16 min-h-[500px]">
