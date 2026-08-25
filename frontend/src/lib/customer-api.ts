@@ -480,6 +480,7 @@ export interface CustomerCategory {
   category_name: string;
   description?: string;
   voucher_count?: number;
+  total_sold?: number;
 }
 
 export interface CustomerBanner {

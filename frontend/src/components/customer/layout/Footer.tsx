@@ -19,18 +19,18 @@ export default function Footer() {
           <h4 className="font-label-md text-label-md font-bold text-on-surface mb-1">
             Khám phá
           </h4>
-          <a
-            href="#"
+          <Link
+            href="/articles"
             className="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-all font-body-md text-body-md"
           >
-            Về chúng tôi
-          </a>
-          <a
-            href="#"
+            Cẩm nang & Bài viết
+          </Link>
+          <Link
+            href="/vouchers"
             className="text-on-surface-variant dark:text-surface-variant hover:text-primary dark:hover:text-inverse-primary transition-all font-body-md text-body-md"
           >
-            Thương hiệu nổi bật
-          </a>
+            Thương hiệu & Ưu đãi
+          </Link>
         </div>
         <div className="flex flex-col gap-3">
           <h4 className="font-label-md text-label-md font-bold text-on-surface mb-1">

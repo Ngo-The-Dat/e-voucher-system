@@ -16,11 +16,11 @@ export default function FeaturedArticles() {
       .getContents()
       .then((res) => {
         if (isMounted) {
-          // Lấy các bài viết dạng ARTICLE, GUIDE, PROMOTION
+          // Lấy các bài viết dạng ARTICLE, GUIDE, PROMOTION (tối đa 6 bài cho trang chủ)
           const articles = (res.contents || []).filter(
             (c) => c.content_type !== "POLICY"
           );
-          setContents(articles);
+          setContents(articles.slice(0, 6));
           setLoading(false);
         }
       })
@@ -55,6 +55,12 @@ export default function FeaturedArticles() {
               Khám phá bí quyết tận hưởng dịch vụ và ưu đãi độc quyền
             </p>
           </div>
+          <Link
+            href="/articles"
+            className="font-label-md text-label-md text-primary font-semibold hover:underline flex items-center gap-1 cursor-pointer shrink-0"
+          >
+            Xem tất cả <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
 
         {loading ? (
