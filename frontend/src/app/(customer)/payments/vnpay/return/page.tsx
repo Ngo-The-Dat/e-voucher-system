@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { customerPaymentApi } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 import { CheckCircle2, XCircle, RefreshCw, Home, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 
@@ -25,6 +26,7 @@ function VNPayReturnContent() {
       if (!queryString) {
         setStatus("error");
         setMessage("Không tìm thấy thông tin giao dịch.");
+        notify.error("Không tìm thấy thông tin giao dịch VNPay.");
         return;
       }
 
@@ -34,14 +36,17 @@ function VNPayReturnContent() {
           setStatus("success");
           setMessage(res.message || "Giao dịch thành công!");
           setOrderId(res.orderId);
+          notify.success(res.message || "Thanh toán VNPay thành công! Voucher đã được cấp vào kho.");
         } else {
           setStatus("error");
           setMessage(res.message || "Giao dịch không thành công.");
           setOrderId(res.orderId);
+          notify.error(res.message || "Giao dịch VNPay không thành công hoặc đã bị hủy.");
         }
       } catch (err: any) {
         setStatus("error");
         setMessage(err.message || "Lỗi kết nối khi xác thực giao dịch.");
+        notify.error(err, "Lỗi kết nối khi xác thực giao dịch VNPay.");
       }
     };
 
