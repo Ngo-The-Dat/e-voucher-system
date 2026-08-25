@@ -3,9 +3,9 @@ title BUC-ADM-02 - Quản lý đối tác
 
 start
 :Chọn mục "Quản lý đối tác";
-:Xem danh sách hồ sơ đối tác
+:Xem danh sách hồ sơ đối tác/nhân viên đối tác
 và danh sách chi nhánh;
-:Chọn một hồ sơ đối tác;
+:Chọn một hồ sơ đối tác/nhân viên đối tác;
 :Xem thông tin chi tiết được hiển thị;
 
 switch (Hành động của Quản trị viên?)
