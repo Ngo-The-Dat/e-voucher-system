@@ -1,7 +1,9 @@
 @startuml
-title SQ01 - Đăng ký tài khoản Đối tác
+title Biểu đồ tuần tự: SQ01 - Đăng ký tài khoản Đối tác
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -10,112 +12,78 @@ boundary ":RegisterPage" as UI
 control ":PartnerAuthController" as Ctrl
 entity ":PartnerAuthService" as AuthSvc
 entity ":RegistrationOtpService" as OtpSvc
-actor "Quản trị viên" as Admin
-boundary ":AdminPartnerPage" as AdminUI
-control ":AdminPartnerController" as AdminCtrl
-entity ":AdminPartnerService" as AdminSvc
 
 == 1. Kiểm tra tính khả dụng của thông tin đăng ký ==
 DT -> UI: enterIdentityInfo(email, identity_no, tax_code)
 UI -> Ctrl: checkRegistration({ email, identity_no, tax_code })
 activate Ctrl
-Ctrl -> AuthSvc: checkRegistrationAvailability({ email, identity_no, tax_code })
+Ctrl -> AuthSvc: checkRegistrationAvailability(\n  email, identity_no, tax_code\n)
 activate AuthSvc
 
 alt Thông tin đã tồn tại (email / identity_no / tax_code)
     AuthSvc --> Ctrl: throw HttpError(409, message)
-    Ctrl --> UI: return error(409, message)
+    Ctrl --> UI: 409 Conflict (message)
     UI --> DT: showErrorMessage(message)
 else Thông tin hợp lệ và chưa đăng ký
     AuthSvc --> Ctrl: return void
     deactivate AuthSvc
-    Ctrl --> UI: return { available: true }
+    Ctrl --> UI: 200 OK ({ available: true })
     deactivate Ctrl
     UI --> DT: enableOtpVerificationStep()
 end
 
 == 2. Gửi và Xác thực mã OTP qua Email ==
 DT -> UI: clickSendOtp()
-UI -> Ctrl: sendRegistrationOtp({ email, identity_no, tax_code })
+UI -> Ctrl: sendRegistrationOtp(identityData)
 activate Ctrl
-Ctrl -> AuthSvc: checkRegistrationAvailability({ email, identity_no, tax_code })
+Ctrl -> AuthSvc: checkRegistrationAvailability(\n  email, identity_no, tax_code\n)
 Ctrl -> OtpSvc: requestRegistrationOtp(email)
 activate OtpSvc
 note right of OtpSvc
-  Nội bộ gọi sendPartnerRegistrationOtp(email, code, expiresInMinutes)
-  để gửi mail OTP đến Đối tác
+  Gửi email chứa mã OTP 6 số
+  đến địa chỉ email đối tác
 end note
-OtpSvc --> DT: [Email] receiveEmail(code)
+OtpSvc --> DT: [Email] receiveEmail(otpCode)
 OtpSvc --> Ctrl: return { challenge_id, expires_in, resend_after }
 deactivate OtpSvc
-Ctrl --> UI: return { challenge_id, expires_in, resend_after }
+Ctrl --> UI: 200 OK ({ challenge_id, expires_in, resend_after })
 deactivate Ctrl
 
-DT -> UI: submitOtp(otp)
-UI -> Ctrl: verifyRegistrationOtp({ email, challenge_id, otp })
+DT -> UI: submitOtp(otpCode)
+UI -> Ctrl: verifyRegistrationOtp(email, challenge_id, otpCode)
 activate Ctrl
-Ctrl -> OtpSvc: verifyRegistrationOtp(email, challenge_id, otp)
+Ctrl -> OtpSvc: verifyRegistrationOtp(email, challenge_id, otpCode)
 activate OtpSvc
 
 alt Mã OTP không đúng hoặc hết hạn
-    OtpSvc --> Ctrl: throw HttpError(400, "Mã OTP không đúng")
-    Ctrl --> UI: return error(400, message)
+    OtpSvc --> Ctrl: throw HttpError(400, "Mã OTP không đúng hoặc hết hạn")
+    Ctrl --> UI: 400 Bad Request (message)
     UI --> DT: showErrorMessage(message)
 else Mã OTP chính xác
     OtpSvc --> Ctrl: return { verified: true, challenge_id }
     deactivate OtpSvc
-    Ctrl --> UI: return { verified: true, challenge_id }
+    Ctrl --> UI: 200 OK ({ verified: true, challenge_id })
     deactivate Ctrl
     UI --> DT: showPasswordAndBusinessForm()
 end
 
 == 3. Hoàn tất đăng ký tài khoản Đối tác ==
-DT -> UI: submitRegisterForm(full_name, email, phone, identity_no, password, business_name, tax_code, otp_challenge_id)
-UI -> Ctrl: register({ full_name, email, phone, identity_no, password, business_name, tax_code, otp_challenge_id })
+DT -> UI: submitRegisterForm(partnerData, otp_challenge_id)
+UI -> Ctrl: register(partnerData, otp_challenge_id)
 activate Ctrl
-Ctrl -> AuthSvc: register({ full_name, email, phone, identity_no, password, business_name, tax_code, otp_challenge_id })
+Ctrl -> AuthSvc: register(partnerData, otp_challenge_id)
 activate AuthSvc
 AuthSvc -> OtpSvc: beginOtpConsumption(email, otp_challenge_id)
 AuthSvc -> OtpSvc: completeOtpConsumption(email, otp_challenge_id)
 AuthSvc --> Ctrl: return user
 deactivate AuthSvc
-Ctrl --> UI: return { message, user }
+Ctrl --> UI: 201 Created ({ message, user })
 deactivate Ctrl
-UI --> DT: showSuccessMessage("Đăng ký thành công! Tài khoản đang chờ Admin phê duyệt.")
+UI --> DT: showSuccessMessage(\n  "Đăng ký thành công!\n  Tài khoản đang chờ Admin phê duyệt."\n)
 
-== 4. Quản trị viên xét duyệt hồ sơ Đối tác ==
-Admin -> AdminUI: selectPendingPartner(partnerId)
-AdminUI -> AdminCtrl: getPendingPartnerById(partnerId)
-activate AdminCtrl
-AdminCtrl -> AdminSvc: getPendingPartnerById(partnerId)
-activate AdminSvc
-AdminSvc --> AdminCtrl: return partnerData
-deactivate AdminSvc
-AdminCtrl --> AdminUI: return partnerData
-deactivate AdminCtrl
-
-alt Admin phê duyệt hồ sơ
-    Admin -> AdminUI: clickApprove()
-    AdminUI -> AdminCtrl: approvePartner(partnerId)
-    activate AdminCtrl
-    AdminCtrl -> AdminSvc: approvePartner(partnerId, adminId)
-    activate AdminSvc
-    AdminSvc --> AdminCtrl: return { message: "Phê duyệt đối tác thành công" }
-    deactivate AdminSvc
-    AdminCtrl --> AdminUI: return result
-    deactivate AdminCtrl
-    AdminUI --> Admin: showToast("Phê duyệt thành công")
-else Admin từ chối hồ sơ
-    Admin -> AdminUI: clickReject(reason)
-    AdminUI -> AdminCtrl: rejectPartner(partnerId, reason)
-    activate AdminCtrl
-    AdminCtrl -> AdminSvc: rejectPartner(partnerId, reason, adminId)
-    activate AdminSvc
-    AdminSvc --> AdminCtrl: return { message: "Từ chối đối tác thành công" }
-    deactivate AdminSvc
-    AdminCtrl --> AdminUI: return result
-    deactivate AdminCtrl
-    AdminUI --> Admin: showToast("Đã từ chối đối tác")
-end
+note over DT, OtpSvc
+  Tài khoản đối tác ở trạng thái PENDING_APPROVAL.
+  Quản trị viên xét duyệt theo quy trình duyệt hồ sơ (UC-ADM-04).
+end note
 
 @enduml

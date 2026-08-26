@@ -52,8 +52,8 @@ export function normalizePaymentMethod(method?: string): string {
   if (m.includes('MOMO')) return 'ZALOPAY';
   if (m.includes('VN') || m.includes('VNPAY')) return 'VNPAY';
   if (m.includes('VISA') || m.includes('MASTER') || m.includes('CREDIT') || m.includes('CARD')) return 'STRIPE';
-  if (m.includes('BANK') || m.includes('CHUYỂN') || m.includes('TRANSFER')) return 'BANK_TRANSFER';
-  if (m.includes('TIỀN MẶT') || m.includes('CASH')) return 'CASH';
+  if (m.includes('BANK') || m.includes('CHUYỂN') || m.includes('TRANSFER')) return 'VNPAY';
+  if (m.includes('TIỀN MẶT') || m.includes('CASH')) return 'VNPAY';
   return 'VNPAY';
 }
 

@@ -1,7 +1,9 @@
 @startuml
-title SQ08 - Tạo mới và Chỉnh sửa chương trình Voucher
+title Biểu đồ tuần tự: SQ08 - Tạo mới và Chỉnh sửa chương trình Voucher
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -18,37 +20,37 @@ Ctrl -> Svc: getActiveCategories()
 activate Svc
 Svc --> Ctrl: return categories
 deactivate Svc
-Ctrl --> UI: return categories
+Ctrl --> UI: 200 OK (categories)
 deactivate Ctrl
 UI --> DT: displayCategoryOptions(categories)
 
 == 2. Tạo chương trình voucher mới (DRAFT) ==
-DT -> UI: submitCreateVoucher(input)
-UI -> Ctrl: createVoucherProgram(input)
+DT -> UI: submitCreateVoucher(voucherData)
+UI -> Ctrl: createVoucherProgram(voucherData)
 activate Ctrl
-Ctrl -> Svc: createVoucherProgram(partnerId, input)
+Ctrl -> Svc: createVoucherProgram(partnerId, voucherData)
 activate Svc
 Svc --> Ctrl: return program
 deactivate Svc
-Ctrl --> UI: return { message: "Tạo chương trình voucher thành công.", program }
+Ctrl --> UI: 201 Created ({\n  message: "Tạo chương trình voucher thành công.",\n  program\n})
 deactivate Ctrl
 UI --> DT: showSuccessToastAndRedirect(program.program_id)
 
 == 3. Chỉnh sửa chương trình voucher ==
-DT -> UI: submitUpdateVoucher(programId, input)
-UI -> Ctrl: updateVoucherProgram(programId, input)
+DT -> UI: submitUpdateVoucher(programId, updateData)
+UI -> Ctrl: updateVoucherProgram(programId, updateData)
 activate Ctrl
-Ctrl -> Svc: updateVoucherProgram(programId, partnerId, input)
+Ctrl -> Svc: updateVoucherProgram(programId, partnerId, updateData)
 activate Svc
 
 alt Chương trình không ở trạng thái DRAFT
-    Svc --> Ctrl: throw HttpError(400, "Chỉ có thể chỉnh sửa khi chương trình ở trạng thái DRAFT.")
-    Ctrl --> UI: return error(400, message)
+    Svc --> Ctrl: throw HttpError(400, "Chỉ có thể chỉnh sửa khi ở trạng thái DRAFT")
+    Ctrl --> UI: 400 Bad Request (message)
     UI --> DT: showErrorMessage(message)
 else Chương trình ở trạng thái DRAFT
     Svc --> Ctrl: return program
     deactivate Svc
-    Ctrl --> UI: return { message: "Cập nhật chương trình voucher thành công.", program }
+    Ctrl --> UI: 200 OK ({\n      message: "Cập nhật thành công.",\n      program\n    })
     deactivate Ctrl
     UI --> DT: showSuccessToast("Cập nhật chương trình voucher thành công.")
 end

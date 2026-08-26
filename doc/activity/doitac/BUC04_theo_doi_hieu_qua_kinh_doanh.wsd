@@ -1,4 +1,12 @@
 @startuml
+title Biểu đồ hoạt động: BUC04 - Theo dõi hiệu quả kinh doanh
+
+skinparam dpi 180
+skinparam defaultFontSize 12
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 11
+skinparam ArrowFontSize 11
+
 |Đối tác|
 start
 
@@ -6,30 +14,21 @@ start
 
 |Hệ thống|
 :Tổng hợp dữ liệu kinh doanh của đối tác:
-- Thống kê tổng quan: tổng số chương trình voucher,
-  số lượng voucher đã bán, số lượng voucher đã sử dụng,
-  tổng doanh thu đạt được
-- Thống kê chi tiết: doanh thu, số phát hành, số đã bán,
-  số đã sử dụng, tỷ lệ quy đổi theo từng chương trình;
+- Thống kê tổng quan:\n  (tổng voucher, đã bán, đã dùng, doanh thu)
+- Thống kê chi tiết từng chương trình:\n  (doanh thu, phát hành, quy đổi);
 
 |Đối tác|
 if (Đã có dữ liệu chương trình voucher?) then (chưa)
   :Hiển thị thông báo chưa có dữ liệu;
   stop
 else (đã có dữ liệu)
-  :Xem biểu đồ & bảng phân tích hiệu suất kinh doanh;
-  :Đối chiếu kết quả đạt được với mục tiêu, kỳ vọng đã đặt ra;
-  :Xác định chương trình đang mang lại hiệu quả tốt
-  và chương trình chưa đạt kỳ vọng;
+  :Xem biểu đồ & bảng phân tích hiệu suất;\n:Đối chiếu kết quả với mục tiêu đề ra;\n:Đánh giá chương trình đạt / chưa đạt kỳ vọng;
 
-  :Quyết định định hướng kinh doanh tiếp theo;
-
-  switch (Định hướng kinh doanh?)
-  case (tiếp tục theo dõi)
-    :Tiếp tục duy trì theo dõi hiệu quả;
-  case (xây dựng ưu đãi mới)
+  if (Định hướng kinh doanh tiếp theo?) then (xây dựng ưu đãi mới)
     :Lập kế hoạch tạo chương trình voucher mới;
-  endswitch
+  else (tiếp tục theo dõi)
+    :Tiếp tục duy trì theo dõi hiệu quả;
+  endif
 endif
 
 stop

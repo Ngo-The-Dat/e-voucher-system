@@ -162,7 +162,7 @@ export async function seedTransactions() {
     { date: formatSqlDate(addDays(now, -30)), status: 'PAID', count: 6 },
   ];
 
-  const paymentMethods = ['MOMO', 'VNPAY', 'CREDIT_CARD', 'ZALOPAY'];
+  const paymentMethods = ['VNPAY', 'ZALOPAY', 'STRIPE', 'PAYPAL'];
   let orderCounter = 0;
   let voucherCounter = 0;
   let reviewCounter = 0;

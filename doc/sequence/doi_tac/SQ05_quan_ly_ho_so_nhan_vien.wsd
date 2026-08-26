@@ -1,7 +1,9 @@
 @startuml
-title SQ05 - Quản lý hồ sơ cá nhân Nhân viên đối tác
+title Biểu đồ tuần tự: SQ05 - Quản lý hồ sơ cá nhân Nhân viên đối tác
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -18,19 +20,19 @@ Ctrl -> Svc: getEmployeeProfile(userId)
 activate Svc
 Svc --> Ctrl: return employeeProfile
 deactivate Svc
-Ctrl --> UI: return employeeProfile
+Ctrl --> UI: 200 OK (employeeProfile)
 deactivate Ctrl
 UI --> NVDT: displayEmployeeProfile(employeeProfile)
 
 == 2. Cập nhật thông tin cá nhân ==
-NVDT -> UI: submitUpdateProfile(full_name, phone, gender, nationality)
-UI -> Ctrl: updateProfile({ full_name, phone, gender, nationality })
+NVDT -> UI: submitUpdateProfile(profileData)
+UI -> Ctrl: updateProfile(profileData)
 activate Ctrl
-Ctrl -> Svc: updateEmployeeProfile(userId, { full_name, phone, gender, nationality })
+Ctrl -> Svc: updateEmployeeProfile(userId, profileData)
 activate Svc
 Svc --> Ctrl: return employeeProfile
 deactivate Svc
-Ctrl --> UI: return employeeProfile
+Ctrl --> UI: 200 OK (employeeProfile)
 deactivate Ctrl
 UI --> NVDT: showSuccessToast("Cập nhật thông tin thành công.")
 

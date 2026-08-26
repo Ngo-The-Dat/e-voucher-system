@@ -1,7 +1,9 @@
 @startuml
-title SQ04 - Quản lý hồ sơ Đối tác & Logo thương hiệu
+title Biểu đồ tuần tự: SQ04 - Quản lý hồ sơ Đối tác & Logo thương hiệu
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -19,19 +21,19 @@ Ctrl -> Svc: getProfile(partnerId)
 activate Svc
 Svc --> Ctrl: return profile
 deactivate Svc
-Ctrl --> UI: return profile
+Ctrl --> UI: 200 OK (profile)
 deactivate Ctrl
 UI --> DT: displayProfile(profile)
 
 == 2. Cập nhật thông tin hồ sơ Đối tác ==
-DT -> UI: submitUpdateProfile(input)
-UI -> Ctrl: updateProfile(input)
+DT -> UI: submitUpdateProfile(inputData)
+UI -> Ctrl: updateProfile(inputData)
 activate Ctrl
-Ctrl -> Svc: updateProfile(partnerId, input)
+Ctrl -> Svc: updateProfile(partnerId, inputData)
 activate Svc
 Svc --> Ctrl: return profile
 deactivate Svc
-Ctrl --> UI: return { message: "Cập nhật hồ sơ thành công.", profile }
+Ctrl --> UI: 200 OK ({\n  message: "Cập nhật hồ sơ thành công.",\n  profile\n})
 deactivate Ctrl
 UI --> DT: showSuccessToast("Cập nhật hồ sơ thành công.")
 
@@ -47,7 +49,7 @@ Ctrl -> Svc: updateProfile(partnerId, { brand_logo: logoUrl })
 activate Svc
 Svc --> Ctrl: return profile
 deactivate Svc
-Ctrl --> UI: return { message: "Upload logo thành công.", logo_url: logoUrl, profile }
+Ctrl --> UI: 200 OK ({\n  message: "Upload logo thành công.",\n  logo_url: logoUrl,\n  profile\n})
 deactivate Ctrl
 UI --> DT: updateBrandLogoView(logoUrl)
 

@@ -1,7 +1,9 @@
 @startuml
-title SQ06 - Quản lý chi nhánh cửa hàng (Branch Management)
+title Biểu đồ tuần tự: SQ06 - Quản lý chi nhánh cửa hàng
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -18,31 +20,31 @@ Ctrl -> Svc: getBranches(partnerId)
 activate Svc
 Svc --> Ctrl: return branches
 deactivate Svc
-Ctrl --> UI: return branches
+Ctrl --> UI: 200 OK (branches)
 deactivate Ctrl
 UI --> DT: displayBranchesTable(branches)
 
 == 2. Tạo chi nhánh mới ==
-DT -> UI: submitCreateBranch(branch_name, address, region, phone)
-UI -> Ctrl: createBranch({ branch_name, address, region, phone })
+DT -> UI: submitCreateBranch(branchData)
+UI -> Ctrl: createBranch(branchData)
 activate Ctrl
-Ctrl -> Svc: createBranch(partnerId, { branch_name, address, region, phone })
+Ctrl -> Svc: createBranch(partnerId, branchData)
 activate Svc
 Svc --> Ctrl: return branch
 deactivate Svc
-Ctrl --> UI: return { message: "Tạo chi nhánh thành công.", branch }
+Ctrl --> UI: 201 Created ({\n  message: "Tạo chi nhánh thành công.",\n  branch\n})
 deactivate Ctrl
 UI --> DT: showSuccessToast("Tạo chi nhánh thành công.")
 
 == 3. Chỉnh sửa chi nhánh ==
-DT -> UI: submitUpdateBranch(branchId, input)
-UI -> Ctrl: updateBranch(branchId, input)
+DT -> UI: submitUpdateBranch(branchId, updatedData)
+UI -> Ctrl: updateBranch(branchId, updatedData)
 activate Ctrl
-Ctrl -> Svc: updateBranch(branchId, partnerId, input)
+Ctrl -> Svc: updateBranch(branchId, partnerId, updatedData)
 activate Svc
 Svc --> Ctrl: return branch
 deactivate Svc
-Ctrl --> UI: return { message: "Cập nhật chi nhánh thành công.", branch }
+Ctrl --> UI: 200 OK ({\n  message: "Cập nhật chi nhánh thành công.",\n  branch\n})
 deactivate Ctrl
 UI --> DT: showSuccessToast("Cập nhật chi nhánh thành công.")
 
@@ -54,7 +56,7 @@ Ctrl -> Svc: deleteBranch(branchId, partnerId)
 activate Svc
 Svc --> Ctrl: return void
 deactivate Svc
-Ctrl --> UI: return { message: "Chi nhánh đã được vô hiệu hóa." }
+Ctrl --> UI: 200 OK ({\n  message: "Chi nhánh đã được vô hiệu hóa."\n})
 deactivate Ctrl
 UI --> DT: showSuccessToast("Chi nhánh đã được vô hiệu hóa.")
 
