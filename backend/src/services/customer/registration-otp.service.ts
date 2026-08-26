@@ -108,7 +108,14 @@ export const requestRegistrationOtp = async (
   try {
     const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
     const codeHash = await bcrypt.hash(code, 10);
-    await sendEmail(email, code, OTP_EXPIRES_IN_MS / 60_000);
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    if (isEmail) {
+      await sendEmail(email, code, OTP_EXPIRES_IN_MS / 60_000);
+    } else {
+      console.log(`\n======================================================`);
+      console.log(`[MOCK SMS OTP - Đăng ký] Gửi mã OTP ${code} tới SĐT: ${email}`);
+      console.log(`======================================================\n`);
+    }
 
     const challenge: OtpChallenge = {
       id: randomUUID(),
