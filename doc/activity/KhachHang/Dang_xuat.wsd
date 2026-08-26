@@ -1,0 +1,10 @@
+@startuml
+title Đăng xuất (BR-CUS-02)
+|Khách hàng|
+start
+:Bấm nút "Đăng xuất";
+|Hệ thống|
+:Hủy phiên làm việc;
+:Chuyển hướng về trang Đăng nhập;
+stop
+@enduml

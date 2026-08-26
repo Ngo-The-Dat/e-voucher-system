@@ -30,7 +30,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} antialiased min-h-screen bg-background text-on-background`}>
         {children}
-        <Toaster position="bottom-right" richColors />
+        <Toaster position="bottom-left" richColors closeButton duration={4000} />
       </body>
     </html>
   );

@@ -1,0 +1,19 @@
+@startuml
+title Đổi mật khẩu (BR-CUS-02)
+|Khách hàng|
+start
+:Truy cập mục "Đổi mật khẩu" trong Hồ sơ;
+repeat
+  :Nhập mật khẩu cũ và mật khẩu mới;
+  |Hệ thống|
+  :Xác thực mật khẩu cũ;
+  if (Đúng mật khẩu cũ?) then (Có)
+    :Mã hóa và lưu mật khẩu mới;
+    :Thông báo đổi mật khẩu thành công;
+    stop
+  else (Không)
+    :Thông báo sai mật khẩu cũ;
+  endif
+  |Khách hàng|
+repeat while (Nhập lại mật khẩu?) is (Thử lại)
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+title Đăng nhập (BR-CUS-02)
+|Khách hàng|
+start
+:Truy cập trang Đăng nhập;
+repeat
+  :Nhập Email/SĐT và Mật khẩu;
+  |Hệ thống|
+  :Kiểm tra tài khoản có tồn tại?;
+  if (Tồn tại?) then (Có)
+    :Kiểm tra mật khẩu;
+    if (Mật khẩu đúng?) then (Có)
+      :Xác thực thành công;
+      :Chuyển hướng về Trang chủ;
+      stop
+    else (Không)
+      :Thông báo sai mật khẩu;
+    endif
+  else (Không)
+    :Thông báo không tìm thấy tài khoản;
+  endif
+  |Khách hàng|
+repeat while (Thử lại đăng nhập?) is (Đồng ý)
+@enduml

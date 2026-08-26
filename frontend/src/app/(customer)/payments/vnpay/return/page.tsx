@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { customerPaymentApi } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 import { CheckCircle2, XCircle, RefreshCw, Home, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 
@@ -15,16 +16,13 @@ function VNPayReturnContent() {
 
   useEffect(() => {
     const verifyPayment = async () => {
-      // Reconstruct query string
-      const params = new URLSearchParams();
-      searchParams.forEach((value, key) => {
-        params.append(key, value);
-      });
-      const queryString = params.toString() ? `?${params.toString()}` : "";
+      // Use raw window.location.search to prevent URLSearchParams from re-encoding spaces to '+' incorrectly
+      const queryString = window?.location?.search || "";
 
       if (!queryString) {
         setStatus("error");
         setMessage("Không tìm thấy thông tin giao dịch.");
+        notify.error("Không tìm thấy thông tin giao dịch VNPay.");
         return;
       }
 
@@ -34,14 +32,17 @@ function VNPayReturnContent() {
           setStatus("success");
           setMessage(res.message || "Giao dịch thành công!");
           setOrderId(res.orderId);
+          notify.success(res.message || "Thanh toán VNPay thành công! Voucher đã được cấp vào kho.");
         } else {
           setStatus("error");
           setMessage(res.message || "Giao dịch không thành công.");
           setOrderId(res.orderId);
+          notify.error(res.message || "Giao dịch VNPay không thành công hoặc đã bị hủy.");
         }
       } catch (err: any) {
         setStatus("error");
         setMessage(err.message || "Lỗi kết nối khi xác thực giao dịch.");
+        notify.error(err, "Lỗi kết nối khi xác thực giao dịch VNPay.");
       }
     };
 

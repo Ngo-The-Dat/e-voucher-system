@@ -1,0 +1,32 @@
+@startuml
+title Đăng xuất (BR-CUS-01)
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện" as UI
+control "Controller" as Controller
+
+KH -> UI : clickLogout()
+activate UI
+UI -> Controller : logoutUser()
+activate Controller
+
+alt Nếu dùng blacklist token
+    entity "AuthService" as Service
+    database "Redis/DB Cache" as Cache
+    Controller -> Service : blacklistToken()
+    activate Service
+    Service -> Cache : saveTokenToBlacklist()
+    activate Cache
+    Cache --> Service : success
+    deactivate Cache
+    Service --> Controller : success
+    deactivate Service
+end
+
+Controller --> UI : logoutSuccess()
+deactivate Controller
+UI -> UI : clearLocalToken()
+UI --> KH : redirectToHomePage()
+deactivate UI
+@enduml

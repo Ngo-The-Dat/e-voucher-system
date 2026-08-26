@@ -1,0 +1,48 @@
+@startuml
+title Cập nhật hồ sơ cá nhân (BR-CUS-02)
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Hồ sơ (ProfilePage)" as UI
+control "UserController" as Controller
+entity "UserService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+
+KH -> UI : openProfilePage()
+activate UI
+UI -> Controller : getProfile(userId)
+activate Controller
+Controller -> Service : fetchUserProfile(userId)
+activate Service
+Service -> DB : queryUserById(userId)
+activate DB
+DB --> Service : userData
+deactivate DB
+Service --> Controller : userData
+deactivate Service
+Controller --> UI : renderProfile(userData)
+deactivate Controller
+UI --> KH : displayProfileData()
+deactivate UI
+
+KH -> UI : updateProfile(name, phone, dob, ...)
+activate UI
+UI -> Controller : updateProfileData(userId, profileData)
+activate Controller
+alt Valid input
+    Controller -> Service : saveProfile(userId, profileData)
+    activate Service
+    Service -> DB : updateUser(userId, profileData)
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    deactivate Service
+    Controller --> UI : showSuccessMessage()
+else Invalid input
+    Controller --> UI : showValidationError()
+end
+UI --> KH : displayResult()
+deactivate Controller
+deactivate UI
+@enduml

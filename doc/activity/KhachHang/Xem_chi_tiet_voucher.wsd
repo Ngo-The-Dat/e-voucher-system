@@ -1,0 +1,16 @@
+@startuml
+title Xem chi tiết voucher (BR-CUS-04)
+|Khách hàng|
+start
+:Chọn một Voucher từ danh sách;
+|Hệ thống|
+if (Voucher tồn tại?) then (Có)
+  :Hiển thị đầy đủ thông tin trang Chi tiết Voucher\n(Thông tin chung, hình ảnh, chi nhánh, đánh giá);
+  stop
+else (Không)
+  |Hệ thống|
+  :Trả về lỗi 404 (Không tìm thấy / Đã ẩn);
+  :Hiển thị thông báo lỗi và quay về Trang chủ;
+  stop
+endif
+@enduml

@@ -24,6 +24,8 @@ const otpSendRateLimit = rateLimit({
 
 // Public auth routes
 router.post('/login', authController.login);
+router.post('/request-registration-otp', otpSendRateLimit, authController.requestRegistrationOtp);
+router.post('/verify-registration-otp', authController.verifyRegistrationOtp);
 router.post('/register', authController.register);
 
 // Forgot password routes

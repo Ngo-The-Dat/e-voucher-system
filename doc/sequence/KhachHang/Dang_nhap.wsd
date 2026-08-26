@@ -1,0 +1,37 @@
+@startuml
+title Đăng nhập (BR-CUS-01)
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Đăng nhập" as UI
+control "AuthController" as Controller
+entity "AuthService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+
+KH -> UI : submitLogin(emailOrPhone, password)
+activate UI
+UI -> Controller : loginUser(emailOrPhone, password)
+activate Controller
+Controller -> Service : authenticate(emailOrPhone, password)
+activate Service
+
+Service -> DB : getUserByEmailOrPhone(emailOrPhone)
+activate DB
+DB --> Service : userData(hashed_password)
+deactivate DB
+
+Service -> Service : comparePassword(password, hashed_password)
+alt Password matches
+    Service -> Service : generateJWT(userId)
+    Service --> Controller : success, jwtToken
+    Controller --> UI : loginSuccess(jwtToken)
+    UI --> KH : showHomePage()
+else Invalid credentials
+    Service --> Controller : authenticationError
+    Controller --> UI : showErrorMessage("Sai tài khoản hoặc mật khẩu")
+    UI --> KH : displayError()
+end
+deactivate Service
+deactivate Controller
+deactivate UI
+@enduml

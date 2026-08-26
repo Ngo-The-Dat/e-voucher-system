@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import { ChevronRight } from "lucide-react";
 import { customerOrderApi, customerPaymentApi, CreateOrderItemInput, PaymentMethodItem, getStoredCustomerToken } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 
 import CartItemList from "@/components/customer/cart/CartItemList";
 import CartSummary, { RecipientState, RecipientErrors } from "@/components/customer/cart/CartSummary";
@@ -133,7 +134,7 @@ export default function CartPage() {
   const handleCheckout = async () => {
     const itemsToCheckout = cart.filter((item) => selectedItems[item.voucher.id]);
     if (itemsToCheckout.length === 0) {
-      alert("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
+      notify.warning("Vui lòng chọn ít nhất một sản phẩm để thanh toán.");
       return;
     }
 
@@ -142,7 +143,7 @@ export default function CartPage() {
       return stock !== undefined && stock <= 0;
     });
     if (outOfStockItem) {
-      alert(`Sản phẩm "${outOfStockItem.voucher.title}" đã hết hàng. Vui lòng bỏ chọn hoặc xóa khỏi giỏ hàng.`);
+      notify.error(`Sản phẩm "${outOfStockItem.voucher.title}" đã hết hàng. Vui lòng bỏ chọn hoặc xóa khỏi giỏ hàng.`);
       return;
     }
 
@@ -152,7 +153,7 @@ export default function CartPage() {
     });
     if (overStockItem) {
       const stock = overStockItem.availableStock ?? overStockItem.voucher.availableStock;
-      alert(`Sản phẩm "${overStockItem.voucher.title}" vượt quá số lượng tồn kho (chỉ còn ${stock} sản phẩm). Vui lòng điều chỉnh lại số lượng.`);
+      notify.warning(`Sản phẩm "${overStockItem.voucher.title}" vượt quá số lượng tồn kho (chỉ còn ${stock} sản phẩm). Vui lòng điều chỉnh lại số lượng.`);
       return;
     }
 
@@ -165,7 +166,7 @@ export default function CartPage() {
 
     const token = getStoredCustomerToken();
     if (!token) {
-      alert("Vui lòng đăng nhập để thực hiện thanh toán đơn hàng.");
+      notify.warning("Vui lòng đăng nhập để thực hiện thanh toán đơn hàng.");
       router.push("/login");
       return;
     }
@@ -179,7 +180,7 @@ export default function CartPage() {
       .filter((item) => !isNaN(item.program_id) && item.program_id > 0);
 
     if (apiItems.length === 0) {
-      alert("Không tìm thấy thông tin sản phẩm hợp lệ để đặt hàng. Vui lòng thử tải lại trang.");
+      notify.error("Không tìm thấy thông tin sản phẩm hợp lệ để đặt hàng. Vui lòng thử tải lại trang.");
       return;
     }
 
@@ -209,15 +210,7 @@ export default function CartPage() {
       });
       setIsPaymentModalOpen(true);
     } catch (err: any) {
-      const rawMsg = err?.message || "";
-      // Lọc bỏ các thông báo kỹ thuật, đường dẫn localhost hoặc lỗi kết nối
-      if (rawMsg.includes("localhost") || rawMsg.includes("fetch failed") || rawMsg.includes("HTTP")) {
-        alert("Không thể kết nối đến máy chủ. Vui lòng kiểm tra lại kết nối và thử lại sau.");
-      } else if (rawMsg) {
-        alert(rawMsg);
-      } else {
-        alert("Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại.");
-      }
+      notify.error(err, "Lỗi hệ thống khi tạo đơn hàng. Vui lòng thử lại sau.");
     } finally {
       setIsSubmitting(false);
     }

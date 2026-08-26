@@ -6,6 +6,7 @@ import { useApp } from "@/context/AppContext";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { customerOrderApi, CustomerVoucherItem, getStoredCustomerUser } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 
 import {
   AlertTriangle,
@@ -165,6 +166,7 @@ export default function MyVoucherDetailPage({ params }: { params: Promise<{ id: 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(displayVoucher.code);
     setCopied(true);
+    notify.success("Đã sao chép mã voucher vào bộ nhớ tạm!");
     setTimeout(() => setCopied(false), 2000);
   };
 

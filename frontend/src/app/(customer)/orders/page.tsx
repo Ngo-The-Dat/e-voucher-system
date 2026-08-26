@@ -3,6 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { customerOrderApi, customerPaymentApi, CustomerOrder } from "@/lib/customer-api";
+import notify from "@/lib/notify";
+import Pagination from "@/components/shared/ui/Pagination";
 import {
   ChevronRight,
   ShoppingBag,
@@ -23,11 +25,16 @@ import {
 } from "lucide-react";
 import PaymentSimulatorModal, { PaymentSimulatorOrder } from "@/components/customer/checkout/PaymentSimulatorModal";
 
+const ITEMS_PER_PAGE = 5;
+
 export default function OrderHistoryPage() {
   const [orders, setOrders] = useState<CustomerOrder[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [currentTime, setCurrentTime] = useState<number>(Date.now());
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState<number>(1);
 
   // Trạng thái tự động xử lý khi PayPal redirect về
   const [paypalCaptureStatus, setPaypalCaptureStatus] = useState<{
@@ -44,6 +51,11 @@ export default function OrderHistoryPage() {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [paymentMethodFilter, setPaymentMethodFilter] = useState<string>("all");
   const [timeRangeFilter, setTimeRangeFilter] = useState<string>("all");
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusTab, searchTerm, paymentMethodFilter, timeRangeFilter]);
 
   const loadOrders = async () => {
     try {
@@ -110,18 +122,22 @@ export default function OrderHistoryPage() {
           customerPaymentApi
             .captureStripeOrder(orderId, sessionId || undefined)
             .then(() => {
+              const msg = `Thanh toán Stripe cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
               setPaypalCaptureStatus({
                 status: "success",
-                message: `Thanh toán Stripe cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                message: msg,
               });
+              notify.success(msg);
               loadOrders();
             })
             .catch((err) => {
               console.warn("Lỗi auto capture Stripe redirect:", err);
+              const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua Stripe.";
               setPaypalCaptureStatus({
                 status: "error",
-                message: err.message || "Không thể hoàn tất thanh toán tự động qua Stripe.",
+                message: errMsg,
               });
+              notify.error(err, "Thanh toán Stripe không thành công.");
               loadOrders();
             });
         }
@@ -142,18 +158,22 @@ export default function OrderHistoryPage() {
           customerPaymentApi
             .capturePayPalOrder(orderId, token)
             .then(() => {
+              const msg = `Thanh toán PayPal cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
               setPaypalCaptureStatus({
                 status: "success",
-                message: `Thanh toán PayPal cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                message: msg,
               });
+              notify.success(msg);
               loadOrders();
             })
             .catch((err) => {
               console.warn("Lỗi auto capture PayPal redirect:", err);
+              const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua PayPal.";
               setPaypalCaptureStatus({
                 status: "error",
-                message: err.message || "Không thể hoàn tất thanh toán tự động qua PayPal.",
+                message: errMsg,
               });
+              notify.error(err, "Thanh toán PayPal không thành công.");
               loadOrders();
             });
         }
@@ -200,18 +220,22 @@ export default function OrderHistoryPage() {
                 checksum: zaloChecksum,
               })
               .then(() => {
+                const msg = `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`;
                 setPaypalCaptureStatus({
                   status: "success",
-                  message: `Thanh toán ZaloPay cho đơn hàng #${orderId} thành công! Các mã E-Voucher đã được phát hành vào kho của bạn.`,
+                  message: msg,
                 });
+                notify.success(msg);
                 loadOrders();
               })
               .catch((err) => {
                 console.warn("Lỗi auto capture ZaloPay redirect:", err);
+                const errMsg = err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.";
                 setPaypalCaptureStatus({
                   status: "error",
-                  message: err.message || "Không thể hoàn tất thanh toán tự động qua ZaloPay.",
+                  message: errMsg,
                 });
+                notify.error(err, "Thanh toán ZaloPay không thành công.");
                 loadOrders();
               })
               .finally(() => {
@@ -219,10 +243,12 @@ export default function OrderHistoryPage() {
               });
           } else {
             window.localStorage.removeItem("pending_zalopay_payment");
+            const failMsg = `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`;
             setPaypalCaptureStatus({
               status: "error",
-              message: `Giao dịch ZaloPay #${orderId} không thành công hoặc đã bị hủy.`,
+              message: failMsg,
             });
+            notify.error(failMsg);
             loadOrders();
           }
         } else {
@@ -416,6 +442,12 @@ export default function OrderHistoryPage() {
     });
   }, [orders, statusTab, searchTerm, paymentMethodFilter, timeRangeFilter, currentTime]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ITEMS_PER_PAGE));
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const pendingCount = useMemo(
     () => orders.filter((o) => getOrderState(o).isPendingActive).length,
     [orders, currentTime]
@@ -598,7 +630,7 @@ export default function OrderHistoryPage() {
         </div>
       ) : filteredOrders.length > 0 ? (
         <div className="flex flex-col gap-6">
-          {filteredOrders.map((order) => {
+          {paginatedOrders.map((order) => {
             const isExpanded = expandedOrderId === order.order_id;
             const isPaid = order.payment_status === "PAID" || order.order_status === "COMPLETED";
             const state = getOrderState(order);
@@ -800,6 +832,21 @@ export default function OrderHistoryPage() {
               </div>
             );
           })}
+
+          {/* Pagination */}
+          <div className="rounded-xl overflow-hidden shadow-sm border border-outline-variant/30">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredOrders.length}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={(page) => {
+                setCurrentPage(page);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              itemName="đơn hàng"
+            />
+          </div>
         </div>
       ) : (
         /* Empty State */

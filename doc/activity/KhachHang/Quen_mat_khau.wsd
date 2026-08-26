@@ -1,0 +1,36 @@
+@startuml
+title Quên mật khẩu (BR-CUS-02)
+|Khách hàng|
+start
+:Bấm "Quên mật khẩu" tại trang Đăng nhập;
+repeat
+  :Nhập Email/SĐT đã đăng ký;
+  :Bấm "Gửi yêu cầu";
+  |Hệ thống|
+  :Kiểm tra tài khoản tồn tại?;
+  if (Tồn tại?) then (Có)
+    :Gửi mã OTP qua Email/SMS;
+    |Khách hàng|
+    :Nhận mã OTP;
+    repeat
+      :Nhập mã OTP và Mật khẩu mới;
+      |Hệ thống|
+      :Xác thực mã OTP;
+      if (OTP hợp lệ?) then (Có)
+        :Lưu mật khẩu mới;
+        :Thông báo đặt lại mật khẩu thành công;
+        :Chuyển hướng về trang Đăng nhập;
+        stop
+      else (Không)
+        :Thông báo mã OTP sai hoặc hết hạn;
+      endif
+      |Khách hàng|
+    repeat while (Nhập lại OTP?) is (Thử lại)
+    stop
+  else (Không)
+    |Hệ thống|
+    :Thông báo tài khoản không tồn tại;
+  endif
+  |Khách hàng|
+repeat while (Nhập lại Email/SĐT?) is (Thử lại)
+@enduml
