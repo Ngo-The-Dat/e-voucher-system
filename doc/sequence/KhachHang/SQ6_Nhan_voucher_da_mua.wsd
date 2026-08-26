@@ -2,11 +2,13 @@
 title Biểu đồ tuần tự: Nhan_voucher_da_mua
 
 autonumber
+skinparam monochrome true
+skinparam shadowing false
+
 actor "Khách hàng" as KH
 boundary "Giao diện Vouchers (CustomerVoucherPage)" as UI
 control "VoucherController" as Controller
 entity "VoucherService" as Service
-database "Cơ sở dữ liệu (Database)" as DB
 
 KH -> UI : openMyVouchersPage()
 activate UI
@@ -14,10 +16,6 @@ UI -> Controller : getMyVouchers(customerId)
 activate Controller
 Controller -> Service : fetchPurchasedVouchers(customerId)
 activate Service
-Service -> DB : queryVouchers(customerId)
-activate DB
-DB --> Service : voucherList
-deactivate DB
 Service --> Controller : voucherList
 deactivate Service
 Controller --> UI : renderVouchers(voucherList)
@@ -34,10 +32,6 @@ else Vouchers exist
     activate Controller
     Controller -> Service : getVoucherDetails(voucherId)
     activate Service
-    Service -> DB : queryVoucherDetails(voucherId)
-    activate DB
-    DB --> Service : voucherDetails
-    deactivate DB
     Service --> Controller : voucherDetails
     deactivate Service
     Controller --> UI : renderVoucherDetails(voucherDetails)
