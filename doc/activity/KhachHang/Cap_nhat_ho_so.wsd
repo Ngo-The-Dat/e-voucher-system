@@ -1,0 +1,23 @@
+@startuml
+title Cập nhật hồ sơ cá nhân (BR-CUS-02)
+|Khách hàng|
+start
+:Truy cập trang Hồ sơ cá nhân;
+|Hệ thống|
+:Truy xuất và hiển thị thông tin người dùng;
+|Khách hàng|
+repeat
+  :Chỉnh sửa thông tin\n(Họ tên, SĐT, Ngày sinh);
+  :Bấm "Lưu thay đổi";
+  |Hệ thống|
+  :Kiểm tra định dạng và tính hợp lệ;
+  if (Hợp lệ?) then (Có)
+    :Cập nhật dữ liệu vào Database;
+    :Thông báo cập nhật thành công;
+    stop
+  else (Không)
+    :Thông báo lỗi định dạng dữ liệu;
+  endif
+  |Khách hàng|
+repeat while (Sửa lại thông tin?) is (Đồng ý)
+@enduml

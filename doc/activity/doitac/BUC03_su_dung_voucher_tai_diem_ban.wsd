@@ -1,41 +1,43 @@
 @startuml
+title Biểu đồ hoạt động: BUC03 - Sử dụng voucher tại điểm bán
+
+skinparam dpi 180
+skinparam defaultFontSize 12
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 11
+skinparam ArrowFontSize 11
+
 |Khách hàng|
 start
-:Xuất trình voucher tại chi nhánh
-(qua Mã voucher hoặc Mã QR trên ứng dụng);
+:Xuất trình voucher tại chi nhánh\n(Mã code hoặc quét mã QR);
 
-|Đối tác / Nhân viên đối tác|
-:Tiếp nhận và tra cứu voucher
-(nhập mã code hoặc quét mã QR);
+|Đối tác / Nhân viên|
+:Tiếp nhận và tra cứu voucher\n(nhập mã code hoặc quét mã QR);
 
 |Hệ thống|
 :Kiểm tra dữ liệu voucher:
-- Mã voucher tồn tại và thuộc đối tác
-- Trạng thái chưa sử dụng (UNUSED)
-- Trong thời hạn sử dụng (use_start_at <= NOW <= expires_at)
-- Chi nhánh áp dụng hợp lệ & đang ACTIVE
-(với nhân viên: đúng chi nhánh được phân công);
+- Mã tồn tại và thuộc đối tác
+- Trạng thái chưa dùng (UNUSED)
+- Trong thời hạn hiệu lực
+- Đúng chi nhánh được áp dụng
+(nhân viên đúng chi nhánh phân công);
 
-if (Voucher hợp lệ và đủ điều kiện?) then (hợp lệ)
-  |Đối tác / Nhân viên đối tác|
+if (Voucher hợp lệ & đủ điều kiện?) then (hợp lệ)
+  |Đối tác / Nhân viên|
   :Xác nhận đổi voucher tại quầy chi nhánh;
 
   |Hệ thống|
-  :Khóa dòng dữ liệu giao dịch (Pessimistic Lock);
-  :Cập nhật trạng thái voucher sang USED;
-  :Ghi nhận thời điểm sử dụng (used_at);
+  :Khóa dòng dữ liệu (Pessimistic Lock);\n:Cập nhật trạng thái sang USED;\n:Ghi nhận thời điểm sử dụng (used_at);
 
-  |Đối tác / Nhân viên đối tác|
+  |Đối tác / Nhân viên|
   :Áp dụng ưu đãi giảm giá / cung cấp dịch vụ;
 
   |Khách hàng|
   :Nhận ưu đãi từ voucher;
   stop
 else (không hợp lệ)
-  |Đối tác / Nhân viên đối tác|
-  :Từ chối áp dụng ưu đãi;
-  :Thông báo lý do cho khách hàng
-  (mã không tồn tại, đã sử dụng, hết hạn, hoặc sai chi nhánh);
+  |Đối tác / Nhân viên|
+  :Từ chối áp dụng ưu đãi;\n:Thông báo lý do cho khách hàng\n(mã sai, đã dùng, hết hạn, sai chi nhánh);
 
   |Khách hàng|
   stop

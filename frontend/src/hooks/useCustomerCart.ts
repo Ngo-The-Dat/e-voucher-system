@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Voucher, MyVoucher } from "@/lib/types/customer";
 import { customerCartApi, customerOrderApi, BackendCartItem, CustomerVoucherItem } from "@/lib/customer-api";
+import notify from "@/lib/notify";
 
 export interface CartItem {
   cartItemId?: number;
@@ -138,14 +139,15 @@ export function useCustomerCart() {
       try {
         const res = await customerCartApi.addToCart(programId, quantity);
         if (res.adjusted && res.message) {
-          alert(res.message);
+          notify.warning(res.message);
+        } else {
+          notify.success(`Đã thêm "${voucher.title}" vào giỏ hàng!`);
         }
         await fetchBackendCart();
         return;
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          alert(err.message);
-        }
+        notify.error(err, "Không thể thêm voucher vào giỏ hàng.");
+        return;
       }
     }
 
@@ -180,6 +182,7 @@ export function useCustomerCart() {
         });
       }
 
+      notify.success(`Đã thêm "${voucher.title}" vào giỏ hàng!`);
       localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
       return newCart;
     });
@@ -192,16 +195,19 @@ export function useCustomerCart() {
     if (token && itemToRemove?.cartItemId) {
       try {
         await customerCartApi.removeFromCart(itemToRemove.cartItemId);
+        notify.success("Đã xóa sản phẩm khỏi giỏ hàng.");
         await fetchBackendCart();
         return;
       } catch (err: unknown) {
         console.error("Lỗi khi xóa sản phẩm từ API giỏ hàng:", err);
+        notify.error(err, "Không thể xóa sản phẩm khỏi giỏ hàng.");
       }
     }
 
     setCart((prevCart) => {
       const newCart = prevCart.filter((item) => String(item.voucher.id) !== String(voucherId));
       localStorage.setItem("vouchify_cart", JSON.stringify(newCart));
+      notify.success("Đã xóa sản phẩm khỏi giỏ hàng.");
       return newCart;
     });
   }, [cart, fetchBackendCart]);
@@ -224,14 +230,13 @@ export function useCustomerCart() {
       try {
         const res = await customerCartApi.updateCartItem(itemToUpdate.cartItemId, quantity);
         if (res.adjusted && res.message) {
-          alert(res.message);
+          notify.warning(res.message);
         }
         await fetchBackendCart();
         return;
       } catch (err: unknown) {
-        if (err instanceof Error) {
-          alert(err.message);
-        }
+        notify.error(err, "Không thể cập nhật số lượng sản phẩm.");
+        return;
       }
     }
 

@@ -1,5 +1,9 @@
 @startuml
+title Biểu đồ Use Case Kinh doanh: Đối tác & Nhân viên đối tác
+
 left to right direction
+skinparam dpi 180
+skinparam defaultFontSize 12
 
 actor "Đối tác" as DT
 actor "Nhân viên đối tác" as NVDT

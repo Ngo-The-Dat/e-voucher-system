@@ -11,7 +11,7 @@ export function useCustomerVouchers() {
   const fetchVouchers = useCallback(async () => {
     try {
       setIsLoading(true);
-      const res = await customerCatalogApi.getVouchers({ limit: 100 });
+      const res = await customerCatalogApi.getVouchers({ limit: 10000 });
       if (res && Array.isArray(res.vouchers)) {
         setVouchers(res.vouchers as Voucher[]);
       }

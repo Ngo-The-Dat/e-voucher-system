@@ -13,7 +13,7 @@ export interface GetPublicVouchersFilter {
 
 export async function getPublicVouchers(filter: GetPublicVouchersFilter = {}) {
   const page = Math.max(1, Number(filter.page) || 1);
-  const limit = Math.max(1, Math.min(100, Number(filter.limit) || 12));
+  const limit = Math.max(1, Number(filter.limit) || 12);
   const offset = (page - 1) * limit;
 
   const conditions: string[] = ["vp.display_status = 'PUBLISHED'"];
@@ -310,16 +310,23 @@ export async function getPublicCategories() {
          FROM voucher_programs vp 
          WHERE vp.category_id = c.category_id 
            AND vp.display_status = 'PUBLISHED'
-       )::int as voucher_count
+       )::int as voucher_count,
+       (
+         SELECT COUNT(*)
+         FROM issued_vouchers iv
+         JOIN voucher_programs vp ON vp.program_id = iv.program_id
+         WHERE vp.category_id = c.category_id
+       )::int as total_sold
      FROM categories c 
      WHERE c.status = 'ACTIVE' 
-     ORDER BY c.category_id ASC`
+     ORDER BY total_sold DESC, voucher_count DESC, c.category_id ASC`
   );
   return res.rows.map((row) => ({
     category_id: Number(row.category_id),
     category_name: row.category_name,
     description: row.description,
     voucher_count: Number(row.voucher_count || 0),
+    total_sold: Number(row.total_sold || 0),
   }));
 }
 

@@ -50,7 +50,7 @@ test('Customer Auth API: register new customer', async () => {
       full_name: 'Nguyễn Văn Đăng Ký',
       email,
       phone,
-      password: 'password123',
+      password: 'Password123@',
     }),
   });
 
@@ -63,7 +63,7 @@ test('Customer Auth API: register new customer', async () => {
 
 test('Customer Auth API: login existing customer', async () => {
   const email = `login_test_${Date.now()}@example.com`;
-  const password = 'mypassword123';
+  const password = 'Password123@';
 
   // 1. Register
   const regRes = await request('/api/customer/auth/register', undefined, {

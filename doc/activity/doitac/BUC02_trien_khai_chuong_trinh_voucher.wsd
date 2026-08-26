@@ -1,39 +1,38 @@
 @startuml
+title Biểu đồ hoạt động: BUC02 - Triển khai chương trình voucher
+
+skinparam dpi 180
+skinparam defaultFontSize 12
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 11
+skinparam ArrowFontSize 11
+
 |Đối tác|
 start
 
-:Thiết lập chương trình voucher mới
-(tên voucher, danh mục, giá gốc, giá bán,
-số lượng phát hành, thời gian bán & sử dụng,
-danh sách chi nhánh áp dụng, bộ sưu tập ảnh);
+:Thiết lập chương trình voucher mới:\n- Tên voucher, danh mục, giá gốc, giá bán\n- Số lượng phát hành, thời gian áp dụng\n- Chi nhánh áp dụng & bộ ảnh mô tả;
 
 :Lưu chương trình ở trạng thái Bản nháp (DRAFT);
 
 repeat
-  if (Cần điều chỉnh thông tin / ảnh voucher trước khi gửi?) then (có - A1)
-    :Chỉnh sửa thông tin chương trình voucher;
-    :Cập nhật bộ sưu tập ảnh mô tả;
+  if (Cần điều chỉnh thông tin / ảnh?) then (có - A1)
+    :Chỉnh sửa thông tin chương trình voucher;\n:Cập nhật bộ sưu tập ảnh mô tả;
   endif
 
-  :Gửi yêu cầu phê duyệt chương trình
-  (Trạng thái: PENDING_APPROVAL);
+  :Gửi yêu cầu phê duyệt chương trình\n(Trạng thái: PENDING_APPROVAL);
 
-  |Doanh nghiệp (Admin)|
+  |Admin|
   :Kiểm tra nội dung & quy tắc chương trình;
 
   if (Admin phê duyệt?) then (hợp lệ)
-    :Phê duyệt chương trình (APPROVED);
-    :Chuyển trạng thái xuất bản (PUBLISHED);
-    |Doanh nghiệp (Hệ thống)|
-    :Chương trình chính thức có hiệu lực
-    và hiển thị đến khách hàng trên sàn;
+    :Phê duyệt chương trình (APPROVED);\n:Chuyển trạng thái xuất bản (PUBLISHED);
+    |Hệ thống|
+    :Chương trình có hiệu lực\nvà hiển thị trên sàn;
     stop
   else (không hợp lệ - A2)
-    :Từ chối phê duyệt (REJECTED);
-    :Ghi nhận lý do phản hồi;
+    :Từ chối phê duyệt (REJECTED);\n:Ghi nhận lý do phản hồi;
     |Đối tác|
-    :Xem lý do từ chối;
-    :Điều chỉnh lại nội dung & quy tắc chương trình;
+    :Xem lý do từ chối;\n:Điều chỉnh lại nội dung & quy tắc;
   endif
 repeat while (Tiếp tục gửi duyệt lại?) is (có)
 ->hủy bỏ;

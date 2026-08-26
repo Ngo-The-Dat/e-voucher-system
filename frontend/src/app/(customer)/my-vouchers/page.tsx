@@ -5,12 +5,18 @@ import { useState, useEffect } from "react";
 import { useApp } from "@/context/AppContext";
 import MyVoucherCard from "@/components/customer/cards/MyVoucherCard";
 import ReviewModal from "@/components/customer/ReviewModal";
+import Pagination from "@/components/shared/ui/Pagination";
 import { MyVoucher, Voucher } from "@/lib/types/customer";
 import { getStoredCustomerUser } from "@/lib/customer-api";
 import { ChevronRight, Search, Ticket } from "lucide-react";
 
+const ITEMS_PER_PAGE = 9;
+
 export default function MyVouchersPage() {
   const { myVouchers, vouchers, addReview, refreshMyVouchers } = useApp();
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (!refreshMyVouchers) return;
@@ -47,7 +53,12 @@ export default function MyVouchersPage() {
 
   const handleTabClick = (tab: "all" | "unused" | "used" | "expiring" | "expired" | "cancelled") => {
     setActiveTab(tab);
+    setCurrentPage(1);
   };
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, selectedBrand]);
 
   // Filter logic
   const filteredMyVouchers = myVouchers.filter((item) => {
@@ -88,6 +99,12 @@ export default function MyVouchersPage() {
 
     return true;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filteredMyVouchers.length / ITEMS_PER_PAGE));
+  const paginatedMyVouchers = filteredMyVouchers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
 
   // Extract unique brands present in my vouchers for filter dropdown
   const uniqueBrands: string[] = [];
@@ -182,35 +199,51 @@ export default function MyVouchersPage() {
 
       {/* Main Area */}
       <div className="flex flex-col gap-6">
-
           {/* Vouchers Grid */}
           {filteredMyVouchers.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
-              {filteredMyVouchers.map((item) => {
-                const baseVoucher = vouchers.find((v) => v.id === item.voucherId) || {
-                  id: item.voucherId,
-                  title: `Voucher #${item.voucherId}`,
-                  brand: "Thương hiệu đối tác",
-                  brandLogo: "",
-                  category: "Ưu đãi",
-                  thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
-                  images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
-                  price: 0,
-                  originalPrice: 0,
-                  rating: 5,
-                  reviewsCount: 0,
-                  soldCount: "0",
-                };
-                return (
-                  <MyVoucherCard
-                    key={item.id}
-                    myVoucher={item}
-                    voucher={baseVoucher}
-                    onOpenReview={(mv, v) => setSelectedReviewItem({ myVoucher: mv, voucher: v })}
-                  />
-                );
-              })}
-            </div>
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+                {paginatedMyVouchers.map((item) => {
+                  const baseVoucher = vouchers.find((v) => v.id === item.voucherId) || {
+                    id: item.voucherId,
+                    title: `Voucher #${item.voucherId}`,
+                    brand: "Thương hiệu đối tác",
+                    brandLogo: "",
+                    category: "Ưu đãi",
+                    thumbnail: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80",
+                    images: ["https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&auto=format&fit=crop&q=80"],
+                    price: 0,
+                    originalPrice: 0,
+                    rating: 5,
+                    reviewsCount: 0,
+                    soldCount: "0",
+                  };
+                  return (
+                    <MyVoucherCard
+                      key={item.id}
+                      myVoucher={item}
+                      voucher={baseVoucher}
+                      onOpenReview={(mv, v) => setSelectedReviewItem({ myVoucher: mv, voucher: v })}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Pagination */}
+              <div className="rounded-xl overflow-hidden shadow-sm border border-outline-variant/30">
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={filteredMyVouchers.length}
+                  itemsPerPage={ITEMS_PER_PAGE}
+                  onPageChange={(page) => {
+                    setCurrentPage(page);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  itemName="voucher"
+                />
+              </div>
+            </>
           ) : (
             /* Empty State */
             <div className="flex flex-col items-center justify-center py-20 bg-surface rounded-xl border border-outline-variant border-dashed">

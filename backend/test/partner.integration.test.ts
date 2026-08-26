@@ -78,11 +78,21 @@ before(async () => {
        COALESCE((SELECT MAX(approval_request_id) FROM voucher_approval_requests), 1)
      )`
   );
+  const sampleItem = await pool.query(
+    `SELECT oi.order_item_id, oi.program_id, o.buyer_user_id 
+     FROM order_items oi
+     JOIN orders o ON o.order_id = oi.order_id
+     LIMIT 1`
+  );
+  const sampleOrderItemId = Number(sampleItem.rows[0]?.order_item_id || 1);
+  const sampleProgramId = Number(sampleItem.rows[0]?.program_id || 1);
+  const sampleOwnerId = Number(sampleItem.rows[0]?.buyer_user_id || 2);
+
   await pool.query(
     `INSERT INTO issued_vouchers
        (program_id, order_item_id, owner_user_id, voucher_code, usage_status, expires_at)
-     VALUES (1, 1, 8, $1, 'UNUSED', NOW() + INTERVAL '1 day')`,
-    [TEST_CODE]
+     VALUES ($1, $2, $3, $4, 'UNUSED', NOW() + INTERVAL '1 day')`,
+    [sampleProgramId, sampleOrderItemId, sampleOwnerId, TEST_CODE]
   );
 
   const earlyProgram = await pool.query(
@@ -102,8 +112,8 @@ before(async () => {
   await pool.query(
     `INSERT INTO issued_vouchers
        (program_id, order_item_id, owner_user_id, voucher_code, usage_status, expires_at)
-     VALUES ($1, 1, 8, $2, 'UNUSED', NOW() + INTERVAL '2 days')`,
-    [earlyProgramId, EARLY_TEST_CODE]
+     VALUES ($1, $2, $3, $4, 'UNUSED', NOW() + INTERVAL '2 days')`,
+    [earlyProgramId, sampleOrderItemId, sampleOwnerId, EARLY_TEST_CODE]
   );
 });
 

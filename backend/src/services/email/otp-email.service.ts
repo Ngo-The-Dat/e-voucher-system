@@ -68,6 +68,52 @@ export const sendPartnerRegistrationOtp: OtpEmailSender = async (email, otp, exp
   }
 };
 
+export const sendCustomerRegistrationOtp: OtpEmailSender = async (email, otp, expiresInMinutes) => {
+  const mailTransporter = getTransporter();
+  const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  
+  if (!mailTransporter || !isEmail) {
+    console.log(`\n==========================================`);
+    console.log(`📨 [MÔ PHỎNG GỬI OTP - ĐĂNG KÝ KHÁCH HÀNG]`);
+    console.log(`Tới: ${email}`);
+    console.log(`Mã OTP của bạn là: ${otp} (Hiệu lực: ${expiresInMinutes} phút)`);
+    console.log(`==========================================\n`);
+    return;
+  }
+
+  const user = process.env.GMAIL_USER!.trim();
+  const fromName = process.env.GMAIL_FROM_NAME?.trim() || 'Vouchify Marketplace';
+
+  try {
+    await mailTransporter.sendMail({
+      from: { name: fromName, address: user },
+      to: email,
+      subject: 'Mã xác thực đăng ký tài khoản Vouchify',
+      text: [
+        `Mã OTP đăng ký tài khoản Khách hàng của bạn là: ${otp}`,
+        `Mã có hiệu lực trong ${expiresInMinutes} phút.`,
+        'Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.',
+      ].join('\n\n'),
+      html: `
+        <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2937">
+          <h2 style="color:#0f2c59">Xác thực đăng ký Vouchify</h2>
+          <p>Mã OTP đăng ký tài khoản Khách hàng của bạn là:</p>
+          <div style="font-size:32px;font-weight:700;letter-spacing:8px;padding:16px 20px;background:#f3f0ff;border-radius:12px;text-align:center">${otp}</div>
+          <p>Mã có hiệu lực trong <strong>${expiresInMinutes} phút</strong>.</p>
+          <p style="color:#6b7280;font-size:13px">Nếu bạn không thực hiện yêu cầu này, vui lòng bỏ qua email.</p>
+        </div>
+      `,
+    });
+  } catch (error) {
+    if ((error as { status?: number }).status === 503) throw error;
+    console.error('Không thể gửi email OTP đăng ký Khách hàng:', error instanceof Error ? error.message : error);
+    throw {
+      status: 503,
+      message: 'Không thể gửi email OTP. Vui lòng thử lại sau.',
+    };
+  }
+};
+
 export const sendForgotPasswordOtp: OtpEmailSender = async (email, otp, expiresInMinutes) => {
   const mailTransporter = getTransporter();
 

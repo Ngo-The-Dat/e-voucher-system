@@ -36,7 +36,9 @@ alt Thêm thành công
     Controller --> UI : showAddSuccess()
 else Out of stock
     Service --> Controller : error("OutOfStock")
+    deactivate Service
     Controller --> UI : showErrorMessage("Sản phẩm hết hàng")
+    deactivate Controller
 end
 deactivate Service
 deactivate Controller
@@ -55,7 +57,9 @@ alt Cập nhật thành công
     Controller --> UI : showUpdateSuccess()
 else Quantity exceeds limit
     Service --> Controller : error("QuantityLimit")
+    deactivate Service
     Controller --> UI : showErrorMessage("Số lượng vượt quá giới hạn")
+    deactivate Controller
 end
 deactivate Service
 deactivate Controller

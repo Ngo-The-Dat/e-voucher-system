@@ -1,7 +1,9 @@
 @startuml
-title SQ09 - Quản lý bộ sưu tập ảnh Voucher (Image Gallery)
+title Biểu đồ tuần tự: SQ09 - Quản lý bộ sưu tập ảnh Voucher
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -12,10 +14,10 @@ entity ":VoucherImageService" as Svc
 entity ":R2Service" as Storage
 
 == 1. Tải lên hình ảnh mới cho Voucher ==
-DT -> UI: selectImageFile(file)
-UI -> Ctrl: uploadImage(programId, file, is_primary, sort_order)
+DT -> UI: selectImageFile(file, is_primary)
+UI -> Ctrl: uploadImage(programId, file, is_primary)
 activate Ctrl
-Ctrl -> Svc: addVoucherImage(programId, partnerId, file, requestedPrimary, sortOrder)
+Ctrl -> Svc: addVoucherImage(programId, partnerId, file, is_primary)
 activate Svc
 Svc -> Storage: uploadVoucherImage(programId, file)
 activate Storage
@@ -23,7 +25,7 @@ Storage --> Svc: return imageUrl
 deactivate Storage
 Svc --> Ctrl: return image
 deactivate Svc
-Ctrl --> UI: return { message: "Upload ảnh voucher thành công.", image }
+Ctrl --> UI: 201 Created ({\n  message: "Upload ảnh thành công.",\n  image\n})
 deactivate Ctrl
 UI --> DT: appendImageCard(image)
 
@@ -36,20 +38,20 @@ activate Svc
 Svc -> Svc: getVoucherImages(programId)
 Svc --> Ctrl: return images
 deactivate Svc
-Ctrl --> UI: return { message: "Đã cập nhật ảnh chính.", images }
+Ctrl --> UI: 200 OK ({\n  message: "Đã cập nhật ảnh chính.",\n  images\n})
 deactivate Ctrl
 UI --> DT: updatePrimaryBadge(imageId)
 
 == 3. Thay đổi thứ tự sắp xếp ảnh (Reorder) ==
-DT -> UI: submitReorder(image_ids)
-UI -> Ctrl: reorder(programId, image_ids)
+DT -> UI: submitReorder(imageIds)
+UI -> Ctrl: reorder(programId, imageIds)
 activate Ctrl
 Ctrl -> Svc: reorderVoucherImages(programId, partnerId, imageIds)
 activate Svc
 Svc -> Svc: getVoucherImages(programId)
 Svc --> Ctrl: return images
 deactivate Svc
-Ctrl --> UI: return { message: "Đã cập nhật thứ tự ảnh.", images }
+Ctrl --> UI: 200 OK ({\n  message: "Đã cập nhật thứ tự ảnh.",\n  images\n})
 deactivate Ctrl
 UI --> DT: renderReorderedGallery(images)
 
@@ -66,7 +68,7 @@ deactivate Storage
 Svc -> Svc: getVoucherImages(programId)
 Svc --> Ctrl: return images
 deactivate Svc
-Ctrl --> UI: return { message: "Đã xóa ảnh voucher.", images }
+Ctrl --> UI: 200 OK ({\n  message: "Đã xóa ảnh voucher.",\n  images\n})
 deactivate Ctrl
 UI --> DT: removeImageCard(imageId)
 

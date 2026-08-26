@@ -110,7 +110,7 @@ export interface NormalizedVoucherProgram {
   contents: Array<{
     title: string;
     body: string;
-    content_type: 'POLICY' | 'ARTICLE' | 'PROMOTION' | 'GUIDE';
+    content_type: 'POLICY' | 'ARTICLE';
     status: 'ACTIVE' | 'INACTIVE';
   }>;
   reviews: NormalizedReview[];

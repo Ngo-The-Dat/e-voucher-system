@@ -1,7 +1,9 @@
 @startuml
-title SQ13 - Báo cáo thống kê hiệu quả kinh doanh & Dashboard
+title Biểu đồ tuần tự: SQ13 - Báo cáo thống kê hiệu quả kinh doanh & Dashboard
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -16,9 +18,9 @@ UI -> Ctrl: getOverview()
 activate Ctrl
 Ctrl -> Svc: getOverview(partnerId)
 activate Svc
-Svc --> Ctrl: return { total_programs, pending_approval, active_programs, total_sold, total_redeemed, total_revenue }
+Svc --> Ctrl: return {\n  total_programs, pending_approval,\n  active_programs, total_sold,\n  total_redeemed, total_revenue\n}
 deactivate Svc
-Ctrl --> UI: return { total_programs, pending_approval, active_programs, total_sold, total_redeemed, total_revenue }
+Ctrl --> UI: 200 OK (overviewData)
 deactivate Ctrl
 UI --> DT: renderKpiCardsAndOverviewCharts(overviewData)
 
@@ -30,7 +32,7 @@ Ctrl -> Svc: getVoucherStats(partnerId, programId)
 activate Svc
 Svc --> Ctrl: return rows
 deactivate Svc
-Ctrl --> UI: return rows
+Ctrl --> UI: 200 OK (rows)
 deactivate Ctrl
 UI --> DT: displayVoucherStatsTable(rows)
 

@@ -39,14 +39,20 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
       SELECT setval(pg_get_serial_sequence('categories', 'category_id'), COALESCE((SELECT MAX(category_id) FROM categories), 1));
       SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), COALESCE((SELECT MAX(branch_id) FROM branches), 1));
       SELECT setval(pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM partner_approval_requests), 1));
+      SELECT setval(pg_get_serial_sequence('partner_employee_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM partner_employee_approval_requests), 1));
       SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), COALESCE((SELECT MAX(program_id) FROM voucher_programs), 1));
       SELECT setval(pg_get_serial_sequence('voucher_program_images', 'image_id'), COALESCE((SELECT MAX(image_id) FROM voucher_program_images), 1));
       SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM voucher_approval_requests), 1));
+      SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), COALESCE((SELECT MAX(cart_item_id) FROM cart_items), 1));
+      SELECT setval(pg_get_serial_sequence('orders', 'order_id'), COALESCE((SELECT MAX(order_id) FROM orders), 1));
+      SELECT setval(pg_get_serial_sequence('order_items', 'order_item_id'), COALESCE((SELECT MAX(order_item_id) FROM order_items), 1));
+      SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), COALESCE((SELECT MAX(issued_voucher_id) FROM issued_vouchers), 1));
+      SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), COALESCE((SELECT MAX(review_id) FROM reviews_feedback), 1));
+      SELECT setval(pg_get_serial_sequence('order_cancellations', 'cancellation_id'), COALESCE((SELECT MAX(cancellation_id) FROM order_cancellations), 1));
       SELECT setval(pg_get_serial_sequence('banners', 'banner_id'), COALESCE((SELECT MAX(banner_id) FROM banners), 1));
       SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), COALESCE((SELECT MAX(popup_id) FROM popups), 1));
       SELECT setval(pg_get_serial_sequence('contents', 'content_id'), COALESCE((SELECT MAX(content_id) FROM contents), 1));
-      SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), COALESCE((SELECT MAX(issued_voucher_id) FROM issued_vouchers), 1));
-      SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), COALESCE((SELECT MAX(review_id) FROM reviews_feedback), 1));
+      SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), COALESCE((SELECT MAX(log_id) FROM system_logs), 1));
     `);
 
     await client.query('BEGIN');
@@ -72,10 +78,10 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
              ON CONFLICT (user_id) DO NOTHING`,
             [
               partnerUserId,
-              v.partner.business_name,
-              v.partner.tax_code,
-              v.partner.brand_logo,
-              v.partner.representative_title,
+              v.partner.business_name.slice(0, 255),
+              v.partner.tax_code.slice(0, 50),
+              v.partner.brand_logo ? v.partner.brand_logo.slice(0, 500) : null,
+              v.partner.representative_title ? v.partner.representative_title.slice(0, 100) : null,
             ]
           );
         }
@@ -96,8 +102,8 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
             partnerUserId,
             v.partner.business_name.slice(0, 255),
             v.partner.tax_code.slice(0, 50),
-            v.partner.brand_logo.slice(0, 1000),
-            v.partner.representative_title.slice(0, 100),
+            v.partner.brand_logo ? v.partner.brand_logo.slice(0, 500) : null,
+            v.partner.representative_title ? v.partner.representative_title.slice(0, 100) : null,
           ]
         );
 
@@ -113,9 +119,10 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
       const branchIds: number[] = [];
       for (const b of v.branches) {
         let branchId: number;
+        const bName = b.branch_name.slice(0, 255);
         const existingBranchRes = await client.query(
           `SELECT branch_id FROM branches WHERE partner_id = $1 AND branch_name = $2 LIMIT 1`,
-          [partnerUserId, b.branch_name]
+          [partnerUserId, bName]
         );
 
         if (existingBranchRes.rows.length > 0) {
@@ -125,7 +132,7 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
             `INSERT INTO branches (partner_id, branch_name, address, region, phone, status)
              VALUES ($1, $2, $3, $4, $5, 'ACTIVE')
              RETURNING branch_id`,
-            [partnerUserId, b.branch_name, b.address, b.region, b.phone]
+            [partnerUserId, bName, b.address.slice(0, 500), b.region.slice(0, 150), b.phone.slice(0, 20)]
           );
           branchId = Number(branchInsertRes.rows[0].branch_id);
           branchesCount++;
@@ -135,7 +142,7 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
 
       // 3. Kiểm tra hoặc tạo Category động từ dữ liệu cào
       let categoryId: number;
-      const catName = v.category_name || 'Khác';
+      const catName = (v.category_name || 'Khác').slice(0, 150);
       const catDesc = v.category_description || `Voucher ưu đãi ngành hàng ${catName}`;
       const existingCatRes = await client.query(
         `SELECT category_id FROM categories WHERE category_name = $1 LIMIT 1`,
@@ -178,12 +185,13 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
       const programId = Number(programInsertRes.rows[0].program_id);
       programsCount++;
 
-      // 4. Gán chi nhánh (voucher_program_branches)
-      for (const bId of branchIds) {
+      // 4. Gán chi nhánh (voucher_program_branches - de-duplicated)
+      const uniqueBranchIds = [...new Set(branchIds)];
+      for (const bId of uniqueBranchIds) {
         await client.query(
           `INSERT INTO voucher_program_branches (program_id, branch_id)
            VALUES ($1, $2)
-           ON CONFLICT DO NOTHING`,
+           ON CONFLICT (program_id, branch_id) DO NOTHING`,
           [programId, bId]
         );
       }
@@ -193,7 +201,7 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
         await client.query(
           `INSERT INTO voucher_program_images (program_id, image_url, is_primary, sort_order)
            VALUES ($1, $2, $3, $4)`,
-          [programId, img.image_url, img.is_primary, img.sort_order]
+          [programId, img.image_url.slice(0, 1000), img.is_primary, img.sort_order]
         );
       }
 
@@ -211,10 +219,10 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             programId,
-            v.banner.title,
-            v.banner.image_url,
+            v.banner.title.slice(0, 255),
+            v.banner.image_url.slice(0, 1000),
             `/vouchers/${programId}`,
-            v.banner.display_position,
+            v.banner.display_position.slice(0, 100),
             v.banner.display_from,
             v.banner.display_to,
             v.banner.status,
@@ -230,10 +238,10 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
           [
             programId,
-            v.popup.title,
+            v.popup.title.slice(0, 255),
             v.popup.content,
             `/vouchers/${programId}`,
-            v.popup.image_url,
+            v.popup.image_url.slice(0, 1000),
             v.popup.start_at,
             v.popup.end_at,
             v.popup.status,
@@ -242,19 +250,21 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
         popupsCount++;
       }
 
-      // 9. Thêm Contents (POLICY, ARTICLE, PROMOTION, GUIDE)
+      // 9. Thêm Contents (POLICY, ARTICLE)
       for (const c of v.contents) {
         await client.query(
           `INSERT INTO contents (program_id, title, body, content_type, status)
            VALUES ($1, $2, $3, $4, $5)`,
-          [programId, c.title, c.body, c.content_type, c.status]
+          [programId, c.title.slice(0, 255), c.body, c.content_type, c.status]
         );
         contentsCount++;
       }
 
       // 10. Thêm Bình luận & Đánh giá khách hàng (Reviews & Feedback)
       if (v.reviews && v.reviews.length > 0) {
-        for (const r of v.reviews) {
+        const payMethods = ['VNPAY', 'ZALOPAY', 'STRIPE', 'PAYPAL'];
+        for (let rIdx = 0; rIdx < v.reviews.length; rIdx++) {
+          const r = v.reviews[rIdx];
           // 10.1 Tạo hoặc lấy khách hàng
           const custRes = await client.query(
             `INSERT INTO users (full_name, email, phone, password_hash, role, status)
@@ -266,13 +276,14 @@ export async function saveVouchersToDatabase(vouchers: NormalizedVoucherProgram[
           const custId = Number(custRes.rows[0].user_id);
           const vCode = `VCH-${programId}-${custId}-${Math.floor(100000 + Math.random() * 900000)}`;
           const discountAmt = Math.max(0, v.original_price - v.sale_price);
+          const payMethod = payMethods[(v.original_price + custId + rIdx) % payMethods.length];
 
           // 10.2 Tạo đơn hàng (orders)
           const orderRes = await client.query(
             `INSERT INTO orders (buyer_user_id, total_amount, payment_method, payment_status, order_status, created_at)
-             VALUES ($1, $2, 'MOMO', 'PAID', 'COMPLETED', $3)
+             VALUES ($1, $2, $3, 'PAID', 'COMPLETED', $4)
              RETURNING order_id`,
-            [custId, v.sale_price, r.submitted_at]
+            [custId, v.sale_price, payMethod, r.submitted_at]
           );
           const orderId = Number(orderRes.rows[0].order_id);
 
@@ -351,16 +362,16 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
     '-- =========================================================================\n',
   ];
 
-  let userCounter = 100;
-  let branchCounter = 100;
-  let programCounter = 100;
-  let bannerCounter = 100;
-  let popupCounter = 100;
-  let contentCounter = 100;
-  let orderCounter = 100;
-  let orderItemCounter = 100;
-  let issuedVoucherCounter = 100;
-  let reviewCounter = 100;
+  let userCounter = 2;
+  let branchCounter = 0;
+  let programCounter = 0;
+  let bannerCounter = 0;
+  let popupCounter = 0;
+  let contentCounter = 0;
+  let orderCounter = 0;
+  let orderItemCounter = 0;
+  let issuedVoucherCounter = 0;
+  let reviewCounter = 0;
   let categoryCounter = 0;
 
   const partnerMap = new Map<string, number>();
@@ -374,7 +385,7 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
   lines.push('-- DANH MỤC CÀO ĐỘNG THỰC TẾ TỪ CÁC SÀN');
   lines.push('-- =========================================================================');
   for (const v of vouchers) {
-    const catName = v.category_name || 'Khác';
+    const catName = (v.category_name || 'Khác').slice(0, 150);
     if (!categoryMap.has(catName)) {
       const catId = ++categoryCounter;
       categoryMap.set(catName, catId);
@@ -388,7 +399,8 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
     const currentProgramId = ++programCounter;
     const currentBannerId = ++bannerCounter;
     const currentPopupId = ++popupCounter;
-    const currentCategoryId = categoryMap.get(v.category_name || 'Khác') || 1;
+    const rawCatName = (v.category_name || 'Khác').slice(0, 150);
+    const currentCategoryId = categoryMap.get(rawCatName) || 1;
 
     // 1. User & Partner (Tái sử dụng nếu đối tác đã được ghi nhận trước đó)
     let currentUserId: number;
@@ -406,22 +418,24 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
     // 2. Branches (Tái sử dụng nếu chi nhánh đã tồn tại, xuất toàn bộ các chi nhánh cào được)
     const currentBranchIds: number[] = [];
     for (const b of v.branches) {
-      const branchKey = `${currentUserId}:${b.branch_name}`;
+      const bName = b.branch_name.slice(0, 255);
+      const branchKey = `${currentUserId}:${bName}`;
       let currentBranchId: number;
       if (branchMap.has(branchKey)) {
         currentBranchId = branchMap.get(branchKey)!;
       } else {
         currentBranchId = ++branchCounter;
         branchMap.set(branchKey, currentBranchId);
-        lines.push(`INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES (${currentBranchId}, ${currentUserId}, '${escapeSql(b.branch_name.slice(0, 255))}', '${escapeSql(b.address.slice(0, 500))}', '${b.region.slice(0, 150)}', '${b.phone.slice(0, 20)}', 'ACTIVE');`);
+        lines.push(`INSERT INTO branches (branch_id, partner_id, branch_name, address, region, phone, status) VALUES (${currentBranchId}, ${currentUserId}, '${escapeSql(bName)}', '${escapeSql(b.address.slice(0, 500))}', '${b.region.slice(0, 150)}', '${b.phone.slice(0, 20)}', 'ACTIVE');`);
       }
       currentBranchIds.push(currentBranchId);
     }
 
     // 3. Voucher Program
     lines.push(`INSERT INTO voucher_programs (program_id, partner_id, category_id, program_name, original_price, sale_price, issue_quantity, sale_start_at, sale_end_at, use_start_at, use_end_at, display_status) VALUES (${currentProgramId}, ${currentUserId}, ${currentCategoryId}, '${escapeSql(v.program_name.slice(0, 255))}', ${v.original_price}, ${v.sale_price}, ${v.issue_quantity}, '${v.sale_start_at.toISOString()}', '${v.sale_end_at.toISOString()}', '${v.use_start_at.toISOString()}', '${v.use_end_at.toISOString()}', '${v.display_status}');`);
-    for (const bId of currentBranchIds) {
-      lines.push(`INSERT INTO voucher_program_branches (program_id, branch_id) VALUES (${currentProgramId}, ${bId});`);
+    const uniqueCurrentBranchIds = [...new Set(currentBranchIds)];
+    for (const bId of uniqueCurrentBranchIds) {
+      lines.push(`INSERT INTO voucher_program_branches (program_id, branch_id) VALUES (${currentProgramId}, ${bId}) ON CONFLICT (program_id, branch_id) DO NOTHING;`);
     }
 
     // 4. Images
@@ -450,7 +464,9 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
 
     // 9. Reviews & Feedback
     if (v.reviews && v.reviews.length > 0) {
-      for (const r of v.reviews) {
+      const payMethods = ['VNPAY', 'ZALOPAY', 'STRIPE', 'PAYPAL'];
+      for (let rIdx = 0; rIdx < v.reviews.length; rIdx++) {
+        const r = v.reviews[rIdx];
         const currentCustId = ++userCounter;
         const currentOrderId = ++orderCounter;
         const currentOrderItemId = ++orderItemCounter;
@@ -458,9 +474,10 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
         const currentReviewId = ++reviewCounter;
         const vCode = `VCH-${currentProgramId}-${currentCustId}-${Math.floor(100000 + Math.random() * 900000)}`;
         const discountAmt = Math.max(0, v.original_price - v.sale_price);
+        const payMethod = payMethods[(v.original_price + currentCustId + rIdx) % payMethods.length];
 
         lines.push(`INSERT INTO users (user_id, full_name, email, phone, password_hash, role, status) VALUES (${currentCustId}, '${escapeSql(r.customer_name.slice(0, 150))}', '${escapeSql(r.customer_email.slice(0, 255))}', '09${Math.floor(10000000 + Math.random() * 90000000)}', '${DEFAULT_PASSWORD_HASH}', 'CUSTOMER', 'ACTIVE') ON CONFLICT (email) DO NOTHING;`);
-        lines.push(`INSERT INTO orders (order_id, buyer_user_id, total_amount, payment_method, payment_status, order_status, created_at) VALUES (${currentOrderId}, (SELECT user_id FROM users WHERE email = '${escapeSql(r.customer_email.slice(0, 255))}'), ${v.sale_price}, 'MOMO', 'PAID', 'COMPLETED', '${r.submitted_at.toISOString()}');`);
+        lines.push(`INSERT INTO orders (order_id, buyer_user_id, total_amount, payment_method, payment_status, order_status, created_at) VALUES (${currentOrderId}, (SELECT user_id FROM users WHERE email = '${escapeSql(r.customer_email.slice(0, 255))}'), ${v.sale_price}, '${payMethod}', 'PAID', 'COMPLETED', '${r.submitted_at.toISOString()}');`);
         lines.push(`INSERT INTO order_items (order_item_id, order_id, program_id, quantity, unit_price) VALUES (${currentOrderItemId}, ${currentOrderId}, ${currentProgramId}, 1, ${v.sale_price});`);
         lines.push(`INSERT INTO issued_vouchers (issued_voucher_id, program_id, order_item_id, owner_user_id, voucher_code, qr_code, usage_status, issued_at, expires_at, applicable_region, used_at, discount_amount) VALUES (${currentIssuedId}, ${currentProgramId}, ${currentOrderItemId}, (SELECT user_id FROM users WHERE email = '${escapeSql(r.customer_email.slice(0, 255))}'), '${vCode}', 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${vCode}', 'USED', '${r.submitted_at.toISOString()}', '${v.use_end_at.toISOString()}', 'Toàn quốc', '${r.submitted_at.toISOString()}', ${discountAmt});`);
         lines.push(`INSERT INTO reviews_feedback (review_id, issued_voucher_id, customer_id, rating, review_content, submitted_at) VALUES (${currentReviewId}, ${currentIssuedId}, (SELECT user_id FROM users WHERE email = '${escapeSql(r.customer_email.slice(0, 255))}'), ${r.rating}, '${escapeSql(r.review_content)}', '${r.submitted_at.toISOString()}');`);
@@ -477,16 +494,20 @@ export function exportToSqlSeed(vouchers: NormalizedVoucherProgram[], outputPath
   lines.push("SELECT setval(pg_get_serial_sequence('categories', 'category_id'), COALESCE((SELECT MAX(category_id) FROM categories), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('branches', 'branch_id'), COALESCE((SELECT MAX(branch_id) FROM branches), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('partner_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM partner_approval_requests), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('partner_employee_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM partner_employee_approval_requests), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('voucher_programs', 'program_id'), COALESCE((SELECT MAX(program_id) FROM voucher_programs), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('voucher_program_images', 'image_id'), COALESCE((SELECT MAX(image_id) FROM voucher_program_images), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('voucher_approval_requests', 'approval_request_id'), COALESCE((SELECT MAX(approval_request_id) FROM voucher_approval_requests), 1));");
-  lines.push("SELECT setval(pg_get_serial_sequence('banners', 'banner_id'), COALESCE((SELECT MAX(banner_id) FROM banners), 1));");
-  lines.push("SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), COALESCE((SELECT MAX(popup_id) FROM popups), 1));");
-  lines.push("SELECT setval(pg_get_serial_sequence('contents', 'content_id'), COALESCE((SELECT MAX(content_id) FROM contents), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('cart_items', 'cart_item_id'), COALESCE((SELECT MAX(cart_item_id) FROM cart_items), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('orders', 'order_id'), COALESCE((SELECT MAX(order_id) FROM orders), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('order_items', 'order_item_id'), COALESCE((SELECT MAX(order_item_id) FROM order_items), 1));");
   lines.push("SELECT setval(pg_get_serial_sequence('issued_vouchers', 'issued_voucher_id'), COALESCE((SELECT MAX(issued_voucher_id) FROM issued_vouchers), 1));");
-  lines.push("SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), COALESCE((SELECT MAX(review_id) FROM reviews_feedback), 1));\n");
+  lines.push("SELECT setval(pg_get_serial_sequence('reviews_feedback', 'review_id'), COALESCE((SELECT MAX(review_id) FROM reviews_feedback), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('order_cancellations', 'cancellation_id'), COALESCE((SELECT MAX(cancellation_id) FROM order_cancellations), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('banners', 'banner_id'), COALESCE((SELECT MAX(banner_id) FROM banners), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('popups', 'popup_id'), COALESCE((SELECT MAX(popup_id) FROM popups), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('contents', 'content_id'), COALESCE((SELECT MAX(content_id) FROM contents), 1));");
+  lines.push("SELECT setval(pg_get_serial_sequence('system_logs', 'log_id'), COALESCE((SELECT MAX(log_id) FROM system_logs), 1));\n");
 
   const sqlContent = lines.join('\n');
   const fullPath = path.resolve(outputPath);

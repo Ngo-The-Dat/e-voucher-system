@@ -1,0 +1,54 @@
+@startuml
+title Quên mật khẩu (BR-CUS-01)
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện Quên Mật Khẩu (ForgotPasswordPage)" as UI
+control "AuthController" as Controller
+entity "AuthService" as Service
+boundary "Dịch vụ Email/SMS (Notification)" as Notification
+database "Cơ sở dữ liệu (Database)" as DB
+
+KH -> UI : requestPasswordReset(emailOrPhone)
+activate UI
+UI -> Controller : resetPasswordRequest(emailOrPhone)
+activate Controller
+Controller -> Service : initiatePasswordReset(emailOrPhone)
+activate Service
+
+Service -> DB : checkUserExists(emailOrPhone)
+activate DB
+DB --> Service : userExists
+deactivate DB
+
+Service -> Notification : sendResetOTP(emailOrPhone)
+activate Notification
+Notification --> Service : success
+deactivate Notification
+
+Service --> Controller : requireOTP
+deactivate Service
+Controller --> UI : showOTPAndNewPasswordForm()
+deactivate Controller
+UI --> KH : displayOTPForm()
+deactivate UI
+
+KH -> UI : submitNewPassword(otpCode, newPassword)
+activate UI
+UI -> Controller : confirmPasswordReset(emailOrPhone, otpCode, newPassword)
+activate Controller
+Controller -> Service : verifyOTPAndResetPassword(emailOrPhone, otpCode, newPassword)
+activate Service
+
+Service -> DB : updatePassword(emailOrPhone, hashed_newPassword)
+activate DB
+DB --> Service : success
+deactivate DB
+
+Service --> Controller : success
+deactivate Service
+Controller --> UI : showSuccessMessage()
+deactivate Controller
+UI --> KH : redirectToListLogin()
+deactivate UI
+@enduml

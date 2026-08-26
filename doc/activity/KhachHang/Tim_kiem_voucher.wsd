@@ -1,0 +1,22 @@
+@startuml
+title Tìm kiếm và Lọc Voucher (BR-CUS-03)
+|Khách hàng|
+start
+:Truy cập trang Danh sách Voucher;
+repeat
+  :Thay đổi tiêu chí Tìm kiếm / Lọc / Sắp xếp;
+  |Hệ thống|
+  :Truy vấn Database lấy danh sách Voucher;
+  
+  if (Số lượng kết quả > 0?) then (Có)
+    :Trả về danh sách Voucher;
+    |Khách hàng|
+    :Hiển thị danh sách kết quả Voucher;
+  else (Không)
+    |Hệ thống|
+    :Trả về danh sách rỗng;
+    |Khách hàng|
+    :Hiển thị thông báo\n"Không tìm thấy voucher phù hợp";
+  endif
+stop
+@enduml

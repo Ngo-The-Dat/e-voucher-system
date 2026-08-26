@@ -195,12 +195,14 @@ test('Admin Order Management: list orders, view order detail, cancel order', asy
   assert.equal(ordersRes.status, 200);
   const ordersData = await ordersRes.json() as any;
   assert.ok(Array.isArray(ordersData.orders));
+  assert.ok(ordersData.orders.length > 0);
+  const targetOrderId = Number(ordersData.orders[0].order_id);
 
   // 2. Order detail
-  const orderDetailRes = await request('/api/admin/orders/1', adminToken);
+  const orderDetailRes = await request(`/api/admin/orders/${targetOrderId}`, adminToken);
   assert.equal(orderDetailRes.status, 200);
   const orderDetailData = await orderDetailRes.json() as any;
-  assert.equal(Number(orderDetailData.order_id), 1);
+  assert.equal(Number(orderDetailData.order_id), targetOrderId);
 });
 
 test('Admin Content Management: Categories CRUD', async () => {

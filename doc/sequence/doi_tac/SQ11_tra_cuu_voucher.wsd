@@ -1,7 +1,9 @@
 @startuml
-title SQ11 - Tra cứu và Kiểm tra thông tin Voucher
+title Biểu đồ tuần tự: SQ11 - Tra cứu và Kiểm tra thông tin Voucher
 
 autonumber
+skinparam dpi 180
+skinparam maxMessageSize 120
 skinparam BoxPadding 10
 skinparam ParticipantPadding 10
 
@@ -19,13 +21,13 @@ Ctrl -> Svc: lookupVoucher(voucherCode, partnerId)
 activate Svc
 
 alt Không tìm thấy voucher
-    Svc --> Ctrl: throw HttpError(404, "Không tìm thấy voucher hoặc voucher không thuộc hệ thống của bạn.")
-    Ctrl --> UI: return error(404, message)
+    Svc --> Ctrl: throw HttpError(404, "Không tìm thấy voucher")
+    Ctrl --> UI: 404 Not Found (message)
     UI --> Staff: showErrorMessage("Không tìm thấy voucher")
 else Tìm thấy voucher hợp lệ
     Svc --> Ctrl: return voucherData
     deactivate Svc
-    Ctrl --> UI: return voucherData
+    Ctrl --> UI: 200 OK (voucherData)
     deactivate Ctrl
     UI --> Staff: displayVoucherDetails(voucherData)
 end
@@ -39,13 +41,13 @@ Ctrl -> Svc: lookupVoucherByQr(qrValue, partnerId)
 activate Svc
 
 alt Mã QR không tồn tại hoặc không khớp
-    Svc --> Ctrl: throw HttpError(404, "Không tìm thấy voucher từ mã QR.")
-    Ctrl --> UI: return error(404, message)
+    Svc --> Ctrl: throw HttpError(404, "Mã QR không hợp lệ")
+    Ctrl --> UI: 404 Not Found (message)
     UI --> Staff: showErrorMessage("Mã QR không hợp lệ")
 else Tìm thấy voucher từ mã QR
     Svc --> Ctrl: return voucherData
     deactivate Svc
-    Ctrl --> UI: return voucherData
+    Ctrl --> UI: 200 OK (voucherData)
     deactivate Ctrl
     UI --> Staff: displayVoucherDetails(voucherData)
 end

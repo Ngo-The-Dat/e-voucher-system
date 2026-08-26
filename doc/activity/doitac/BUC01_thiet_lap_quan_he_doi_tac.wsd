@@ -1,28 +1,33 @@
 @startuml
+title Biểu đồ hoạt động: BUC01 - Thiết lập quan hệ đối tác
+
+skinparam dpi 180
+skinparam defaultFontSize 12
+skinparam ActivityFontSize 12
+skinparam ActivityDiamondFontSize 11
+skinparam ArrowFontSize 11
+
 |Đối tác|
 start
 
 repeat
-  :Cung cấp thông tin định danh & doanh nghiệp
-  (họ tên, CCCD/CMND, SĐT, email,
-  tên doanh nghiệp, mã số thuế, số ĐKKD);
+  :Nhập thông tin định danh & doanh nghiệp\n(họ tên, CCCD, SĐT, email,\ntên doanh nghiệp, MST, GPKD);
 
-  |Doanh nghiệp (Hệ thống)|
-  :Kiểm tra thông tin định danh & MST
-  là duy nhất, chưa từng đăng ký;
+  |Hệ thống|
+  :Kiểm tra thông tin định danh & MST\n(duy nhất, chưa từng đăng ký);
 
   backward: Báo lỗi thông tin bị trùng\nvà yêu cầu điều chỉnh;
 repeat while (Thông tin định danh\nđã tồn tại?) is (có)
 ->không;
 
-|Doanh nghiệp (Hệ thống)|
+|Hệ thống|
 :Gửi mã OTP 6 số qua email đăng ký;
 
 |Đối tác|
 repeat
   :Nhập mã xác thực OTP;
 
-  |Doanh nghiệp (Hệ thống)|
+  |Hệ thống|
   :Kiểm tra tính hợp lệ và thời hạn OTP;
 
   backward: Báo lỗi mã OTP không đúng\nhoặc đã hết hạn;
@@ -30,10 +35,9 @@ repeat while (Mã OTP hợp lệ?) is (không)
 ->hợp lệ;
 
 |Đối tác|
-:Thiết lập mật khẩu đăng nhập;
-:Gửi hồ sơ đăng ký đối tác;
+:Thiết lập mật khẩu đăng nhập;\n:Gửi hồ sơ đăng ký đối tác;
 
-|Doanh nghiệp (Admin)|
+|Admin|
 :Xem xét hồ sơ đối tác;
 
 if (Admin phê duyệt hồ sơ?) then (từ chối)
@@ -42,20 +46,16 @@ if (Admin phê duyệt hồ sơ?) then (từ chối)
   :Nhận thông báo từ chối;
   stop
 else (phê duyệt)
-  |Doanh nghiệp (Admin)|
-  :Kích hoạt tài khoản đối tác (ACTIVE);
-  :Cấp quyền tham gia kinh doanh trên sàn;
+  |Admin|
+  :Kích hoạt tài khoản đối tác (ACTIVE);\n:Cấp quyền tham gia kinh doanh trên sàn;
 endif
 
 |Đối tác|
 :Đăng nhập vào cổng thông tin đối tác;
-fork
-  :Cập nhật thông tin hồ sơ & logo thương hiệu;
-fork again
-  :Thiết lập danh sách chi nhánh kinh doanh;
-fork again
-  :Tạo tài khoản & phân công nhân viên chi nhánh;
-end fork
+:Thiết lập thông tin hoạt động ban đầu:
+- Cập nhật thông tin hồ sơ & logo thương hiệu
+- Khởi tạo danh sách chi nhánh kinh doanh
+- Tạo tài khoản & phân công nhân viên chi nhánh;
 
 stop
 @enduml
