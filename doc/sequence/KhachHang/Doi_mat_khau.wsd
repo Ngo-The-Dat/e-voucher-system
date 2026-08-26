@@ -1,0 +1,41 @@
+@startuml
+title Đổi mật khẩu (BR-CUS-01)
+
+autonumber
+actor "Khách hàng" as KH
+boundary "Giao diện" as UI
+control "AuthController" as Controller
+entity "AuthService" as Service
+database "Cơ sở dữ liệu (Database)" as DB
+
+KH -> UI : submitChangePassword(oldPassword, newPassword)
+activate UI
+UI -> Controller : changePassword(userId, oldPassword, newPassword)
+activate Controller
+Controller -> Service : updatePassword(userId, oldPassword, newPassword)
+activate Service
+
+Service -> DB : getUserById(userId)
+activate DB
+DB --> Service : userData(hashed_password)
+deactivate DB
+
+Service -> Service : comparePassword(oldPassword, hashed_password)
+alt Old password matches
+    Service -> DB : updatePassword(userId, hashed_newPassword)
+    activate DB
+    DB --> Service : success
+    deactivate DB
+    Service --> Controller : success
+    Controller --> UI : showSuccessMessage()
+    UI --> KH : displaySuccessAndRedirect()
+else Invalid old password
+    Service --> Controller : errorInvalidOldPassword
+    Controller --> UI : showErrorMessage("Mật khẩu cũ không chính xác")
+    UI --> KH : displayError()
+end
+
+deactivate Service
+deactivate Controller
+deactivate UI
+@enduml
