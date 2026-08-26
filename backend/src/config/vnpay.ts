@@ -42,11 +42,27 @@ export function generateVNPaySignature(signData: string, secretKey: string): str
 }
 
 export function formatDate(date: Date): string {
-  const yyyy = date.getFullYear();
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  const HH = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const ss = String(date.getSeconds()).padStart(2, '0');
+  const options: Intl.DateTimeFormatOptions = {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  };
+  const formatter = new Intl.DateTimeFormat('en-US', options);
+  const parts = formatter.formatToParts(date);
+
+  const getPart = (type: string) => parts.find(p => p.type === type)?.value || '';
+
+  const yyyy = getPart('year');
+  const MM = getPart('month');
+  const dd = getPart('day');
+  const HH = getPart('hour');
+  const mm = getPart('minute');
+  const ss = getPart('second');
+
   return `${yyyy}${MM}${dd}${HH}${mm}${ss}`;
 }
