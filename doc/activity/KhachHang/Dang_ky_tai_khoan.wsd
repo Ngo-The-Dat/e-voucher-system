@@ -1,0 +1,41 @@
+@startuml
+title Đăng ký tài khoản (BR-CUS-01)
+|Khách hàng|
+start
+:Truy cập trang Đăng ký;
+repeat
+  :Nhập thông tin đăng ký\n(Họ tên, Email/SĐT, Mật khẩu);
+  :Bấm "Đăng ký";
+  |Hệ thống|
+  :Kiểm tra định dạng thông tin;
+  if (Hợp lệ?) then (Có)
+    :Kiểm tra trùng lặp (Email/SĐT);
+    if (Đã tồn tại?) then (Không)
+      :Tạo mã OTP và gửi qua Email/SMS;
+      |Khách hàng|
+      :Nhận mã OTP;
+      repeat
+        :Nhập mã OTP;
+        |Hệ thống|
+        :Xác thực mã OTP;
+        if (Mã OTP hợp lệ?) then (Có)
+          :Lưu thông tin tài khoản vào Database;
+          :Thông báo đăng ký thành công;
+          :Tự động đăng nhập;
+          stop
+        else (Không)
+          :Thông báo lỗi (Sai hoặc hết hạn);
+        endif
+        |Khách hàng|
+      repeat while (Nhập lại mã OTP?) is (Thử lại)
+      stop
+    else (Có)
+      |Hệ thống|
+      :Thông báo tài khoản đã tồn tại;
+    endif
+  else (Không)
+    :Thông báo lỗi định dạng;
+  endif
+  |Khách hàng|
+repeat while (Nhập lại thông tin?) is (Đồng ý)
+@enduml
