@@ -3,6 +3,7 @@ left to right direction
 
 actor "Khách hàng" as KH
 actor "Đối tác" as DT
+actor "Nhân viên đối tác" as NVDT
 actor "Quản trị viên" as QTV
 
 rectangle "Hệ thống bán voucher" {
@@ -53,6 +54,8 @@ DT --> DT_UC01
 DT --> DT_UC02
 DT --> DT_UC03
 DT --> DT_UC04
+
+NVDT --> DT_UC03
 
 ' --- Liên kết Quản trị viên ---
 QTV --> QTV_UC1
