@@ -135,7 +135,7 @@ MSSV & Họ và tên \\
 \begin{itemize}
   \item Hệ thống tích hợp bốn cổng thanh toán ở chế độ \textbf{Sandbox / Test Mode}:
     \begin{itemize}
-      \item \textbf{Stripe}: Thanh toán bằng thẻ mô phỏng qua Stripe Elements.
+      \item \textbf{Stripe}: Thanh toán bằng thẻ mô phỏng qua Stripe Sandbox.
       \item \textbf{PayPal}: Thanh toán bằng thẻ mô phỏng qua PayPal Sandbox.
       \item \textbf{VNPay}: Thanh toán bằng thẻ mô phỏng qua môi trường VNPay Sandbox.
       \item \textbf{ZaloPay}: Thanh toán bằng thẻ mô phỏng qua môi trường ZaloPay Sandbox.
@@ -176,7 +176,7 @@ MSSV & Họ và tên \\
 \begin{frame}{Môi trường triển khai \& Vận hành (Deployment)}
 \begin{itemize}
   \item \textbf{Nhà cung cấp hosting}: Oracle Cloud Infrastructure.
-  \item \textbf{Cấu hình máy chủ}: 1 OCPU, bộ nhớ 1 GB và địa chỉ \texttt{"168{.}107{.}65{.}236"}.
+  \item \textbf{Cấu hình máy chủ}: 1 OCPU, bộ nhớ 1 GB và địa chỉ \texttt{168{.}107{.}65{.}236}.
   \item \textbf{Frontend}: Next.js Standalone Build phục vụ qua Node.js trên máy chủ Oracle Cloud.
   \item \textbf{Backend API}: Triển khai trên máy chủ ảo \textbf{VPS Linux (Ubuntu)}, quản lý tiến trình bằng \textbf{PM2} / \textbf{Docker}.
   \item \textbf{Web Server \& Proxy}: \textbf{Nginx Reverse Proxy} định tuyến traffic, cân bằng tải, nén Gzip và bảo mật SSL/TLS (Let's Encrypt / Certbot).
