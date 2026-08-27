@@ -96,7 +96,7 @@ export async function createVNPayPaymentUrl(
 }
 
 export async function processVNPayIpn(ipnQuery: any) {
-  let vnp_Params = ipnQuery;
+  let vnp_Params = { ...ipnQuery };
   const secureHash = vnp_Params['vnp_SecureHash'];
 
   delete vnp_Params['vnp_SecureHash'];
@@ -154,17 +154,62 @@ export async function processVNPayIpn(ipnQuery: any) {
 
       // Generate E-Vouchers
       const itemsRes = await client.query(
-        `SELECT voucher_id, quantity FROM order_items WHERE order_id = $1`,
+        `SELECT 
+           oi.order_item_id,
+           oi.program_id,
+           oi.quantity,
+           oi.unit_price,
+           vp.program_name,
+           vp.discount_amount,
+           vp.use_end_at
+         FROM order_items oi
+         JOIN voucher_programs vp ON vp.program_id = oi.program_id
+         WHERE oi.order_id = $1`,
         [dbOrderId]
       );
 
+      const recipientUserId = order.recipient_user_id || order.buyer_user_id;
+
       for (const item of itemsRes.rows) {
-        for (let i = 0; i < item.quantity; i++) {
-          const evCode = await generateVoucherCode();
+        const quantity = Number(item.quantity);
+        for (let i = 0; i < quantity; i++) {
+          let code = generateVoucherCode();
+          let isUnique = false;
+          let attempts = 0;
+          while (!isUnique && attempts < 5) {
+            const codeCheck = await client.query(
+              `SELECT 1 FROM issued_vouchers WHERE voucher_code = $1`,
+              [code]
+            );
+            if (codeCheck.rows.length === 0) {
+              isUnique = true;
+            } else {
+              code = generateVoucherCode();
+              attempts++;
+            }
+          }
+
           await client.query(
-            `INSERT INTO evouchers (order_id, voucher_id, owner_id, evoucher_code, status, created_at, expired_at)
-             VALUES ($1, $2, $3, $4, 'ACTIVE', CURRENT_TIMESTAMP, (SELECT expired_at FROM vouchers WHERE voucher_id = $2))`,
-            [dbOrderId, item.voucher_id, order.recipient_user_id || order.buyer_user_id, evCode]
+            `INSERT INTO issued_vouchers (
+               program_id,
+               order_item_id,
+               owner_user_id,
+               voucher_code,
+               qr_code,
+               usage_status,
+               issued_at,
+               expires_at,
+               discount_amount
+             ) VALUES ($1, $2, $3, $4, $5, 'UNUSED', CURRENT_TIMESTAMP, $6, $7)`,
+            [
+              item.program_id,
+              item.order_item_id,
+              recipientUserId,
+              code,
+              code,
+              item.use_end_at,
+              item.discount_amount
+            ]
           );
         }
       }
@@ -189,7 +234,7 @@ export async function processVNPayIpn(ipnQuery: any) {
 }
 
 export async function verifyVNPayReturn(query: any) {
-  let vnp_Params = query;
+  let vnp_Params = { ...query };
   const secureHash = vnp_Params['vnp_SecureHash'];
 
   delete vnp_Params['vnp_SecureHash'];
@@ -209,6 +254,15 @@ export async function verifyVNPayReturn(query: any) {
   const orderId = Number(txnRef.split('_')[0]);
 
   if (responseCode === '00') {
+    // FALLBACK for Localhost / Sandbox:
+    const ipnQueryClone = { ...query };
+    const ipnResult = await processVNPayIpn(ipnQueryClone);
+    
+    if (ipnResult.RspCode !== '00' && ipnResult.RspCode !== '02') {
+      console.error('IPN Fallback failed:', ipnResult);
+      return { success: false, message: 'Lỗi cấp phát Voucher: ' + ipnResult.Message, orderId };
+    }
+    
     return { success: true, message: 'Giao dịch thành công.', orderId };
   } else {
     return { success: false, message: 'Giao dịch không thành công hoặc bị hủy.', orderId };
