@@ -6,7 +6,6 @@ actor "Khách hàng" as KH
 boundary "Giao diện" as UI
 control "Controller" as Controller
 entity "CatalogService" as Service
-database "Cơ sở dữ liệu" as DB
 
 KH -> UI : clickVoucher(programId)
 activate UI
@@ -15,26 +14,15 @@ activate Controller
 Controller -> Service : getPublicVoucherById(programId)
 activate Service
 
-Service -> DB : queryVoucherBasicInfo(programId, status='PUBLISHED')
-activate DB
 alt Voucher exists
-    DB --> Service : voucherData
     
-    Service -> DB : queryVoucherBranches(programId)
-    DB --> Service : branchesList
     
-    Service -> DB : queryVoucherReviews(programId)
-    DB --> Service : reviewsList
-    deactivate DB
     
     Service -> Service : aggregateData(voucherData, branchesList, reviewsList)
     Service --> Controller : aggregatedVoucherDetails
     Controller --> UI : renderVoucherDetails(aggregatedVoucherDetails)
     UI --> KH : displayFullDetails()
 else Voucher not found / hidden
-    activate DB
-    DB --> Service : null
-    deactivate DB
     Service --> Controller : notFoundError
     Controller --> UI : showErrorPage(404)
     UI --> KH : displayErrorMessage()

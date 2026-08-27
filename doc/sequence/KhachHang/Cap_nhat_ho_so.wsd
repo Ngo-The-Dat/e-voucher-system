@@ -6,7 +6,6 @@ actor "Khách hàng" as KH
 boundary "Giao diện Hồ sơ (ProfilePage)" as UI
 control "UserController" as Controller
 entity "UserService" as Service
-database "Cơ sở dữ liệu (Database)" as DB
 
 KH -> UI : openProfilePage()
 activate UI
@@ -14,10 +13,6 @@ UI -> Controller : getProfile(userId)
 activate Controller
 Controller -> Service : fetchUserProfile(userId)
 activate Service
-Service -> DB : queryUserById(userId)
-activate DB
-DB --> Service : userData
-deactivate DB
 Service --> Controller : userData
 deactivate Service
 Controller --> UI : renderProfile(userData)
@@ -32,10 +27,6 @@ activate Controller
 alt Valid input
     Controller -> Service : saveProfile(userId, profileData)
     activate Service
-    Service -> DB : updateUser(userId, profileData)
-    activate DB
-    DB --> Service : success
-    deactivate DB
     Service --> Controller : success
     deactivate Service
     Controller --> UI : showSuccessMessage()

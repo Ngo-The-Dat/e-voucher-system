@@ -6,7 +6,6 @@ actor "Khách hàng" as KH
 boundary "Giao diện Đăng nhập" as UI
 control "AuthController" as Controller
 entity "AuthService" as Service
-database "Cơ sở dữ liệu (Database)" as DB
 
 KH -> UI : submitLogin(emailOrPhone, password)
 activate UI
@@ -15,10 +14,6 @@ activate Controller
 Controller -> Service : authenticate(emailOrPhone, password)
 activate Service
 
-Service -> DB : getUserByEmailOrPhone(emailOrPhone)
-activate DB
-DB --> Service : userData(hashed_password)
-deactivate DB
 
 Service -> Service : comparePassword(password, hashed_password)
 alt Password matches

@@ -6,7 +6,6 @@ actor "Khách hàng" as KH
 boundary "Giao diện" as UI
 control "Controller" as Controller
 entity "CatalogService" as Service
-database "Cơ sở dữ liệu" as DB
 
 KH -> UI : changeSearchFilters(keyword, category, priceRange, sort)
 activate UI
@@ -14,10 +13,6 @@ UI -> Controller : getVouchers(filters)
 activate Controller
 Controller -> Service : getPublicVouchers(filters)
 activate Service
-Service -> DB : queryVouchers(filters, display_status='PUBLISHED')
-activate DB
-DB --> Service : voucherList, pagination
-deactivate DB
 Service --> Controller : voucherList, pagination
 deactivate Service
 Controller --> UI : renderVouchers(voucherList, pagination)

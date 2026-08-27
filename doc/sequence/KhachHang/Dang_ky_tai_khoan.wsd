@@ -7,7 +7,6 @@ boundary "Giao diện Đăng ký" as UI
 control "AuthController" as Controller
 entity "AuthService" as Service
 boundary "Dịch vụ Email/SMS (Notification)" as Notification
-database "Cơ sở dữ liệu (Database)" as DB
 
 KH -> UI : submitRegister(name, emailOrPhone, password)
 activate UI
@@ -16,10 +15,6 @@ activate Controller
 Controller -> Service : processRegistration(name, emailOrPhone, password)
 activate Service
 
-Service -> DB : checkExistingUser(emailOrPhone)
-activate DB
-DB --> Service : userNotExists
-deactivate DB
 
 Service -> Notification : sendOTP(emailOrPhone)
 activate Notification
@@ -39,10 +34,6 @@ UI -> Controller : verifyOTPAndCreateUser(emailOrPhone, otpCode)
 activate Controller
 Controller -> Service : verifyOTPAndSave(emailOrPhone, otpCode)
 activate Service
-Service -> DB : insertUser(name, emailOrPhone, hashed_password)
-activate DB
-DB --> Service : userId
-deactivate DB
 
 Service --> Controller : success, jwtToken
 deactivate Service
