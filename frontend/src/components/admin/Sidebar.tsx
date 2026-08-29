@@ -1,3 +1,21 @@
+/**
+ * =========================================================================================
+ * FILE: Sidebar.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Thanh Điều hướng Bên trái (Navigation Sidebar) dành riêng cho Quản trị viên (Admin).
+ *   - Các tính năng kỹ thuật nổi bật:
+ *       1. Tự động tính toán & hiển thị Badge Số lượng hồ sơ chờ xử lý (Pending Count):
+ *          - Gọi đồng thời 3 API (`Promise.allSettled`): Đối tác chờ duyệt, Nhân viên chờ duyệt, Voucher chờ duyệt.
+ *          - Tự động re-fetch khi người dùng chuyển trang (`pathname` thay đổi).
+ *       2. Tính năng Thu gọn / Mở rộng (Collapse Mode):
+ *          - Hỗ trợ thu hẹp thành 80px (icon-only với tooltip) giúp mở rộng không gian làm việc trên máy tính.
+ *       3. Trạng thái Active Route thông minh:
+ *          - Highlight chính xác các menu cha/con (ví dụ `/admin/partners/pending` hoặc `/admin/partners/manage` đều sáng mục Đối tác).
+ *       4. Đăng xuất an toàn: Xóa token JWT khỏi LocalStorage và điều hướng về trang Login.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -13,6 +31,7 @@ export interface NavItem {
   badgeKey?: "partners" | "vouchers";
 }
 
+// Danh sách các mục điều hướng chính của hệ thống Quản trị
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/admin", icon: "dashboard" },
   { label: "Quản lý người dùng", href: "/admin/users", icon: "group" },
@@ -24,10 +43,10 @@ const navItems: NavItem[] = [
 ];
 
 interface SidebarProps {
-  isOpen?: boolean;
-  onClose?: () => void;
-  isCollapsed?: boolean;
-  onToggleCollapse?: () => void;
+  isOpen?: boolean;             // Trạng thái mở menu trên mobile
+  onClose?: () => void;         // Đóng menu mobile khi click backdrop hoặc link
+  isCollapsed?: boolean;        // Chế độ thu hẹp menu trên desktop
+  onToggleCollapse?: () => void;// Nút gập/mở rộng menu desktop
 }
 
 export default function Sidebar({
@@ -37,13 +56,18 @@ export default function Sidebar({
   onToggleCollapse,
 }: SidebarProps) {
   const pathname = usePathname();
+  // State lưu trữ số lượng hồ sơ đang chờ duyệt
   const [pendingCounts, setPendingCounts] = useState<{
     partners: number;
     vouchers: number;
   }>({ partners: 0, vouchers: 0 });
 
-  // Tự động load số lượng chờ duyệt thực tế từ database
+  /**
+   * Tải số lượng hồ sơ cần duyệt thực tế từ Backend Database.
+   * Sử dụng Promise.allSettled để tránh trường hợp 1 API lỗi làm chết toàn bộ sidebar.
+   */
   const loadPendingCounts = useCallback(async () => {
+
     try {
       const [partnerRes, empRes, voucherRes] = await Promise.allSettled([
         adminApi.getPendingPartners({ limit: 1 }),

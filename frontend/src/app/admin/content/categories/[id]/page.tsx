@@ -1,3 +1,20 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx (Admin Edit Category)
+ * VỊ TRÍ: frontend/src/app/admin/content/categories/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chỉnh sửa Danh mục & Quản lý Voucher Trực thuộc (UC-ADM-05).
+ *   - Các tính năng nghiệp vụ cốt lõi:
+ *       1. Cập nhật thông tin cơ bản: Tên danh mục, mô tả chi tiết, trạng thái hoạt động (ACTIVE / INACTIVE).
+ *       2. Quản lý Danh sách Voucher đã gán vào Danh mục:
+ *          - Hiển thị danh sách các voucher hiện đang thuộc danh mục này.
+ *          - Gỡ voucher ra khỏi danh mục (`adminApi.removeVoucherFromCategory`).
+ *       3. Modal Gán Voucher vào Danh mục (Add Vouchers to Category):
+ *          - Tải danh sách các voucher khả dụng toàn sàn (`adminApi.getVoucherProgramOptions`).
+ *          - Cho phép chọn nhiều voucher cùng lúc (Checkbox Pool) và gán hàng loạt (`adminApi.assignVouchersToCategory`).
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -18,11 +35,13 @@ export default function EditCategoryPage() {
   const router = useRouter();
   const catId = params?.id ? Number(params.id) : null;
 
+  // ─── 1. State Dữ liệu Danh mục & Form Chỉnh sửa ───────────────────────────────────
   const [category, setCategory] = useState<AdminCategoryDetail | null>(null);
   const [categoryName, setCategoryName] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
   const [vouchers, setVouchers] = useState<AdminCategoryVoucherItem[]>([]);
+
 
   // Available vouchers pool for modal
   const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);

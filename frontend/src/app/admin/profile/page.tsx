@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx (Admin Profile)
+ * VỊ TRÍ: frontend/src/app/admin/profile/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản lý Hồ sơ Cá nhân & Bảo mật của Quản trị viên (Admin Profile & Security).
+ *   - Các tính năng nghiệp vụ chính:
+ *       1. Xem chi tiết thông tin tài khoản: Email, Vai trò (ADMIN), Trạng thái hoạt động, Lần đăng nhập cuối, Ngày tạo tài khoản.
+ *       2. Chỉnh sửa thông tin cá nhân: Họ tên, Số điện thoại (Regex kiểm tra đầu số VN), Giới tính, Quốc tịch, Số CMND/CCCD.
+ *       3. Đổi mật khẩu đăng nhập: Kiểm tra độ dài tối thiểu 8 ký tự, khớp xác nhận mật khẩu, kiểm tra mật khẩu cũ qua Backend (bcrypt.compare).
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState } from "react";
@@ -8,9 +21,10 @@ import StatusBadge from "@/components/shared/ui/StatusBadge";
 import { useAdminProfile } from "@/hooks/useAdminProfile";
 
 export default function AdminProfilePage() {
+  // Hook lấy dữ liệu hồ sơ và các hàm thao tác API (updateProfile, changePassword)
   const { profile, isLoading, updateProfile, changePassword } = useAdminProfile();
 
-  // Edit personal info state
+  // ─── State Chỉnh sửa Thông tin Cá nhân ──────────────────────────────────────────
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -19,12 +33,13 @@ export default function AdminProfilePage() {
   const [identityNo, setIdentityNo] = useState("");
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
-  // Change password state
+  // ─── State Đổi Mật khẩu Đăng nhập ──────────────────────────────────────────────
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+
 
   const handleStartEdit = () => {
     if (!profile) return;

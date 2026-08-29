@@ -1,20 +1,33 @@
+/**
+ * =========================================================================================
+ * FILE: PendingApprovalsWidget.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Widget "Cần xử lý ngay" đặt trên Dashboard Quản trị viên (UC-ADM-06, UC-ADM-07).
+ *   - Hiển thị danh sách tóm tắt các yêu cầu phê duyệt mới nhất (Đối tác, Voucher) đang xếp hàng chờ duyệt.
+ *   - Cung cấp nút liên kết trực tiếp (Deep-link) chuyển nhanh đến màn hình chi tiết để duyệt/từ chối.
+ * =========================================================================================
+ */
+
 import Link from "next/link";
 import Icon from "@/components/shared/ui/Icon";
 
+// Interface định nghĩa cấu trúc 1 công việc duyệt trong widget
 interface PendingApproval {
-  id: string;
-  name: string;
-  type: string;
-  date: string;
-  status: string;
-  link: string;
+  id: string;      // Mã định danh (Ví dụ: PARTNER-12, VOUCHER-45)
+  name: string;    // Tên đối tác hoặc Tên chương trình voucher
+  type: string;    // Loại yêu cầu (Đăng ký đối tác / Phát hành voucher)
+  date: string;    // Ngày gửi yêu cầu
+  status: string;  // Trạng thái hiện tại
+  link: string;    // Đường dẫn chuyển đến trang chi tiết
 }
 
 interface PendingApprovalsWidgetProps {
-  pendingApprovals: PendingApproval[];
+  pendingApprovals: PendingApproval[]; // Danh sách hồ sơ cần duyệt truyền từ Dashboard cha
 }
 
 export default function PendingApprovalsWidget({ pendingApprovals }: PendingApprovalsWidgetProps) {
+
   return (
     <div className="bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">
       <div>

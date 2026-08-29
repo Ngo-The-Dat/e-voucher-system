@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: SubNavbar.tsx (Admin Content Component)
+ * VỊ TRÍ: frontend/src/app/admin/content/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Thanh điều hướng danh mục phụ (Sub-Navbar) cho toàn bộ phân hệ Quản lý Nội dung (CMS - UC-ADM-05).
+ *   - Cung cấp liên kết chuyển tab mượt mà giữa 4 phân hệ con:
+ *       1. Danh mục ngành hàng (`/admin/content/categories`).
+ *       2. Banner quảng cáo (`/admin/content/banners`).
+ *       3. Popup truyền thông (`/admin/content/popups`).
+ *       4. Bài viết & Chính sách (`/admin/content/articles`).
+ *   - Nhận diện tab đang active dựa trên `usePathname()`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -7,6 +22,7 @@ import Icon from "@/components/shared/ui/Icon";
 export default function ContentSubNavbar() {
   const pathname = usePathname();
 
+  // Cấu hình 4 phân hệ quản lý nội dung
   const navItems = [
     {
       name: "Danh mục",
@@ -29,6 +45,7 @@ export default function ContentSubNavbar() {
       icon: "article",
     },
   ];
+
 
   return (
     <div className="bg-white border-b border-slate-200 -mx-6 -mt-6 px-6 pt-4 mb-6 sticky top-0 z-10">

@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx (Admin Articles & Policies Management)
+ * VỊ TRÍ: frontend/src/app/admin/content/articles/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Bài viết Tin tức & Văn bản Chính sách Sàn (UC-ADM-05: Quản lý Nội dung / Articles).
+ *   - Các tính năng:
+ *       1. Danh sách Bài viết có lọc theo Loại nội dung (`ARTICLE` - Bài viết tin tức / `POLICY` - Điều khoản chính sách) và Trạng thái.
+ *       2. Modal Thêm bài viết mới: Tiêu đề, nội dung văn bản, phân loại và liên kết chương trình voucher nếu có.
+ *       3. Toggle nhanh trạng thái xuất bản và Modal xác nhận xóa bài viết.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,6 +30,7 @@ import {
 } from "@/lib/admin-api";
 
 export default function ArticlesPage() {
+  // ─── 1. State Danh sách Bài viết & Bộ lọc ──────────────────────────────────────────
   const [articles, setArticles] = useState<AdminContentListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -27,6 +41,7 @@ export default function ArticlesPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

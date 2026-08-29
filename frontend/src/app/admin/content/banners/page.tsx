@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx (Admin Banners Management)
+ * VỊ TRÍ: frontend/src/app/admin/content/banners/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Banner Quảng cáo (UC-ADM-05: Quản lý Nội dung / Banners).
+ *   - Các tính năng chính:
+ *       1. Danh sách Banner quảng cáo có lọc theo Vị trí hiển thị (Slider trang chủ, Banner phụ...), Trạng thái (ACTIVE/INACTIVE).
+ *       2. Modal Thêm Banner mới: Thiết lập hình ảnh (Image URL), liên kết đích (Chương trình Voucher hoặc URL ngoài), thời gian hiển thị (`display_from` đến `display_to`).
+ *       3. Toggle nhanh trạng thái Bật/Tắt hiển thị của Banner trực tiếp trên bảng.
+ *       4. Modal xác nhận xóa Banner an toàn.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,6 +31,7 @@ import {
 } from "@/lib/admin-api";
 
 export default function BannersPage() {
+  // ─── 1. State Danh sách Banner & Bộ lọc ───────────────────────────────────────────
   const [banners, setBanners] = useState<AdminBannerListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -27,6 +42,7 @@ export default function BannersPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // Modal States - Tạo Banner
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

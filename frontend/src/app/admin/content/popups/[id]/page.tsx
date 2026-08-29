@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx (Admin Edit Popup)
+ * VỊ TRÍ: frontend/src/app/admin/content/popups/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chỉnh sửa Chi tiết Popup Truyền Thông (UC-ADM-05).
+ *   - Các tính năng:
+ *       1. Tải song song thông tin Popup và danh sách voucher tùy chọn (`adminApi.getVoucherOptions`).
+ *       2. Cho phép cập nhật Tiêu đề, Nội dung, Hình ảnh, Voucher liên kết hoặc URL ngoài, Khoảng thời gian bắt đầu/kết thúc hiển thị.
+ *       3. Preview tức thời nội dung popup trước khi lưu.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,8 +30,10 @@ export default function EditPopupPage() {
   const router = useRouter();
   const popupId = params?.id ? Number(params.id) : null;
 
+  // ─── 1. State Dữ liệu Popup & Danh sách Voucher liên kết ───────────────────────────
   const [popup, setPopup] = useState<AdminPopupDetail | null>(null);
   const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
+
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");

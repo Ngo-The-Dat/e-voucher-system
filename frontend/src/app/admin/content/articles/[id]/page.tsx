@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx (Admin Edit Article)
+ * VỊ TRÍ: frontend/src/app/admin/content/articles/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chỉnh sửa Chi tiết Bài viết Tin tức / Điều khoản Chính sách (UC-ADM-05).
+ *   - Các tính năng:
+ *       1. Tải song song thông tin bài viết và danh sách voucher tùy chọn.
+ *       2. Cho phép cập nhật Tiêu đề, Loại nội dung (ARTICLE / POLICY), Nội dung văn bản (body), Voucher liên kết, Trạng thái (ACTIVE / INACTIVE).
+ *       3. Kiểm tra tính toàn vẹn và thông báo kết quả qua Sonner Toast.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,8 +30,10 @@ export default function EditArticlePage() {
   const router = useRouter();
   const contentId = params?.id ? Number(params.id) : null;
 
+  // ─── 1. State Dữ liệu Bài viết & Danh sách Voucher liên kết ──────────────────────────
   const [article, setArticle] = useState<AdminContentDetail | null>(null);
   const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
+
 
   const [title, setTitle] = useState("");
   const [contentType, setContentType] = useState<"POLICY" | "ARTICLE">("ARTICLE");

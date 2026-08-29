@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: VoucherRejectModal.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Modal Hộp thoại "Từ chối duyệt Voucher" của Quản trị viên (UC-ADM-03).
+ *   - Các đặc điểm nghiệp vụ quan trọng:
+ *       1. Bắt buộc nhập lý do từ chối: Nút xác nhận bị vô hiệu hóa (`disabled={!reason.trim()}`) nếu lý do trống.
+ *       2. Phản hồi này được ghi vào trường `rejection_reason` của yêu cầu duyệt và chuyển voucher về trạng thái DRAFT.
+ *       3. Ghi vết kiểm toán vào `system_logs` (Audit Log).
+ * =========================================================================================
+ */
+
 "use client";
 
 import { Button } from "@/components/shared/ui/Button";
@@ -5,13 +18,13 @@ import FormField from "@/components/shared/ui/FormField";
 import { AdminPendingVoucherItem } from "@/lib/admin-api";
 
 interface VoucherRejectModalProps {
-  isOpen: boolean;
-  voucher: AdminPendingVoucherItem | null;
-  reason: string;
-  onReasonChange: (val: string) => void;
-  onClose: () => void;
-  onConfirm: () => void;
-  isSubmitting?: boolean;
+  isOpen: boolean;                               // Trạng thái hiển thị modal
+  voucher: AdminPendingVoucherItem | null;       // Đối tượng voucher đang được thao tác từ chối
+  reason: string;                                // Giá trị chuỗi lý do từ chối
+  onReasonChange: (val: string) => void;         // Callback khi gõ nội dung lý do
+  onClose: () => void;                           // Callback đóng modal
+  onConfirm: () => void;                         // Callback gọi API từ chối voucher
+  isSubmitting?: boolean;                        // Cờ hiệu đang gọi API để vô hiệu hóa nút bấm tránh double-click
 }
 
 export default function VoucherRejectModal({
@@ -23,6 +36,7 @@ export default function VoucherRejectModal({
   onConfirm,
   isSubmitting = false,
 }: VoucherRejectModalProps) {
+
   if (!isOpen || !voucher) return null;
 
   return (

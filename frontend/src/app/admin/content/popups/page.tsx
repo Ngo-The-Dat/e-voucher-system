@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx (Admin Popups Management)
+ * VỊ TRÍ: frontend/src/app/admin/content/popups/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản trị Popup Thông Báo / Truyền Thông (UC-ADM-05: Quản lý Nội dung / Popups).
+ *   - Các tính năng nổi bật:
+ *       1. Hiển thị danh sách Popup thông báo (kèm thời gian bắt đầu `start_at` và kết thúc `end_at`).
+ *       2. Modal Tạo Popup mới: Nhập tiêu đề, nội dung ngắn, liên kết voucher hoặc URL ngoài, khoảng ngày hiệu lực.
+ *       3. Modal Xem trước Popup (Preview Modal): Giúp Quản trị viên kiểm tra trực quan giao diện popup như khi hiển thị cho khách hàng.
+ *       4. Bật/Tắt trạng thái hoạt động trực tiếp hoặc xóa popup.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,6 +31,7 @@ import {
 } from "@/lib/admin-api";
 
 export default function PopupsPage() {
+  // ─── 1. State Danh sách Popup & Bộ lọc ─────────────────────────────────────────────
   const [popups, setPopups] = useState<AdminPopupListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -26,6 +41,7 @@ export default function PopupsPage() {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
 
   // Modal States
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);

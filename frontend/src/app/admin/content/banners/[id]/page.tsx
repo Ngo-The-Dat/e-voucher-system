@@ -1,3 +1,16 @@
+/**
+ * =========================================================================================
+ * FILE: [id]/page.tsx (Admin Edit Banner)
+ * VỊ TRÍ: frontend/src/app/admin/content/banners/[id]/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Chỉnh sửa Chi tiết Banner Quảng cáo (UC-ADM-05).
+ *   - Các tính năng chính:
+ *       1. Tải song song thông tin Banner và danh sách voucher tùy chọn (`Promise.all([getBanner, getVoucherOptions])`).
+ *       2. Cho phép cập nhật Tiêu đề, Vị trí hiển thị (HOME_TOP / HOME_MIDDLE / CATEGORY_TOP), Hình ảnh, Liên kết đích, Khoảng ngày hiển thị.
+ *       3. Preview trực quan hình ảnh Banner trước khi lưu thay đổi.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -17,8 +30,10 @@ export default function EditBannerPage() {
   const router = useRouter();
   const bannerId = params?.id ? Number(params.id) : null;
 
+  // ─── 1. State Dữ liệu Banner & Danh sách Voucher liên kết ───────────────────────────
   const [banner, setBanner] = useState<AdminBannerDetail | null>(null);
   const [voucherOptions, setVoucherOptions] = useState<VoucherProgramOption[]>([]);
+
 
   const [title, setTitle] = useState("");
   const [programId, setProgramId] = useState<number | "">("");

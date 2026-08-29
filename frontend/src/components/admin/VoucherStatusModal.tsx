@@ -1,3 +1,17 @@
+/**
+ * =========================================================================================
+ * FILE: VoucherStatusModal.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Modal Thay đổi Trạng thái Hiển thị / Hoạt động của Voucher trong kho toàn sàn (UC-ADM-03).
+ *   - Các trạng thái được xử lý (Lifecycle States):
+ *       1. `HIDDEN` (Tạm ngưng): Ẩn voucher khỏi trang tìm kiếm/mua sắm của khách hàng, có thể mở lại.
+ *       2. `PUBLISHED` (Đang bán): Mở bán công khai trở lại cho khách hàng.
+ *       3. `ENDED` (Ngừng bán vĩnh viễn): Kết thúc đợt phát hành, không thể mua thêm nhưng voucher đã mua vẫn dùng được.
+ *   - Sử dụng bảng cấu hình `config` để tự động render icon, tiêu đề, màu sắc, cảnh báo và nút bấm tương ứng.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Icon from "@/components/shared/ui/Icon";
@@ -5,13 +19,13 @@ import { Button } from "@/components/shared/ui/Button";
 import { AdminManagedVoucherItem } from "@/lib/admin-api";
 
 interface VoucherStatusModalProps {
-  isOpen: boolean;
-  voucher: AdminManagedVoucherItem | null;
-  targetStatus: "PUBLISHED" | "HIDDEN" | "ENDED" | null;
-  onClose: () => void;
-  onConfirm: () => void;
-  isSubmitting?: boolean;
-  errorMessage?: string | null;
+  isOpen: boolean;                                               // Trạng thái mở modal
+  voucher: AdminManagedVoucherItem | null;                       // Đối tượng voucher được chọn
+  targetStatus: "PUBLISHED" | "HIDDEN" | "ENDED" | null;        // Trạng thái đích muốn cập nhật
+  onClose: () => void;                                           // Callback đóng modal
+  onConfirm: () => void;                                         // Callback gọi API cập nhật trạng thái
+  isSubmitting?: boolean;                                        // Cờ hiệu đang xử lý API
+  errorMessage?: string | null;                                  // Thông báo lỗi trả về từ Backend (nếu có)
 }
 
 export default function VoucherStatusModal({
@@ -23,6 +37,7 @@ export default function VoucherStatusModal({
   isSubmitting = false,
   errorMessage = null,
 }: VoucherStatusModalProps) {
+
   if (!isOpen || !voucher || !targetStatus) return null;
 
   const config = {

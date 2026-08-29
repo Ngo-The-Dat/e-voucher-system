@@ -1,3 +1,18 @@
+/**
+ * =========================================================================================
+ * FILE: Header.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Thanh Tiêu đề Trên cùng (Top Navigation Bar) của toàn bộ giao diện Quản trị viên (Admin Layout).
+ *   - Các chức năng chính:
+ *       1. Nút Menu Hamburger (Mobile Toggle): Bật/tắt thanh điều hướng Sidebar trên thiết bị di động.
+ *       2. Khối thông tin cá nhân (Profile Badge):
+ *          - Sử dụng custom hook `useAdminProfile()` để lấy dữ liệu họ tên Admin theo thời gian thực.
+ *          - Tự động trích xuất chữ cái đầu tiên của Tên (initial) làm avatar tròn fallback.
+ *          - Chuyển hướng nhanh sang trang xem/sửa hồ sơ `/admin/profile`.
+ * =========================================================================================
+ */
+
 "use client";
 
 import Link from "next/link";
@@ -5,15 +20,18 @@ import Icon from "@/components/shared/ui/Icon";
 import { useAdminProfile } from "@/hooks/useAdminProfile";
 
 interface HeaderProps {
-  onMenuToggle?: () => void;
+  onMenuToggle?: () => void; // Callback mở rộng sidebar trên màn hình di động
 }
 
 export default function Header({ onMenuToggle }: HeaderProps) {
+  // Hook lấy thông tin hồ sơ Admin từ API Backend
   const { profile } = useAdminProfile();
 
+  // Trích xuất chữ cái đầu của tên (ví dụ: 'Nguyễn Văn Admin' -> 'A')
   const adminName = profile?.full_name || "Admin";
   const parts = adminName.trim().split(" ");
   const initial = parts.length > 0 ? parts[parts.length - 1][0].toUpperCase() : "A";
+
 
   return (
     <header className="sticky top-0 z-30 h-16 bg-white/95 backdrop-blur-md border-b border-border px-4 lg:px-8 flex items-center justify-between gap-4">

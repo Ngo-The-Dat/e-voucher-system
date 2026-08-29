@@ -1,17 +1,34 @@
+/**
+ * =========================================================================================
+ * FILE: DashboardChart.tsx (Admin Component)
+ * VỊ TRÍ: frontend/src/components/admin/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Biểu đồ Cột Phân tích Hiệu suất Toàn sàn trên màn hình Dashboard (UC-ADM-06, UC-ADM-07).
+ *   - Các tính năng kỹ thuật chính:
+ *       1. Hỗ trợ 2 Tab Chuyển đổi Dữ liệu trực quan:
+ *          - Tab 1: Voucher phát hành & Đã quy đổi (Issue vs Redeem).
+ *          - Tab 2: Doanh thu sàn & Số lượng đơn hàng (Revenue vs Orders).
+ *       2. Tính toán tỷ lệ chiều cao thanh cột động `(value / maxValue) * 100%` bằng CSS Inline Styles.
+ *       3. Trạng thái Fallback Empty State khi chưa có dữ liệu trong khoảng thời gian đã chọn.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState } from "react";
 import Icon from "@/components/shared/ui/Icon";
 
 interface DashboardChartProps {
-  hasData: boolean;
-  setHasData: (val: boolean) => void;
-  chartData: any[];
+  hasData: boolean;                    // Cờ kiểm tra có dữ liệu hay không
+  setHasData: (val: boolean) => void;  // Hàm cập nhật trạng thái dữ liệu
+  chartData: any[];                    // Mảng dữ liệu các mốc thời gian (label, issue, redeem, revenue, orders)
 }
 
 export default function DashboardChart({ hasData, setHasData, chartData }: DashboardChartProps) {
   type ChartTab = "voucher" | "revenue";
+  // State lưu tab biểu đồ đang được chọn
   const [chartTab, setChartTab] = useState<ChartTab>("voucher");
+
 
   return (
     <div className="w-full bg-white p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-between">

@@ -1,3 +1,19 @@
+/**
+ * =========================================================================================
+ * FILE: page.tsx (Admin Categories Management)
+ * VỊ TRÍ: frontend/src/app/admin/content/categories/
+ * VAI TRÒ TRONG HỆ THỐNG:
+ *   - Màn hình Quản lý Danh mục Ngành hàng (UC-ADM-05: Quản lý Nội dung / Categories).
+ *   - Các tính năng nghiệp vụ & kỹ thuật cốt lõi:
+ *       1. Hiển thị danh sách danh mục kèm số lượng voucher trực thuộc (`voucher_count`).
+ *       2. Tìm kiếm Debounce 400ms và lọc theo trạng thái (`ACTIVE` - Đang hiển thị / `INACTIVE` - Tạm ẩn).
+ *       3. Modal Thêm Danh mục mới (kiểm tra trùng tên).
+ *       4. Kiểm tra Ràng buộc Nghiệp vụ Rule A1 (Category Constraints):
+ *          - Khi Admin chuyển trạng thái sang `INACTIVE` hoặc xóa danh mục mà danh mục đó đang chứa voucher,
+ *            hệ thống hiển thị Modal cảnh báo Rule A1 giải thích rõ các voucher liên quan sẽ bị ảnh hưởng hiển thị.
+ * =========================================================================================
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
@@ -16,6 +32,7 @@ import {
 } from "@/lib/admin-api";
 
 export default function CategoriesPage() {
+  // ─── 1. State Danh sách Danh mục & Phân trang ─────────────────────────────────────
   const [categories, setCategories] = useState<AdminCategoryListItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -26,18 +43,18 @@ export default function CategoriesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modal States - Tạo Danh Mục
+  // ─── 2. State Modal Thêm Danh mục Mới ──────────────────────────────────────────────
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
   const [newCatStatus, setNewCatStatus] = useState<"ACTIVE" | "INACTIVE">("ACTIVE");
 
-  // Rule A1 Warning Modal
+  // ─── 3. State Modal Cảnh báo Ràng buộc Rule A1 & Xác nhận Xóa ─────────────────────
   const [warningCat, setWarningCat] = useState<AdminCategoryListItem | null>(null);
-  // Confirm Delete Modal
   const [confirmDeleteCat, setConfirmDeleteCat] = useState<AdminCategoryListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
 
   // Search debounce
   useEffect(() => {
